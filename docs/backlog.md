@@ -8,8 +8,6 @@
 
 ## Iteration +3
 
-- Improve Kafka source
-  https://github.com/bruin-data/ingestr/pull/306
 - Validate support for CrateDB
   https://github.com/bruin-data/ingestr/pull/284
 - Support streaming sources

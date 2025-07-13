@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Kafka: Expanded `default_msg_processor` into a miniature decoding unit
+
 ## 2026/06/19 v0.1.0
 
 - Dependencies: Permitted installation of SQLAlchemy 2.0

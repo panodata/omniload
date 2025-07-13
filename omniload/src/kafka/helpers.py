@@ -12,69 +12,89 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional
 
+import orjson
 from confluent_kafka import Consumer, Message, TopicPartition
 from confluent_kafka.admin import TopicMetadata
 from dlt import config
 from dlt.common import pendulum
 from dlt.common.configuration import configspec
 from dlt.common.configuration.specs import CredentialsConfiguration
-from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import DictStrAny, TSecretValue
-from dlt.common.utils import digest128
+
+from omniload.src.kafka.model import KafkaDecodingOptions, KafkaEvent
 
 
-def default_msg_processor(msg: Message) -> Dict[str, Any]:
-    """Basic Kafka message processor.
-
-    Returns the message value and metadata. Timestamp consists of two values:
-    (type of the timestamp, timestamp). Type represents one of the Python
-    Kafka constants:
-        TIMESTAMP_NOT_AVAILABLE - Timestamps not supported by broker.
-        TIMESTAMP_CREATE_TIME - Message creation time (or source / producer time).
-        TIMESTAMP_LOG_APPEND_TIME - Broker receive time.
-
-    Args:
-        msg (confluent_kafka.Message): A single Kafka message.
-
-    Returns:
-        dict: Processed Kafka message.
+class KafkaEventProcessor:
     """
-    ts = msg.timestamp()
-    topic = msg.topic()
-    partition = msg.partition()
+    A processor for Kafka events with processing stages and configuration capabilities.
 
-    # Sanity checks.
-    if topic is None:
-        raise ValueError("A Kafka message without topic is not supported")
-    if partition is None:
-        raise ValueError("A Kafka message without partition is not supported")
+    It cycles through "decode", "deserialize" and "format".
+    """
 
-    # Decode `key` and `value`.
-    if msg.key() is not None:
-        key = cast(bytes, msg.key()).decode("utf-8")
-    else:
-        key = None
-    if msg.value() is not None:
-        value = cast(bytes, msg.value()).decode("utf-8")
-    else:
-        value = None
+    def __init__(self, options: Optional[KafkaDecodingOptions] = None):
+        self.options = options or KafkaDecodingOptions()
 
-    return {
-        "_kafka": {
-            "partition": partition,
-            "topic": topic,
-            "key": key,
-            "offset": msg.offset(),
-            "ts": {
-                "type": ts[0],
-                "value": ensure_pendulum_datetime(ts[1] / 1e3),
-            },
-            "data": value,
-        },
-        "_kafka_msg_id": digest128(topic + str(partition) + str(key)),
-    }
+    def process(self, msg: Message) -> Dict[str, Any]:
+        """
+        Progress Kafka event.
+
+        Returns the message value and metadata. Timestamp consists of two values:
+        (type of the timestamp, timestamp). Type represents one of the Python
+        Kafka constants:
+            TIMESTAMP_NOT_AVAILABLE - Timestamps not supported by broker.
+            TIMESTAMP_CREATE_TIME - Message creation time (or source / producer time).
+            TIMESTAMP_LOG_APPEND_TIME - Broker receive time.
+
+        Args:
+            msg (confluent_kafka.Message): A single Kafka message.
+
+        Returns:
+            dict: Processed Kafka message.
+        """
+
+        # Decode.
+        event = self.decode(msg)
+
+        # Deserialize.
+        self.deserialize(event)
+
+        # Format egress message based on input options.
+        return event.to_dict(self.options)
+
+    def decode(self, msg: Message) -> KafkaEvent:
+        """
+        Translate from Confluent library's `Message` instance to `Event` instance.
+        """
+        return KafkaEvent(
+            ts=msg.timestamp(),
+            topic=msg.topic(),
+            partition=msg.partition(),
+            offset=msg.offset(),
+            key=msg.key(),
+            value=msg.value(),
+        )
+
+    def deserialize(self, event: KafkaEvent) -> KafkaEvent:
+        """
+        Deserialize event key and value according to decoding options.
+        """
+        if self.options.key_type is not None:
+            if self.options.key_type == "json":
+                if event.key is not None:
+                    event.key = orjson.loads(event.key)
+            else:
+                raise NotImplementedError(f"Unknown key type: {self.options.key_type}")
+        if self.options.value_type is not None:
+            if self.options.value_type == "json":
+                if event.value is not None:
+                    event.value = orjson.loads(event.value)
+            else:
+                raise NotImplementedError(
+                    f"Unknown value type: {self.options.value_type}"
+                )
+        return event
 
 
 class OffsetTracker(dict):
@@ -130,9 +150,7 @@ class OffsetTracker(dict):
 
         return tracked_topics
 
-    def _init_partition_offsets(
-        self, start_from: Optional[pendulum.DateTime] = None
-    ) -> None:
+    def _init_partition_offsets(self, start_from: Optional[pendulum.DateTime]) -> None:
         """Designate current and maximum offsets for every partition.
 
         Current offsets are read from the state, if present. Set equal
