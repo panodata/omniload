@@ -71,12 +71,36 @@ Organization IDs are numeric and visible in:
 
 ## Tables
 
+### Entity tables
+
 | Table | PK | Inc Key | Inc Strategy | Details |
 |---|---|---|---|---|
 | `campaigns` | `[orgId, id]` | `modificationTime` | merge | All ad campaigns in the organization, including budget, status, countries/regions, and timeframe. |
 | `ad_groups` | `[orgId, id]` | `modificationTime` | merge | Targeting groups inside each campaign — bids, audience/device/geo targeting, and keyword-matching settings. |
 | `ads` | `[orgId, id]` | `modificationTime` | merge | Individual ads within each ad group, linking a creative to its ad group and serving status. |
 | `creatives` | `[orgId, id]` | `modificationTime` | merge | Creative assets registered to the organization (custom product pages, text, media) that ads reference. |
+
+### Report tables
+
+Report tables return performance metrics (impressions, taps, installs, spend, etc.) from the [Apple Search Ads Reporting API](https://developer.apple.com/documentation/apple_ads/apple-search-ads-campaign-management-api-5).
+
+| Table | PK | Inc Key | Inc Strategy | Details |
+|---|---|---|---|---|
+| `campaign_reports` | `[orgId, campaignId]` | `modificationTime` | merge | Campaign-level performance metrics. |
+| `ad_group_reports` | `[orgId, campaignId, adGroupId]` | `modificationTime` | merge | Ad group-level performance metrics. |
+| `ad_reports` | `[orgId, campaignId, adId]` | `modificationTime` | merge | Ad-level performance metrics. |
+
+Report table names support an optional `:granularity:groupBy` suffix to control time breakdown and dimensional grouping:
+
+- Granularity — hourly, daily, weekly, or monthly.
+- GroupBy — one or more dimensions separated by commas. `campaign_reports` and `ad_group_reports` accept any of `countryOrRegion`, `ageRange`, `gender`, `deviceClass`, `adminArea`, `locality`, `countryCode`. `ad_reports` is restricted to `countryOrRegion` only.
+
+| Granularity | Max start date |
+| :--- | :--- |
+| hourly | 30 days |
+| daily | 90 days |
+| weekly | 24 months |
+| monthly | 24 months |
 
 ## Example
 
@@ -117,6 +141,36 @@ ingestr ingest \
 
 All campaigns from all three organizations land in a single table, distinguished
 by the `orgId` column.
+
+### Daily campaign report by country
+
+```bash
+ingestr ingest \
+  --source-uri="appleads://?client_id=...&team_id=...&key_id=...&org_id=...&key_path=..." \
+  --source-table='campaign_reports:daily:countryOrRegion' \
+  --dest-uri="duckdb:///tmp/apple_ads.duckdb" \
+  --dest-table=main.campaign_reports_daily_country
+```
+
+### Aggregated report grouped by gender (no time breakdown)
+
+```bash
+ingestr ingest \
+  --source-uri="appleads://?client_id=...&team_id=...&key_id=...&org_id=...&key_path=..." \
+  --source-table='campaign_reports::gender' \
+  --dest-uri="duckdb:///tmp/apple_ads.duckdb" \
+  --dest-table=main.campaign_reports_gender
+```
+
+### Monthly metrics grouped by country and gender
+
+```bash
+ingestr ingest \
+  --source-uri="appleads://?client_id=...&team_id=...&key_id=...&org_id=...&key_path=..." \
+  --source-table='campaign_reports:monthly:countryOrRegion,gender' \
+  --dest-uri="duckdb:///tmp/apple_ads.duckdb" \
+  --dest-table=main.campaign_reports_monthly_country_gender
+```
 
 ## Notes
 
