@@ -95,12 +95,15 @@ Report table names support an optional `:granularity:groupBy` suffix to control 
 - Granularity — hourly, daily, weekly, or monthly. When set, date is added to the primary key.
 - GroupBy — one or more dimensions separated by commas. Each dimension is added to the primary key. `campaign_reports` and `ad_group_reports` accept any of `countryOrRegion`, `ageRange`, `gender`, `deviceClass`, `adminArea`, `locality`, `countryCode`. `ad_reports` is restricted to `countryOrRegion` only.
 
-| Granularity | Max start date |
-| :--- | :--- |
-| hourly | 30 days |
-| daily | 90 days |
-| weekly | 24 months |
-| monthly | 24 months |
+
+**Granularity constraints** (from [Apple docs](https://developer.apple.com/documentation/apple_ads/reportingrequest)):
+
+| Granularity | Min date range | Max lookback |
+|---|---|---|
+| `hourly` | — | 30 days |
+| `daily` | — | 90 days |
+| `weekly` | > 14 days | 24 months |
+| `monthly` | > 90 days (3 months) | 24 months |
 
 ## Example
 
@@ -141,6 +144,16 @@ ingestr ingest \
 
 All campaigns from all three organizations land in a single table, distinguished
 by the `orgId` column.
+
+### Aggregated campaign report (no granularity, no groupBy)
+
+```bash
+ingestr ingest \
+  --source-uri="appleads://?client_id=...&team_id=...&key_id=...&org_id=...&key_path=..." \
+  --source-table=campaign_reports \
+  --dest-uri="duckdb:///tmp/apple_ads.duckdb" \
+  --dest-table=main.campaign_reports
+```
 
 ### Daily campaign report by country
 
