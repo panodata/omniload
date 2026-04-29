@@ -136,6 +136,26 @@ ingestr ingest \
   --dest-table 'my_object.property_history'
 ```
 
+## Overriding associations
+
+Each built-in table fetches a default set of associations. You can override that list by appending `:<assoc1>,<assoc2>` to the table name. The suffix **replaces** the default list, so you can narrow it down to just what you need, or include custom object names. Use `<table>:` (colon with empty list) to skip associations entirely.
+
+```sh
+# only fetch companies and deals for contacts
+ingestr ingest \
+  --source-uri 'hubspot://?api_key=pat_test_12345' \
+  --source-table 'contacts:companies,deals' \
+  --dest-uri duckdb:///hubspot.duckdb \
+  --dest-table 'contacts.data'
+
+# fetch contacts with no associations 
+ingestr ingest \
+  --source-uri 'hubspot://?api_key=pat_test_12345' \
+  --source-table 'contacts:' \
+  --dest-uri duckdb:///hubspot.duckdb \
+  --dest-table 'contacts.data'
+```
+
 ## Incremental Loading
 
 HubSpot supports incremental loading out of the box. On the first run, ingestr performs a full load of all records. On subsequent runs, it uses the `hs_lastmodifieddate` field to fetch only records that have been created or updated since the last successful run.
