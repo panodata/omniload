@@ -138,6 +138,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             items: [
               { text: "Adjust", link: "/supported-sources/adjust.md" },
               { text: "Airtable", link: "/supported-sources/airtable.md" },
+              { text: "Allium", link: "/supported-sources/allium.md" },
               { text: "Amazon Kinesis", link: "/supported-sources/kinesis.md" },
               { text: "Anthropic", link: "/supported-sources/anthropic.md" },
               { text: "AppsFlyer", link: "/supported-sources/appsflyer.md" },
@@ -173,6 +174,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               { text: "Indeed", link: "/supported-sources/indeed.md" },
               { text: "Gorgias", link: "/supported-sources/gorgias.md" },
               { text: "HubSpot", link: "/supported-sources/hubspot.md" },
+              { text: "Intercom", link: "/supported-sources/intercom.md" },
               { text: "Internet Society Pulse", link: "/supported-sources/isoc-pulse.md" },
               { text: "Jira", link: "/supported-sources/jira.md" },
               { text: "JobTread", link: "/supported-sources/jobtread.md" },
