@@ -714,13 +714,12 @@ def ingest(
         )
         print()
 
-    except Exception as e:
+    except Exception:
         raise
 
 
 @app.command()
 def example_uris():
-
     print()
     typer.echo(
         "Following are some example URI formats for supported sources and destinations:"

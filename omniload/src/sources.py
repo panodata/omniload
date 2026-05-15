@@ -508,7 +508,9 @@ class MongoDbSource:
             # First, convert MongoDB shell syntax to Extended JSON format
             from bson import json_util
 
-            from omniload.src.mongodb.helpers import convert_mongo_shell_to_extended_json
+            from omniload.src.mongodb.helpers import (
+                convert_mongo_shell_to_extended_json,
+            )
 
             # Convert MongoDB shell constructs to Extended JSON v2 format
             converted_query = convert_mongo_shell_to_extended_json(query_json)
@@ -2134,7 +2136,7 @@ class JiraSource:
 
 
 class DynamoDBSource:
-    AWS_ENDPOINT_PATTERN = re.compile(".*\.(.+)\.amazonaws\.com")
+    AWS_ENDPOINT_PATTERN = re.compile(r".*\.(.+)\.amazonaws\.com")
 
     def infer_aws_region(self, uri: ParseResult) -> Optional[str]:
         # try to infer from URI
