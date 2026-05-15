@@ -1,38 +1,43 @@
 <div align="center">
-    <b>omniload</b>
-    <p>Copy data from any source to any destination without any code</p>
-    <img src="https://github.com/panodata/omniload/blob/main/resources/demo.gif?raw=true" width="750" />
+
+# omniload
+<p>Load data from any source into any destination.</p>
+<img src="https://github.com/panodata/omniload/blob/main/resources/demo.gif?raw=true" width="750" />
+
 </div>
 
----
+## About
 
-omniload is a polyglot data loader based on dlt.
-It allows you to ingest data from any source into any destination using simple command-line flags, no code necessary.
+omniload is a polyglot data loader framework based on dlt.
+It allows you to load data from any source into any destination,
+either using a concise CLI from your shell,
+or the Python API from your own applications.
 
-- ✨ copy data from your database into any destination
-- ➕ incremental loading: `append`, `merge` or `delete+insert`
-- 🐍 single-command installation
+omniload provides the same efficient incremental data loading modes
+inherited by [dlt]: `append`, `merge`, and `delete+insert`.
 
-omniload takes away the complexity of managing any backend or writing any code for ingesting data, simply run the command and watch the data land on its destination.
+## Install
+We recommend using [uv] to install or run `omniload`.
 
-## Installation
-We recommend using [uv](https://github.com/astral-sh/uv) to run `omniload`.
-
-```
+```shell
 pip install uv
 uvx omniload
 ```
 
 Alternatively, if you'd like to install it globally:
-```
+```shell
 uv pip install --system omniload
 ```
 
 While installation with vanilla `pip` is possible, it's an order of magnitude slower.
 
-## Quickstart
+## Synopsis
 
-```bash
+The next command instructs omniload to read the table `public.some_data` from
+your PostgreSQL instance, and to write the data to your BigQuery warehouse
+under the schema `omniload` and table `some_data`.
+
+```shell
 omniload ingest \
     --source-uri 'postgresql://admin:admin@localhost:8837/web?sslmode=disable' \
     --source-table 'public.some_data' \
@@ -40,308 +45,46 @@ omniload ingest \
     --dest-table 'omniload.some_data'
 ```
 
-That's it.
+## Handbook
 
-This command:
+Please visit the [full documentation][Documentation], or inspect the
+list of supported [sources and destinations].
 
-- gets the table `public.some_data` from the Postgres instance.
-- uploads this data to your BigQuery warehouse under the schema `omniload` and table `some_data`.
+## Project
 
-## Documentation
+### Contribute
 
-You can see the full documentation [here](https://github.com/panodata/omniload/blob/main/docs/getting-started/quickstart.md).
+Contributions are very much welcome. Please visit the [Documentation]
+to learn how to spin up a sandbox environment on your workstation and submit
+patches, or create a [ticket][Issues] to report a bug or propose a feature.
 
-## Contributing
+### Status
 
-Pull requests are welcome. However, please open an issue first to discuss what you would like to change. We maybe able to offer you help and feedback regarding any changes you would like to make.
+Breaking changes should be expected until a 1.0 release, so version pinning is
+strongly recommended, especially when using this software as a library.
+For example:
+```shell
+pip install 'omniload[full]==0.0.42'
+```
 
-> [!NOTE]
-> After cloning `omniload` make sure to run `make setup` to install githooks.
+### License
 
-## Supported sources & destinations
-<table>
-    <tr>
-        <th></th>
-        <th>Source</th>
-        <th>Destination</th>
-    </tr>
-    <tr>
-        <td colspan="3" style='text-align:center;'><strong>Databases</strong></td>
-    </tr>
-    <tr>
-        <td>BigQuery</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-    <tr>
-        <td>ClickHouse</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-    <tr>
-        <td>CrateDB</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-    <tr>
-        <td>Databricks</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-    <tr>
-        <td>IBM Db2</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>DuckDB</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-    <tr>
-        <td>DynamoDB</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Elasticsearch</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-     <tr>
-        <td>GCP Spanner</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Local CSV file</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-    <tr>
-        <td>Microsoft SQL Server</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-    <tr>
-        <td>MongoDB</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-    <tr>
-        <td>MotherDuck</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-    <tr>
-        <td>MySQL</td>
-        <td>✅</td>
-        <td>❌</td>
-    </tr>
-    <tr>
-        <td>Oracle</td>
-        <td>✅</td>
-        <td>❌</td>
-    </tr>
-    <tr>
-        <td>Postgres</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-     <tr>
-        <td>Redshift</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-    <tr>
-        <td>SAP Hana</td>
-        <td>✅</td>
-        <td>❌</td>
-    </tr>
-    <tr>
-        <td>Snowflake</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-    <tr>
-        <td>SQLite</td>
-        <td>✅</td>
-        <td>❌</td>
-    </tr>
-    <tr>
-        <td>Trino</td>
-        <td>✅</td>
-        <td>✅</td>
-    </tr>
-    <tr>
-        <td colspan="3" style='text-align:center;'><strong>Platforms</strong></td>
-    </tr>
-        <td>Adjust</td>
-        <td>✅</td>
-        <td>-</td>
-    <tr>
-        <td>Airtable</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Amazon Kinesis</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Apache Kafka</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>AppsFlyer</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>App Store</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Asana</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Attio</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Chess.com</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Facebook Ads</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>GitHub</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Gorgias</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Google Sheets</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Google Ads</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Google Analytics</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-     <tr>
-        <td>Klaviyo</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>LinkedIn Ads</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Notion</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Personio</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-     <tr>
-        <td>Phantombuster</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Pipedrive</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-     <tr>
-        <td>S3</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Salesforce</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Shopify</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-     <tr>
-        <td>Slack</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Smartsheets</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Solidgate</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Stripe</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>TikTok Ads</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>Zendesk</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-</table>
+The project is licensed under the MIT License, see the [LICENSE] file for details.
+Some components are licensed under the Apache 2.0 license, see the [NOTICE] file for details.
 
-Feel free to create an issue if you'd like to see support for another source or destination.
+### Acknowledgements
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-Some components are licensed under Apache 2.0 - see the NOTICE file for details.
-
-## Acknowledgements
-
-This project would not have been possible without the amazing work done by the
-[SQLAlchemy], [dlt], and [ingestr] teams. `omniload` relies on their work to
-connect to various sources and destinations, inheriting many concepts of
-ingestr after its code base converged to Go.
+This project would not have been possible without the amazing work by the
+authors and contributors to [SQLAlchemy], [dlt], and [ingestr], turtles all
+the way down. Kudos.
 
 
-[dlt]: https://dlthub.com/
+[dlt]: https://github.com/dlt-hub/dlt
+[Documentation]: https://github.com/panodata/omniload/blob/main/docs/getting-started/quickstart.md
 [ingestr]: https://bruin-data.github.io/ingestr/
+[Issues]: https://github.com/panodata/omniload/issues
+[LICENSE]: https://github.com/panodata/omniload/blob/main/LICENSE.md
+[NOTICE]: https://github.com/panodata/omniload/blob/main/NOTICE
+[sources and destinations]: https://github.com/panodata/omniload/blob/main/docs/supported-sources/index.md
 [SQLAlchemy]: https://www.sqlalchemy.org/
+[uv]: https://docs.astral.sh/uv/
