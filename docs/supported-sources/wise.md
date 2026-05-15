@@ -2,7 +2,7 @@
 
 [Wise](https://wise.com/) is a global financial technology company that provides international money transfers, multi-currency accounts, and business payment solutions.
 
-ingestr supports Wise as a source.
+omniload supports Wise as a source.
 
 ## URI format
 
@@ -29,7 +29,7 @@ Copy the token and save it securely..
 Copy transfers from Wise into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'wise://?api_key=mytoken' \
     --source-table transfers \
     --dest-uri duckdb:///wise.duckdb \

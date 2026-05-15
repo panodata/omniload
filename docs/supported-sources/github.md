@@ -2,7 +2,7 @@
 
 [GitHub](https://github.com/) is a developer platform that allows developers to create, store, manage and share their code.
 
-ingestr supports GitHub as a source.
+omniload supports GitHub as a source.
 
 ## URI format
 
@@ -26,7 +26,7 @@ GitHub requires a few steps to set up an integration, please follow the guide dl
 Once you complete the guide, you should have an access token. Let's say your access token is `ghp_test_1234`, the owner is `max`, and the name of the repository is `test_example`. Here is a sample command that will copy the data from GitHub into a DuckDB database:
 
 ```sh
-ingestr ingest --source-uri 'github://?access_token=ghp_test_1234&owner=max&repo=test_example' --source-table 'issues' --dest-uri duckdb:///github.duckdb --dest-table 'dest.issues'
+omniload ingest --source-uri 'github://?access_token=ghp_test_1234&owner=max&repo=test_example' --source-table 'issues' --dest-uri duckdb:///github.duckdb --dest-table 'dest.issues'
 ```
 
 This is a sample command that will copy the data from the GitHub source to DuckDB.
@@ -44,5 +44,5 @@ GitHub source allows ingesting the following sources into separate tables:
 | `stargazers`    | - | –                | replace               | Retrieves stargazers. Full reload on each run.                                  |
 
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
  

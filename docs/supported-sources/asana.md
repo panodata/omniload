@@ -29,7 +29,7 @@ Let's say you have a workspace with id `workspace-1337` and you want to ingest a
 
 You can run the following to achieve this:
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "asana://workspace-1337?access_token=fake_token" \
   --source-table "tasks" \
   --dest-uri "duckdb://./work.db" \
@@ -53,7 +53,7 @@ Asana source allows ingesting the following sources into separate tables:
 | `users` | - | - | replace | Individuals who have access to the Asana platform. Full reload on each run. |
 
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 > [!WARNING]
-> Asana does not support incremental loading for many endpoints in its APIs, which means ingestr will load endpoints incrementally if they support it, and do a full-refresh if not.
+> Asana does not support incremental loading for many endpoints in its APIs, which means omniload will load endpoints incrementally if they support it, and do a full-refresh if not.

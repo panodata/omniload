@@ -2889,7 +2889,7 @@ def test_custom_query(testcase, source, dest):
 # )
 # def test_github_to_duckdb(dest):
 #     dest_uri = dest.start()
-#     source_uri = "github://?owner=bruin-data&repo=ingestr"
+#     source_uri = "github://?owner=panodata&repo=omniload"
 #     source_table = "repo_events"
 
 #     dest_table = "dest.github_repo_events"

@@ -3,7 +3,7 @@
 streamline HR processes, including recruitment, employee data management, and payroll, in one
 platform.
 
-ingestr supports Personio as a source.
+omniload supports Personio as a source.
 
 ## URI format
 
@@ -25,7 +25,7 @@ To grab personio credentials, please follow the guide [here](https://dlthub.com/
 Once you complete the guide, you should have a client ID and client secret. Let's say your `client_id` is id_123 and your `client_secret` is secret_123, here's a sample command that will copy the data from Personio into a DuckDB database:
 
 ```bash
-ingestr ingest --source-uri 'personio://?client_id=id_123&client_secret=secret_123' \
+omniload ingest --source-uri 'personio://?client_id=id_123&client_secret=secret_123' \
  --source-table 'employees' \
  --dest-uri duckdb:///personio.duckdb \
  --dest-table 'dest.employees'
@@ -51,8 +51,8 @@ Personio source allows ingesting the following sources into separate tables:
 | [custom_reports_list](https://developer.personio.de/v1.0/reference/listreports) | id | – | replace | Retrieves metadata about existing custom reports in your Personio account, such as report name, report type, report date / timeframe.      |
 | [employees_absences_balance](https://developer.personio.de/v1.0/reference/get_company-employees-employee-id-absences-balance) | [employee_id,id] | –  | merge | Retrieves the absence balance for a specific employee    |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.\
+Use these as `--source-table` parameter in the `omniload ingest` command.\
 
 
 > [!WARNING]
-> Personio does not support incremental loading for many endpoints, which means ingestr will load endpoints incrementally if they support it, and do a full-refresh if not.
+> Personio does not support incremental loading for many endpoints, which means omniload will load endpoints incrementally if they support it, and do a full-refresh if not.

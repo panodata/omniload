@@ -2,7 +2,7 @@
 
 [FundraiseUp](https://fundraiseup.com/) is a modern donation platform that helps non-profits increase their online fundraising revenue.
 
-ingestr supports FundraiseUp as a source.
+omniload supports FundraiseUp as a source.
 
 ## URI format
 
@@ -20,7 +20,7 @@ URI parameters:
 Assuming your API key is `your_api_key`, you can ingest donations into DuckDB using:
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri 'fundraiseup://?api_key=your_api_key' \
     --source-table 'donations' \
     --dest-uri duckdb:///fundraiseup.duckdb \
@@ -40,7 +40,7 @@ The FundraiseUp source supports the following tables:
 | `recurring_plans`       | id | - | replace               | Recurring donation plans and subscription details |
 | `supporters`       | id | - | replace               | Donor/supporter information including contact details |
 
-Use one of these as the `--source-table` parameter in the `ingestr ingest` command.
+Use one of these as the `--source-table` parameter in the `omniload ingest` command.
 
 ## Notes
 
@@ -54,28 +54,28 @@ To ingest all available data from FundraiseUp:
 
 ```bash
 # Ingest donations
-ingestr ingest \
+omniload ingest \
     --source-uri 'fundraiseup://?api_key=your_api_key' \
     --source-table 'donations' \
     --dest-uri duckdb:///fundraiseup.db \
     --dest-table 'main.donations'
 
 # Ingest events
-ingestr ingest \
+omniload ingest \
     --source-uri 'fundraiseup://?api_key=your_api_key' \
     --source-table 'events' \
     --dest-uri duckdb:///fundraiseup.db \
     --dest-table 'main.events'
 
 # Ingest recurring plans
-ingestr ingest \
+omniload ingest \
     --source-uri 'fundraiseup://?api_key=your_api_key' \
     --source-table 'recurring_plans' \
     --dest-uri duckdb:///fundraiseup.db \
     --dest-table 'main.recurring_plans'
 
 # Ingest supporters
-ingestr ingest \
+omniload ingest \
     --source-uri 'fundraiseup://?api_key=your_api_key' \
     --source-table 'supporters' \
     --dest-uri duckdb:///fundraiseup.db \

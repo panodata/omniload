@@ -1,14 +1,14 @@
 # Microsoft SQL Server
 Microsoft SQL Server is a relational database management system developed by Microsoft.
 
-ingestr supports Microsoft SQL Server as both a source and destination.
+omniload supports Microsoft SQL Server as both a source and destination.
 
 ## Installation
 
-To use Microsoft SQL Server with ingestr, you need to install the `pyodbc` add-on as well. You can do this by running:
+To use Microsoft SQL Server with omniload, you need to install the `pyodbc` add-on as well. You can do this by running:
 
 ```bash
-pip install ingestr[odbc]
+pip install omniload[odbc]
 ```
 
 ## URI format
@@ -39,7 +39,7 @@ Set the password to your token and the `Authentication` parameter to `ActiveDire
 ```sh [token-auth-example.sh]
 USER=$(az account show --query user.name -o tsv)
 TOKEN=$(az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv)
-ingestr ingest \
+omniload ingest \
     --source-uri "mssql://$USER:$TOKEN@<server>.database.windows.net/<database>?Authentication=ActiveDirectoryAccessToken" \
     --source-table "dbo.example" \
     --dest-uri "duckdb:///example.db" \

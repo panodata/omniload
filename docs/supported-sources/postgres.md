@@ -1,7 +1,7 @@
 # Postgres
 Postgres is an open source, object-relational database system that provides reliability, data integrity, and correctness.
 
-ingestr supports Postgres as both a source and destination.
+omniload supports Postgres as both a source and destination.
 
 ## URI format
 The URI format for Postgres is as follows:

@@ -19,7 +19,7 @@ class AnthropicClient:
         self.headers = {
             "anthropic-version": "2023-06-01",
             "x-api-key": api_key,
-            "User-Agent": "ingestr/1.0.0 (https://github.com/bruin-data/ingestr)",
+            "User-Agent": "omniload/1.0.0 (https://github.com/panodata/omniload)",
         }
         # Create client with retry logic for common error codes
         self.client = create_client(retry_status_codes=[429, 502, 503, 504])

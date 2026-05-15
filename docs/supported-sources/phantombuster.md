@@ -1,7 +1,7 @@
 # PhantomBuster
 [PhantomBuster](https://phantombuster.com/) is a cloud-based data automation and web scraping platform that allows users to extract data from websites, automate actions.
 
-ingestr supports PhantomBuster as a source.
+omniload supports PhantomBuster as a source.
 
 ## URI format
 
@@ -22,7 +22,7 @@ Let's say your `api_key` is key_123, here's a sample command that will copy the 
 
 
 ```bash
-ingestr ingest \
+omniload ingest \
 --source-uri 'PhantomBuster://?api_key=key_123' \
 --source-table 'completed_phantoms:<agent_id>' \
 --dest-uri duckdb:///PhantomBuster.duckdb \
@@ -39,4 +39,4 @@ Phantombuster source allows ingesting the following sources into separate tables
 | --------------- | ----------- | --------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | [completed_phantoms:<agent_id>](https://hub.phantombuster.com/reference/get_containers-fetch-all) | container_id | ended_at     | merge               | Gets all containers associated to a specified agent. Where agent id is a unique identifier for a specific Phantom which can be found in URI of a specific phantom. |
 
-Use this as `--source-table` parameter in the `ingestr ingest` command.
+Use this as `--source-table` parameter in the `omniload ingest` command.

@@ -2,7 +2,7 @@ SHELL := /bin/bash
 .ONESHELL:
 .PHONY: test lint format test-ci lint-ci build upload-release setup docker-shell write-build-info remove-build-info
 
-BUILDINFO=ingestr/src/buildinfo.py
+BUILDINFO=omniload/src/buildinfo.py
 
 venv: venv/touchfile
 
@@ -22,7 +22,7 @@ deps-ci:
 	uv pip install --system -r requirements-dev.txt
 
 test-ci:
-	set -a; [ -f test.env ] && source test.env; set +a; TESTCONTAINERS_RYUK_DISABLED=true pytest -n auto -x -rP -vv --tb=short --durations=10 --cov=ingestr --no-cov-on-fail
+	set -a; [ -f test.env ] && source test.env; set +a; TESTCONTAINERS_RYUK_DISABLED=true pytest -n auto -x -rP -vv --tb=short --durations=10 --cov=omniload --no-cov-on-fail
 
 test : venv lock-deps
 	. venv/bin/activate; $(MAKE) test-ci
@@ -31,11 +31,11 @@ test-specific: venv lock-deps
 	. venv/bin/activate; set -a; [ -f test.env ] && source test.env; set +a; TESTCONTAINERS_RYUK_DISABLED=true pytest -n auto  -rP -vv --tb=short --capture=no -k $(test)
 
 lint-ci:
-	@ruff format --diff ingestr && ruff check ingestr && mypy --config-file pyproject.toml --explicit-package-bases ingestr
+	@ruff format --diff omniload && ruff check omniload && mypy --config-file pyproject.toml --explicit-package-bases omniload
 
 format:
-	@ruff format ingestr && ruff check ingestr --fix
-	@mypy --config-file pyproject.toml --explicit-package-bases ingestr
+	@ruff format omniload && ruff check omniload --fix
+	@mypy --config-file pyproject.toml --explicit-package-bases omniload
 
 lint: venv lock-deps
 	. venv/bin/activate; $(MAKE) format
@@ -64,5 +64,5 @@ setup:
 	@install -m 755 .githooks/pre-commit-hook.sh .git/hooks/pre-commit
 
 docker-shell:
-	# run a docker container to build and run ingestr
+	# run a docker container to build and run omniload
 	@docker run -v $(PWD):/root/code -w /root/code -it --rm --entrypoint /bin/bash python:3.11

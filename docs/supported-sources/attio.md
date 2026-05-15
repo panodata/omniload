@@ -1,7 +1,7 @@
 # Attio
 [Attio](https://attio.com/) is an AI-native CRM platform that helps companies build, scale, and grow their business.
 
-ingestr supports Attio as a source.
+omniload supports Attio as a source.
 
 ## URI format
 
@@ -22,7 +22,7 @@ Let's say your `api_key` is key_123, here's a sample command that will copy the 
 
 
 ```bash
-ingestr ingest \
+omniload ingest \
 --source-uri 'Attio://?api_key=key_123' \
 --source-table 'objects' \
 --dest-uri duckdb:///attio.duckdb \
@@ -41,7 +41,7 @@ Attio source supports ingesting the following sources into separate tables:
 | [list_entries:{list_id}](https://docs.attio.com/rest-api/endpoint-reference/entries/list-entries) | - | - | replace | Lists all items in a specific list. For example: `list_entries:8abc-123-456-789d-123`. Full reload on each run. |
 | [all_list_entries:{object_api_slug}](https://docs.attio.com/rest-api/endpoint-reference/entries/list-entries) | - | - | replace | Fetches all the lists for an object, and then fetches all the entries from that list. For example: `all_list_entries:companies`. Full reload on each run. |
 
-Use this as `--source-table` parameter in the `ingestr ingest` command.
+Use this as `--source-table` parameter in the `omniload ingest` command.
 
 > [!WARNING]
-> Attio does not support incremental loading, which means ingestr will do a full-refresh.
+> Attio does not support incremental loading, which means omniload will do a full-refresh.

@@ -2,7 +2,7 @@
 
 [Fluxx](https://www.fluxx.io/) is a cloud-based grants management platform designed to streamline and automate the entire grantmaking process for foundations, corporations, governments, and other funding organizations.
 
-ingestr supports Fluxx as a source.
+omniload supports Fluxx as a source.
 
 ## URI format
 
@@ -25,7 +25,7 @@ URI parameters:
 Assuming your instance is `myorg.preprod`, you can ingest grant requests into DuckDB using:
 
 ```bash
-ingestr ingest \
+omniload ingest \
 --source-uri 'fluxx://myorg.preprod?client_id=your_client_id&client_secret=your_client_secret' \
 --source-table 'grant_request' \
 --dest-uri duckdb:///fluxx.duckdb \
@@ -37,7 +37,7 @@ ingestr ingest \
 You can select specific fields to ingest using the colon syntax:
 
 ```bash
-ingestr ingest \
+omniload ingest \
 --source-uri 'fluxx://myorg.preprod?client_id=your_client_id&client_secret=your_client_secret' \
 --source-table 'grant_request:id,amount_requested,amount_recommended,granted' \
 --dest-uri duckdb:///fluxx.duckdb \
@@ -288,7 +288,7 @@ Fluxx source allows ingesting the following sources into separate tables:
 | `workflow_event` | id | - | replace | Workflow Event management and tracking |
 | `zenith_user_configuration` | id | - | replace | Zenith User Configuration management and tracking |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 ### Field Selection
 

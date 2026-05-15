@@ -1,7 +1,7 @@
 # Redshift
 Redshift is a fully managed, petabyte-scale data warehouse service in the cloud.
 
-ingestr supports Redshift as both a source and destination.
+omniload supports Redshift as both a source and destination.
 
 ## URI format
 The URI format for Redshift is as follows:

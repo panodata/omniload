@@ -2,7 +2,7 @@
 
 [Linear](https://linear.app/) is a purpose-built tool for planning and building products that provides issue tracking and project management for teams.
 
-ingestr supports Linear as a source through [Linear's public API](https://linear.app/developers/graphql).
+omniload supports Linear as a source through [Linear's public API](https://linear.app/developers/graphql).
 
 ## URI format
 
@@ -21,7 +21,7 @@ URI parameters:
 Assuming your API key is `lin_api_123`, you can ingest teams into DuckDB using:
 
 ```bash
-ingestr ingest
+omniload ingest
 --source-uri 'linear://?api_key=lin_api_123' \
 --source-table 'teams' \
 --dest-uri duckdb:///linear.duckdb \
@@ -54,4 +54,4 @@ Linear source allows ingesting the following tables:
 | `organization`  | id | updatedAt     | merge               | Fetches organization-level information.|
 
 
-Use these as the `--source-table` parameter in the `ingestr ingest` command.
+Use these as the `--source-table` parameter in the `omniload ingest` command.

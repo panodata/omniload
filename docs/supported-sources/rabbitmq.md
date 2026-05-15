@@ -1,7 +1,7 @@
 # RabbitMQ
 [RabbitMQ](https://www.rabbitmq.com/) is an open-source message broker that implements the Advanced Message Queuing Protocol (AMQP). It is widely used for building distributed systems, microservices communication, and asynchronous task processing.
 
-ingestr supports RabbitMQ as a source.
+omniload supports RabbitMQ as a source.
 
 ## URI format
 The URI format for RabbitMQ is as follows:
@@ -39,7 +39,7 @@ Each message is stored as a row with three columns:
 Once you have your RabbitMQ server running, here's a sample command to ingest messages from a queue into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'amqp://guest:guest@localhost:5672/' \
     --source-table 'my_queue' \
     --dest-uri 'duckdb://./rabbitmq.duckdb' \

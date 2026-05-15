@@ -2,7 +2,7 @@
 
 [Klaviyo](https://www.klaviyo.com/) is a marketing automation platform that helps businesses build and manage smarter digital relationships with their customers by connecting through personalized email and enhancing customer loyalty.
 
-ingestr supports Klaviyo as a source.
+omniload supports Klaviyo as a source.
 
 ## URI format
 
@@ -19,7 +19,7 @@ URI parameters:
 The URI is used to connect to the Klaviyo API for extracting data.
 
 ```bash
-ingestr ingest --source-table 'events' --source-uri 'klaviyo://?api_key=pk_test' --dest-uri duckdb:///klaviyo.duckdb --interval-start 2022-01-01 --dest-table 'dest.events' --extract-parallelism 20
+omniload ingest --source-table 'events' --source-uri 'klaviyo://?api_key=pk_test' --dest-uri duckdb:///klaviyo.duckdb --interval-start 2022-01-01 --dest-table 'dest.events' --extract-parallelism 20
 ```
 
 This command fetches all the events that are created/updated since 2022-01-01 and writes them to `dest.events` table on DuckDB, using 20 parallel threads to improve performance and efficiently handle large data .
@@ -50,8 +50,8 @@ Klaviyo source allows ingesting the following sources into separate tables:
 | [forms](https://developers.klaviyo.com/en/reference/get_forms) | id | updated_at    | merge               | Retrieves all forms in an account.|
 | [templates](https://developers.klaviyo.com/en/reference/get_templates) | id | updated     | merge               |  Retrieves all templates in an account. |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 
 > [!WARNING]
-> Klaviyo does not support incremental loading for many endpoints in its APIs, which means ingestr will load endpoints incrementally if they support it, and do a full-refresh if not.
+> Klaviyo does not support incremental loading for many endpoints in its APIs, which means omniload will load endpoints incrementally if they support it, and do a full-refresh if not.

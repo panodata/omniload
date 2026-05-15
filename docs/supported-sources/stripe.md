@@ -2,7 +2,7 @@
 
 [Stripe](https://www.stripe.com/) is a technology company that builds economic infrastructure for the internet, providing payment processing software and APIs for e-commerce websites and mobile applications.
 
-ingestr supports Stripe as a source.
+omniload supports Stripe as a source.
 
 ## URI format
 
@@ -25,7 +25,7 @@ Stripe requires a few steps to set up an integration, please follow the guide dl
 Once you complete the guide, you should have an API key. Let's say your API key is `sk_test_12345`, here's a sample command that will copy the data from Stripe into a DuckDB database:
 
 ```sh
-ingestr ingest --source-uri 'stripe://?api_key=sk_test_12345' --source-table 'charges' --dest-uri duckdb:///stripe.duckdb --dest-table 'dest.charges'
+omniload ingest --source-uri 'stripe://?api_key=sk_test_12345' --source-table 'charges' --dest-uri duckdb:///stripe.duckdb --dest-table 'dest.charges'
 ```
 
 The result of this command will be a table in the `stripe.duckdb` database with JSON columns.
@@ -51,7 +51,7 @@ Stripe source supports different loading modes that can be specified using the t
 
 **Example**:
 ```sh
-ingestr ingest --source-uri 'stripe://?api_key=sk_test_12345' --source-table 'subscriptions' --dest-uri duckdb:///stripe.duckdb --dest-table 'dest.subscriptions'
+omniload ingest --source-uri 'stripe://?api_key=sk_test_12345' --source-table 'subscriptions' --dest-uri duckdb:///stripe.duckdb --dest-table 'dest.subscriptions'
 ```
 
 #### Sync Loading
@@ -74,7 +74,7 @@ ingestr ingest --source-uri 'stripe://?api_key=sk_test_12345' --source-table 'su
 
 **Example**:
 ```sh
-ingestr ingest --source-uri 'stripe://?api_key=sk_test_12345' --source-table 'charges:sync:incremental' --dest-uri duckdb:///stripe.duckdb --dest-table 'dest.charges' --interval-start '2024-01-01' --interval-end '2024-01-31'
+omniload ingest --source-uri 'stripe://?api_key=sk_test_12345' --source-table 'charges:sync:incremental' --dest-uri duckdb:///stripe.duckdb --dest-table 'dest.charges' --interval-start '2024-01-01' --interval-end '2024-01-31'
 ```
 
 ### Choosing the Right Approach
@@ -134,7 +134,7 @@ All endpoints support the standard async loading mode. The following endpoints a
 | `transfer` | id | created | merge | Records transfers between Stripe accounts. |
 | `webhook_endpoint` | id | created | merge | Contains webhook endpoint configurations for receiving event notifications. |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 > [!TIP]
 > For time-sensitive data analysis or regular updates, use incremental loading (`:incremental`) with `--interval-start` and `--interval-end` parameters for faster processing. For comprehensive historical analysis, use standard async loading without any suffix.

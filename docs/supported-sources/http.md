@@ -1,6 +1,6 @@
 # HTTP
 
-ingestr supports reading CSV, JSON, and Parquet files from public HTTP/HTTPS URLs. This allows you to ingest data from publicly accessible file URLs directly into your databases.
+omniload supports reading CSV, JSON, and Parquet files from public HTTP/HTTPS URLs. This allows you to ingest data from publicly accessible file URLs directly into your databases.
 
 ## URI format
 
@@ -28,7 +28,7 @@ The file format is automatically inferred from the URL extension. You can also e
 ### Basic example
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri "https://example.com/data.csv" \
     --source-table "data" \
     --dest-uri "duckdb:///local.duckdb" \
@@ -40,7 +40,7 @@ ingestr ingest \
 If the URL doesn't have a recognizable extension (e.g., an API endpoint), you can specify the format using the `#format` suffix in `--source-table`:
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri "https://example.com/api/export" \
     --source-table "data#csv" \
     --dest-uri "duckdb:///local.duckdb" \
@@ -53,7 +53,7 @@ For CSV files that don't have a header row, use `#csv_headless`. You can optiona
 
 ```bash
 # With custom column names
-ingestr ingest \
+omniload ingest \
     --source-uri "https://example.com/data.csv" \
     --source-table "data#csv_headless" \
     --columns "id:bigint,name:text,value:double" \
@@ -65,7 +65,7 @@ If no column names are provided, columns will be automatically named `unknown_co
 
 ```bash
 # Without column names (auto-generated)
-ingestr ingest \
+omniload ingest \
     --source-uri "https://example.com/data.csv" \
     --source-table "data#csv_headless" \
     --dest-uri "duckdb:///local.duckdb" \
@@ -75,7 +75,7 @@ ingestr ingest \
 ### Example with JSON file
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri "https://api.example.com/export/data.json" \
     --source-table "data" \
     --dest-uri "snowflake://user:pass@account/database/schema" \
@@ -85,7 +85,7 @@ ingestr ingest \
 ### Example with Parquet file
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri "https://storage.example.com/data.parquet" \
     --source-table "data" \
     --dest-uri "bigquery://project/dataset" \

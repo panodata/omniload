@@ -2,7 +2,7 @@
 
 [PostHog](https://posthog.com/) is an open-source product analytics platform that helps teams understand user behavior with features like event tracking, feature flags, session recordings, and more.
 
-ingestr supports PostHog as a source.
+omniload supports PostHog as a source.
 
 ## URI format
 
@@ -31,7 +31,7 @@ PostHog requires a Personal API Key to authenticate API requests. You can genera
 After completing the setup, you will have your `personal_api_key` and `project_id`. For example, if your personal API key is `phx_xxx` and project ID is `12345`, you can use the following command to copy data from PostHog into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "posthog://?personal_api_key=phx_xxx&project_id=12345" \
   --source-table "events" \
   --dest-uri duckdb:///posthog.duckdb \
@@ -41,7 +41,7 @@ ingestr ingest \
 If you are using the EU cloud instance, specify the `base_url` parameter:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "posthog://?personal_api_key=phx_xxx&project_id=12345&base_url=https://eu.posthog.com" \
   --source-table "events" \
   --dest-uri duckdb:///posthog.duckdb \
@@ -64,7 +64,7 @@ The PostHog source allows you to ingest the following tables:
 | property_definitions:session | id | updated_at | merge | Session property definitions |
 | annotations | id | updated_at | merge | Project annotations |
 
-Use these as the `--source-table` parameter in the `ingestr ingest` command.
+Use these as the `--source-table` parameter in the `omniload ingest` command.
 
 > [!NOTE]
 > The `property_definitions` table requires a sub-type suffix (`:event`, `:person`, or `:session`) to specify which type of property definitions to ingest.

@@ -1,7 +1,7 @@
 # ClickUp
 [ClickUp](https://clickup.com/) is a cloud-based productivity platform designed to help teams and individuals manage tasks, projects, and workflows in one place.
 
-ingestr supports ClickUp as a source.
+omniload supports ClickUp as a source.
 
 ## URI format
 
@@ -19,7 +19,7 @@ Once you've completed the guide, you should have `api_token`. Let's say your API
 To ingest tasks from ClickUp into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "clickup://?api_token=token_123" \
   --source-table "tasks" \
   --dest-uri duckdb:///clickup.duckdb \
@@ -39,7 +39,7 @@ ClickUp source allows ingesting the following resources into separate tables:
 | [lists](https://developer.clickup.com/reference/getlists)   | id | –  | merge               | Lists contained in each space. Lists are collections of tasks, often representing projects, sprints, or workflow stages |
 | [tasks](https://developer.clickup.com/reference/gettasks)    | id | date_updated             | merge            | Tasks belonging to each list |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 > [!WARNING]
-> ClickUp does not support incremental loading for many endpoints, which means ingestr will load endpoints incrementally if they support it, and do a full-refresh if not.
+> ClickUp does not support incremental loading for many endpoints, which means omniload will load endpoints incrementally if they support it, and do a full-refresh if not.

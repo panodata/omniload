@@ -4,12 +4,12 @@
 massive amounts of data in near real-time, even with complex queries. It is
 PostgreSQL-compatible, and based on Lucene.
 
-ingestr supports CrateDB as a source and destination database, using different
+omniload supports CrateDB as a source and destination database, using different
 adapters and protocols (HTTP vs. PostgreSQL, see below).
 
 ## Source
 
-For connecting to CrateDB as a database source, ingestr uses its SQLAlchemy
+For connecting to CrateDB as a database source, omniload uses its SQLAlchemy
 dialect package [sqlalchemy-cratedb], effectively talking HTTP to port 4200
 by default.
 
@@ -46,7 +46,7 @@ This is an example command that will copy the `sys.summits` table from CrateDB
 to DuckDB, then display the content from DuckDB.
 
 ```shell
-ingestr ingest \
+omniload ingest \
     --source-uri 'crate://crate@localhost:4200/' \
     --source-table 'sys.summits' \
     --dest-uri 'duckdb:///cratedb.duckdb' \
@@ -65,7 +65,7 @@ different adapters using different protocols.
 
 ## Destination
 
-For connecting to CrateDB as a database destination, ingestr uses the
+For connecting to CrateDB as a database destination, omniload uses the
 [dlt cratedb adapter], which is based on the [dlt postgres adapter],
 in turn using the [psycopg2] package, effectively speaking the PostgreSQL
 wire protocol on port 5432 by default.
@@ -101,10 +101,10 @@ This is an example command that will import a CSV file into CrateDB,
 then display the content from CrateDB.
 
 ```shell
-wget -O input.csv https://github.com/bruin-data/ingestr/raw/refs/heads/main/ingestr/testdata/create_replace.csv
+wget -O input.csv https://github.com/panodata/omniload/raw/refs/heads/main/omniload/testdata/create_replace.csv
 ```
 ```shell
-ingestr ingest \
+omniload ingest \
    --source-uri 'csv://input.csv' \
    --source-table 'sample' \
    --dest-uri 'cratedb://crate:@localhost:5432/?sslmode=disable' \
@@ -132,7 +132,7 @@ docker run --rm -it --name=cratedb \
 ```
 
 We are tracking development progress and incompatibilities at 
-[Support for ingestr/CrateDB] and ["tool: dlt/ingestr"]. Please join the discussion
+[Support for omniload/CrateDB] and ["tool: dlt/omniload"]. Please join the discussion
 or share relevant issue reports that help us improve interoperability. Thanks!
 
 
@@ -143,5 +143,5 @@ or share relevant issue reports that help us improve interoperability. Thanks!
 [PostgreSQL SSL Mode Descriptions]: https://www.postgresql.org/docs/current/libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS
 [psycopg2]: https://pypi.org/project/psycopg2-binary/
 [sqlalchemy-cratedb]: https://pypi.org/project/sqlalchemy-cratedb/
-[Support for ingestr/CrateDB]: https://github.com/crate/crate-clients-tools/issues/86
-["tool: dlt/ingestr"]: https://github.com/crate/crate/issues?q=state%3Aopen%20label%3A%22tool%3A%20dlt%2Fingestr%22
+[Support for omniload/CrateDB]: https://github.com/crate/crate-clients-tools/issues/86
+["tool: dlt/omniload"]: https://github.com/crate/crate/issues?q=state%3Aopen%20label%3A%22tool%3A%20dlt%2Fomniload%22

@@ -1,7 +1,7 @@
 # Reddit Ads
 Reddit Ads is a platform that allows businesses and marketers to create, manage, and analyze advertising campaigns on Reddit.
 
-Ingestr supports Reddit Ads as a source.
+omniload supports Reddit Ads as a source.
 
 ## URI format
 The URI format for Reddit Ads as a source is as follows:
@@ -59,13 +59,13 @@ Reddit Ads source allows ingesting the following sources into separate tables:
 | [funding_instruments](https://ads-api.reddit.com/docs/v3/) | id | - | replace | Retrieves funding instruments (payment methods) for each ad account. |
 | [custom](https://ads-api.reddit.com/docs/v3/) | [level_id, breakdowns] | date | merge | Custom reports allow you to retrieve performance data based on specific levels, breakdowns, and metrics. |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 ### Example
 
 Retrieve all campaigns:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "redditads://?access_token=token_123&account_ids=id_123,id_456" \
     --source-table 'campaigns' \
     --dest-uri 'duckdb:///reddit.duckdb' \
@@ -74,7 +74,7 @@ ingestr ingest \
 
 Retrieve all ad groups:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "redditads://?access_token=token_123&account_ids=id_123" \
     --source-table 'ad_groups' \
     --dest-uri 'duckdb:///reddit.duckdb' \
@@ -96,7 +96,7 @@ custom:<level>,<breakdowns>:<metrics>
 - `metrics`(required): A comma-separated list of metrics to retrieve. Common metrics include: `impressions`, `reach`, `clicks`, `spend`, `ecpm`, `ctr`, `cpc`, and various video and conversion metrics.
 
 > [!NOTE]
-> By default, ingestr fetches data from January 1, 2020 to today's date. You can specify a custom date range using the `--interval-start` and `--interval-end` parameters.
+> By default, omniload fetches data from January 1, 2020 to today's date. You can specify a custom date range using the `--interval-start` and `--interval-end` parameters.
 
 > [!NOTE]
 > Monetary metrics (`spend`, `ecpm`, `cpc`) are automatically converted from microcurrency to standard currency values.
@@ -105,7 +105,7 @@ custom:<level>,<breakdowns>:<metrics>
 
 Retrieve daily campaign performance data:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "redditads://?access_token=token_123&account_ids=id_123,id_456" \
     --source-table 'custom:campaign,date:impressions,clicks,spend' \
     --dest-uri 'duckdb:///reddit.duckdb' \
@@ -119,7 +119,7 @@ The applied parameters for the report are:
 
 Retrieve ad group performance by country for a specific date range:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "redditads://?access_token=token_123&account_ids=id_123" \
     --source-table 'custom:ad_group,date,country:impressions,reach,ctr' \
     --dest-uri 'duckdb:///reddit.duckdb' \
@@ -135,7 +135,7 @@ The applied parameters for the report are:
 
 Retrieve account-level spend data:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "redditads://?access_token=token_123&account_ids=id_123,id_456" \
     --source-table 'custom:account,date:spend,impressions' \
     --dest-uri 'duckdb:///reddit.duckdb' \

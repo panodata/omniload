@@ -2,7 +2,7 @@
 
 [Intercom](https://www.intercom.com/) is a customer messaging platform that helps businesses connect with customers through targeted, behavior-driven messages.
 
-ingestr supports Intercom as a source.
+omniload supports Intercom as a source.
 
 ## URI format
 
@@ -26,7 +26,7 @@ Intercom requires a few steps to set up an integration, please follow the guide 
 Once you complete the guide, you should have an access token. Let's say your access token is `dG9rOjE...` and your workspace is in the US region, here's a sample command that will copy the data from Intercom into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'intercom://?access_token=dG9rOjE...&region=us' \
     --source-table 'contacts' \
     --dest-uri duckdb:///intercom.duckdb \
@@ -51,7 +51,7 @@ Intercom source allows ingesting the following sources into separate tables:
 | [teams](https://developers.intercom.com/docs/references/rest-api/api.intercom.io/Teams/team/) | id | - | replace | Retrieves team information |
 | [data_attributes](https://developers.intercom.com/docs/references/rest-api/api.intercom.io/Data%20Attributes/dataattribute/) | name | - | replace | Retrieves data attributes (both built-in and custom attributes) |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 > [!TIP]
 > Resources marked with "merge" Inc Strategy support incremental loading based on the `updated_at` timestamp, which means subsequent runs will only fetch new or updated records.

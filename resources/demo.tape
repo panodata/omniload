@@ -7,7 +7,7 @@ Set LineHeight 1.5
 Set TypingSpeed 0.01
 Set Framerate 60
 
-Type "ingestr ingest --source-uri $POSTGRES_URI --source-table 'testschema.table_name' --dest-uri $BIGQUERY_URI"
+Type "omniload ingest --source-uri $POSTGRES_URI --source-table 'testschema.table_name' --dest-uri $BIGQUERY_URI"
 Enter
 
 Sleep 2s

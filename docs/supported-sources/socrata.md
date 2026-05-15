@@ -2,7 +2,7 @@
 
 [Socrata](https://dev.socrata.com/) is an open data platform used by governments and organizations to publish and share public datasets. The platform powers thousands of open data portals worldwide, including data.gov and many city, state, and federal government sites.
 
-`ingestr` allows ingesting data from any Socrata-powered open data portal using the [Socrata Open Data API (SODA)](https://dev.socrata.com/docs/endpoints.html).
+`omniload` allows ingesting data from any Socrata-powered open data portal using the [Socrata Open Data API (SODA)](https://dev.socrata.com/docs/endpoints.html).
 
 ## URI Format
 
@@ -46,10 +46,10 @@ For this example, we'll load the Seattle City wage data:
 * Dataset ID: `2khk-5ukd`
 * App token: `your_app_token_here`
 
-We will run `ingestr` to save this data to a [duckdb](https://duckdb.org/) database called `socrata.db` under the table name `public.wage_data`.
+We will run `omniload` to save this data to a [duckdb](https://duckdb.org/) database called `socrata.db` under the table name `public.wage_data`.
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "socrata://data.seattle.gov?app_token=your_app_token_here" \
     --source-table "2khk-5ukd" \
     --dest-uri "duckdb:///socrata.db" \
@@ -63,7 +63,7 @@ Socrata supports incremental loading using the `:updated_at` system field or any
 First, run an initial load for a specific time range using `:updated_at` as the incremental key:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "socrata://data.seattle.gov?app_token=your_app_token_here" \
     --source-table "2khk-5ukd" \
     --dest-uri "duckdb:///socrata.db" \
@@ -76,10 +76,10 @@ ingestr ingest \
 
 
 
-Now, we will run `ingestr` again without specifying dates to load only new or updated records:
+Now, we will run `omniload` again without specifying dates to load only new or updated records:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "socrata://data.seattle.gov?app_token=your_app_token_here" \
     --source-table "2khk-5ukd" \
     --dest-uri "duckdb:///socrata.db" \
@@ -94,7 +94,7 @@ This will automatically fetch only records that were created or updated after th
 For private datasets that require authentication:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "socrata://your.domain.com?app_token=your_token&username=your_username&password=your_password" \
     --source-table "xxxx-xxxx" \
     --dest-uri "duckdb:///socrata.db" \

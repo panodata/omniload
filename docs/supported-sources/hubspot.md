@@ -2,7 +2,7 @@
 
 [HubSpot](https://www.hubspot.com/) is a customer relationship management software that helps businesses attract visitors, connect with customers, and close deals.
 
-ingestr supports HubSpot as a source.
+omniload supports HubSpot as a source.
 
 ## URI format
 
@@ -25,7 +25,7 @@ HubSpot requires a few steps to set up an integration, please follow the guide d
 Once you complete the guide, you should have an API key. Let's say your API key is `pat_test_12345`, here's a sample command that will copy the data from HubSpot into a DuckDB database:
 
 ```sh
-ingestr ingest --source-uri 'hubspot://?api_key=pat_test_12345' --source-table 'companies' --dest-uri duckdb:///hubspot.duckdb --dest-table 'companies.data'
+omniload ingest --source-uri 'hubspot://?api_key=pat_test_12345' --source-table 'companies' --dest-uri duckdb:///hubspot.duckdb --dest-table 'companies.data'
 ```
 
 The result of this command will be a table in the `hubspot.duckdb` database.
@@ -60,7 +60,7 @@ HubSpot source allows ingesting the following sources into separate tables:
 | [pipelines](https://developers.hubspot.com/docs/reference/api/crm/pipelines) | object_type, pipeline_id | – | replace | Pipeline definitions across all pipelined object types. One row per pipeline. |
 | [pipeline_stages](https://developers.hubspot.com/docs/reference/api/crm/pipelines) | object_type, pipeline_id, stage_id | – | replace | Stage definitions for each pipeline. One row per stage.|
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 ### Property History Tables
 
@@ -99,7 +99,7 @@ Custom objects also support history via `property_history:custom:<objectType>` (
 
 By default, `property_history:*` tables return change history for **every** property on the object type. For tenants with many properties this produces large, slow responses and consumes more HubSpot API quota than necessary.
 
-You can append a comma-separated allow-list of property names to the table name to restrict the request to just those properties. When the suffix is present, ingestr passes exactly that list to HubSpot's API, so only those properties' history is returned. When the suffix is omitted, behavior is unchanged.
+You can append a comma-separated allow-list of property names to the table name to restrict the request to just those properties. When the suffix is present, omniload passes exactly that list to HubSpot's API, so only those properties' history is returned. When the suffix is omitted, behavior is unchanged.
 
 Syntax:
 
@@ -111,7 +111,7 @@ Examples:
 Fetch only `email`, `firstname`, and `lastname` history for contacts:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'hubspot://?api_key=pat_test_12345' \
   --source-table 'property_history:contacts:email,firstname,lastname' \
   --dest-uri duckdb:///hubspot.duckdb \
@@ -121,7 +121,7 @@ ingestr ingest \
 Fetch only `amount` and `dealstage` history for deals:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'hubspot://?api_key=pat_test_12345' \
   --source-table 'property_history:deals:amount,dealstage' \
   --dest-uri duckdb:///hubspot.duckdb \
@@ -131,7 +131,7 @@ ingestr ingest \
 Fetch only `field_a` and `field_b` history for a custom object `my_object`:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'hubspot://?api_key=pat_test_12345' \
   --source-table 'property_history:custom:my_object:field_a,field_b' \
   --dest-uri duckdb:///hubspot.duckdb \
@@ -144,14 +144,14 @@ Each built-in table fetches a default set of associations. You can override that
 
 ```sh
 # only fetch companies and deals for contacts
-ingestr ingest \
+omniload ingest \
   --source-uri 'hubspot://?api_key=pat_test_12345' \
   --source-table 'contacts:companies,deals' \
   --dest-uri duckdb:///hubspot.duckdb \
   --dest-table 'contacts.data'
 
 # fetch contacts with no associations 
-ingestr ingest \
+omniload ingest \
   --source-uri 'hubspot://?api_key=pat_test_12345' \
   --source-table 'contacts:' \
   --dest-uri duckdb:///hubspot.duckdb \
@@ -160,13 +160,13 @@ ingestr ingest \
 
 ## Incremental Loading
 
-HubSpot supports incremental loading out of the box. On the first run, ingestr performs a full load of all records. On subsequent runs, it uses the `hs_lastmodifieddate` field to fetch only records that have been created or updated since the last successful run.
+HubSpot supports incremental loading out of the box. On the first run, omniload performs a full load of all records. On subsequent runs, it uses the `hs_lastmodifieddate` field to fetch only records that have been created or updated since the last successful run.
 
-No additional flags are needed — incremental state is managed automatically by ingestr.
+No additional flags are needed — incremental state is managed automatically by omniload.
 
 ## Custom Objects
 
-HubSpot allows you to create custom objects to store unique business data that's not covered by the standard objects. ingestr supports ingesting data from custom objects using the following format:
+HubSpot allows you to create custom objects to store unique business data that's not covered by the standard objects. omniload supports ingesting data from custom objects using the following format:
 
 ```plaintext
 custom:<custom_object_name>
@@ -188,7 +188,7 @@ custom:<custom_object_name>:<associations>
 Ingesting a custom object called "licenses":
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'hubspot://?api_key=pat_test_12345' \
   --source-table 'custom:licenses' \
   --dest-uri duckdb:///hubspot.duckdb \
@@ -198,7 +198,7 @@ ingestr ingest \
 Ingesting a custom object with associations to companies, deals, and contacts:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'hubspot://?api_key=pat_test_12345' \
   --source-table 'custom:licenses:companies,deals,contacts' \
   --dest-uri duckdb:///hubspot.duckdb \

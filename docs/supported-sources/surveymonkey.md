@@ -2,7 +2,7 @@
 
 [SurveyMonkey](https://www.surveymonkey.com/) is an online survey platform that allows users to create surveys, collect responses, and analyze data.
 
-ingestr supports SurveyMonkey as a source.
+omniload supports SurveyMonkey as a source.
 
 ## URI format
 
@@ -39,7 +39,7 @@ SurveyMonkey requires an access token to connect to the API. To get one:
 Once you have the access token, here's a sample command that will copy survey data into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "surveymonkey://?access_token=your_token_here" \
   --source-table "surveys" \
   --dest-uri duckdb:///surveymonkey.duckdb \
@@ -59,4 +59,4 @@ SurveyMonkey source allows ingesting the following resources into separate table
 | [contact_lists](https://api.surveymonkey.com/v3/docs?shell#api-endpoints-get-contact_lists) | id | - | replace | Contact lists |
 | [contacts](https://api.surveymonkey.com/v3/docs?shell#api-endpoints-get-contacts) | id | - | replace | Contacts across all statuses (active, optout, bounced) |
 
-Use these as the `--source-table` parameter in the `ingestr ingest` command.
+Use these as the `--source-table` parameter in the `omniload ingest` command.

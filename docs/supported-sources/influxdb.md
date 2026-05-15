@@ -1,7 +1,7 @@
 # InfluxDB
 [InfluxDB](https://www.influxdata.com/) is a time series database optimized for storing high throughput metrics.
 
-ingestr supports InfluxDB as a source.
+omniload supports InfluxDB as a source.
 
 ## URI format
 
@@ -24,7 +24,7 @@ The `<measurement>` name should be provided as the value for `--source-table`.
 Copy cpu metrics from InfluxDB into DuckDB:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'influxdb://eu-central-1-0.aws.cloud3.influxdata.com?token=my-token&org=my-org&bucket=metrics&secure=false' \
     --source-table 'cpu' \
     --dest-uri duckdb:///metrics.duckdb \
@@ -33,7 +33,7 @@ ingestr ingest \
 
 ## Tables
 
-The InfluxDB source accepts any measurement name. Specify the measurement as the `--source-table` option when running `ingestr`.
+The InfluxDB source accepts any measurement name. Specify the measurement as the `--source-table` option when running `omniload`.
 
 > [!NOTE]
 > Primary Key Required for Merge: When using `--incremental-strategy merge`, you must also specify `--primary-key` Otherwise, the strategy defaults to append.

@@ -1,7 +1,7 @@
 # LinkedIn Ads
 LinkedIn Ads is a platform that allows businesses and marketers to create, manage, and analyze advertising campaigns.
 
-Ingestr supports LinkedIn Ads as a source.
+omniload supports LinkedIn Ads as a source.
 
 ## URI format
 The URI format for LinkedIn Ads as a source is as follows:
@@ -67,13 +67,13 @@ LinkedIn Ads source allows ingesting the following sources into separate tables:
 | insight_tag_domains | domainName, account_id | – | replace | Retrieves domains associated with Insight Tags for each ad account. |
 | [custom](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/ads-reporting/ads-reporting?view=li-lms-2024-11&tabs=http#analytics-finder) | [dimension, date] or [dimension, start_date, end_date] | date (daily) or start_date (monthly) | merge | Custom reports allow you to retrieve data based on specific dimensions and metrics. |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 ### Example
 
 Retrieve all campaigns:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "linkedinads://?access_token=token_123&account_ids=id_123,id_456" \
     --source-table 'campaigns' \
     --dest-uri 'duckdb:///linkedin.duckdb' \
@@ -82,7 +82,7 @@ ingestr ingest \
 
 Retrieve lead form responses for a specific date interval:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "linkedinads://?access_token=token_123" \
     --source-table 'lead_form_responses' \
     --dest-uri 'duckdb:///linkedin.duckdb' \
@@ -90,7 +90,7 @@ ingestr ingest \
     --interval-start '2024-01-01' \
     --interval-end '2024-02-01'
 ```
-If you omit `--interval-end`, ingestr fetches responses from `--interval-start` up to the current time.
+If you omit `--interval-end`, omniload fetches responses from `--interval-start` up to the current time.
 
 ### Custom Reports
 
@@ -110,13 +110,13 @@ custom:<dimensions>:<metrics>
 - `metrics`(required): A comma-separated list of [metrics](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/ads-reporting/ads-reporting?view=li-lms-2024-11&tabs=http#metrics-available) to retrieve.
 
 > [!NOTE]
-> By default, ingestr fetches data from January 1, 2018 to today's date. You can specify a custom date range using the `--interval-start` and `--interval-end` parameters.
+> By default, omniload fetches data from January 1, 2018 to today's date. You can specify a custom date range using the `--interval-start` and `--interval-end` parameters.
 
 ### Custom Reports Examples
 
 Retrieve data for campaign with `account_ids` id_123 and id_456:
 ```sh
-ingestr ingest \                      
+omniload ingest \                      
     --source-uri "linkedinads://?access_token=token_123&account_ids=id_123,id_456" \
     --source-table 'custom:campaign,date:impressions,clicks' \
     --dest-uri 'duckdb:///linkedin.duckdb' \
@@ -129,7 +129,7 @@ The applied parameters for the report are:
 
 Retrieve data for creative with `account_ids` id_123 and id_456 for the date range from 2024-10-15 to 2024-12-31:
 ```sh
-ingestr ingest \                         
+omniload ingest \                         
     --source-uri "linkedinads://?access_token=token_123&account_ids=id_123,id_456" \
     --source-table 'custom:creative,month:impressions,shares,videoCompletions' \
     --dest-uri 'duckdb:///linkedin.duckdb' \
@@ -142,7 +142,7 @@ The applied parameters for the report are:
 - metrics: `shares`, `impressions`, `videoCompletions`
 
 ```sh
-ingestr ingest \                         
+omniload ingest \                         
     --source-uri "linkedinads://?access_token=token_123&account_ids=id_123,id_456" \
     --source-table 'custom:account,month:totalEngagements,impressions,' \
     --dest-uri 'duckdb:///linkedin.duckdb' \
@@ -156,7 +156,7 @@ The applied parameters for the report are:
 
 You can use demographic dimensions to audit targeting quality. For example, to retrieve impressions and clicks broken down by job title:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "linkedinads://?access_token=token_123&account_ids=id_123,id_456" \
     --source-table 'custom:member_job_title,date:impressions,clicks' \
     --dest-uri 'duckdb:///linkedin.duckdb' \

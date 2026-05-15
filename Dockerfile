@@ -58,4 +58,4 @@ RUN uv pip install --requirement requirements.txt pyodbc .
 
 
 # Ready.
-ENTRYPOINT ["ingestr"]
+ENTRYPOINT ["omniload"]

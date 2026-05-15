@@ -1,7 +1,7 @@
 # SAP HANA
 SAP HANA is an in-memory, column-oriented, relational database management system.
 
-ingestr supports SAP HANA as both a source and destination. It uses the [SQLAlchemy connector for SAP HANA](https://github.com/SAP/sqlalchemy-hana/), so the connection options there would all be valid.
+omniload supports SAP HANA as both a source and destination. It uses the [SQLAlchemy connector for SAP HANA](https://github.com/SAP/sqlalchemy-hana/), so the connection options there would all be valid.
 
 ## URI format
 The URI format for SAP HANA is as follows:

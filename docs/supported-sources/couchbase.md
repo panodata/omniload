@@ -2,7 +2,7 @@
 
 [Couchbase](https://www.couchbase.com/) is a distributed NoSQL cloud database that delivers unmatched performance, scalability, and flexibility for building modern applications.
 
-ingestr supports Couchbase as a source.
+omniload supports Couchbase as a source.
 
 ## URI format
 
@@ -63,7 +63,7 @@ bucket._default._default
 
 #### Basic connection without SSL
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "couchbase://admin:password123@localhost" \
   --source-table "mybucket.myscope.mycollection" \
   --dest-uri "duckdb:///output.db" \
@@ -72,7 +72,7 @@ ingestr ingest \
 
 #### For Couchbase Capella (Cloud)
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "couchbase://admin:password123@localhost?ssl=true" \
   --source-table "mybucket._default._default" \
   --dest-uri "duckdb:///output.db" \
@@ -81,7 +81,7 @@ ingestr ingest \
 
 #### With bucket in URI
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "couchbase://admin:password123@localhost/mybucket" \
   --source-table "myscope.mycollection" \
   --dest-uri "duckdb:///output.db" \
@@ -99,7 +99,7 @@ ingestr ingest \
 Use the `couchbase://` scheme with `ssl=true` parameter. Note the `cb.` prefix in the hostname:
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "couchbase://username:password@cb.xxx.cloud.couchbase.com?ssl=true" \
   --source-table "travel-sample.inventory.airport" \
   --dest-uri "duckdb:///airports.db" \
@@ -109,7 +109,7 @@ ingestr ingest \
 With bucket in URI for Couchbase Capella
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "couchbase://username:password@cb.xxx.cloud.couchbase.com/travel-sample?ssl=true" \
   --source-table "inventory.airport" \
   --dest-uri "duckdb:///airports.db" \
@@ -120,12 +120,12 @@ ingestr ingest \
 ### With URL-encoded password
 
 > [!IMPORTANT]
-> When using ingestr CLI, passwords containing special characters (`@`, `:`, `/`, `#`, `?`, etc.) **must be URL-encoded** in the connection URI.
+> When using omniload CLI, passwords containing special characters (`@`, `:`, `/`, `#`, `?`, etc.) **must be URL-encoded** in the connection URI.
 
 If your password contains special characters, you need to URL-encode them:
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "couchbase://admin:MyPass%40123%21@localhost" \
   --source-table "mybucket.myscope.mycollection" \
   --dest-uri "duckdb:///output.db" \

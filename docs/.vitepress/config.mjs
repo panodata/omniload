@@ -2,22 +2,22 @@ import { defineConfig } from "vitepress";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: "ingestr",
-  description: "Ingest & copy data between any source and any destination",
-  base: "/ingestr/",
+  title: "omniload",
+  description: "Copy data between any source and any destination",
+  base: "/omniload/",
   sitemap: {
-    hostname: 'https://getbruin.com',
+    hostname: 'https://panodata.org',
     transformItems: (items) => {
       return items.map((item) => {
-        const cleaned = item.url.replace(/^\/ingestr\//, '');
-        item.url = `https://getbruin.com/docs/ingestr/${cleaned}`;
+        const cleaned = item.url.replace(/^\/omniload\//, '');
+        item.url = `https://panodata.org/docs/omniload/${cleaned}`;
         return item;
       });
     },
     trailingSlash: true,
   },
   transformPageData(pageData) {
-    const canonicalUrl = `https://getbruin.com/docs/ingestr/${pageData.relativePath}`
+    const canonicalUrl = `https://panodata.org/docs/omniload/${pageData.relativePath}`
       .replace(/index\.md$/, '')
       .replace(/\.md$/, '.html')
 
@@ -216,7 +216,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     ],
 
     socialLinks: [
-      { icon: "github", link: "https://github.com/bruin-data/ingestr" },
+      { icon: "github", link: "https://github.com/panodata/omniload" },
     ],
   },
 

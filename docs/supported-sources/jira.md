@@ -2,7 +2,7 @@
 
 [Jira](https://www.atlassian.com/software/jira) is a proprietary issue tracking product developed by Atlassian that allows bug tracking and agile project management.
 
-ingestr supports Jira as a source through [Jira's REST API v3](https://developer.atlassian.com/cloud/jira/platform/rest/v3/).
+omniload supports Jira as a source through [Jira's REST API v3](https://developer.atlassian.com/cloud/jira/platform/rest/v3/).
 
 ## URI format
 
@@ -21,7 +21,7 @@ URI parameters:
 Assuming your Jira domain is `company.atlassian.net`, email is `user@company.com`, and API token is `ATATT3xFfGF0...`, you can ingest issues into DuckDB using:
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri 'jira://company.atlassian.net?email=user@company.com&api_token=ATATT3xFfGF0...' \
   --source-table 'issues' \
   --dest-uri duckdb:///jira.duckdb \
@@ -52,7 +52,7 @@ Jira source allows ingesting the following tables:
 | `project_components` | id | - | replace | Fetches components for each project. |
 | `issue_changelogs` | id | - | replace | Fetches changelog entries for all issues across all projects. |
 
-Use these as the `--source-table` parameter in the `ingestr ingest` command.
+Use these as the `--source-table` parameter in the `omniload ingest` command.
 
 ## Filtering archived projects
 
@@ -60,7 +60,7 @@ Use these as the `--source-table` parameter in the `ingestr ingest` command.
 
 For instance:
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri 'jira://company.atlassian.net?email=user@company.com&api_token=ATATT3xFfGF0...' \
   --source-table 'project_versions:skip_archived' \
   --dest-uri duckdb:///jira.duckdb \

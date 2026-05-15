@@ -2,7 +2,7 @@
 
 [RevenueCat](https://www.revenuecat.com/) is a complete solution for implementing in-app subscriptions and purchases across all platforms, with real-time analytics and infrastructure for scaling subscription businesses.
 
-ingestr supports RevenueCat as a source.
+omniload supports RevenueCat as a source.
 
 ## URI format
 
@@ -24,7 +24,7 @@ URI parameters:
 Assuming your API key is `rcat_v2_abc123` and project ID is `proj_abc123`, you can ingest customers into DuckDB using:
 
 ```bash
-ingestr ingest \
+omniload ingest \
 --source-uri 'revenuecat://?api_key=rcat_v2_abc123&project_id=proj_abc123' \
 --source-table 'customers' \
 --dest-uri duckdb:///revenuecat.duckdb \
@@ -34,7 +34,7 @@ ingestr ingest \
 To ingest projects (no project_id required):
 
 ```bash
-ingestr ingest \
+omniload ingest \
 --source-uri 'revenuecat://?api_key=rcat_v2_abc123' \
 --source-table 'projects' \
 --dest-uri duckdb:///revenuecat.duckdb \
@@ -56,7 +56,7 @@ RevenueCat source allows ingesting the following tables:
 |  [offerings](https://www.revenuecat.com/docs/api-v2#tag/Offering/operation/list-offerings)    | id |   | merge               |  Fetches all offerings configured in your RevenueCat project.|
 
 
-Use these as the `--source-table` parameter in the `ingestr ingest` command.
+Use these as the `--source-table` parameter in the `omniload ingest` command.
 
 ## Notes
 - The `project_id` parameter is required for customers and products tables but not for projects.

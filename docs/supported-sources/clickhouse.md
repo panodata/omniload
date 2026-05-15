@@ -1,7 +1,7 @@
 # ClickHouse
 ClickHouse is a fast, open-source, column-oriented database management system that allows for high performance data ingestion and querying.
 
-ingestr supports ClickHouse as a source and destination.
+omniload supports ClickHouse as a source and destination.
 
 ## URI format
 The URI format for ClickHouse as a source is as follows:
@@ -29,7 +29,7 @@ clickhouse://<username>:<password>@<host>:<port>?http_port=<http_port>&secure=<s
 ClickHouse requires a `username`, `password`, `host` and `port` to connect to the ClickHouse server. For more information, read [here](https://dlthub.com/docs/dlt-ecosystem/destinations/clickhouse#2-setup-clickhouse-database). Once you've completed the guide, you should have all the above-mentioned credentials.
 
 ```
-ingestr ingest \
+omniload ingest \
     --source-uri "stripe://?api_key=key123" \
     --source-table 'event' \
     --dest-uri "clickhouse://user_123:pass123@localhost:9000" \
@@ -43,7 +43,7 @@ This is a sample command that will copy the data from the Stripe source into Cli
 You can also specify engine settings for the destination table:
 
 ```
-ingestr ingest \
+omniload ingest \
     --source-uri "stripe://?api_key=key123" \
     --source-table 'event' \
     --dest-uri "clickhouse://user_123:pass123@localhost:9000?engine.index_granularity=8192" \

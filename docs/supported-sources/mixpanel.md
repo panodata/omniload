@@ -2,7 +2,7 @@
 
 [Mixpanel](https://mixpanel.com/) is an analytics service for tracking user interactions in web and mobile applications.
 
-ingestr supports Mixpanel as a source.
+omniload supports Mixpanel as a source.
 
 ## URI format
 
@@ -27,7 +27,7 @@ To grab mixpanel credentials, please follow the guide [here](https://developer.m
 Copy events from Mixpanel into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'mixpanel://?username=my-service-account&password=my-secret&project_id=12345' \
     --source-table 'events' \
     --dest-uri duckdb:///mixpanel.duckdb \
@@ -47,4 +47,4 @@ Mixpanel source allows ingesting the following tables:
 | [events](https://developer.mixpanel.com/reference/raw-event-export)        | distinct_id | time     | merge               | Retrieves events data|
 | [profiles](https://developer.mixpanel.com/reference/engage-query)     | distinct_id | last_seen     | merge               | Retrieves Mixpanel user profiles and attributes. |
 
-Use these as `--source-table` values in the `ingestr ingest` command.
+Use these as `--source-table` values in the `omniload ingest` command.

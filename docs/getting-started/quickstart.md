@@ -3,26 +3,26 @@ outline: deep
 ---
 
 # Quickstart
-ingestr is a command-line app that allows you to ingest data from any source into any destination using simple command-line flags, no code necessary.
+omniload is a command-line app that allows you to ingest data from any source into any destination using simple command-line flags, no code necessary.
 
 - ✨ copy data from your Postgres / Mongo / BigQuery or any other source into any destination
 - ➕ incremental loading: `append`, `merge` or `delete+insert`
 - 🐍 single-command installation
 
-ingestr takes away the complexity of managing any backend or writing any code for ingesting data, simply run the command and watch the magic.
+omniload takes away the complexity of managing any backend or writing any code for ingesting data, simply run the command and watch the magic.
 
 
 ## Installation
-We recommend using [uv](https://github.com/astral-sh/uv) to run `ingestr`.
+We recommend using [uv](https://github.com/astral-sh/uv) to run `omniload`.
 
 ```
 pip install uv
-uvx ingestr
+uvx omniload
 ```
 
 Alternatively, if you'd like to install it globally:
 ```
-uv pip install --system ingestr
+uv pip install --system omniload
 ```
 
 While installation with vanilla `pip` is possible, it's an order of magnitude slower.
@@ -30,7 +30,7 @@ While installation with vanilla `pip` is possible, it's an order of magnitude sl
 ## Quickstart
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri 'chess://?players=awryaw,albertojgomez' \
     --source-table 'profiles' \
     --dest-uri 'duckdb:///./chess.duckdb' \

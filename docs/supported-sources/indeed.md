@@ -2,7 +2,7 @@
 
 Indeed is a job search and advertising platform that enables employers to post jobs and manage sponsored job campaigns.
 
-ingestr supports Indeed as a source using the [Indeed Ads API](https://docs.indeed.com/sponsored-jobs-api/).
+omniload supports Indeed as a source using the [Indeed Ads API](https://docs.indeed.com/sponsored-jobs-api/).
 
 ## URI format
 
@@ -32,7 +32,7 @@ Please follow the [Indeed API documentation](https://docs.indeed.com/api/sponsor
 Once you have your credentials, here's a sample command that will copy data from Indeed into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'indeed://?client_id=your_client_id&client_secret=your_secret&employer_id=your_employer_id' \
   --source-table 'campaigns' \
   --dest-uri 'duckdb:///indeed.duckdb' \
@@ -59,7 +59,7 @@ Indeed source allows ingesting the following resources into separate tables:
 The `campaign_stats` and `traffic_stats` tables support incremental loading using date-based merge strategy. Use `--interval-start` and `--interval-end` to specify the date range:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'indeed://?client_id=your_client_id&client_secret=your_secret&employer_id=your_employer_id' \
   --source-table 'campaign_stats' \
   --dest-uri 'duckdb:///indeed.duckdb' \
@@ -73,7 +73,7 @@ ingestr ingest \
 ### Fetch all campaigns
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'indeed://?client_id=your_client_id&client_secret=your_secret&employer_id=your_employer_id' \
   --source-table 'campaigns' \
   --dest-uri 'duckdb:///indeed.duckdb' \
@@ -83,7 +83,7 @@ ingestr ingest \
 ### Fetch campaign statistics for a date range
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'indeed://?client_id=your_client_id&client_secret=your_secret&employer_id=your_employer_id' \
   --source-table 'campaign_stats' \
   --dest-uri 'duckdb:///indeed.duckdb' \
@@ -95,7 +95,7 @@ ingestr ingest \
 ### Fetch traffic statistics
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'indeed://?client_id=your_client_id&client_secret=your_secret&employer_id=your_employer_id' \
   --source-table 'traffic_stats' \
   --dest-uri 'duckdb:///indeed.duckdb' \
@@ -107,7 +107,7 @@ ingestr ingest \
 ### Fetch account information
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'indeed://?client_id=your_client_id&client_secret=your_secret&employer_id=your_employer_id' \
   --source-table 'account' \
   --dest-uri 'duckdb:///indeed.duckdb' \

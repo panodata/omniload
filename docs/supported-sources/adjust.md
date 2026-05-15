@@ -2,7 +2,7 @@
 
 [Adjust](https://www.adjust.com/) is a mobile marketing analytics platform that provides solutions for measuring and optimizing campaigns, as well as protecting user data.
 
-ingestr supports Adjust as a source.
+omniload supports Adjust as a source.
 
 ## URI format
 
@@ -20,7 +20,7 @@ An API token is required to retrieve reports from the Adjust reporting API. plea
 Once you complete the guide, you should have an API key. Let's say your API key is `nr_123`, here's a sample command that will copy the data from Adjust into a DuckDB database:
 
 ```sh
-ingestr ingest --source-uri 'adjust://?api_key=nr_123' \
+omniload ingest --source-uri 'adjust://?api_key=nr_123' \
 --source-table 'campaigns' \
 --dest-uri duckdb:///adjust.duckdb \
 --dest-table 'adjust.output'
@@ -34,13 +34,13 @@ You can filter data for a specific app by appending `:<app_token>` to the source
 
 ```sh
 # Single app token
-ingestr ingest --source-uri 'adjust://?api_key=nr_123' \
+omniload ingest --source-uri 'adjust://?api_key=nr_123' \
 --source-table 'campaigns:abc123xyz' \
 --dest-uri duckdb:///adjust.duckdb \
 --dest-table 'adjust.output'
 
 # Multiple app tokens
-ingestr ingest --source-uri 'adjust://?api_key=nr_123' \
+omniload ingest --source-uri 'adjust://?api_key=nr_123' \
 --source-table 'campaigns:abc123,def456' \
 --dest-uri duckdb:///adjust.duckdb \
 --dest-table 'adjust.output'
@@ -83,7 +83,7 @@ Parameters:
 
 Copy campaigns data from Adjust into a DuckDB database:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'adjust://?api_key=nr_123' \
     --source-table 'campaigns' \
     --dest-uri duckdb:///adjust.duckdb \
@@ -92,7 +92,7 @@ ingestr ingest \
 
 Copy creatives data filtered by app token:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'adjust://?api_key=nr_123' \
     --source-table 'creatives:abc123xyz' \
     --dest-uri duckdb:///adjust.duckdb \
@@ -101,7 +101,7 @@ ingestr ingest \
 
 Copy custom data from Adjust into a DuckDB database:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "adjust://?api_key=nr_123&lookback_days=2" \
     --source-table "custom:hour,app,store_id,channel,os_name,country_code,campaign_network,campaign_id_network,adgroup_network,adgroup_id_network,creative_network,creative_id_network:impressions,clicks,cost,network_cost,installs,ad_revenue,all_revenue" \
     --dest-uri duckdb:///adjust.db \
@@ -110,7 +110,7 @@ ingestr ingest \
 
 Copy custom data filtered by app token:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "adjust://?api_key=nr_123" \
     --source-table "custom:day,campaign,app:installs,clicks:app_token__in=abc123xyz" \
     --dest-uri duckdb:///adjust.db \

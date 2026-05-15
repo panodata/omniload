@@ -1,7 +1,7 @@
 # MotherDuck
 MotherDuck is a managed cloud service built on DuckDB, designed for fast analytics and data processing in the cloud.
 
-ingestr supports MotherDuck as both a source and destination.
+omniload supports MotherDuck as both a source and destination.
 
 ## URI format
 The URI format for MotherDuck is as follows:

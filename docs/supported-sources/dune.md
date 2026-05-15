@@ -2,7 +2,7 @@
 
 [Dune](https://dune.com/) is a blockchain analytics platform that provides access to on-chain data through SQL queries and a powerful API.
 
-ingestr supports Dune as a source.
+omniload supports Dune as a source.
 
 ## URI format
 
@@ -30,7 +30,7 @@ To get your Dune API key:
 Once you have your API key, here's a sample command that will copy data from Dune into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'dune://?api_key=your_api_key' \
   --source-table 'queries' \
   --dest-uri duckdb:///dune.duckdb \
@@ -74,7 +74,7 @@ The Dune source connector:
 ### List Saved Queries
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'dune://?api_key=your_api_key' \
   --source-table 'queries' \
   --dest-uri duckdb:///dune.duckdb \
@@ -84,7 +84,7 @@ ingestr ingest \
 ### Execute a Saved Query
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'dune://?api_key=your_api_key' \
   --source-table 'query:1234567' \
   --dest-uri duckdb:///dune.duckdb \
@@ -94,7 +94,7 @@ ingestr ingest \
 ### Execute a Saved Query with Parameters
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'dune://?api_key=your_api_key' \
   --source-table 'query:1234567:bar=1000&foo=value' \
   --dest-uri duckdb:///dune.duckdb \
@@ -104,7 +104,7 @@ ingestr ingest \
 ### Execute Raw SQL
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'dune://?api_key=your_api_key' \
   --source-table 'sql:SELECT block_number, hash FROM ethereum.transactions LIMIT 100' \
   --dest-uri duckdb:///dune.duckdb \

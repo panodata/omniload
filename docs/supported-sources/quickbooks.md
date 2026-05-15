@@ -2,7 +2,7 @@
 
 [QuickBooks](https://quickbooks.intuit.com/) is an accounting software package developed and marketed by Intuit.
 
-ingestr supports QuickBooks as a source.
+omniload supports QuickBooks as a source.
 
 ## URI format
 
@@ -25,7 +25,7 @@ Follow Intuit's [OAuth setup guide](https://developer.intuit.com/app/developer/q
 Once you have the credentials, you can ingest data. For example, to copy customers data into DuckDB:
 
 ```sh
-ingestr ingest \
+omniload ingest \
 --source-uri 'quickbooks://?company_id=1234567890&client_id=cid&client_secret=csecret&refresh_token=rtoken' \
 --source-table 'customers' \
 --dest-uri duckdb:///customers.duckdb \
@@ -47,5 +47,5 @@ QuickBooks source allows ingesting the following tables:
 | `vendors`       | id | lastupdatedtime     | merge               | Retrives vendor records. |
 | `payments`      | id | lastupdatedtime     | merge  | Retrives payments recorded. |
 
-Use these as the `--source-table` parameter in the `ingestr ingest` command.
+Use these as the `--source-table` parameter in the `omniload ingest` command.
 

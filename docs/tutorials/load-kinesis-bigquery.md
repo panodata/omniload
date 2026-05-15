@@ -1,25 +1,25 @@
 # Load Data from Amazon Kinesis to Google BigQuery
 
 Welcome! 👋  
- This beginner-friendly guide will help you load data from `Amazon Kinesis` into `Google BigQuery` using `ingestr` — a simple yet powerful command-line tool. No prior experience is needed, and best of all, no coding required!
+ This beginner-friendly guide will help you load data from `Amazon Kinesis` into `Google BigQuery` using `omniload` — a simple yet powerful command-line tool. No prior experience is needed, and best of all, no coding required!
 
-By the end of this guide, you'll have your Kinesis data securely stored in BigQuery. But before we dive in, let’s take a quick look at `ingestr`.
+By the end of this guide, you'll have your Kinesis data securely stored in BigQuery. But before we dive in, let’s take a quick look at `omniload`.
 
-## Overview of ingestr
+## Overview of omniload
 
-`ingestr` is a command-line tool that simplifies data ingestion by allowing users to load data from a source to a destination using simple command-line flags.
+`omniload` is a command-line tool that simplifies data ingestion by allowing users to load data from a source to a destination using simple command-line flags.
 
-### ingestr Command
+### omniload Command
 
 ```bash
-ingestr ingest \   
+omniload ingest \
    --source-uri '<your-source-uri-here>' \   
    --source-table '<your-schema>.<your-table>' \   
    --dest-uri '<your-destination-uri-here>' \   
    --dest-table '<your-schema>.<your-table>'
 ```
 
-- `ingestr ingest`: Executes the data ingestion process.
+- `omniload ingest`: Executes the data ingestion process.
 - `--source-uri TEXT`: Specifies the URI of the data source.
 - `--dest-uri TEXT`: Specifies the URI of the destination.
 - `--source-table TEXT`: Defines the table to fetch data from.
@@ -29,11 +29,11 @@ With this command, we connect to the source, retrieve the specified data, and lo
 
 ## Let's Load Data from Kinesis to BigQuery Together!
 
-Amazon Kinesis is a cloud-based service for real-time data streaming and analytics that processes large data streams. To analyze this data, you may need to load it into a data warehouse like Google BigQuery. `ingestr` makes this process simple.
+Amazon Kinesis is a cloud-based service for real-time data streaming and analytics that processes large data streams. To analyze this data, you may need to load it into a data warehouse like Google BigQuery. `omniload` makes this process simple.
 
-### Step 1: Install ingestr
+### Step 1: Install omniload
 
-Ensure `ingestr` is installed. If not, follow the installation guide [here](../getting-started/quickstart.md#Installation).
+Ensure `omniload` is installed. If not, follow the installation guide [here](../getting-started/quickstart.md#Installation).
 
 ### Step 2: Get AWS Credentials
 Kinesis will be our data source. To access it, you need AWS credentials.
@@ -88,12 +88,12 @@ This flag specifies where to save the data:
 --dest-table 'dataset.table_name'
 ```
 
-### Step 5: Run the ingestr Command
+### Step 5: Run the omniload Command
 
 Execute the following command to load data from Kinesis to BigQuery:
 
 ```bash
-ingestr ingest \   
+omniload ingest \   
     --source-uri 'kinesis://?aws_access_key_id=<YOUR_KEY_ID>&aws_secret_access_key=<YOUR_SECRET_KEY>&region_name=eu-central-1' \   
     --source-table 'kinesis_stream_name' \   
     --dest-uri 'bigquery://project-name?credentials_path=/Users/abc.json' \   
@@ -127,4 +127,4 @@ After running the ingestion process, your Kinesis data will be available in BigQ
 <img alt="kinesis_bigquery" src="../media/kinesis.bigquery.png" />
 
 ## 🎉 Congratulations!
-You have successfully loaded data from Amazon Kinesis to BigQuery using `ingestr`.
+You have successfully loaded data from Amazon Kinesis to BigQuery using `omniload`.

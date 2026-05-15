@@ -1,10 +1,10 @@
 # Apple App Store 
 The [App Store](https://appstore.com/) is an app marketplace developed and maintained by Apple, for mobile apps on its iOS and iPadOS operating systems. The store allows users to browse and download approved apps developed within Apple's iOS SDK. Apps can be downloaded on the iPhone, iPod Touch, or iPad, and some can be transferred to the Apple Watch smartwatch or 4th-generation or newer Apple TVs as extensions of iPhone apps.
 
-`ingestr` allows you to ingest analytics, sales and performance data using the [Apple App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi)
+`omniload` allows you to ingest analytics, sales and performance data using the [Apple App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi)
 
 > [!NOTE]
-> Sometimes, the data in App Store Analytics reports isn’t fully complete when first provided. This happens because some information takes longer to process and appears in the reports later. For example, certain usage or sales details might be updated after the initial report is generated to correct errors or include missing data. This means that the report for a certain date may include data points from older dates. `ingestr` takes care of updating these rows to show the updated values. However, caution should be exercised when analysing current date's data, as it maybe subject to change in the future. 
+> Sometimes, the data in App Store Analytics reports isn’t fully complete when first provided. This happens because some information takes longer to process and appears in the reports later. For example, certain usage or sales details might be updated after the initial report is generated to correct errors or include missing data. This means that the report for a certain date may include data points from older dates. `omniload` takes care of updating these rows to show the updated values. However, caution should be exercised when analysing current date's data, as it maybe subject to change in the future. 
 > see [Data Completeness and Corrections](https://developer.apple.com/documentation/analytics-reports/data-completeness-corrections) for more information.
 ## URI Format
 
@@ -28,7 +28,7 @@ To generate an API key, you must have an Admin account in App Store Connect.
 
 ### Generate an API Key
 
-To generate a new API key to use with `ingestr`, log in to [App Store Connect](https://appstoreconnect.apple.com/) and:
+To generate a new API key to use with `omniload`, log in to [App Store Connect](https://appstoreconnect.apple.com/) and:
 
 1. Select Users and Access, and then select the API Keys tab.
 2. Make sure the Team Keys tab is selected.
@@ -210,10 +210,10 @@ For this example, we'll assume that:
 * `key` is stored in the current directory and is named `api.key`
 * `app_id` is `12345`
 
-We will run `ingestr` to save this data to a [duckdb](https://duckdb.org/) database called `analytics.db` under the name `public.app_downloads`.
+We will run `omniload` to save this data to a [duckdb](https://duckdb.org/) database called `analytics.db` under the name `public.app_downloads`.
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "appstore://app_id=12345&key_path=api.key&key_id=key_0&issuer_id=issue_0" \
     --source-table "app-downloads-detailed" \
     --dest-uri "duckdb:///analytics.db"  \
@@ -224,7 +224,7 @@ ingestr ingest \
 
 We will extend the prior example with another app with ID `67890`. To achieve this, simply add another `app_id` query parameter to the URI.
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "appstore://app_id=12345&app_id=67890&key_path=api.key&key_id=key_0&issuer_id=issue_0" \
     --source-table "app-downloads-detailed" \
     --dest-uri "duckdb:///analytics.db"  \
@@ -233,11 +233,11 @@ ingestr ingest \
 
 ### Incremental Loading
 
-`ingestr` supports incremental loading for all App Store tables.
+`omniload` supports incremental loading for all App Store tables.
 
 To begin, we will first load all data till `2025-01-01` by specifying the `--interval-end` flag. We'll assume the same credentials from our [first example](#example-loading-app-downloads-analytics)
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "appstore://app_id=12345&key_path=api.key&key_id=key_0&issuer_id=issue_0" \
     --source-table "app-downloads-detailed" \
     --dest-uri "duckdb:///analytics.db"  \
@@ -245,10 +245,10 @@ ingestr ingest \
     --interval-end "2025-01-01"
 ```
 
-`ingestr` will load all data available till `2025-01-01`. Now we will run `ingestr` again, but this time, we'll let `ingestr` pickup from where it left off by specifying the `--incremental-strategy` flag.
+`omniload` will load all data available till `2025-01-01`. Now we will run `omniload` again, but this time, we'll let `omniload` pickup from where it left off by specifying the `--incremental-strategy` flag.
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "appstore://app_id=12345&key_path=api.key&key_id=key_0&issuer_id=issue_0" \
     --source-table "app-downloads-detailed" \
     --dest-uri "duckdb:///analytics.db"  \
@@ -256,8 +256,8 @@ ingestr ingest \
     --incremental-strategy "merge"
 ```
 
-Notice how we didn't specify a date parameter? `ingestr` will automatically use the metadata from last load and continue loading data from that point on.
+Notice how we didn't specify a date parameter? `omniload` will automatically use the metadata from last load and continue loading data from that point on.
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 To know more about these reports and their dimensions, see [App Store Analytics docs](https://developer.apple.com/documentation/analytics-reports).

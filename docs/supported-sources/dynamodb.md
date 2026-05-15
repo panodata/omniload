@@ -2,7 +2,7 @@
 
 Amazon [DynamoDB](https://aws.amazon.com/dynamodb/) is a managed NoSQL database service provided by Amazon Web Services (AWS). It supports key-value and document data structures and is designed to handle a wide range of applications requiring scalability and performance. 
 
-ingestr supports DynamoDB as both a source and destination.
+omniload supports DynamoDB as both a source and destination.
 
 ## URI format
 
@@ -36,14 +36,14 @@ The user account must have the following IAM permissions:
 * `dynamodb:BatchWriteItem` (destination only)
 * `dynamodb:PutItem` (destination only)
 
-Following AWS best practices, you can create an IAM policy that you can assign to the user account you wish to use with `ingestr`.
+Following AWS best practices, you can create an IAM policy that you can assign to the user account you wish to use with `omniload`.
 Below is a sample policy:
 ```json
 {
 	"Version": "2012-10-17",
 	"Statement": [
 		{
-			"Sid": "DynamoDBIngestr",
+			"Sid": "DynamoDBomniload",
 			"Effect": "Allow",
 			"Action": [
 				"dynamodb:DescribeTable",
@@ -71,7 +71,7 @@ Say you have a table called `absolute-armadillo` in the region `ap-south-1` and 
 
 You run the following to achieve this:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "dynamodb://dynamodb.ap-south-1.amazonaws.com?access_key_id=user&secret_access_key=pass" \
     --source-table "absolute-armadillo" \
     --dest-uri "duckdb://./animal.db" \
@@ -79,11 +79,11 @@ ingestr ingest \
 ```
 
 ### Example: Incremental load
-`ingestr` supports incremental loading. Incremental loading is a technique whereby only rows or fields that are changed are fetched. This reduces load times of subsequent runs and improves efficiency of your pipelines.
+`omniload` supports incremental loading. Incremental loading is a technique whereby only rows or fields that are changed are fetched. This reduces load times of subsequent runs and improves efficiency of your pipelines.
 
 Assuming the same setup from [Simple Load](#example-simple-load), we can run incremental load with:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "dynamodb://dynamodb.ap-south-1.amazonaws.com?access_key_id=user&secret_access_key=pass" \
     --source-table "absolute-armadillo" \
     --dest-uri "duckdb://./animal.db" \
@@ -96,15 +96,15 @@ Assuming that `absolute-armadillo` table has a datetime field called `updated_at
 
 > [!WARNING]
 > DynamoDB doesn't support indexed range scans.
-> Whenever you run `ingestr ingest`, the whole table is scanned.
-> Although `ingestr` does specify a filter criteria, DynamoDB only applies
+> Whenever you run `omniload ingest`, the whole table is scanned.
+> Although `omniload` does specify a filter criteria, DynamoDB only applies
 > this _after_ running the table scan.
 
 ### Example: Load into DynamoDB
 
 You can also use DynamoDB as a destination. For example, to load data from Postgres into DynamoDB:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "postgres://user:pass@localhost:5432/mydb" \
     --source-table "public.users" \
     --dest-uri "dynamodb://dynamodb.us-east-1.amazonaws.com?access_key_id=AKID&secret_access_key=SECRET" \

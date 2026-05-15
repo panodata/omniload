@@ -1,7 +1,7 @@
 # JobTread
 [JobTread](https://www.jobtread.com/) is a construction management platform that helps contractors manage jobs, estimates, invoices, budgets, tasks, and more.
 
-ingestr supports JobTread as a source.
+omniload supports JobTread as a source.
 
 ## URI format
 
@@ -29,7 +29,7 @@ currentGrant:
 Once you have both, here's a sample command that will copy the data from JobTread into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "jobtread://?grant_key=your_grant_key&organization_id=your_org_id" \
   --source-table "jobs" \
   --dest-uri duckdb:///jobtread.duckdb \
@@ -60,7 +60,7 @@ JobTread source allows ingesting the following resources into separate tables:
 | cost_groups | id | - | replace | Budget categories and templates |
 | events | id | createdAt | merge | Audit log of all actions in the system |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 > [!WARNING]
 > JobTread does not expose an `updatedAt` field on any entity, so most tables use a full replace strategy. Only the `events` table supports incremental loading via `createdAt` since events are immutable.

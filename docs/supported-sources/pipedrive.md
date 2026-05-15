@@ -1,7 +1,7 @@
 # Pipedrive
 [Pipedrive](https://www.pipedrive.com/) is a cloud-based sales Customer Relationship Management (CRM) tool designed to help businesses manage leads and deals, track communication, and automate sales processes.
 
-ingestr supports pipedrive as a source.
+omniload supports pipedrive as a source.
 
 ## URI format
 
@@ -21,7 +21,7 @@ To grab pipedrive credentials, please follow the guide [here](https://dlthub.com
 Once you complete the guide, you should have a `api_token`. Let's say your `api_token` is token_123, here's a sample command that will copy the data from pipedriveinto a DuckDB database:
 
 ```bash
-ingestr ingest \
+omniload ingest \
 --source-uri 'pipedrive://?api_token=token' \
 --source-table 'users' \
 --dest-uri duckdb:///pipedrive.duckdb \
@@ -42,4 +42,4 @@ pipedrive source allows ingesting the following resources into separate tables:
 | `users` | id | update_time | merge | Refers to Individual with a unique login credential who can access and use the platform |
 
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.

@@ -1,7 +1,7 @@
 # Apache Kafka
 [Apache Kafka](https://kafka.apache.org/) is a distributed event streaming platform used by thousands of companies for high-performance data pipelines, streaming analytics, data integration, and mission-critical applications.
 
-ingestr supports Apache Kafka as a source.
+omniload supports Apache Kafka as a source.
 
 ## URI format
 The URI format for Apache Kafka is as follows:
@@ -28,7 +28,7 @@ The group ID is used to identify the consumer group that reads messages from a t
 Once you have your Kafka server, credentials, and group ID set up, here's a sample command to ingest messages from a Kafka topic into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'kafka://?bootstrap_servers=localhost:9092&group_id=test_group' \
     --source-table 'my-topic' \
     --dest-uri duckdb:///kafka.duckdb \

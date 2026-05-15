@@ -2,7 +2,7 @@
 
 [Fireflies.ai](https://fireflies.ai/) is an AI-powered meeting assistant that automatically records, transcribes, and analyzes voice conversations from meetings across various video conferencing platforms.
 
-Ingestr supports Fireflies as a source.
+omniload supports Fireflies as a source.
 
 ## URI format
 
@@ -29,7 +29,7 @@ To set up Fireflies integration, you need to obtain an API key:
 Once you have your API key, here's a sample command that will copy the transcripts from Fireflies into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'fireflies://?api_key=your-api-key-here' \
   --source-table 'transcripts' \
   --dest-uri duckdb:///fireflies.duckdb \
@@ -43,7 +43,7 @@ The result of this command will be a table in the `fireflies.duckdb` database.
 Fireflies source supports incremental loading for `analytics` and `transcripts` tables. You can use `--interval-start` and `--interval-end` parameters to specify the time range:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'fireflies://?api_key=your-api-key-here' \
   --source-table 'transcripts' \
   --dest-uri duckdb:///fireflies.duckdb \
@@ -53,7 +53,7 @@ ingestr ingest \
 ```
 
 > [!NOTE]
-> For `analytics`, the API has a 30-day limit per request. ingestr automatically chunks larger date ranges into 30-day intervals.
+> For `analytics`, the API has a 30-day limit per request. omniload automatically chunks larger date ranges into 30-day intervals.
 >
 > [!WARNING]
 > The `analytics` table returns **pre-aggregated data** for each chunk (e.g., average duration, total meetings). When querying periods longer than the chunk size, each chunk is stored as a separate row with its own aggregations.
@@ -72,7 +72,7 @@ You can customize the chunk size for analytics by appending a granularity suffix
 Example with daily granularity:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'fireflies://?api_key=your-api-key-here' \
   --source-table 'analytics:DAY' \
   --dest-uri duckdb:///fireflies.duckdb \
@@ -99,7 +99,7 @@ Fireflies source allows ingesting the following sources into separate tables:
 | `bites` | - | - | replace | Short audio/video clips (bites) extracted from meetings. |
 | `contacts` | - | - | replace | Contacts associated with your Fireflies account. |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 > [!TIP]
 > For loading meeting transcripts incrementally, use the `transcripts` table with `--interval-start` and `--interval-end` parameters. This is recommended for regular sync jobs to avoid re-fetching all historical data.

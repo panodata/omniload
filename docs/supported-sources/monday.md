@@ -26,7 +26,7 @@ Let's say you want to ingest all boards into a DuckDB database called `monday.db
 
 You can run the following to achieve this:
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "monday://?api_token=fake_token" \
   --source-table "boards" \
   --dest-uri "duckdb://./monday.db" \
@@ -52,7 +52,7 @@ Monday.com source allows ingesting the following resources into separate tables:
 | `board_columns` | - | - | replace | Columns defined in all boards with their types and settings. Full reload on each run. |
 | `board_views` | - | - | replace | Views configured for boards with their filters and settings. Full reload on each run. |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 > [!NOTE]
 > Monday.com has rate limits for API requests. The source handles pagination automatically and respects the API's maximum page size of 100 items.

@@ -2,7 +2,7 @@
 
 [Pinterest](https://www.pinterest.com/) is a social media platform for discovering and sharing ideas using visual bookmarks.
 
-ingestr supports Pinterest as a source.
+omniload supports Pinterest as a source.
 
 
 ## URI Format
@@ -27,4 +27,4 @@ Pinterest source allows ingesting the following sources into separate tables:
 | [boards](https://developers.pinterest.com/docs/api/v5/boards-list)      | id | created_at     | merge               | Retrieves a list of boards.
  |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.

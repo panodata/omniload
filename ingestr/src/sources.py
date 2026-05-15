@@ -869,7 +869,7 @@ class ShopifySource:
             resource = table
         else:
             raise ValueError(
-                f"Table name '{table}' is not supported for Shopify source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Table name '{table}' is not supported for Shopify source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
         from ingestr.src.shopify import shopify_source
@@ -908,7 +908,7 @@ class GorgiasSource:
             resource = table
         else:
             raise ValueError(
-                f"Resource '{table}' is not supported for Gorgias source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Resource '{table}' is not supported for Gorgias source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
         date_args = {}
@@ -1014,7 +1014,7 @@ class ChessSource:
 
         if table not in table_mapping:
             raise ValueError(
-                f"Resource '{table}' is not supported for Chess source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Resource '{table}' is not supported for Chess source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
         from ingestr.src.chess import source
@@ -1108,7 +1108,7 @@ class StripeAnalyticsSource:
                 ).with_resources(endpoint)
 
         raise ValueError(
-            f"Resource '{table}' is not supported for stripe source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+            f"Resource '{table}' is not supported for stripe source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
         )
 
 
@@ -1266,7 +1266,7 @@ class FacebookAdsSource:
             )
         else:
             raise ValueError(
-                f"Resource '{table}' is not supported for Facebook Ads source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Resource '{table}' is not supported for Facebook Ads source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
         final_account_ids = table_account_ids if table_account_ids else account_id
@@ -1314,7 +1314,7 @@ class SlackSource:
             endpoint = "messages"
         else:
             raise ValueError(
-                f"Resource '{table}' is not supported for slack source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Resource '{table}' is not supported for slack source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
         date_args = {}
@@ -1402,7 +1402,7 @@ class HubspotSource:
             endpoint = table
         else:
             raise ValueError(
-                f"Resource '{table}' is not supported for Hubspot source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Resource '{table}' is not supported for Hubspot source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
         return hubspot(
@@ -1491,7 +1491,7 @@ class KlaviyoSource:
             resource = table
         else:
             raise ValueError(
-                f"Resource '{table}' is not supported for Klaviyo source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Resource '{table}' is not supported for Klaviyo source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
         start_date = kwargs.get("interval_start") or "2000-01-01"
@@ -1536,7 +1536,7 @@ class MixpanelSource:
 
         if table not in ["events", "profiles"]:
             raise ValueError(
-                f"Resource '{table}' is not supported for Mixpanel source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Resource '{table}' is not supported for Mixpanel source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
         start_date = kwargs.get("interval_start")
@@ -1828,7 +1828,7 @@ class ZendeskSource:
             ).with_resources(table)
         else:
             raise ValueError(
-                f"Resource '{table}' is not supported for Zendesk source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Resource '{table}' is not supported for Zendesk source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
 
@@ -2060,7 +2060,7 @@ class AsanaSource:
 
         if table not in self.resources:
             raise ValueError(
-                f"Resource '{table}' is not supported for Asana source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Resource '{table}' is not supported for Asana source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
         import dlt
@@ -2116,7 +2116,7 @@ class JiraSource:
 
         if table not in self.resources:
             raise ValueError(
-                f"Resource '{table}' is not supported for Jira source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Resource '{table}' is not supported for Jira source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
         import dlt
@@ -2405,7 +2405,7 @@ class GitHubSource:
             return github_stargazers(owner=owner, name=repo, access_token=access_token)
         else:
             raise ValueError(
-                f"Resource '{table}' is not supported for GitHub source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Resource '{table}' is not supported for GitHub source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
 
@@ -3022,7 +3022,7 @@ class ApplovinMaxSource:
                 f"Table name '{requested_table}' is not supported for AppLovin Max source yet."
                 f"Only '{AVAILABLE_TABLES}' are currently supported. "
                 "If you need additional tables, please create a GitHub issue at "
-                "https://github.com/bruin-data/ingestr"
+                "https://github.com/panodata/omniload"
             )
 
         applications = [
@@ -4158,7 +4158,7 @@ class WiseSource:
 
         if table not in ["profiles", "transfers", "balances"]:
             raise ValueError(
-                f"Resource '{table}' is not supported for Wise source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                f"Resource '{table}' is not supported for Wise source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
         start_date = kwargs.get("interval_start")
@@ -5017,7 +5017,7 @@ class HostawaySource:
                 resource_name = "tasks"
             case _:
                 raise ValueError(
-                    f"Resource '{table}' is not supported for Hostaway source yet, if you are interested in it please create a GitHub issue at https://github.com/bruin-data/ingestr"
+                    f"Resource '{table}' is not supported for Hostaway source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
                 )
 
         start_date = kwargs.get("interval_start")
