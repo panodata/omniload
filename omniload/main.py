@@ -7,8 +7,6 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from omniload.src.telemetry.event import track
-
 try:
     from duckdb_engine import DuckDBEngineWarning
 
@@ -388,13 +386,6 @@ def ingest(
                 )
         return types
 
-    track(
-        "command_triggered",
-        {
-            "command": "ingest",
-        },
-    )
-
     clean_sql_exclude_columns = []
     if sql_exclude_columns:
         for col in sql_exclude_columns:
@@ -416,14 +407,6 @@ def ingest(
         )
 
         factory = SourceDestinationFactory(source_uri, dest_uri)
-        track(
-            "command_running",
-            {
-                "command": "ingest",
-                "source_type": factory.source_scheme,
-                "destination_type": factory.destination_scheme,
-            },
-        )
 
         source = factory.get_source()
         destination = factory.get_destination()
@@ -532,7 +515,6 @@ def ingest(
         if not yes:
             continuePipeline = typer.confirm("Are you sure you would like to continue?")
             if not continuePipeline:
-                track("command_finished", {"command": "ingest", "status": "aborted"})
                 raise typer.Abort()
 
         print()
@@ -731,30 +713,13 @@ def ingest(
             f"[bold green]Successfully finished loading data from '{factory.source_scheme}' to '{factory.destination_scheme}' {elapsedHuman} [/bold green]"
         )
         print()
-        track(
-            "command_finished",
-            {
-                "command": "ingest",
-                "status": "success",
-            },
-        )
 
     except Exception as e:
-        track(
-            "command_finished",
-            {"command": "ingest", "status": "failed", "error": str(e)},
-        )
         raise
 
 
 @app.command()
 def example_uris():
-    track(
-        "command_triggered",
-        {
-            "command": "example-uris",
-        },
-    )
 
     print()
     typer.echo(
@@ -828,13 +793,6 @@ def example_uris():
     print()
     typer.echo(
         "These are all coming from SQLAlchemy's URI format, so they should be familiar to most users."
-    )
-    track(
-        "command_finished",
-        {
-            "command": "example-uris",
-            "status": "success",
-        },
     )
 
 
