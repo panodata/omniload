@@ -8,28 +8,28 @@ Copyright 2022-2025 ScaleVector
 Licensed under the Apache License, Version 2.0
 
 The following directories contain code from dlt-hub:
-- ingestr/src/airtable/
-- ingestr/src/asana_source/
-- ingestr/src/chess/
-- ingestr/src/facebook_ads/
-- ingestr/src/filesystem/
-- ingestr/src/freshdesk/
-- ingestr/src/github/
-- ingestr/src/google_ads/
-- ingestr/src/google_analytics/
-- ingestr/src/google_sheets/
-- ingestr/src/hubspot/
-- ingestr/src/jira_source/
-- ingestr/src/kafka/
-- ingestr/src/kinesis/
-- ingestr/src/mongodb/
-- ingestr/src/notion/
-- ingestr/src/personio/
-- ingestr/src/pipedrive/
-- ingestr/src/salesforce/
-- ingestr/src/shopify/
-- ingestr/src/slack/
-- ingestr/src/stripe_analytics/
-- ingestr/src/zendesk/
+- omniload/src/airtable/
+- omniload/src/asana_source/
+- omniload/src/chess/
+- omniload/src/facebook_ads/
+- omniload/src/filesystem/
+- omniload/src/freshdesk/
+- omniload/src/github/
+- omniload/src/google_ads/
+- omniload/src/google_analytics/
+- omniload/src/google_sheets/
+- omniload/src/hubspot/
+- omniload/src/jira_source/
+- omniload/src/kafka/
+- omniload/src/kinesis/
+- omniload/src/mongodb/
+- omniload/src/notion/
+- omniload/src/personio/
+- omniload/src/pipedrive/
+- omniload/src/salesforce/
+- omniload/src/shopify/
+- omniload/src/slack/
+- omniload/src/stripe_analytics/
+- omniload/src/zendesk/
 
 The Apache License 2.0 can be found in the LICENSE.Apache-2.0 file.

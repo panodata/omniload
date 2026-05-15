@@ -1,7 +1,7 @@
 # MySQL
 MySQL is an open source relational database management system, known for its speed and reliability.
 
-ingestr supports MySQL as a source and a destination.
+omniload supports MySQL as a source and a destination.
 
 ## URI format
 The URI format for MySQL is as follows:

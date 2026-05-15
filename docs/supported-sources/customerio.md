@@ -2,7 +2,7 @@ mak # Customer.io
 
 [Customer.io](https://customer.io/) is a customer engagement platform that enables businesses to send automated messages across email, push, SMS, and more.
 
-ingestr supports Customer.io as a source.
+omniload supports Customer.io as a source.
 
 ## URI format
 
@@ -30,7 +30,7 @@ To get your API key:
 Once you have your API key, here's a sample command that will copy the data from Customer.io into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'customerio://?api_key=your_api_key&region=us' \
   --source-table 'broadcasts' \
   --dest-uri duckdb:///customerio.duckdb \
@@ -77,7 +77,7 @@ Customer.io source allows ingesting the following sources into separate tables:
 | [transactional_messages](https://customer.io/docs/api/app/#operation/listTransactional) | id | – | replace | Retrieves transactional message templates. |
 | [workspaces](https://customer.io/docs/api/app/#operation/listWorkspaces) | id | – | replace | Retrieves workspaces in your account. |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 ## Examples
 
@@ -87,14 +87,14 @@ Metrics tables require a period suffix. Use the format `table_name:period` where
 
 ```sh
 # Get daily broadcast metrics
-ingestr ingest \
+omniload ingest \
   --source-uri 'customerio://?api_key=your_api_key&region=us' \
   --source-table 'broadcast_metrics:days' \
   --dest-uri duckdb:///customerio.duckdb \
   --dest-table 'customerio.broadcast_metrics'
 
 # Get hourly campaign metrics
-ingestr ingest \
+omniload ingest \
   --source-uri 'customerio://?api_key=your_api_key&region=us' \
   --source-table 'campaign_metrics:hours' \
   --dest-uri duckdb:///customerio.duckdb \
@@ -105,14 +105,14 @@ ingestr ingest \
 
 ```sh
 # Get all customers with their identifiers
-ingestr ingest \
+omniload ingest \
   --source-uri 'customerio://?api_key=your_api_key&region=us' \
   --source-table 'customers' \
   --dest-uri duckdb:///customerio.duckdb \
   --dest-table 'customerio.customers'
 
 # Get detailed customer attributes
-ingestr ingest \
+omniload ingest \
   --source-uri 'customerio://?api_key=your_api_key&region=us' \
   --source-table 'customer_attributes' \
   --dest-uri duckdb:///customerio.duckdb \
@@ -121,10 +121,10 @@ ingestr ingest \
 
 ## Incremental Loading
 
-Customer.io supports incremental loading for tables that have an `updated` or `updated_at` field. When using the `--interval-start` and `--interval-end` flags, ingestr will only fetch records that have been updated within the specified time range.
+Customer.io supports incremental loading for tables that have an `updated` or `updated_at` field. When using the `--interval-start` and `--interval-end` flags, omniload will only fetch records that have been updated within the specified time range.
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'customerio://?api_key=your_api_key&region=us' \
   --source-table 'broadcasts' \
   --dest-uri duckdb:///customerio.duckdb \

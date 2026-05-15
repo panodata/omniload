@@ -2,7 +2,7 @@
 
 [Mailchimp](https://mailchimp.com/) is an all-in-one marketing platform that helps businesses manage and talk to their clients, customers, and other interested parties through email marketing campaigns, automated messages, and targeted ads.
 
-ingestr supports Mailchimp as a source.
+omniload supports Mailchimp as a source.
 
 ## URI format
 
@@ -31,7 +31,7 @@ To get your Mailchimp API credentials:
 Once you have your credentials, here's a sample command that will copy the data from Mailchimp into a DuckDB database:
 
 ```sh
-ingestr ingest --source-uri 'mailchimp://?api_key=your_api_key&server=us10' --source-table 'campaigns' --dest-uri duckdb:///mailchimp.duckdb --dest-table 'mailchimp.campaigns'
+omniload ingest --source-uri 'mailchimp://?api_key=your_api_key&server=us10' --source-table 'campaigns' --dest-uri duckdb:///mailchimp.duckdb --dest-table 'mailchimp.campaigns'
 ```
 
 The result of this command will be a table in the `mailchimp.duckdb` database.
@@ -71,14 +71,14 @@ Mailchimp source allows ingesting the following sources into separate tables:
 | reports_sub_reports | - | - | replace | Retrieves sub-reports for A/B test campaigns. Includes `reports_id` reference. |
 | reports_unsubscribed | - | - | replace | Retrieves list of members who unsubscribed from the campaign. Includes `reports_id` reference. |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 ## Examples
 
 ### Ingesting Campaign Data
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'mailchimp://?api_key=your_api_key&server=us10' \
   --source-table 'campaigns' \
   --dest-uri duckdb:///mailchimp.duckdb \

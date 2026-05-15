@@ -2,7 +2,7 @@
 
 [Slack](https://www.Slack.com/) is a messaging platform for teams and organizations where they can collaborate, share ideas and information.
 
-ingestr supports Slack as a source.
+omniload supports Slack as a source.
 
 ## URI format
 
@@ -25,7 +25,7 @@ Slack requires a few steps to set up an integration, please follow the guide dlt
 Once you complete the guide, you should have an API key with the necessary permissions as mentioned in the guide. Let's say your API key is axb-test-564. Here's a sample command that will copy the data from Slack into a DuckDB database:
 
 ```sh
-ingestr ingest --source-uri 'slack://?api_key=axb-test-564' --source-table 'channels' --dest-uri duckdb:///slack.duckdb --dest-table 'dest.channels'
+omniload ingest --source-uri 'slack://?api_key=axb-test-564' --source-table 'channels' --dest-uri duckdb:///slack.duckdb --dest-table 'dest.channels'
 ```
 
 The result of this command will be a table in the `slack.duckdb` database.
@@ -43,4 +43,4 @@ Slack source allows ingesting the following sources into separate tables:
 | [access_logs](https://api.slack.com/methods/team.accessLogs) | user_id | - | append | Retrieves access logs|
 
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.

@@ -1,7 +1,7 @@
 # Applovin Max
 [AppLovin Max](https://developers.applovin.com/en/max/getting-started/) is a tool from AppLovin that helps app developers optimize ad revenue by selecting the highest-paying ads from various ad networks.
 
-`ingestr` allows ingesting data from AppLovin Max reporting API.
+`omniload` allows ingesting data from AppLovin Max reporting API.
 
 ## URI Format
 The URI format for Applovin Max is as follows:
@@ -34,13 +34,13 @@ You can generate a report key from your [AppLovin dashboard](https://developers.
 To retrieve `user ad revenue` data for an application `com.example.app` with api key `key_123`, and to store it in a DuckDB database, use the following command:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "applovinmax://?api_key=key_123" \
     --source-table "user_ad_revenue:com.example.app" \
     --dest-uri "duckdb:///applovin_max.db"  \
     --dest-table "dest.ad_revenue"
 ```
-By default, `ingestr` retrieves data for the last 30 days. For a custom date range, use the `--interval-start` and `--interval-end` parameters.
+By default, `omniload` retrieves data for the last 30 days. For a custom date range, use the `--interval-start` and `--interval-end` parameters.
 
 <img alt="applovin_max_img" src="../media/applovin_max.png"/>
 

@@ -2,7 +2,7 @@
 
 [Cursor](https://cursor.com/) is an AI-powered code editor built for productivity. The Cursor API provides access to team usage data, spending information, and detailed usage events.
 
-ingestr supports Cursor as a source.
+omniload supports Cursor as a source.
 
 ## URI format
 
@@ -29,7 +29,7 @@ To set up a Cursor integration, you need to:
 Once you have your API key, here's a sample command that will copy the data from Cursor into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'cursor://?api_key=your_api_key' \
     --source-table 'team_members' \
     --dest-uri duckdb:///cursor.duckdb \
@@ -49,14 +49,14 @@ Cursor source allows ingesting the following sources into separate tables:
 | `team_spend` | Team spending data | No | Contains spending information for the current billing cycle including per-member costs and request counts. |
 | `filtered_usage_events` | Detailed usage events | Optional | Contains granular usage event data including timestamps, models, token usage, and costs. Most detailed data source. |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 ## Examples
 
 ### Basic Usage - Team Members
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'cursor://?api_key=your_api_key' \
     --source-table 'team_members' \
     --dest-uri duckdb:///cursor.duckdb \
@@ -66,7 +66,7 @@ ingestr ingest \
 ### Daily Usage Data with Date Range
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'cursor://?api_key=your_api_key' \
     --source-table 'daily_usage_data' \
     --dest-uri duckdb:///cursor.duckdb \
@@ -80,7 +80,7 @@ ingestr ingest \
 ### Daily Usage Data without Date Range
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'cursor://?api_key=your_api_key' \
     --source-table 'daily_usage_data' \
     --dest-uri duckdb:///cursor.duckdb \
@@ -92,7 +92,7 @@ When no date range is provided, the API returns the last 30 days of data by defa
 ### Team Spending Data
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'cursor://?api_key=your_api_key' \
     --source-table 'team_spend' \
     --dest-uri duckdb:///cursor.duckdb \
@@ -104,7 +104,7 @@ Returns spending data for the current billing cycle.
 ### Filtered Usage Events
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'cursor://?api_key=your_api_key' \
     --source-table 'filtered_usage_events' \
     --dest-uri duckdb:///cursor.duckdb \

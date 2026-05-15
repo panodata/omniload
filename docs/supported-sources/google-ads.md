@@ -29,7 +29,7 @@ URI parameters:
 > For service account auth, you may specify credentials using `credentials_base64` instead of `credentials_path`.
 > The value of this parameter is the base64 encoded contents of the
 > service account json file. However, we don't recommend using this
-> parameter, unless you're integrating ingestr into another system.
+> parameter, unless you're integrating omniload into another system.
 ## Setting up a Google Ads integration
 
 ### Prerequisites
@@ -68,7 +68,7 @@ For this example, we'll assume that:
 
 You can run the following to achieve this:
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "googleads://12345678?credentials_path=./svc_account.json&dev_token=dev-token-spec-1" \
   --source-table "campaign_report_daily" \
   --dest-uri "duckdb://./adverts.db" \
@@ -79,7 +79,7 @@ ingestr ingest \
 
 Using OAuth2 credentials instead of a service account:
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "googleads://1234567890?client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&refresh_token=YOUR_REFRESH_TOKEN&dev_token=dev-token-spec-1" \
   --source-table "campaign_report_daily" \
   --dest-uri "duckdb://./adverts.db" \
@@ -91,7 +91,7 @@ ingestr ingest \
 If your service account has access to a Manager Account (MCC) and you want to pull data from a client account under that MCC, you need to specify the `login_customer_id` parameter:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "googleads://CLIENT_ID?credentials_path=./svc_account.json&dev_token=dev-token-spec-1&login_customer_id=MCC_ID" \
   --source-table "campaign_report_daily" \
   --dest-uri "duckdb://./adverts.db" \
@@ -107,7 +107,7 @@ Where:
 You can ingest data from multiple Google Ads accounts in a single command by specifying comma-separated customer IDs:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "googleads://1234567890,0987654321,1122334455?credentials_path=./svc_account.json&dev_token=dev-token-spec-1" \
   --source-table "campaign_report_daily" \
   --dest-uri "duckdb://./adverts.db" \
@@ -121,7 +121,7 @@ When using multiple customer IDs, each row in the output will include a `custome
 You can override the customer IDs from the URI by appending `:customer_ids` to the table name:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "googleads://default_customer?credentials_path=./svc_account.json&dev_token=dev-token-spec-1" \
   --source-table "campaign_report_daily:1234567890,0987654321" \
   --dest-uri "duckdb://./adverts.db" \
@@ -178,9 +178,9 @@ We want to obtain the following info:
   * metrics.conversions
   * metrics.impressions
 
-To achieve this, we pass a `daily` report specification to `ingestr` source table as follows:
+To achieve this, we pass a `daily` report specification to `omniload` source table as follows:
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "googleads://12345678?credentials_path=./svc_account.json&dev_token=dev-token-spec-1" \
   --source-table "daily:ad_group_ad_asset_view:ad_group.id,campaign.id,customer.id:clicks,conversions,impressions" \
   --dest-uri "duckdb:///custom.db" \
@@ -194,7 +194,7 @@ a custom report.
 
 You can specify customer IDs directly in the custom report definition. This overrides the customer IDs from the URI:
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "googleads://default_customer?credentials_path=./svc_account.json&dev_token=dev-token-spec-1" \
   --source-table "daily:ad_group_ad_asset_view:ad_group.id,campaign.id,customer.id:clicks,conversions,impressions:1234567890,0987654321" \
   --dest-uri "duckdb:///custom.db" \
@@ -212,7 +212,7 @@ In addition to predefined tables and custom reports, you can execute raw [Google
 To run a GAQL query, use the `gaql_query:` prefix followed by your query:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "googleads://CUSTOMER_ID?credentials_path=./svc_account.json&dev_token=dev-token-spec-1&login_customer_id=MCC_ID" \
   --source-table "gaql_query:SELECT campaign.id, campaign.name, campaign.status FROM campaign LIMIT 10" \
   --dest-uri "duckdb://./adverts.db" \
@@ -221,14 +221,14 @@ ingestr ingest \
 
 ### Date Filtering with Placeholders
 
-GAQL queries support special placeholders for date filtering that integrate with ingestr's `--interval-start` and `--interval-end` parameters:
+GAQL queries support special placeholders for date filtering that integrate with omniload's `--interval-start` and `--interval-end` parameters:
 
 - `:interval_start` - Replaced with the value of `--interval-start` (defaults to `1970-01-01` if not provided)
 - `:interval_end` - Replaced with the value of `--interval-end` (defaults to today's date if not provided)
 
 **Example with date range:**
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "googleads://CUSTOMER_ID?credentials_path=./svc_account.json&dev_token=dev-token-spec-1&login_customer_id=MCC_ID" \
   --source-table "gaql_query:SELECT campaign.id, campaign.name, metrics.impressions, metrics.clicks, segments.date FROM campaign WHERE segments.date BETWEEN :interval_start AND :interval_end" \
   --dest-uri "duckdb://./adverts.db" \
@@ -263,4 +263,4 @@ ingestr ingest \
 > GAQL queries use `append` write disposition by default. Each row includes a `customer_id` field to identify which account the data came from.
 
 > [!TIP]
-> Use the [Google Ads Query Builder](https://developers.google.com/google-ads/api/fields/v18/overview_query_builder) to construct and validate your GAQL queries before using them with ingestr.
+> Use the [Google Ads Query Builder](https://developers.google.com/google-ads/api/fields/v18/overview_query_builder) to construct and validate your GAQL queries before using them with omniload.

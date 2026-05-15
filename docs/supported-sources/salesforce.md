@@ -1,7 +1,7 @@
 # Salesforce
 [Salesforce](https://www.salesforce.com/) is a cloud-based customer relationship management (CRM) platform that helps businesses manage sales, customer interactions, and business processes. It provides tools for sales automation, customer service, marketing, analytics, and application development.
 
-Ingestr supports Salesforce as a source.
+omniload supports Salesforce as a source.
 
 ## URI format
 
@@ -34,7 +34,7 @@ Let's say:
 
 You can run the following command to achieve this:
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "salesforce://?username=user&password=password123&token=fake_token&domain=your-domain.my" \
   --source-table "account" \
   --dest-uri "duckdb:///sf.db" \
@@ -64,12 +64,12 @@ Salesforce source allows ingesting the following objects into separate tables:
 |  `event`   | id | last_timestamp | merge | Used to track and manage calendar-based events, such as meetings, appointments, or calls. |
 |  `custom:<custom_object_name>`   | - | - | replace | Track and store data that’s unique to your organization. For more information about custom objects in Salesforce, read [here](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_custom_objects.htm)|
 
-Use these as `--source-table` parameters in the `ingestr ingest` command.
+Use these as `--source-table` parameters in the `omniload ingest` command.
 
  ## Examples
  Copy user_role data from Salesforce into a DuckDB database:
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "salesforce://?username=<username>&password=<password>&token=<token>&domain=<domain>" \
   --source-table "user_role" \
   --dest-uri "duckdb:///sf.db" \
@@ -78,7 +78,7 @@ ingestr ingest \
 
 Copy custom object data from Salesforce into a DuckDB database:
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "salesforce://?username=<username>&password=<password>&token=<token>&domain=<domain>" \
   --source-table "custom:My__Community_Group__c" \
   --dest-uri "duckdb:///sf.db" \

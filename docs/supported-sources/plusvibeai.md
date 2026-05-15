@@ -2,7 +2,7 @@
 
 [Plus Vibe AI](https://plusvibe.ai/) is an email marketing and outreach platform that helps businesses automate their email campaigns, manage leads, and track engagement metrics.
 
-ingestr supports Plus Vibe AI as a source.
+omniload supports Plus Vibe AI as a source.
 
 ## URI format
 
@@ -31,7 +31,7 @@ To set up a Plus Vibe AI integration, you need to:
 Once you have your API key and workspace ID, here's a sample command that will copy the data from Plus Vibe AI into a DuckDB database:
 
 ```sh
-ingestr ingest --source-uri 'plusvibeai://?api_key=your_api_key&workspace_id=your_workspace_id' --source-table 'campaigns' --dest-uri duckdb:///plusvibeai.duckdb --dest-table 'campaigns.data'
+omniload ingest --source-uri 'plusvibeai://?api_key=your_api_key&workspace_id=your_workspace_id' --source-table 'campaigns' --dest-uri duckdb:///plusvibeai.duckdb --dest-table 'campaigns.data'
 ```
 
 The result of this command will be a table in the `plusvibeai.duckdb` database with JSON columns for nested objects.
@@ -50,7 +50,7 @@ Plus Vibe AI source allows ingesting the following sources into separate tables:
 | `webhooks` | _id | modified_at | merge | Contains webhook configurations for receiving real-time notifications about campaign events and lead interactions. |
 | `tags` | _id | modified_at | merge | Contains tag information used for organizing and categorizing campaigns, leads, and other resources. |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 ## Features
 

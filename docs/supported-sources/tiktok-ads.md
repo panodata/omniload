@@ -1,7 +1,7 @@
 # TikTok Ads
 TikTok Ads is an advertising platform that enables businesses and marketers to create, manage, and analyze ad campaigns targeting TikTok's user base.
 
-Ingestr supports TikTok Ads as a Source.
+omniload supports TikTok Ads as a Source.
 
 ## URI format
 The URI format for TikTok Ads as a Source is as follows:
@@ -36,13 +36,13 @@ custom:<dimensions>:<metrics>[:<filter_name,filter_values>]
     - `filter_values`: A comma-separated list of one or more values associated with the filter name (e.g., `camp_id123,camp_id456`). Only the `IN` filter type is supported. Learn more about [filters](https://business-api.tiktok.com/portal/docs?id=1751443975608321.). 
 
 > [!NOTE]
-> Ingestr will fetch data for the last 30 days and use the default page size of `1000`. You can override this by specifying the `interval_start` and `interval_end` parameters.
+> omniload will fetch data for the last 30 days and use the default page size of `1000`. You can override this by specifying the `interval_start` and `interval_end` parameters.
 
 ### Example
 
 Retrieve data for campaigns with `campaign_ids` camp_id123 and camp_id456:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "tiktok://?access_token=token_123&advertiser_ids=0594720014,0594720015" \
     --source-table "custom:campaign_id,stat_time_day:clicks,cpc" \
     --dest-uri "duckdb:///campaigns.duckdb" \

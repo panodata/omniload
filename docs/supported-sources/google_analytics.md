@@ -1,7 +1,7 @@
 # Google Analytics
 [Google Analytics](https://marketingplatform.google.com/about/analytics/) is a service for web analytics that tracks and provides data regarding user engagement with your website or application.
 
-ingestr supports Google Analytics as a source.
+omniload supports Google Analytics as a source.
 
 ## URI format
 The URI format for Google Analytics is as follows:
@@ -45,8 +45,8 @@ custom:<dimensions>:<metrics>
  #### Example
 
 ```sh
-ingestr ingest \
-    --source-uri "googleanalytics://?credentials_path="ingestr/src/g_analytics.json&property_id=id123" \
+omniload ingest \
+    --source-uri "googleanalytics://?credentials_path="omniload/src/g_analytics.json&property_id=id123" \
     --source-table "custom:date:activeUsers" \
     --dest-uri "duckdb:///analytics.duckdb" \
     --dest-table "dest.custom"
@@ -78,8 +78,8 @@ If no minute_ranges are specified, the system defaults to retrieving data from t
 #### Example
 
 ```sh
-ingestr ingest \
-    --source-uri "googleanalytics://?credentials_path="ingestr/src/g_analytics.json&property_id=id123" \
+omniload ingest \
+    --source-uri "googleanalytics://?credentials_path="omniload/src/g_analytics.json&property_id=id123" \
     --source-table "realtime:streamId:activeUsers:0-4,10-29" \
     --dest-uri "duckdb:///analytics.duckdb" \
     --dest-table "dest.realtime"

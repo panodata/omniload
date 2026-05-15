@@ -53,7 +53,7 @@ exclude = [
 
 [tool.pytest.ini_options]
 pythonpath = "."
-testpaths = "ingestr"
+testpaths = "omniload"
 ignore = ["venv"]
 addopts = "-p no:warnings -rP"
 
@@ -101,37 +101,37 @@ exclude = [
 
 [[tool.mypy.overrides]]
 module = [
-  "ingestr.src.sql_database.*",
-  "ingestr.src.mongodb.*",
-  "ingestr.src.google_sheets.*",
-  "ingestr.src.shopify.*",
-  "ingestr.src.gorgias.*",
-  "ingestr.src.chess.*",
-  "ingestr.src.stripe_analytics.*",
-  "ingestr.src.facebook_ads.*",
-  "ingestr.src.airtable.*",
-  "ingestr.src.slack.*",
-  "ingestr.src.hubspot.*",
-  "ingestr.src.klaviyo.*",
-  "ingestr.src.adjust.*",
-  "ingestr.src.appsflyer",
-  "ingestr.src.filesystem.*",
-  "ingestr.src.zendesk.*",
-  "ingestr.src.google_analytics.*",
-  "ingestr.src.dynamodb.*",
-  "ingestr.src.asana_source.*",
-  "ingestr.src.tiktok_ads.*",
-  "ingestr.src.github.*",
-  "ingestr.src.clickhouse.*",
-  "ingestr.src.pipedrive.*",
-  "ingestr.src.linear.*",
-  "ingestr.src.zoom.*",
-  "ingestr.src.clickup.*",
-  "ingestr.src.influxdb",
-  "ingestr.src.freshdesk",
-  "ingestr.src.wise",
-  "ingestr.src.revenuecat",
-  "ingestr.src.salesforce",
+  "omniload.src.sql_database.*",
+  "omniload.src.mongodb.*",
+  "omniload.src.google_sheets.*",
+  "omniload.src.shopify.*",
+  "omniload.src.gorgias.*",
+  "omniload.src.chess.*",
+  "omniload.src.stripe_analytics.*",
+  "omniload.src.facebook_ads.*",
+  "omniload.src.airtable.*",
+  "omniload.src.slack.*",
+  "omniload.src.hubspot.*",
+  "omniload.src.klaviyo.*",
+  "omniload.src.adjust.*",
+  "omniload.src.appsflyer",
+  "omniload.src.filesystem.*",
+  "omniload.src.zendesk.*",
+  "omniload.src.google_analytics.*",
+  "omniload.src.dynamodb.*",
+  "omniload.src.asana_source.*",
+  "omniload.src.tiktok_ads.*",
+  "omniload.src.github.*",
+  "omniload.src.clickhouse.*",
+  "omniload.src.pipedrive.*",
+  "omniload.src.linear.*",
+  "omniload.src.zoom.*",
+  "omniload.src.clickup.*",
+  "omniload.src.influxdb",
+  "omniload.src.freshdesk",
+  "omniload.src.wise",
+  "omniload.src.revenuecat",
+  "omniload.src.salesforce",
 ]
 follow_imports = "skip"
 
@@ -141,11 +141,14 @@ requires = ["hatchling", "hatch-requirements-txt"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ingestr"
+name = "omniload"
 authors = [
   { name="Burak Karakan", email="burak.karakan@getbruin.com" },
 ]
-description = "ingestr is a command-line application that ingests data from various sources and stores them in any database."
+maintainers = [
+  { name="Andreas Motl", email="andreas.motl@panodata.org" },
+]
+description = "omniload is a polyglot data loader based on dlt. Copy data between any source and any destination."
 readme = "README.md"
 requires-python = ">=3.10"
 dynamic = ["dependencies", "version"]
@@ -172,20 +175,20 @@ ibm-db = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/bruin-data/ingestr"
-Issues = "https://github.com/bruin-data/ingestr/issues"
+Homepage = "https://github.com/panodata/omniload"
+Issues = "https://github.com/panodata/omniload/issues"
 
 [tool.hatch.version]
 source = "code"
-path = "ingestr/src/version.py"
+path = "omniload/src/version.py"
 expression = "__version__"
 search-paths = ["."]
 
 [tool.hatch.build.targets.wheel]
-packages = ["ingestr"]
+packages = ["omniload"]
 
 [project.scripts]
-ingestr = "ingestr.main:main"
+omniload = "omniload.main:main"
 
 [tool.hatch.build.targets.sdist]
 exclude = [

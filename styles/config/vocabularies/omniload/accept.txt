@@ -1,5 +1,5 @@
 CrateDB
-ingestr
+omniload
 URIs
 PostgreSQL
 Postgres

@@ -1,21 +1,21 @@
 # Load Data from Stripe to PostgreSQL
 
-Welcome! 👋 This beginner-friendly guide will help you load data from `Stripe` into `PostgreSQL` using ingestr — a simple yet powerful command-line tool. No prior experience is needed, and best of all, no coding required! 🚀
+Welcome! 👋 This beginner-friendly guide will help you load data from `Stripe` into `PostgreSQL` using omniload — a simple yet powerful command-line tool. No prior experience is needed, and best of all, no coding required! 🚀
 
-By the end of this guide, you'll have your Stripe data securely stored in PostgreSQL. But before we dive in, let’s take a quick look at ingestr.
+By the end of this guide, you'll have your Stripe data securely stored in PostgreSQL. But before we dive in, let’s take a quick look at omniload.
 
-## Overview of `ingestr`
-`ingestr` is a command-line tool that simplifies data ingestion by allowing users to load data from a source to a destination.
+## Overview of `omniload`
+`omniload` is a command-line tool that simplifies data ingestion by allowing users to load data from a source to a destination.
 
-### `ingestr` Command
+### `omniload` Command
 ```bash
-ingestr ingest \
+omniload ingest \
    --source-uri '<your-source-uri-here>' \
    --source-table '<your-schema>.<your-table>' \
    --dest-uri '<your-destination-uri-here>' \
    --dest-table '<your-schema>.<your-table>'
 ```
-- `ingestr ingest`: Executes the data ingestion process.
+- `omniload ingest`: Executes the data ingestion process.
 - `--source-uri TEXT`: Defines the source database URI.
 - `--dest-uri TEXT`: Defines the destination database URI.
 - `--source-table TEXT`: Specifies the table to fetch data from.
@@ -27,11 +27,11 @@ With this command, we connect to the source, retrieve the specified data, and lo
 
 Stripe is a popular payment processing platform used by e-commerce and SaaS applications. If you need to analyze Stripe data, you can load it into PostgreSQL, a reliable and widely used relational database.
 
-## Step 1: Install `ingestr`
-Ensure `ingestr` is installed on your system. If not, follow the installation guide [here](../getting-started/quickstart.md#Installation).
+## Step 1: Install `omniload`
+Ensure `omniload` is installed on your system. If not, follow the installation guide [here](../getting-started/quickstart.md#Installation).
 
 ```bash
-pip install ingestr
+pip install omniload
 ```
 
 ## Step 2: Retrieve Stripe API Credentials
@@ -55,11 +55,11 @@ In this example, we are using a **cloud-hosted PostgreSQL instance**.
    - **Username & Password**: Credentials used to connect to PostgreSQL.
    - **sslmode**: Required depending on the security settings of your PostgreSQL instance
 
-## Step 4: Run the `ingestr` Command
+## Step 4: Run the `omniload` Command
 Execute the following command to load data from **Stripe to PostgreSQL**:
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri 'stripe://?api_key=<YOUR_STRIPE_SECRET_KEY>' \
     --source-table 'event' \
     --dest-uri 'postgresql://<username>:<password>@<host>:<port>/<database-name>?sslmode=<sslmode>' \

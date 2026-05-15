@@ -1,7 +1,7 @@
 # GCP Spanner
 [GCP Spanner](https://cloud.google.com/spanner) is a fully managed, scalable, and strongly consistent database service.
 
-ingestr supports GCP Spanner as a source.
+omniload supports GCP Spanner as a source.
 
 ## URI format
 The URI format for Spanner is as follows:
@@ -25,7 +25,7 @@ URI parameters:
 Let's say we have the above credentials. Here's a sample command that will copy the data from Spanner (GoogleSQL) to DuckDB.
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'spanner://?project_id=id_123&instance_id=instance_123&database=db_123&credentials_path=./service_account.json' \
   --source-table 'users' \
   --dest-uri duckdb:///spanner.duckdb \

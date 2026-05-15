@@ -1,6 +1,6 @@
 # Data Masking
 
-Data masking is a critical security feature that allows you to protect sensitive information while maintaining data utility for development, testing, and analytics purposes. ingestr provides comprehensive masking capabilities that can be applied to any column during the ingestion process.
+Data masking is a critical security feature that allows you to protect sensitive information while maintaining data utility for development, testing, and analytics purposes. omniload provides comprehensive masking capabilities that can be applied to any column during the ingestion process.
 
 ## Overview
 
@@ -16,7 +16,7 @@ Data masking transforms sensitive data into a protected format while preserving 
 Apply masking to specific columns using the `--mask` parameter:
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "postgres://user:pass@localhost/db" \
   --source-table "users" \
   --dest-uri "duckdb:///masked_data.db" \
@@ -264,7 +264,7 @@ Keeps only month and year.
 ### GDPR Compliance for Development Environment
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "postgres://prod_user:pass@prod.db/customers" \
   --source-table "customer_data" \
   --dest-uri "postgres://dev_user:pass@dev.db/customers" \
@@ -280,7 +280,7 @@ ingestr ingest \
 ### Healthcare Data for Analytics
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "mysql://user:pass@hospital.db/patients" \
   --source-table "patient_records" \
   --dest-uri "bigquery://project/dataset" \
@@ -295,7 +295,7 @@ ingestr ingest \
 ### Financial Data for Testing
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "snowflake://account/database/schema" \
   --source-table "transactions" \
   --dest-uri "duckdb:///test_data.db" \
@@ -309,7 +309,7 @@ ingestr ingest \
 ### E-commerce Data Sharing
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "postgres://internal.db/ecommerce" \
   --source-table "orders" \
   --dest-uri "s3://partner-bucket/data.parquet" \
@@ -364,7 +364,7 @@ ingestr ingest \
 You can also set masking configurations via environment variables:
 
 ```bash
-export INGESTR_MASK="email:hash,phone:partial:3,ssn:redact"
+export OMNILOAD_MASK="email:hash,phone:partial:3,ssn:redact"
 ```
 
 Multiple masks should be comma-separated when using environment variables.

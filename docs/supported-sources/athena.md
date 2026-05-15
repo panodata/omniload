@@ -3,7 +3,7 @@
 
 The Athena destination stores data as Parquet files in S3 buckets and creates external tables in AWS Glue Catalog.
 
-ingestr supports Athena as a destination.
+omniload supports Athena as a destination.
 
 ## URI format
 The URI format for Athena is as follows:
@@ -26,12 +26,12 @@ You have two ways of providing credentials:
 1. Provide `access_key_id` and `secret_access_key` directly in the URI.
 2. Provide the name of the AWS profile to use in the `profile` parameter.
 
-If there's no access key and secret key provided, ingestr will try to find the credentials in the local AWS credentials file.
+If there's no access key and secret key provided, omniload will try to find the credentials in the local AWS credentials file.
 
 ## Setting up an Athena Integration
 Athena requires a `bucket`, `access_key_id`, `secret_access_key` and `region_name` to access the S3 bucket. Please follow the guide on dltHub to obtain [credentials](https://dlthub.com/docs/dlt-ecosystem/destinations/athena#2-setup-bucket-storage-and-athena-credentials). Once you've completed the guide, you should have all the above-mentioned credentials.
 ```
-ingestr ingest \
+omniload ingest \
   --source-uri "stripe://?api_key=key123" \
   --source-table 'event' \
   --dest-uri "athena://?bucket=bucket_123&access_key_id=access_123&secret_access_key=secret_123&region_name=eu-central-1" \

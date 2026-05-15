@@ -2,7 +2,7 @@
 
 [Freshdesk](https://www.freshworks.com/freshdesk/) is a cloud-based customer service platform that helps businesses manages customer support via multiple channels including email,phone,websites, and social media.
 
-ingestr supports Freshdesk as a source.
+omniload supports Freshdesk as a source.
 
 ## URI format
 
@@ -26,7 +26,7 @@ After completing the guide,, you will have your  `api_key` and `domain`. For exa
 `test_key` and domain `my_company`, you can use the following command to copy data from Freshdesk into a DuckDB database:
 
 ```sh
-ingestr ingest --source-uri 'freshdesk://$DOMAIN?api_key=$API_KEY' --source-table 'contacts' --dest-uri duckdb:///freshdesk.duckdb --dest-table 'dest.contacts'
+omniload ingest --source-uri 'freshdesk://$DOMAIN?api_key=$API_KEY' --source-table 'contacts' --dest-uri duckdb:///freshdesk.duckdb --dest-table 'dest.contacts'
 ```
 This command copies data from the Freshdesk source to DuckDB.
 
@@ -46,4 +46,4 @@ The Freshdesk source allows you to ingest the following tables:
 | [tickets](https://developers.freshdesk.com/api/#tickets)      | id | updated_at     | merge               | Retrieves customer inquiries or issues submitted via various channels like email, chat, phone, etc.
 | [tickets:&lt;query&gt;](https://developers.freshdesk.com/api/#filter_tickets) | id | updated_at | merge | Executes the [Freshdesk ticket filter query](https://developers.freshdesk.com/api/#filter_tickets) while preserving incremental sync. Maximum results: 300 tickets. |
 
-Use these as the `--source-table` parameter in the `ingestr ingest` command.
+Use these as the `--source-table` parameter in the `omniload ingest` command.

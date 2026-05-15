@@ -2,7 +2,7 @@
 
 Facebook Ads is the advertising platform that helps users to create targeted ads on Facebook, Instagram and Messenger.
 
-ingestr supports Facebook Ads as a source using [Facebook Marketing API](https://developers.facebook.com/docs/marketing-api/).
+omniload supports Facebook Ads as a source using [Facebook Marketing API](https://developers.facebook.com/docs/marketing-api/).
 
 ## URI format
 
@@ -26,7 +26,7 @@ Facebook Ads requires a few steps to set up an integration, please follow the gu
 Once you complete the guide, you should have an access token and an Account ID. Let's say your `access_token` is `abcdef` and `account_id` is `1234`, here's a sample command that will copy the data from Facebook Ads into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=easdyh&account_id=1234' \
   --source-table 'campaigns' \
   --dest-uri 'duckdb:///facebook.duckdb' \
@@ -49,7 +49,7 @@ Facebook Ads source allows ingesting the following sources into separate tables:
 | `facebook_insights`   | date_start | date_start     | merge  | Retrieves insights data (requires account_id in URI) |
 | `facebook_insights_with_account_ids:account_id1,account_id2`   | date_start | date_start     | merge  | Retrieves insights data for multiple accounts |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 ### Account ID in Table Name
 
@@ -57,14 +57,14 @@ For `campaigns`, `ad_sets`, `ads`, `ad_creatives`, and `leads`, you can specify 
 
 ```sh
 # Single account in table name
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=your_token' \
   --source-table 'campaigns:1234567890' \
   --dest-uri 'duckdb:///facebook.duckdb' \
   --dest-table 'dest.campaigns'
 
 # Multiple accounts in table name
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=your_token' \
   --source-table 'campaigns:1234567890,9876543210' \
   --dest-uri 'duckdb:///facebook.duckdb' \
@@ -139,63 +139,63 @@ When using **custom dimensions** (not predefined breakdowns), you can use any va
 
 ```sh
 # Predefined breakdown: Basic insights without breakdowns
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=easdyh&account_id=1234' \
   --source-table 'facebook_insights:ads_insights' \
   --dest-uri 'duckdb:///facebook.duckdb' \
   --dest-table 'dest.insights_basic'
 
 # Predefined breakdown: Age and gender with default fields
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=easdyh&account_id=1234' \
   --source-table 'facebook_insights:ads_insights_age_and_gender' \
   --dest-uri 'duckdb:///facebook.duckdb' \
   --dest-table 'dest.insights_demographics'
 
 # Predefined breakdown: Country with custom fields
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=easdyh&account_id=1234' \
   --source-table 'facebook_insights:ads_insights_country:campaign_id,adset_id,ad_id,impressions,clicks,spend,reach,cpm,ctr' \
   --dest-uri 'duckdb:///facebook.duckdb' \
   --dest-table 'dest.insights_by_country'
 
 # Predefined breakdown: Platform and device with default fields
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=easdyh&account_id=1234' \
   --source-table 'facebook_insights:ads_insights_platform_and_device' \
   --dest-uri 'duckdb:///facebook.duckdb' \
   --dest-table 'dest.insights_platform_device'
 
 # Custom dimensions: Age and gender with custom fields (fields required)
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=easdyh&account_id=1234' \
   --source-table 'facebook_insights:age,gender:campaign_id,adset_id,ad_id,impressions,clicks,spend' \
   --dest-uri 'duckdb:///facebook.duckdb' \
   --dest-table 'dest.insights_custom_dimensions'
 
 # Campaign level with custom dimensions and fields
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=easdyh&account_id=1234' \
   --source-table 'facebook_insights:campaign,age,gender:campaign_id,adset_id,ad_id,impressions,clicks,spend,reach' \
   --dest-uri 'duckdb:///facebook.duckdb' \
   --dest-table 'dest.campaign_insights_demographics'
 
 # Ad level with geographic dimensions
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=easdyh&account_id=1234' \
   --source-table 'facebook_insights:ad,country,age:campaign_id,adset_id,ad_id,clicks,impressions,spend' \
   --dest-uri 'duckdb:///facebook.duckdb' \
   --dest-table 'dest.ad_insights_geographic'
 
 # Account level insights only (no additional dimensions, fields required)
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=easdyh&account_id=1234' \
   --source-table 'facebook_insights:account:campaign_id,adset_id,ad_id,impressions,clicks,spend,reach' \
   --dest-uri 'duckdb:///facebook.duckdb' \
   --dest-table 'dest.account_level_insights'
 
 # Adset level with single dimension
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=easdyh&account_id=1234' \
   --source-table 'facebook_insights:adset,gender:campaign_id,adset_id,ad_id,spend' \
   --dest-uri 'duckdb:///facebook.duckdb' \
@@ -218,7 +218,7 @@ facebook_insights_with_account_ids:account_id1,account_id2:breakdown_type:field1
 
 ```sh
 # Basic insights from multiple accounts
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=your_token' \
   --source-table 'facebook_insights_with_account_ids:1234567890,9876543210' \
   --dest-uri 'duckdb:///facebook.duckdb' \
@@ -227,7 +227,7 @@ ingestr ingest \
   --interval-end 2024-12-31
 
 # Multiple accounts with predefined breakdown
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=your_token' \
   --source-table 'facebook_insights_with_account_ids:1234567890,9876543210:ads_insights_age_and_gender' \
   --dest-uri 'duckdb:///facebook.duckdb' \
@@ -236,7 +236,7 @@ ingestr ingest \
   --interval-end 2024-12-31
 
 # Multiple accounts with breakdown and custom fields
-ingestr ingest \
+omniload ingest \
   --source-uri 'facebookads://?access_token=your_token' \
   --source-table 'facebook_insights_with_account_ids:1234567890,9876543210:ads_insights_country:impressions,clicks,spend' \
   --dest-uri 'duckdb:///facebook.duckdb' \

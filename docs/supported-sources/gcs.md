@@ -2,7 +2,7 @@
 
 [Google Cloud Storage](https://cloud.google.com/storage?hl=en) is an online file storage web service for storing and accessing data on Google Cloud Platform infrastructure. The service combines the performance and scalability of Google's cloud with advanced security and sharing capabilities. It is an Infrastructure as a Service (IaaS), comparable to Amazon S3.
 
-`ingestr` supports Google Cloud Storage as both a data source and destination.
+`omniload` supports Google Cloud Storage as both a data source and destination.
 
 ## URI format
 
@@ -25,7 +25,7 @@ The `--source-table` must be in the format:
 
 ## Setting up a GCS Integration
 
-To use Google Cloud Storage source in `ingestr`, you will need:
+To use Google Cloud Storage source in `omniload`, you will need:
 * A Google Cloud Project.
 * A Service Account with at least [roles/storage.objectUser](https://cloud.google.com/storage/docs/access-control/iam-roles) IAM permission for reading, or [roles/storage.objectAdmin](https://cloud.google.com/storage/docs/access-control/iam-roles) for writing to GCS.
 * A Service Account key file for the corresponding service account.
@@ -44,7 +44,7 @@ Let's assume that:
 You can run the following command line to achieve this:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "gs://?credentials_path=$PWD/service_account.json" \
     --source-table "my-org-bucket/data/latest/dump.csv" \
     --dest-uri "duckdb:///local.db" \
@@ -60,7 +60,7 @@ For this example, we'll assume that:
 
 The following command demonstrates how to copy data from a local DuckDB database to GCS:
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'duckdb:///records.db' \
     --source-table 'public.users' \
     --dest-uri "gs://?credentials_path=$PWD/service_account.json" \
@@ -83,7 +83,7 @@ The value of `load_id` and `file_id` is determined at runtime. The default layou
 For example, if you would like to create a parquet file with the same name as the source table (as opposed to a folder) you can set `layout` to `{table_name}.{ext}` in the command line above:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'duckdb:///records.db' \
     --source-table 'public.users' \
     --dest-uri "gs://?layout={table_name}.{ext}&credentials_path=$PWD/service_account.json" \
@@ -113,7 +113,7 @@ List of available Layout variables is available [here](https://dlthub.com/docs/d
 When writing to GCS, only `parquet` is supported.
 :::
 ## File Pattern
-`ingestr` supports [glob](https://en.wikipedia.org/wiki/Glob_(programming)) like pattern matching for `gs` source.
+`omniload` supports [glob](https://en.wikipedia.org/wiki/Glob_(programming)) like pattern matching for `gs` source.
 This allows for a powerful pattern matching mechanism that allows you to specify multiple files in a single `--source-table`.
 
 Below are some examples of path patterns, each path pattern is glob you can specify after the bucket name:
@@ -126,12 +126,12 @@ Below are some examples of path patterns, each path pattern is glob you can spec
 
 ### Working with compressed files
 
-`ingestr` automatically detects and handles gzipped files in your GCS bucket. You can load data from compressed files with the `.gz` extension without any additional configuration.
+`omniload` automatically detects and handles gzipped files in your GCS bucket. You can load data from compressed files with the `.gz` extension without any additional configuration.
 
 For example, to load data from a gzipped CSV file:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "gs://?credentials_path=$PWD/service_account.json" \
     --source-table "my-org-bucket/logs/event-data.csv.gz" \
     --dest-uri "duckdb:///compressed_data.duckdb" \
@@ -141,7 +141,7 @@ ingestr ingest \
 You can also use glob patterns to load multiple compressed files:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "gs://?credentials_path=$PWD/service_account.json" \
     --source-table "my-org-bucket/logs/**/*.csv.gz" \
     --dest-uri "duckdb:///compressed_data.duckdb" \
@@ -150,7 +150,7 @@ ingestr ingest \
 
 ### File type hinting
 
-If your files are properly encoded but lack the correct file extension (CSV, JSONL, or Parquet), you can provide a file type hint to inform `ingestr` about the format of the files. This is done by appending a fragment identifier (`#format`) to the end of the path in your `--source-table` parameter.
+If your files are properly encoded but lack the correct file extension (CSV, JSONL, or Parquet), you can provide a file type hint to inform `omniload` about the format of the files. This is done by appending a fragment identifier (`#format`) to the end of the path in your `--source-table` parameter.
 
 For example, if you have JSONL-formatted log files stored in GCS with a non-standard extension:
 
@@ -158,7 +158,7 @@ For example, if you have JSONL-formatted log files stored in GCS with a non-stan
 --source-table "my-org-bucket/logs/event-data#jsonl"
 ```
 
-This tells `ingestr` to process the files as JSONL, regardless of their actual extension.
+This tells `omniload` to process the files as JSONL, regardless of their actual extension.
 
 Supported format hints include:
 - `#csv` - For comma-separated values files with headers
@@ -176,7 +176,7 @@ For CSV files that don't have a header row, use the `#csv_headless` format hint.
 
 ```sh
 # With custom column names
-ingestr ingest \
+omniload ingest \
     --source-uri "gs://?credentials_path=$PWD/service_account.json" \
     --source-table "my-org-bucket/data/raw-data.csv#csv_headless" \
     --columns "id:bigint,name:text,value:double" \
@@ -188,7 +188,7 @@ If no column names are provided, columns will be automatically named `unknown_co
 
 ```sh
 # Without column names (auto-generated)
-ingestr ingest \
+omniload ingest \
     --source-uri "gs://?credentials_path=$PWD/service_account.json" \
     --source-table "my-org-bucket/data/raw-data.csv#csv_headless" \
     --dest-uri "duckdb:///local.db" \

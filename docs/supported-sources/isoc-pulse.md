@@ -2,7 +2,7 @@
 
 [Internet Society Pulse](https://pulse.internetsociety.org/) is a platform that monitors the health, availability, and evolution of the Internet, providing metrics on key technologies that contribute to its security, resilience, and trustworthiness.
 
-ingestr supports Internet Society Pulse as a source.
+omniload supports Internet Society Pulse as a source.
 
 ## URI format
 
@@ -22,7 +22,7 @@ To use the Internet Society Pulse source, you need to obtain an API token from t
 Once you have the token, you can access various metrics from the Pulse platform. Here's a sample command that will copy data from the ISOC Pulse API into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'isoc-pulse://?token=your_token_here' \
   --source-table 'https' \
   --dest-uri 'duckdb:///pulse_data.duckdb' \
@@ -54,7 +54,7 @@ Internet Society Pulse source allows ingesting the following metrics as separate
 | `tls13` | TLS 1.3 protocol metrics | No | None | date | date | merge |
 
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 ## Parameter Syntax
 
@@ -116,7 +116,7 @@ Where the options and parameters vary by metric type.
 ### Country-specific HTTPS Adoption
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'isoc-pulse://?token=your_token_here' \
   --source-table 'https::US' \
   --dest-uri 'duckdb:///pulse_data.duckdb' \
@@ -127,7 +127,7 @@ ingestr ingest \
 ### IPv6 Top Sites Data
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'isoc-pulse://?token=your_token_here' \
   --source-table 'ipv6:topsites' \
   --dest-uri 'duckdb:///pulse_data.duckdb' \
@@ -138,7 +138,7 @@ ingestr ingest \
 ### ROA IPv4 Data by Country
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'isoc-pulse://?token=your_token_here' \
   --source-table 'roa:4:US' \
   --dest-uri 'duckdb:///pulse_data.duckdb' \

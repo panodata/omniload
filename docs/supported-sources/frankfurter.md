@@ -2,7 +2,7 @@
 
 [Frankfurter API](https://www.frankfurter.dev/) is an online platform which fetches current and historical exchnge rate data.
 
-ingestr supports Frankfurter as a source primarily to demonstrate ingestr's features since the API doesn't require any authentication. 
+omniload supports Frankfurter as a source primarily to demonstrate omniload's features since the API doesn't require any authentication. 
 
 ## URI format
 
@@ -21,7 +21,7 @@ URI parameters:
 Let's say you want to fetch the exchange rates for a certain period with the base currency as Indian Rupees. Here's a sample command that will copy this data into your DuckDB database:
 
 ```bash
-ingestr ingest \
+omniload ingest \
 --source-uri 'frankfurter://?base=INR' \
 --interval-start '2025-03-20' \ 
 --interval-end '2025-03-28' \       
@@ -42,11 +42,11 @@ Frankfurter source allows ingesting the following sources into separate tables:
 | [latest](https://www.frankfurter.dev/docs/#latest)    | ["date", "currency_code", "base_currency"] | –                | merge               | Fetches latest exchange rates for all currencies. |
 | [exchange_rates](https://www.frankfurter.dev/docs/#historical) | ["date", "currency_code", "base_currency"] | date    | merge               | Retrieves historical exchange rates for specified date range.|
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 
 
 **Notes**:
 - The arguments `--interval-start` and `--interval-end` are only relevant for the table exchange_rates.
-- If a start date but no end date is specified, then the end date will default to today's date and ingestr will retrieve data up until the latest published data.
+- If a start date but no end date is specified, then the end date will default to today's date and omniload will retrieve data up until the latest published data.
 - Note that the [Frankfurter API](https://www.frankfurter.dev/) only publishes updates Monday-Friday. If the given date is on the weekend, the date will default to the previous Friday.
 

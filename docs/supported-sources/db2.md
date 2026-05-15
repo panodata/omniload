@@ -1,14 +1,14 @@
 # IBM Db2
 [IBM Db2](https://www.ibm.com/db2) is a high-performance, enterprise-grade relational database system designed for reliability, scalability, and transactional integrity.
 
-ingestr supports IBM Db2 as a source.
+omniload supports IBM Db2 as a source.
 
 ## Installation
 
-To use IBM Db2 with ingestr, you need to install the `ibm-db` add-on as well. You can do this by running:
+To use IBM Db2 with omniload, you need to install the `ibm-db` add-on as well. You can do this by running:
 
 ```bash
-pip install ingestr[ibm-db]
+pip install omniload[ibm-db]
 ```
 
 ## URI format

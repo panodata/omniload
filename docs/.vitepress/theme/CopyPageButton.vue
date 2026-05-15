@@ -11,7 +11,7 @@ const cachedMarkdown = ref('')
 // Get the current page's markdown URL
 const markdownUrl = computed(() => {
   const relativePath = page.value.relativePath
-  return `https://raw.githubusercontent.com/bruin-data/ingestr/main/docs/${relativePath}`
+  return `https://raw.githubusercontent.com/panodata/omniload/main/docs/${relativePath}`
 })
 
 // Pre-fetch markdown when page loads or changes

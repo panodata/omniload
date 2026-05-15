@@ -188,7 +188,7 @@ The `workspace_members` table contains workspace membership information.
 Load all Claude Code usage data to a DuckDB database:
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri "anthropic://?api_key=sk-ant-admin-..." \
     --source-table "claude_code_usage" \
     --dest-uri "duckdb:///anthropic_data.db" \
@@ -200,7 +200,7 @@ ingestr ingest \
 Load data incrementally starting from a specific date:
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri "anthropic://?api_key=sk-ant-admin-..." \
     --source-table "claude_code_usage" \
     --dest-uri "postgresql://user:password@localhost:5432/analytics" \
@@ -212,7 +212,7 @@ ingestr ingest \
 ### Load to BigQuery
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri "anthropic://?api_key=sk-ant-admin-..." \
     --source-table "claude_code_usage" \
     --dest-uri "bigquery://project-id.dataset" \
@@ -222,7 +222,7 @@ ingestr ingest \
 ### Load Organization Data
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri "anthropic://?api_key=sk-ant-admin-..." \
     --source-table "organization" \
     --dest-uri "duckdb:///anthropic_data.db" \
@@ -232,7 +232,7 @@ ingestr ingest \
 ### Load Usage Report
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri "anthropic://?api_key=sk-ant-admin-..." \
     --source-table "usage_report" \
     --dest-uri "postgresql://user:password@localhost:5432/analytics" \
@@ -244,7 +244,7 @@ ingestr ingest \
 ### Load Cost Report
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri "anthropic://?api_key=sk-ant-admin-..." \
     --source-table "cost_report" \
     --dest-uri "duckdb:///costs.db" \
@@ -255,21 +255,21 @@ ingestr ingest \
 
 ```bash
 # Load users
-ingestr ingest \
+omniload ingest \
     --source-uri "anthropic://?api_key=sk-ant-admin-..." \
     --source-table "users" \
     --dest-uri "duckdb:///org_data.db" \
     --dest-table "users"
 
 # Load workspaces
-ingestr ingest \
+omniload ingest \
     --source-uri "anthropic://?api_key=sk-ant-admin-..." \
     --source-table "workspaces" \
     --dest-uri "duckdb:///org_data.db" \
     --dest-table "workspaces"
 
 # Load workspace members
-ingestr ingest \
+omniload ingest \
     --source-uri "anthropic://?api_key=sk-ant-admin-..." \
     --source-table "workspace_members" \
     --dest-uri "duckdb:///org_data.db" \
@@ -353,4 +353,4 @@ The Anthropic Admin API has rate limits in place. The source handles pagination 
 | `users` | ❌ | id | User list |
 | `workspace_members` | ❌ | workspace_id, user_id | Workspace memberships |
 
-For feature requests or issues, please create a GitHub issue at https://github.com/bruin-data/ingestr
+For feature requests or issues, please create a GitHub issue at https://github.com/panodata/omniload

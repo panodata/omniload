@@ -2,9 +2,9 @@
 
 [Zendesk](https://www.zendesk.com/) is a cloud-based customer service and support platform. It offers a range of features including ticket management, self-service options, knowledge-base management, live chat, customer analytics, and conversations.
 
-ingestr supports Zendesk as a source.
+omniload supports Zendesk as a source.
 
-The Zendesk supports two authentication methods when connecting through ingestr:
+The Zendesk supports two authentication methods when connecting through omniload:
 - OAuth Token 
 - API Token
 
@@ -36,7 +36,7 @@ Zendesk requires a few steps to set up an integration, please follow the guide d
 Once you complete the guide, if you decide to use an OAuth token, you should have a subdomain and an OAuth token. Let’s say your subdomain is `mycompany` and your OAuth token is `qVsbdiasVt`.
 
 ```sh
-ingestr ingest --source-uri "zendesk://:qVsbdiasVt@mycompany" \
+omniload ingest --source-uri "zendesk://:qVsbdiasVt@mycompany" \
 --source-table 'tickets' \
 --dest-uri 'duckdb:///zendesk.duckdb' \
 --dest-table 'dest.tickets' \
@@ -46,7 +46,7 @@ ingestr ingest --source-uri "zendesk://:qVsbdiasVt@mycompany" \
 If you decide to use an API Token, you should have a subdomain, email, and API token. Let’s say your subdomain is `mycompany`, your email is `john@get.com`, and your API token is `nbs123`.
 
 ```sh
-ingestr ingest --source-uri "zendesk://john@get.com:nbs123@mycompany" \
+omniload ingest --source-uri "zendesk://john@get.com:nbs123@mycompany" \
 --source-table 'tickets' \
 --dest-uri 'duckdb:///zendesk.duckdb' \
 --dest-table 'dest.tickets' \
@@ -84,4 +84,4 @@ Zendesk source allows ingesting the following sources into separate tables:
 | [legs_incremental](https://developer.zendesk.com/api-reference/voice/talk-api/incremental_exports/#incremental-call-legs-export) | id | updated_at | merge               | Retrieves detailed information about each agent involved in a call. |
 | [chats](https://developer.zendesk.com/api-reference/live-chat/chat-api/incremental_export/)  | id | update_timestamp/ updated_timestamp | merge  | Retrieves available chats. |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.

@@ -2,7 +2,7 @@
 
 [Solidgate](https://solidgate.com//) is a one-stop payment processing platform that ensures seamless online purchases and streamlined payment infrastructure.
 
-ingestr supports Solidgate as a source.
+omniload supports Solidgate as a source.
 
 ## URI format
 
@@ -26,7 +26,7 @@ Solidgate requires a few steps to set up an integration. Please follow the [guid
 Once you complete the guide, you should have `public_key` and `secret_key`, here’s a sample command that ingests data from Solidgate into a DuckDB database:
 
 ```sh
-ingestr ingestr ingest \
+omniload omniload ingest \
 --source-uri "solidgate://?public_key=api_pk_test&secret_key=api_sk_test" \
 --source-table "apm-orders" \
 --dest-uri "duckdb:///solidgate.db" \
@@ -46,5 +46,5 @@ Solidgate source allows ingesting the following sources into separate tables:
 | [card_orders](https://api-docs.solidgate.com/#tag/Reports/operation/retrieve-card-orders) | order_id | updated_at | merge | Provides detailed information on orders processed via card payments, including transaction data, payment status, and customer details |
 | [financial_entries](https://docs.solidgate.com/) | id | created_at | merge | Provides a detailed transaction-level breakdown of financial records |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.
 

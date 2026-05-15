@@ -1,7 +1,7 @@
 # Shopify
 [Shopify](https://www.shopify.com/) is a comprehensive e-commerce platform that enables individuals and businesses to create online stores.
 
-ingestr supports Shopify as a source.
+omniload supports Shopify as a source.
 
 ## URI format
 The URI format for Shopify is as follows:
@@ -36,7 +36,7 @@ Once you complete these steps, you will have the API key and your store name (e.
 
 ```sh
 SHOPIFY_API_KEY=your_api_key \
-ingestr ingest --source-uri "shopify://my-store.myshopify.com?api_key=${SHOPIFY_API_KEY}" --source-table "orders" --dest-uri "duckdb:///shopify.duckdb" --dest-table "dest.orders"
+omniload ingest --source-uri "shopify://my-store.myshopify.com?api_key=${SHOPIFY_API_KEY}" --source-table "orders" --dest-uri "duckdb:///shopify.duckdb" --dest-table "dest.orders"
 ```
 
 The result of this command will be a table in the `shopify.duckdb` database with JSON columns.
@@ -55,4 +55,4 @@ Shopify source allows ingesting the following sources into separate tables:
 | [events](https://shopify.dev/api/admin-rest/2023-10/resources/event) | id | created_at | merge | Retrieves Shopify event data for audit trails and activity tracking |
 | [price_rules](https://shopify.dev/api/admin-rest/2023-10/resources/pricerule) | id | updated_at | merge | **DEPRECATED** - Use `discounts` table instead |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.

@@ -2,7 +2,7 @@
 
 [Primer](https://primer.io/) is a unified payment infrastructure that enables businesses to connect, manage, and optimize their entire payment stack through a single integration.
 
-ingestr supports Primer as a source.
+omniload supports Primer as a source.
 
 ## URI format
 
@@ -25,7 +25,7 @@ Primer requires an API key to access the API. You can obtain your API key from t
 Once you have your API key, here's a sample command that will copy the data from Primer into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "primer://?api_key=your_api_key_here" \
   --source-table "payments" \
   --dest-uri "duckdb:///primer.duckdb" \
@@ -39,7 +39,7 @@ The result of this command will be a table in the `primer.duckdb` database.
 Primer source supports incremental loading using date ranges. You can specify `--interval-start` and `--interval-end` parameters to filter payments by date:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri "primer://?api_key=your_api_key_here" \
   --source-table "payments" \
   --dest-uri "duckdb:///primer.duckdb" \
@@ -56,4 +56,4 @@ Primer source allows ingesting the following sources into separate tables:
 |-------|---------|
 | `payments` | Contains detailed payment information including payment IDs, statuses, amounts, and transaction metadata |
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.

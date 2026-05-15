@@ -2,7 +2,7 @@
 
 SFTP (SSH File Transfer Protocol) is a secure file transfer protocol that runs over the SSH protocol. It provides a secure way to transfer files between a local and a remote computer.
 
-`ingestr` supports SFTP as a data source.
+`omniload` supports SFTP as a data source.
 
 ## URI Format
 
@@ -20,14 +20,14 @@ sftp://<username>:<password>@<host>:<port>
 
 ## Setting up an SFTP Integration
 
-To integrate `ingestr` with an SFTP server, you need the server's hostname, port, a valid username, and a password.
+To integrate `omniload` with an SFTP server, you need the server's hostname, port, a valid username, and a password.
 
 Once you have your credentials, you can load data to desired destaination.
 
 ### Example: Loading data from SFTP TO DUCKDB
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'sftp://myuser:MySecretPassword123@sftp.example.com' \
     --source-table 'user.csv' \
     --dest-uri duckdb:///sftp_data.duckdb \
@@ -37,7 +37,7 @@ ingestr ingest \
 <img alt="sftp" src="../media/sftp.png"/>
 
 
-The `--source-table` specifies `/path/to/directory` The base directory on the server where `ingestr` should start looking for files.
+The `--source-table` specifies `/path/to/directory` The base directory on the server where `omniload` should start looking for files.
 
 
 

@@ -1,7 +1,7 @@
 # Applovin
 [AppLovin](https://www.applovin.com/) Corporation is an American mobile technology company headquartered in Palo Alto, California. AppLovin enables developers of all sizes to market, monetize, analyze and publish their apps through its mobile advertising, marketing, and analytics platforms MAX, AppDiscovery, and SparkLabs.
 
-`ingestr` allows ingesting data from [AppDiscovery reporting API](https://developers.applovin.com/en/app-discovery/api/reporting-api/)
+`omniload` allows ingesting data from [AppDiscovery reporting API](https://developers.applovin.com/en/app-discovery/api/reporting-api/)
 
 ## URI Format
 
@@ -23,10 +23,10 @@ You can generate a report key from your [analytics dashboard](https://www.applov
 For this example, we'll assume that:
 * `api_key` is `api_key_0`
 
-We will run `ingestr` to save this data to a [duckdb](https://duckdb.org/) database called `report.db` under the table name `public.publisher_report`.
+We will run `omniload` to save this data to a [duckdb](https://duckdb.org/) database called `report.db` under the table name `public.publisher_report`.
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "applovin://?api_key=api_key_0
     --source-table "publisher-report" \
     --dest-uri "duckdb:///report.db"  \
@@ -40,7 +40,7 @@ We will extend the [Loading Publisher Report](#example-loading-publisher-report)
 First, we run the example with a start date of `2025-01-01` and an end date of `2025-01-05`
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "applovin://?api_key=api_key_0
     --source-table "publisher-report" \
     --dest-uri "duckdb:///report.db"  \
@@ -64,10 +64,10 @@ $ duckdb report.db 'select day from public.publisher_report group by 1'
 │ 2025-01-05 │
 └────────────┘
 ```
-Now, we will run `ingestr` again, but we will omit start and end date to demonstrate an incremental load.
+Now, we will run `omniload` again, but we will omit start and end date to demonstrate an incremental load.
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "applovin://?api_key=api_key_0
     --source-table "publisher-report" \
     --dest-uri "duckdb:///report.db"  \
@@ -133,7 +133,7 @@ We want to obtain the following columns:
 To achieve this, we can pass the custom report defintion in `--source-table`
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri "applovin://?api_key=api_key_0
     --source-table "custom:report:publisher:ad_type,clicks,country" \
     --dest-uri "duckdb:///report.db"  \

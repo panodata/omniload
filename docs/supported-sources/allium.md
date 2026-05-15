@@ -2,7 +2,7 @@
 
 [Allium](https://allium.so/) is a blockchain data platform that provides access to indexed blockchain data through a powerful query interface.
 
-ingestr supports Allium as a source.
+omniload supports Allium as a source.
 
 ## URI format
 
@@ -18,7 +18,7 @@ URI parameters:
 
 The URI is used to connect to the Allium API for extracting blockchain data.
 
-Query parameters should be passed using ingestr's `--interval-start` and `--interval-end` flags.
+Query parameters should be passed using omniload's `--interval-start` and `--interval-end` flags.
 
 ## Setting up an Allium Integration
 
@@ -32,7 +32,7 @@ To get your Allium API credentials:
 Once you have your credentials, here's a sample command that will copy the data from Allium into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'allium://?api_key=your_api_key' \
   --source-table 'query:your_query_id' \
   --interval-start '2025-02-01' \
@@ -86,7 +86,7 @@ The Allium source connector:
 ### Basic Query Ingestion (without date filters)
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'allium://?api_key=your_api_key' \
   --source-table 'query:abc123def456' \
   --dest-uri duckdb:///allium.duckdb \
@@ -96,7 +96,7 @@ ingestr ingest \
 ### Query with Date Parameters
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'allium://?api_key=your_api_key' \
   --source-table 'query:abc123def456' \
   --interval-start '2025-02-01' \
@@ -108,7 +108,7 @@ ingestr ingest \
 ### Query with Custom Parameters
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'allium://?api_key=your_api_key' \
   --source-table 'query:abc123def456:network=ethereum&min_value=1000' \
   --interval-start '2025-02-01' \
@@ -122,7 +122,7 @@ In this example, the query will receive both the default date parameters and the
 ### Query with Run Config Parameters
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'allium://?api_key=your_api_key' \
   --source-table 'query:abc123def456:limit=5000&compute_profile=standard' \
   --interval-start '2025-02-01' \
@@ -136,7 +136,7 @@ This example limits the result to 5000 rows and uses the 'standard' compute prof
 ### Query with Both Custom and Run Config Parameters
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'allium://?api_key=your_api_key' \
   --source-table 'query:abc123def456:network=ethereum&limit=10000&compute_profile=large' \
   --interval-start '2025-02-01' \

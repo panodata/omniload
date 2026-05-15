@@ -1,7 +1,7 @@
 # Elasticsearch
 [Elasticsearch](https://www.elastic.co/elasticsearch) is a distributed, RESTful search and analytics engine designed for fast and scalable data retrieval.
 
-ingestr supports Elasticsearch as both a source and destination.
+omniload supports Elasticsearch as both a source and destination.
 
 ## URI format
 The URI format for Elasticsearch is as follows:
@@ -27,7 +27,7 @@ The same URI structure can be used both for sources and destinations.
 `<index-name>`: Fetches all available documents from the specified index.
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri "elasticsearch://elastic:changeme@localhost:9200?secure=false&verify_certs=false" \
     --source-table 'test-index' \
     --dest-uri "duckdb:///users.duckdb" \
@@ -45,7 +45,7 @@ Elasticsearch can be used as a destination to load data from various sources. Th
 ### Elasticsearch Cloud (with authentication)
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "postgres://user:pass@localhost:5432/mydb" \
   --source-table "public.users" \
   --dest-uri "elasticsearch://username:password@cluster.cloud.es.io:443" \
@@ -58,7 +58,7 @@ ingestr ingest \
 ### Local Elasticsearch with authentication
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "csv:///path/to/data.csv" \
   --source-table "data" \
   --dest-uri "elasticsearch://elastic:changeme@localhost:9200?secure=false" \
@@ -68,7 +68,7 @@ ingestr ingest \
 ### Local Elasticsearch without authentication
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "csv:///path/to/data.csv" \
   --source-table "data" \
   --dest-uri "elasticsearch://localhost:9200?secure=false" \
@@ -76,5 +76,5 @@ ingestr ingest \
 ```
 
 > [!TIP]
-> By default, ingestr uses a "replace" strategy which deletes the existing index before loading new data. The target index will be created automatically if it doesn't exist.
+> By default, omniload uses a "replace" strategy which deletes the existing index before loading new data. The target index will be created automatically if it doesn't exist.
 

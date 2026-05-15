@@ -110,7 +110,7 @@ Report table names support an optional `:granularity:groupBy` suffix to control 
 ### Basic — ingest all campaigns
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri="appleads://?client_id=SEARCHADS.xxxx&team_id=SEARCHADS.xxxx&key_id=xxxx&org_id=11111111&key_path=/path/to/private-key.pem" \
   --source-table=campaigns \
   --dest-uri="duckdb:///tmp/apple_ads.duckdb" \
@@ -120,7 +120,7 @@ ingestr ingest \
 ### Incremental — only rows modified in the last day
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri="appleads://?client_id=...&team_id=...&key_id=...&org_id=...&key_path=..." \
   --source-table=ad_groups \
   --dest-uri="duckdb:///tmp/apple_ads.duckdb" \
@@ -129,13 +129,13 @@ ingestr ingest \
   --interval-end=2026-04-22
 ```
 
-ingestr will load ad groups whose `modificationTime` falls within the
+omniload will load ad groups whose `modificationTime` falls within the
 `[interval-start, interval-end)` window.
 
 ### Multi-organization
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri="appleads://?client_id=...&team_id=...&key_id=...&org_id=11111111,98765432,11223344&key_path=..." \
   --source-table=campaigns \
   --dest-uri="duckdb:///tmp/apple_ads.duckdb" \
@@ -148,7 +148,7 @@ by the `orgId` column.
 ### Aggregated campaign report (no granularity, no groupBy)
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri="appleads://?client_id=...&team_id=...&key_id=...&org_id=...&key_path=..." \
   --source-table=campaign_reports \
   --dest-uri="duckdb:///tmp/apple_ads.duckdb" \
@@ -158,7 +158,7 @@ ingestr ingest \
 ### Daily campaign report by country
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri="appleads://?client_id=...&team_id=...&key_id=...&org_id=...&key_path=..." \
   --source-table='campaign_reports:daily:countryOrRegion' \
   --dest-uri="duckdb:///tmp/apple_ads.duckdb" \
@@ -168,7 +168,7 @@ ingestr ingest \
 ### Aggregated report grouped by gender (no time breakdown)
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri="appleads://?client_id=...&team_id=...&key_id=...&org_id=...&key_path=..." \
   --source-table='campaign_reports::gender' \
   --dest-uri="duckdb:///tmp/apple_ads.duckdb" \
@@ -178,7 +178,7 @@ ingestr ingest \
 ### Monthly metrics grouped by country and gender
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri="appleads://?client_id=...&team_id=...&key_id=...&org_id=...&key_path=..." \
   --source-table='campaign_reports:monthly:countryOrRegion,gender' \
   --dest-uri="duckdb:///tmp/apple_ads.duckdb" \

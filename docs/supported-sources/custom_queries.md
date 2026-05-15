@@ -1,12 +1,12 @@
 # Custom Queries for SQL Sources
 
-ingestr has primarily supported table replication for SQL sources due to that being a common use case. However, there are certain scenarios where loading a table only is not possible:
+omniload has primarily supported table replication for SQL sources due to that being a common use case. However, there are certain scenarios where loading a table only is not possible:
 - you might want to load a subset of rows from a table
 - you might want to load a table that has a complex query that cannot be expressed as a simple table
   - you could technically create a view in the database, but sometimes you don't have access/permissions to do so.
 - you might want to do incremental loads but the table you want to load does not have an incremental key, so it needs to be joined with another table that does.
 
-In order to support these scenarios, ingestr has added experimental support for custom queries.
+In order to support these scenarios, omniload has added experimental support for custom queries.
 
 > [!DANGER]
 > This is an experimental feature, so do not expect it to work for all use cases. Please create an issue if you find a use case that doesn't work.
@@ -16,14 +16,14 @@ In order to support these scenarios, ingestr has added experimental support for 
 To use a custom query, you can pass a `query:` prefix to the source name:
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri $POSTGRES_URI \
     --dest-uri "duckdb:///mydb.db" \
     --dest-table "public.output" \
     --source-table "query:select oi.*, o.updated_at from order_items oi join orders o on oi.order_id = o.id" 
  ```
 
-Ingestr uses SQLAlchemy to run the queries, therefore you can use any valid SQLAlchemy query.
+omniload uses SQLAlchemy to run the queries, therefore you can use any valid SQLAlchemy query.
 
 ### Incremental loads
 
@@ -36,7 +36,7 @@ Custom queries support incremental loads, but there are some caveats:
 Here's an example of how to do an incremental load:
 
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri $POSTGRES_URI \
     --dest-uri "duckdb:///mydb.db" \
     --dest-table "public.output" \

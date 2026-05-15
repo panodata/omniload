@@ -3,7 +3,7 @@
 [Trustpilot](https://www.trustpilot.com/) provides a platform for collecting and
 sharing customer reviews.
 
-ingestr supports Trustpilot as a source.
+omniload supports Trustpilot as a source.
 
 ## URI format
 
@@ -22,7 +22,7 @@ URI parameters:
 Assuming your `business_unit_id` is `123` and your API key is `key_abc`, you can ingest reviews into DuckDB using:
 
 ```bash
-ingestr ingest --source-uri 'trustpilot://123?api_key=key_abc' --source-table 'reviews' --dest-uri duckdb:///trustpilot.duckdb --dest-table 'dest.reviews'
+omniload ingest --source-uri 'trustpilot://123?api_key=key_abc' --source-table 'reviews' --dest-uri duckdb:///trustpilot.duckdb --dest-table 'dest.reviews'
 ```
 
 ## Tables
@@ -33,4 +33,4 @@ Currently the Trustpilot source exposes the following table:
 | --------------- | ----------- | --------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `reviews`       | id | updated_at | merge               | Customer reviews for the specified businessa |
 
-Use this as the `--source-table` parameter in the `ingestr ingest` command.
+Use this as the `--source-table` parameter in the `omniload ingest` command.

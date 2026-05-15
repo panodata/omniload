@@ -2,7 +2,7 @@
 
 [Chess.com](https://www.chess.com/) is an online platform offering chess games, tournaments, lessons, and more.
 
-ingestr supports Chess.com as a source, primarily to play around with the data of players, games, and more since it doesn't require any authentication.
+omniload supports Chess.com as a source, primarily to play around with the data of players, games, and more since it doesn't require any authentication.
 
 ## URI format
 
@@ -21,7 +21,7 @@ URI parameter:
 Let's say you have a list of player usernames: max2 and peter23. Here's a sample command that will copy the data from Chess into a DuckDB database:
 
 ```sh
-ingestr ingest --source-uri 'chess://?players=max2,peter23' --source-table 'profiles' --dest-uri 'duckdb:///chess.duckdb' --dest-table 'players.profiles'
+omniload ingest --source-uri 'chess://?players=max2,peter23' --source-table 'profiles' --dest-uri 'duckdb:///chess.duckdb' --dest-table 'players.profiles'
 ```
 
 The result of this command will be a table in the `chess.duckdb` database.
@@ -35,4 +35,4 @@ Chess source allows ingesting the following sources into separate tables:
 | `games` | - | –                | replace               | Retrieves players games for specified players.   
 | `archives`        | - | –                | replace               | Retrieves the URLs to game archives for specified players.                                      |                                                 
 
-Use these as `--source-table` parameter in the `ingestr ingest` command.
+Use these as `--source-table` parameter in the `omniload ingest` command.

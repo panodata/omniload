@@ -1,13 +1,13 @@
-# `ingestr ingest`
+# `omniload ingest`
 
-The `ingest` command is a core feature of the `ingestr` tool, allowing users to transfer data from a source to a destination with optional support for incremental updates.
+The `ingest` command is a core feature of the `omniload` tool, allowing users to transfer data from a source to a destination with optional support for incremental updates.
 
 ## Example
 
 The following example demonstrates how to use the `ingest` command to transfer data from a source to a destination.
 
 ```bash
-ingestr ingest \
+omniload ingest \
    --source-uri '<your-source-uri-here>' \
    --source-table '<your-schema>.<your-table>' \
    --dest-uri '<your-destination-uri-here>'
@@ -50,7 +50,7 @@ The `interval-start` and `interval-end` options support various datetime formats
 ### Ingesting a CSV file to DuckDB
 
 ```bash
-ingestr ingest \
+omniload ingest \
    --source-uri 'csv://input.csv' \
    --source-table 'sample' \
    --dest-uri 'duckdb://output.duckdb'
@@ -59,7 +59,7 @@ ingestr ingest \
 ### Copy a table from Postgres to DuckDB
 
 ```bash
-ingestr ingest \
+omniload ingest \
    --source-uri 'postgresql://myuser:mypassword@localhost:5432/mydatabase?sslmode=disable' \
    --source-table 'public.input_table' \
    --dest-uri 'duckdb://output.duckdb' \
@@ -69,7 +69,7 @@ ingestr ingest \
 ### Incrementally ingest a table from Postgres to BigQuery
 
 ```bash
-ingestr ingest 
+omniload ingest 
    --source-uri 'postgresql://myuser:mypassword@localhost:5432/mydatabase?sslmode=disable' \
    --source-table 'public.users' \
    --dest-uri 'bigquery://my_project?credentials_path=/path/to/service/account.json&location=EU' \
@@ -81,7 +81,7 @@ ingestr ingest
 ### Load an interval of data from Postgres to BigQuery using a date column
 
 ```bash
-ingestr ingest 
+omniload ingest 
    --source-uri 'postgresql://myuser:mypassword@localhost:5432/mydatabase?sslmode=disable' \
    --source-table 'public.users' \
    --dest-uri 'bigquery://my_project?credentials_path=/path/to/service/account.json&location=EU' \
@@ -96,7 +96,7 @@ ingestr ingest
 ### Load a specific query from Postgres to Snowflake
 
 ```bash
-ingestr ingest 
+omniload ingest 
    --source-uri 'postgresql://myuser:mypassword@localhost:5432/mydatabase?sslmode=disable' \
    --dest-uri 'snowflake://user:password@account/dbname?warehouse=COMPUTE_WH&role=my_role' \
    --source-table 'query:SELECT * FROM public.users as pu JOIN public.orders as o ON pu.id = o.user_id WHERE pu.dt BETWEEN :interval_start AND :interval_end' \
@@ -111,7 +111,7 @@ ingestr ingest
 ### Ingesting with Data Masking
 
 ```bash
-ingestr ingest \
+omniload ingest \
    --source-uri 'postgresql://user:pass@localhost/customers' \
    --source-table 'customer_data' \
    --dest-uri 'duckdb:///masked_customers.db' \

@@ -2,7 +2,7 @@
 
 [Hostaway](https://www.hostaway.com/) is a property management system (PMS) designed for vacation rental managers and hosts. It provides tools for managing listings, reservations, channels, and guest communications across multiple booking platforms.
 
-ingestr supports Hostaway as a source.
+omniload supports Hostaway as a source.
 
 ## URI format
 
@@ -43,10 +43,10 @@ The response will contain an access token (JWT) that you'll use for authenticati
 
 ### 3. Use the Access Token
 
-Once you have your access token, you can use it with ingestr. Here's a sample command that will copy listings data from Hostaway into a DuckDB database:
+Once you have your access token, you can use it with omniload. Here's a sample command that will copy listings data from Hostaway into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'hostaway://?api_key=YOUR_ACCESS_TOKEN' \
   --source-table 'listings' \
   --dest-uri 'duckdb:///hostaway.duckdb' \
@@ -95,7 +95,7 @@ Hostaway source allows ingesting the following resources into separate tables:
 | `webhook_reservations` | - | - | replace | Webhook configurations for reservation events |
 | `tasks` | - | - | replace | Tasks and to-dos within the system |
 
-Use these table names as the `--source-table` parameter in the `ingestr ingest` command.
+Use these table names as the `--source-table` parameter in the `omniload ingest` command.
 
 ## Notes
 

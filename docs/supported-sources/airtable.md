@@ -2,7 +2,7 @@
 
 [Airtable](https://airtable.com/) is a cloud-based platform that combines spreadsheet and database functionalities, designed for data management and collaboration.
 
-ingestr supports Airtable as a source.
+omniload supports Airtable as a source.
 
 ## URI format
 
@@ -24,7 +24,7 @@ Airtable requires a few steps to set up an integration, please follow the guide 
 
 Once you complete the guide, you should have an Access Token. 
 
-The source table you'll use for ingestr will be `<base_id>/<table_id>`.
+The source table you'll use for omniload will be `<base_id>/<table_id>`.
 
 ### Getting your Base ID and Table ID
 
@@ -44,7 +44,7 @@ In this case base_id is `appve10kl227BIT4GV` and table_id is `tblOUnZVLFWbemTP1`
 Let's say your access token is `patr123.abc` and the base ID is `appXYZ`, here's a sample command that will copy the data from Airtable into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
     --source-uri 'airtable://?access_token=patr123.abc' \
     --source-table 'appXYZ/employee' \
     --dest-uri 'duckdb:///airtable.duckdb' \

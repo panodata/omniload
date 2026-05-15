@@ -2,7 +2,7 @@
 
 [Docebo](https://www.docebo.com/) is a cloud-based Learning Management System (LMS) platform that provides enterprise learning solutions for employee training, customer education, and partner enablement.
 
-ingestr supports Docebo as a source.
+omniload supports Docebo as a source.
 
 ## URI format
 
@@ -36,7 +36,7 @@ You can use either:
 Here's a sample command that will copy data from Docebo into a DuckDB database:
 
 ```bash
-ingestr ingest \
+omniload ingest \
 --source-uri 'docebo://?base_url=https://yourcompany.docebosaas.com&client_id=your_client_id&client_secret=your_client_secret' \
 --source-table 'users' \
 --dest-uri duckdb:///docebo.duckdb \
@@ -66,10 +66,10 @@ Docebo source supports ingesting the following sources into separate tables:
 | [user_fields](https://help.docebo.com/hc/en-us/articles/360019499600) | - | - | replace | Custom user field definitions. Full reload on each run. |
 | [users](https://help.docebo.com/hc/en-us/articles/360019499600) | - | - | replace | All platform users including learners, instructors, and administrators. Full reload on each run. |
 
-Use the table name as the `--source-table` parameter in the `ingestr ingest` command.
+Use the table name as the `--source-table` parameter in the `omniload ingest` command.
 
 > [!WARNING]
-> Docebo does not currently support incremental loading, which means ingestr will do a full-refresh on each run.
+> Docebo does not currently support incremental loading, which means omniload will do a full-refresh on each run.
 
 > [!NOTE]
 > Date fields containing invalid dates (e.g., '0000-00-00') are automatically normalized to Unix epoch (1970-01-01) for compatibility.

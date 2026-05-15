@@ -2,7 +2,7 @@
 
 [Google Sheets](https://www.google.com/sheets/about/) is a web-based spreadsheet program that is part of Google's free, web-based Google Docs Editors suite.
 
-ingestr supports Google Sheets as a source.
+omniload supports Google Sheets as a source.
 
 ## URI format
 
@@ -37,7 +37,7 @@ Once you complete the guide, you should have a service account JSON file and the
 Based on this assumption, here's a sample command that will copy the data from the Google Sheets spreadsheet into a DuckDB database:
 
 ```sh
-ingestr ingest --source-uri 'gsheets://?credentials_path=/path/to/file.json' --source-table 'fkdUQ2bjdNfUq2CA.Sheet1' --dest-uri duckdb:///gsheets.duckdb --dest-table 'dest.output'
+omniload ingest --source-uri 'gsheets://?credentials_path=/path/to/file.json' --source-table 'fkdUQ2bjdNfUq2CA.Sheet1' --dest-uri duckdb:///gsheets.duckdb --dest-table 'dest.output'
 ```
 
 The result of this command will be a table in the `gsheets.duckdb` database.

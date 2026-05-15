@@ -1,6 +1,6 @@
 # WARN: this is used as a notification filter in our slack.
 # When updating this, make sure to update the workflow subscription as well.
-name: "Release ingestr on pip and ghcr.io"
+name: "Publish to pip and ghcr.io"
 
 on:
   push:
@@ -17,8 +17,6 @@ jobs:
   pip-release:
     runs-on: ubuntu-latest
     needs: tests
-    env:
-      TWINE_PASSWORD: ${{ secrets.PYPI_INGESTR_TOKEN }}
     steps:
       - name: checkout
         uses: actions/checkout@v4

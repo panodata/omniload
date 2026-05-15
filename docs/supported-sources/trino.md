@@ -1,7 +1,7 @@
 # Trino
 Trino (formerly PrestoSQL) is a distributed SQL query engine designed for fast analytics on large datasets across multiple data sources.
 
-ingestr supports Trino as both a source and destination.
+omniload supports Trino as both a source and destination.
 
 > [!WARNING]
 > Trino is currently supported as a beta platform, which means that some features might not work as expected.
@@ -54,7 +54,7 @@ The catalog is specified in the connection URI, not in the table name.
 
 ### Using Trino as a source
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri 'trino://admin@localhost:8080/iceberg' \
     --source-table 'default.source_table' \
     --dest-uri 'duckdb:///output.db' \
@@ -63,7 +63,7 @@ ingestr ingest \
 
 ### Using Trino as a destination
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri 'postgresql://user:pass@localhost:5432/sourcedb' \
     --source-table 'public.customers' \
     --dest-uri 'trino://admin@localhost:8080/hive' \
@@ -72,7 +72,7 @@ ingestr ingest \
 
 ### With authentication
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri 'mysql://user:pass@localhost:3306/sourcedb' \
     --source-table 'orders' \
     --dest-uri 'trino://user:password@trino-server:8443/iceberg' \

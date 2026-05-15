@@ -3,7 +3,7 @@
 [Amazon Kinesis](https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html) is a
 cloud-based service for real-time data streaming and analytics, enabling the processing and analysis of large streams of data in real time.
 
-ingestr supports Kinesis as a source.
+omniload supports Kinesis as a source.
 
 ## URI format
 The URI format for Kinesis is as follows:
@@ -25,7 +25,7 @@ To get Kinesis credentials, please refer to the guide [here](https://dlthub.com/
 Once you complete the guide, you should have a aws_access_key_id, aws_secret_access_key and region_name. Let's say your `aws_access_key_id` is id_123, your `aws_secret_access_key` is secret_123 and your `region_name` is eu-central-1, here's a sample command that will copy the data from Kinesis into a DuckDB database:
 
 ```bash
-ingestr ingest --source-uri 'kinesis://?aws_access_key_id=id_123&aws_secret_access_key=secret_123&region_name=eu-central-1' \
+omniload ingest --source-uri 'kinesis://?aws_access_key_id=id_123&aws_secret_access_key=secret_123&region_name=eu-central-1' \
  --source-table 'stream_name_1' \
  --dest-uri duckdb:///kinesis.duckdb \
  --dest-table 'dest.results'
@@ -35,7 +35,7 @@ When using Kinesis as a source, specify the [StreamName] you want to read from a
 You can also use a full Kinesis [StreamARN] to address the stream in [ARN] format, like `arn:aws:kinesis:eu-central-1:842404475894:stream/customer_events`.
 
 ### Initial Load Configuration
-By default, ingestr reads from the beginning of the Kinesis stream. To start reading from a specific time, use the `interval_start` parameter.
+By default, omniload reads from the beginning of the Kinesis stream. To start reading from a specific time, use the `interval_start` parameter.
 
 
 [ARN]: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html

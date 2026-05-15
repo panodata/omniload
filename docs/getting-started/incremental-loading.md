@@ -3,7 +3,7 @@ outline: deep
 ---
 
 # Incremental Loading
-ingestr supports incremental loading, which means you can choose to append, merge or delete+insert data into the destination table. Incremental loading allows you to ingest only the new rows from the source table into the destination table, which means that you don't have to ingest the entire table every time you run ingestr.
+omniload supports incremental loading, which means you can choose to append, merge or delete+insert data into the destination table. Incremental loading allows you to ingest only the new rows from the source table into the destination table, which means that you don't have to ingest the entire table every time you run omniload.
 
 Before you use incremental loading, you should understand 3 important keys:
 - `primary_key`: the column or columns that uniquely identify a row in the table, if you give a primary key for an ingestion the resulting rows will be deduplicated based on the primary key, which means there will only be one row for each primary key in the destination.
@@ -23,7 +23,7 @@ Replace is the default strategy, and it simply replaces the entire destination t
 
 The following example below will replace the entire `my_schema.some_data` table in BigQuery with the `my_schema.some_data` table in Postgres.
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri 'postgresql://admin:admin@localhost:8837/web?sslmode=disable' \
     --source-table 'my_schema.some_data' \
     --dest-uri 'bigquery://<your-project-name>?credentials_path=/path/to/service/account.json' \
@@ -42,7 +42,7 @@ Append will simply append the new rows from the source table to the destination 
 
 The following example below will append the new rows from the `my_schema.some_data` table in Postgres to the `my_schema.some_data` table in BigQuery, only where there's a new table.
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri 'postgresql://admin:admin@localhost:8837/web?sslmode=disable' \
     --source-table 'my_schema.some_data' \
     --dest-uri 'bigquery://<your-project-name>?credentials_path=/path/to/service/account.json' \
@@ -97,7 +97,7 @@ Merge will merge the new rows with the existing rows in the destination table, i
 
 The following example below will merge the new rows from the `my_schema.some_data` table in Postgres to the `my_schema.some_data` table in BigQuery, only where there's a new table.
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri 'postgresql://admin:admin@localhost:8837/web?sslmode=disable' \
     --source-table 'my_schema.some_data' \
     --dest-uri 'bigquery://<your-project-name>?credentials_path=/path/to/service/account.json' \
@@ -159,7 +159,7 @@ Delete+Insert will delete the existing rows in the destination table that match 
 
 The following example below will delete the existing rows in the `my_schema.some_data` table in BigQuery that match the `updated_at` and then insert the new rows from the `my_schema.some_data` table in Postgres.
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri 'postgresql://admin:admin@localhost:8837/web?sslmode=disable' \
     --source-table 'my_schema.some_data' \
     --dest-uri 'bigquery://<your-project-name>?credentials_path=/path/to/service/account.json' \

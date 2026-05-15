@@ -1,22 +1,22 @@
 # Load Data from Personio to DuckDB
 
 Welcome! 👋  
- This beginner-friendly guide will help you load data from `Personio` into `DuckDB` using ingestr — a simple yet powerful command-line tool. No prior experience is needed, and best of all, no coding required!
+ This beginner-friendly guide will help you load data from `Personio` into `DuckDB` using omniload — a simple yet powerful command-line tool. No prior experience is needed, and best of all, no coding required!
 
-By the end of this guide, you'll have your Personio data securely stored in DuckDB. But before we dive in, let’s take a quick look at `ingestr`
+By the end of this guide, you'll have your Personio data securely stored in DuckDB. But before we dive in, let’s take a quick look at `omniload`
 
-## Overview of ingestr
-`ingestr` is a command-line tool that simplifies data ingestion by allowing users to load data from a source to a destination using simple command-line flags.
+## Overview of omniload
+`omniload` is a command-line tool that simplifies data ingestion by allowing users to load data from a source to a destination using simple command-line flags.
 
-### `ingestr` Command
+### `omniload` Command
 ```bash
-ingestr ingest \
+omniload ingest \
    --source-uri '<your-source-uri-here>' \
    --source-table '<your-schema>.<your-table>' \
    --dest-uri '<your-destination-uri-here>' \
    --dest-table '<your-schema>.<your-table>'
 ```
-- `ingestr ingest`: Executes the data ingestion process.
+- `omniload ingest`: Executes the data ingestion process.
 - `--source-uri TEXT`: Specifies the URI of the data source.
 - `--dest-uri TEXT`: Specifies the URI of the destination.
 - `--source-table TEXT`: Defines the table to fetch data from.
@@ -25,10 +25,10 @@ ingestr ingest \
 With this command, we connect to the source, retrieve the specified data, and load it into the destination database.
 ## Let's Load Data from Personio to DuckDB Together!
 
-Personio is a human resources management platform that helps businesses handle recruitment and employee data. To analyze this data, you may need to load it into an analytics database like DuckDB. `ingestr` makes this process simple.
+Personio is a human resources management platform that helps businesses handle recruitment and employee data. To analyze this data, you may need to load it into an analytics database like DuckDB. `omniload` makes this process simple.
 
-### Step 1: Install `ingestr`
-Ensure `ingestr` is installed. If not, follow the installation guide [here](../getting-started/quickstart.md#Installation).
+### Step 1: Install `omniload`
+Ensure `omniload` is installed. If not, follow the installation guide [here](../getting-started/quickstart.md#Installation).
 
 ### Step 2: Get Personio Credentials
 Personio will be our data source.
@@ -48,10 +48,10 @@ pip install duckdb
 ```  
 Alternatively, you can download the latest version from the [official DuckDB website](https://duckdb.org/docs/installation/?version=stable&environment=cli&platform=macos&download_method=direct).
 
-### Step 4: Run the `ingestr` Command
+### Step 4: Run the `omniload` Command
 Execute the following command to load data from Personio to DuckDB:
 ```bash
-ingestr ingest \
+omniload ingest \
     --source-uri 'personio://?client_id=<YOUR_CLIENT_ID>&client_secret=<YOUR_CLIENT_SECRET>' \
     --source-table 'employees' \
     --dest-uri 'duckdb:///personio.duckdb' \
@@ -91,5 +91,4 @@ Example output:
 
 ![Personio to DuckDB](../media/personio_duckdb.png)
 
-🎉 **Congratulations!** You have successfully loaded data from Personio to DuckDB using `ingestr`. 
-
+🎉 **Congratulations!** You have successfully loaded data from Personio to DuckDB using `omniload`.

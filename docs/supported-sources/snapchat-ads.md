@@ -2,7 +2,7 @@
 
 Snapchat Ads is an advertising platform that enables businesses to create, manage, and analyze ad campaigns targeting Snapchat's user base.
 
-ingestr supports Snapchat Ads as a source using [Snapchat ADS API](https://developers.snap.com/api/marketing-api/Ads-API/introduction).
+omniload supports Snapchat Ads as a source using [Snapchat ADS API](https://developers.snap.com/api/marketing-api/Ads-API/introduction).
 
 ## URI format
 
@@ -35,7 +35,7 @@ Please follow the [Snapchat Ads API documentation](https://developers.snap.com/a
 Once you have your credentials, here's a sample command that will copy data from Snapchat Ads into a DuckDB database:
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'snapchatads://?refresh_token=your_token&client_id=your_client_id&client_secret=your_secret&organization_id=your_org_id' \
   --source-table 'campaigns' \
   --dest-uri 'duckdb:///snapchat.duckdb' \
@@ -119,7 +119,7 @@ Snapchat Ads source supports fetching stats/measurement data for campaigns, ad s
 
 ### Fetch campaigns for all ad accounts
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'snapchatads://?refresh_token=token&client_id=id&client_secret=secret&organization_id=org_id' \
   --source-table 'campaigns' \
   --dest-uri 'duckdb:///snapchat.duckdb' \
@@ -128,7 +128,7 @@ ingestr ingest \
 
 ### Fetch campaigns for specific ad accounts
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'snapchatads://?refresh_token=token&client_id=id&client_secret=secret&organization_id=org_id' \
   --source-table 'campaigns:account_id_1,account_id_2,account_id_3' \
   --dest-uri 'duckdb:///snapchat.duckdb' \
@@ -138,7 +138,7 @@ ingestr ingest \
 ### Fetch campaign stats without breakdown (hourly granularity)
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'snapchatads://?refresh_token=token&client_id=id&client_secret=secret&organization_id=org_id' \
   --source-table 'campaigns_stats:HOUR:impressions,spend,swipes' \
   --dest-uri 'duckdb:///snapchat.duckdb' \
@@ -152,7 +152,7 @@ Result will include `campaign_id`, but `adsquad_id` and `ad_id` will be NULL.
 ### Fetch campaign stats with ad breakdown
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'snapchatads://?refresh_token=token&client_id=id&client_secret=secret&organization_id=org_id' \
   --source-table 'campaigns_stats:ad,DAY:impressions,spend' \
   --dest-uri 'duckdb:///snapchat.duckdb' \
@@ -166,7 +166,7 @@ Result will include `campaign_id` and `ad_id`, but `adsquad_id` will be NULL.
 ### Fetch ad account stats with campaign breakdown
 
 ```sh
-ingestr ingest \
+omniload ingest \
   --source-uri 'snapchatads://?refresh_token=token&client_id=id&client_secret=secret&organization_id=org_id' \
   --source-table 'ad_accounts_stats:campaign,LIFETIME:spend' \
   --dest-uri 'duckdb:///snapchat.duckdb' \
@@ -181,7 +181,7 @@ Since all stats resources use the same primary key structure, you can ingest dat
 
 ```sh
 # First: ingest without breakdown
-ingestr ingest \
+omniload ingest \
   --source-uri 'snapchatads://...' \
   --source-table 'campaigns_stats:HOUR:impressions,spend' \
   --dest-table 'dest.campaigns_stats' \
@@ -189,7 +189,7 @@ ingestr ingest \
   --interval-end '2024-01-31'
 
 # Second: ingest with ad breakdown (appends to same table)
-ingestr ingest \
+omniload ingest \
   --source-uri 'snapchatads://...' \
   --source-table 'campaigns_stats:ad,HOUR:impressions,spend' \
   --dest-table 'dest.campaigns_stats' \

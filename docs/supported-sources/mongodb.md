@@ -1,7 +1,7 @@
 # MongoDB
 MongoDB is a popular, open source NoSQL database known for its flexibility, scalability, and wide adoption in a variety of applications.
 
-ingestr supports MongoDB as both a source and destination.
+omniload supports MongoDB as both a source and destination.
 
 ## URI format
 
@@ -54,14 +54,14 @@ This allows you to specify a custom MongoDB aggregation pipeline as a JSON array
 
 ## Custom aggregations
 
-ingestr supports custom MongoDB aggregation pipelines, similar to how SQL sources support custom queries. This allows you to perform complex data transformations, filtering, and projections directly in MongoDB before the data is ingested.
+omniload supports custom MongoDB aggregation pipelines, similar to how SQL sources support custom queries. This allows you to perform complex data transformations, filtering, and projections directly in MongoDB before the data is ingested.
 
 ### Basic syntax
 
 Use the following format for custom aggregations:
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "mongodb://user:password@host:port" \
   --source-table 'database.collection:[{"$match": {...}}, {"$project": {...}}]'
 ```
@@ -70,14 +70,14 @@ ingestr ingest \
 
 #### Simple filtering
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "mongodb://localhost:27017" \
   --source-table 'mydb.users:[{"$match": {"status": "active"}}]'
 ```
 
 #### Complex aggregation with grouping
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "mongodb://localhost:27017" \
   --source-table 'mydb.orders:[
     {"$match": {"status": "completed"}},
@@ -91,7 +91,7 @@ ingestr ingest \
 
 #### Projection and transformation
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "mongodb://localhost:27017" \
   --source-table 'mydb.products:[
     {"$project": {
@@ -112,7 +112,7 @@ Custom aggregations support incremental loading when combined with the `--increm
 You can use `:interval_start` and `:interval_end` placeholders in your aggregation pipeline, which will be automatically replaced with the actual datetime values during incremental loads:
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "mongodb://localhost:27017" \
   --source-table 'mydb.events:[
     {"$match": {
@@ -137,11 +137,11 @@ When using incremental loads with custom aggregations:
 
 1. **Incremental key projection**: The field specified in `--incremental-key` must be included in your projection
 2. **Datetime type**: The incremental key should be a datetime field
-3. **Pipeline validation**: ingestr validates that your aggregation pipeline properly projects the incremental key
+3. **Pipeline validation**: omniload validates that your aggregation pipeline properly projects the incremental key
 
 ### Validation and error handling
 
-ingestr performs several validations on custom aggregation pipelines:
+omniload performs several validations on custom aggregation pipelines:
 
 - **JSON validation**: Ensures the aggregation pipeline is valid JSON
 - **Array format**: Aggregation pipelines must be JSON arrays
@@ -165,7 +165,7 @@ ingestr performs several validations on custom aggregation pipelines:
 MongoDB Atlas can be used as a source to extract data using the SRV connection string format.
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority" \
   --source-table "mydb.users" \
   --dest-uri "duckdb:///local.duckdb" \
@@ -178,7 +178,7 @@ ingestr ingest \
 All the custom aggregation features described above work with MongoDB Atlas as well:
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority" \
   --source-table 'mydb.orders:[{"$match": {"status": "completed"}}]' \
   --dest-uri "duckdb:///local.duckdb" \
@@ -192,7 +192,7 @@ MongoDB can be used as a destination to load data from various sources. The `--d
 ### MongoDB Atlas
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "postgres://user:pass@localhost:5432/mydb" \
   --source-table "public.users" \
   --dest-uri "mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority" \
@@ -205,7 +205,7 @@ ingestr ingest \
 ### Local MongoDB with authentication
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "csv:///path/to/data.csv" \
   --source-table "data" \
   --dest-uri "mongodb://username:password@localhost:27017/?authSource=admin" \
@@ -215,7 +215,7 @@ ingestr ingest \
 ### Local MongoDB without authentication
 
 ```bash
-ingestr ingest \
+omniload ingest \
   --source-uri "csv:///path/to/data.csv" \
   --source-table "data" \
   --dest-uri "mongodb://localhost:27017" \
@@ -223,4 +223,4 @@ ingestr ingest \
 ```
 
 > [!TIP]
-> By default, ingestr uses a "replace" strategy which deletes existing data in the collection before loading new data. The target database and collection will be created automatically if they don't exist.
+> By default, omniload uses a "replace" strategy which deletes existing data in the collection before loading new data. The target database and collection will be created automatically if they don't exist.
