@@ -16,10 +16,10 @@ lock-deps:
 	@uv pip compile requirements.in --quiet -o requirements_arm64.txt --python-platform aarch64-unknown-linux-gnu
 
 deps: lock-deps
-	uv pip install -r requirements-dev.txt
+	uv pip install . -r requirements-dev.txt
 
 deps-ci:
-	uv pip install --system -r requirements-dev.txt
+	uv pip install --system . -r requirements-dev.txt
 
 test-ci:
 	set -a; [ -f test.env ] && source test.env; set +a; TESTCONTAINERS_RYUK_DISABLED=true pytest -n auto -x -rP -vv --tb=short --durations=10 --cov=omniload --no-cov-on-fail

@@ -55,7 +55,7 @@ exclude = [
 pythonpath = "."
 testpaths = "omniload"
 ignore = ["venv"]
-addopts = "-p no:warnings -rP"
+addopts = "-vvv -p no:warnings -rP"
 
 [tool.coverage.run]
 omit = ["*_test.py"]
