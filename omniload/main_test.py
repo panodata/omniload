@@ -193,7 +193,6 @@ def invoke_ingest_command(
             app,
             args,
             input="y\n",
-            env={"DISABLE_TELEMETRY": "true"},
         )
         if result.exit_code != 0 and print_output:
             traceback.print_exception(*result.exc_info)
@@ -205,7 +204,6 @@ def invoke_ingest_command(
 
     cmd = [sys.executable, "-m", "omniload.main"] + args
     env = os.environ.copy()
-    env["DISABLE_TELEMETRY"] = "true"
 
     process = subprocess.run(cmd, input="y\n", text=True, capture_output=True, env=env)
 
