@@ -9,6 +9,8 @@ on:
   workflow_dispatch: {}
   workflow_call: {}
   pull_request:
+  schedule:
+    - cron: '0 3 * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
