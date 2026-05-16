@@ -1,0 +1,9 @@
+include *.md *.rst LICENSE*
+recursive-include doc *.md *.rst
+
+global-exclude *.db
+prune */.idea
+prune */__pycache__
+prune release
+prune tests
+prune tmp

@@ -20,7 +20,9 @@ node_modules
 *.duckdb.wal
 *.db
 *.db.wal
+*.egg-info
 *.sql
+coverage.xml
 ingest.sh
 test.env
 *.log
