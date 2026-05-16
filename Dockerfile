@@ -1,4 +1,4 @@
-FROM python:3.13-slim-bookworm
+FROM python:3.14-slim-trixie
 
 LABEL org.opencontainers.image.source="https://github.com/panodata/omniload" \
       org.opencontainers.image.title="omniload (full)" \
