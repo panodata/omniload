@@ -13,8 +13,6 @@
 - Migrate from VitePress to Sphinx
 - Migrate from GitHub Pages to Read the Docs
 - Packaging: PyPI and OCI
-- Turn off dlt telemetry
-  with mock.patch("dlt.common.runtime.telemetry._TELEMETRY_STARTED", True):
 
 ## Iteration +2
 

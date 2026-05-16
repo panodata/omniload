@@ -12,5 +12,6 @@
 - Documentation: Trimmed README, copy editing
 - CI: Validated on Python 3.14
 - OCI: Updated to Python 3.14 and Debian 13 "trixie"
+- dlt: Turned off telemetry due to excessive requests
 
 [ingestr v0.14.155]: https://github.com/bruin-data/ingestr/tree/v0.14.155
