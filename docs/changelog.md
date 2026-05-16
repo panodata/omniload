@@ -8,3 +8,4 @@
 - Migrated from Makefile to Poethepoet
 - Started using `versioningit` for versionining
 - OCI: Modernized `Dockerfile`
+- Project: Standardized version handling

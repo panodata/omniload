@@ -3,7 +3,8 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
-from main_test import DESTINATIONS, SOURCES  # type: ignore
+
+from .main_test import DESTINATIONS, SOURCES  # type: ignore
 
 
 def pytest_configure(config):

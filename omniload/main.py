@@ -797,7 +797,7 @@ def example_uris():
 
 @app.command()
 def version():
-    from omniload.src.version import __version__  # type: ignore
+    from omniload import __version__  # type: ignore
 
     print(f"v{__version__}")
 

@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 import pytest
-from src.blob import parse_uri  # type: ignore
+
+from omniload.src.blob import parse_uri  # type: ignore
 
 
 @dataclass

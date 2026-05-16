@@ -3840,14 +3840,11 @@ def test_version_cmd():
     """
     This should always be 0.0.0-dev.
     """
-    from omniload.src.version import __version__
+    from verlib2 import Version  # type: ignore[import-untyped]
 
-    msg = """
-    You maybe have commited omniload/src/buildinfo.py to git.
-    Remove it to fix this error.
-    """
+    from omniload import __version__
 
-    assert __version__ == "0.0.0-dev", msg
+    assert Version(__version__) >= Version("0.0.0-dev")
 
 
 @pytest.mark.parametrize("source", [mysqlDocker], ids=["mysql8"])
