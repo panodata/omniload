@@ -168,11 +168,11 @@ def ingest(
             envvar=["CLUSTER_BY", "OMNILOAD_CLUSTER_BY"],
         ),
     ] = None,  # type: ignore
-    yes: Annotated[
+    dry_run: Annotated[
         Optional[bool],
         typer.Option(
-            help="Skip the confirmation prompt and ingest right away",
-            envvar=["SKIP_CONFIRMATION", "OMNILOAD_SKIP_CONFIRMATION"],
+            help="Display data transfer plan but don't invoke it",
+            envvar=["DRY_RUN", "OMNILOAD_DRY_RUN"],
         ),
     ] = False,  # type: ignore
     full_refresh: Annotated[
@@ -512,10 +512,9 @@ def ingest(
         print(f"[bold yellow]  Pipeline ID:[/bold yellow] {m.hexdigest()}")
         print()
 
-        if not yes:
-            continuePipeline = typer.confirm("Are you sure you would like to continue?")
-            if not continuePipeline:
-                raise typer.Abort()
+        if dry_run:
+            typer.echo("Skipping data transfer, because `--dry-run` was selected.")
+            raise typer.Exit(0)
 
         print()
         print("[bold green]Starting the ingestion...[/bold green]")
