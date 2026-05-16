@@ -13,9 +13,4 @@ Set Framerate 60
 Type "omniload ingest --source-uri $POSTGRESQL_URI --source-table 'information_schema.tables' --dest-uri $DUCKDB_URI --dest-table 'pg.tables'"
 Enter
 
-Sleep 2s
-
-Type "y"
-Enter
-
 Sleep 12s
