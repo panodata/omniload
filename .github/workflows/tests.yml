@@ -1,3 +1,5 @@
+name: Tests
+
 on:
   push:
     branches:
@@ -7,88 +9,74 @@ on:
   workflow_dispatch: {}
   workflow_call: {}
   pull_request:
-    branches:
-      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      code-changes: ${{ steps.filter.outputs.code-changes }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            code-changes:
-              - '**'
-              - '!**/*.md'
-              - '!docs/**'
 
   tests:
-    needs: check-changes
-    if: github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch' || needs.check-changes.outputs.code-changes == 'true' || startsWith(github.ref, 'refs/tags/')
     strategy:
       fail-fast: false
       matrix:
-        # I tried running stuff on macOS but it was too slow and unreliable.
-        # I also tried windows runners but couldn't get Docker to work there, so I gave up.
-        os: [ubuntu-latest]
-        python-version: [
-          '3.10',
-          '3.11',
-          '3.12',
-          '3.13',
-        ]
+        os:
+          - 'ubuntu-latest'
+        python-version:
+          - '3.10'
+          - '3.13'
+
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - name: install Microsoft ODBC
+
+      - name: Acquire sources
+        uses: actions/checkout@v6
+
+      - name: Install Microsoft ODBC (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo ACCEPT_EULA=Y apt-get install msodbcsql18 -y
-      - name: install Microsoft ODBC
+
+      - name: Install Microsoft ODBC (macOS)
         if: matrix.os == 'macos-13'
         run: |
           brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
           brew update
           HOMEBREW_ACCEPT_EULA=Y brew install msodbcsql18
-      - name: Install Docker on macOS
-        if: matrix.os == 'macos-13'
-        run: |
-          brew install docker
-          brew install docker-compose
-          brew install colima
-          colima start
-          # Wait for Docker daemon to be ready
-          while ! docker system info > /dev/null 2>&1; do sleep 1; done
-      - name: install Microsoft ODBC
+
+      - name: Install Microsoft ODBC (Windows)
         if: matrix.os == 'windows-latest'
         run: |
           Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=2249006 -OutFile msodbcsql.msi
           Start-Process -FilePath "msiexec.exe" -ArgumentList "/i msodbcsql.msi /qn /norestart IACCEPTMSODBCSQLLICENSETERMS=YES" -Wait
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: install uv
-        uses: astral-sh/setup-uv@v3
-      - name: Install pip dependencies
-        run: make deps-ci
 
-      - name: run tests (macOS)
-        if: matrix.os == 'macos-13'
-        run: make test-ci
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: 'true'
+          cache-suffix: ${{ matrix.python-version }}
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install project
+        run: |
+          uv pip install --editable='.[full,develop,test]'
+
+      - name: Set timezone
+        uses: szenius/set-timezone@v2.0
+        with:
+          timezoneLinux: "Europe/Berlin"
+          timezoneMacos: "Europe/Berlin"
+          timezoneWindows: "European Standard Time"
+
+      - name: Run linters and software tests
+        run: poe check
+
+      # https://github.com/codecov/codecov-action
+      - name: Upload coverage results to Codecov
+        uses: codecov/codecov-action@v6
         env:
-          TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
-          DOCKER_HOST: unix:///Users/runner/.colima/docker.sock
-      - name: run tests (other OS)
-        if: matrix.os != 'macos-13'
-        run: make test-ci
-      - name: check the formatting
-        run: make lint-ci
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          fail_ci_if_error: true
