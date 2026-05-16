@@ -162,6 +162,7 @@ optional-dependencies.release = [
 optional-dependencies.test = [
   "pendulum[test]>=3,<4",
   "pytest<9",
+  "pytest-asyncio<2",
   "pytest-cov<5",
   "pytest-xdist[psutil]<4",
   "testcontainers[mysql,postgres]<4.9",

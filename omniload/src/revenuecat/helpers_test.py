@@ -5,6 +5,8 @@ Unit tests for RevenueCat helper functions.
 import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+
 from .helpers import (
     _make_request,
     _make_request_async,
@@ -122,12 +124,14 @@ class TestPaginate:
 class TestAsyncFunctions:
     """Tests for async helper functions."""
 
+    @pytest.mark.asyncio
     async def test_async_function_signature(self):
         """Test that async functions exist and have correct signatures."""
         # Test that functions are callable and async
         assert asyncio.iscoroutinefunction(_make_request_async)
         assert asyncio.iscoroutinefunction(_paginate_async)
 
+    @pytest.mark.asyncio
     async def test_async_sleep_patch(self):
         """Test async sleep can be patched (integration test)."""
         with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
@@ -138,6 +142,7 @@ class TestAsyncFunctions:
 class TestPaginateAsync:
     """Tests for _paginate_async function."""
 
+    @pytest.mark.asyncio
     async def test_async_single_page(self):
         """Test async pagination with single page."""
         mock_session = AsyncMock()
