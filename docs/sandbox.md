@@ -13,8 +13,13 @@ Run linters and software tests.
 poe check
 ```
 
-Build OCI image.
+Build local OCI image.
 ```shell
 export BUILDKIT_PROGRESS=plain
-docker build --tag=local/omniload --file=Dockerfile .
+docker build --tag=local/omniload --file=release/oci/Dockerfile .
+```
+
+Invoke local OCI image.
+```shell
+docker run --rm -it local/omniload version
 ```

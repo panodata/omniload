@@ -1,0 +1,147 @@
+# Stage OCI container images through GitHub Actions (GHA) to GitHub Container Registry (GHCR).
+name: "Release: OCI to GHCR"
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+  # Run on pull requests.
+  pull_request:
+
+  # Run each night.
+  schedule:
+    - cron: '45 04 * * *'  # every day at 04:45 am
+
+  # Allow job to be triggered manually.
+  workflow_dispatch:
+
+permissions:
+  # Permit pushing to GHCR.
+  contents: read
+  packages: write
+  # Enable signed provenance/attestations.
+  id-token: write
+
+# Cancel in-progress jobs when pushing to the same branch.
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+# The name for the produced image at ghcr.io.
+env:
+  IMAGE_NAME: "${{ github.repository }}"
+
+jobs:
+
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Acquire sources
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          activate-environment: 'true'
+          enable-cache: true
+          python-version: '3.14'
+
+      - name: Build wheel package
+        run: |
+          uv pip install build
+          python -m build
+
+      - name: Upload wheel package
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ runner.os }}-wheel-${{ github.sha }}
+          path: dist/*.whl
+          retention-days: 7
+
+      - name: Run tests
+        run: |
+          compose_file="release/oci-full/test.yml"
+          if [[ -f "${compose_file}" ]]; then
+            export BUILDKIT_PROGRESS=plain
+            export COMPOSE_DOCKER_CLI_BUILD=1
+            export DOCKER_BUILDKIT=1
+            docker compose --file "${compose_file}" build
+            docker compose --file "${compose_file}" run --rm sut
+            docker compose --file "${compose_file}" down --volumes --remove-orphans
+          fi
+
+  build-and-publish:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Acquire sources
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Define image name and tags
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          # List of OCI images to use as base name for tags
+          images: |
+            ghcr.io/${{ env.IMAGE_NAME }}
+          # Generate OCI image tags based on the following events/attributes
+          tags: |
+            type=schedule,pattern=nightly
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Inspect metadata
+        run: |
+          echo "Tags:      ${{ steps.meta.outputs.tags }}"
+          echo "Labels:    ${{ steps.meta.outputs.labels }}"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Inspect builder
+        run: |
+          echo "Name:      ${{ steps.buildx.outputs.name }}"
+          echo "Endpoint:  ${{ steps.buildx.outputs.endpoint }}"
+          echo "Status:    ${{ steps.buildx.outputs.status }}"
+          echo "Flags:     ${{ steps.buildx.outputs.flags }}"
+          echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: release/oci/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: ${{ ! (startsWith(github.actor, 'dependabot') || github.event.pull_request.head.repo.fork ) }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          sbom: true
+          provenance: mode=max
+
+      - name: Display git status
+        run: |
+          set -x
+          git describe --tags --always
+          git status
