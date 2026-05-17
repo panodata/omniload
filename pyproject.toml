@@ -146,8 +146,8 @@ optional-dependencies.develop = [
 ]
 optional-dependencies.full = [ "omniload[ibm-db,odbc,oracle]" ]
 optional-dependencies.ibm-db = [
-  "ibm-db<4",
-  "ibm-db-sa<0.5",
+  "ibm-db<4; platform_machine!='aarch64'",
+  "ibm-db-sa<0.5; platform_machine!='aarch64'",
 ]
 optional-dependencies.odbc = [
   "pyodbc<5.4",

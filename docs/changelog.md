@@ -14,5 +14,6 @@
 - OCI: Updated to Python 3.14 and Debian 13 "trixie"
 - dlt: Turned off telemetry due to excessive requests
 - Runtime: Removed interactive mode `--yes`, replaced with `--dry-run`
+- Packaging: Modernized PyPI and OCI publishing
 
 [ingestr v0.14.155]: https://github.com/bruin-data/ingestr/tree/v0.14.155
