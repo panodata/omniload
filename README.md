@@ -1,7 +1,7 @@
 <div align="center">
 
 # omniload
-<p>Load data from any source into any destination.</p>
+<p>Copy data between any source and any destination.</p>
 <img src="https://github.com/panodata/omniload/blob/main/resources/demo.gif?raw=true" width="750" />
 
 </div>
