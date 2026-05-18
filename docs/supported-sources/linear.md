@@ -8,7 +8,7 @@ omniload supports Linear as a source through [Linear's public API](https://linea
 
 The URI format for Linear is:
 
-```plaintext
+```text
 linear://?api_key=<api_key>
 ```
 

@@ -8,7 +8,7 @@ omniload supports HubSpot as a source.
 
 The URI format for HubSpot is as follows:
 
-```plaintext
+```text
 hubspot://?api_key=<api-key-here>
 ```
 
@@ -95,6 +95,7 @@ Use the format `property_history:<table>` as the `--source-table` value. An opti
 
 Custom objects also support history via `property_history:custom:<objectType>` (e.g., `property_history:custom:myObject`).
 
+(filtering-properties-in-property-history-tables)=
 ### Filtering properties in property_history:* tables
 
 By default, `property_history:*` tables return change history for **every** property on the object type. For tenants with many properties this produces large, slow responses and consumes more HubSpot API quota than necessary.
@@ -168,13 +169,13 @@ No additional flags are needed — incremental state is managed automatically by
 
 HubSpot allows you to create custom objects to store unique business data that's not covered by the standard objects. omniload supports ingesting data from custom objects using the following format:
 
-```plaintext
+```text
 custom:<custom_object_name>
 ```
 
 or with associations to other objects:
 
-```plaintext
+```text
 custom:<custom_object_name>:<associations>
 ```
 

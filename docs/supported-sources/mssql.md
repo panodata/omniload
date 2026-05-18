@@ -14,7 +14,7 @@ pip install omniload[odbc]
 ## URI format
 The URI format for Microsoft SQL Server is as follows:
 
-```plaintext
+```text
 mssql://user:password@host:port/dbname?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
 ```
 

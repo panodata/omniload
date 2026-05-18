@@ -8,7 +8,7 @@ omniload supports Chess.com as a source, primarily to play around with the data 
 
 The URI format for Chess is as follows:
 
-```plaintext
+```text
 --source-uri 'chess://?players=<List[str]>'
 ```
 

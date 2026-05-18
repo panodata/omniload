@@ -202,6 +202,8 @@ Use this report to understand crashes for your App Store apps by app version and
 
 
 ## Examples
+
+(example-loading-app-downloads-analytics)=
 ### Loading App Downloads Analytics
 
 For this example, we'll assume that:

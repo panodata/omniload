@@ -7,7 +7,7 @@ omniload supports pipedrive as a source.
 
 The URI format for pipedrive is as follows:
 
-```plaintext
+```text
 pipedrive://?api_token=<api_token>
 ```
 

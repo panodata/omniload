@@ -5,7 +5,7 @@ omniload supports InfluxDB as a source.
 
 ## URI format
 
-```plaintext
+```text
 influxdb://<host>:<port>?token=<token>&org=<org>&bucket=<bucket>&secure=<secure>
 ```
 

@@ -4,6 +4,7 @@
 
 - Dependencies: Permitted installation of SQLAlchemy 2.0
 - Dependencies: Relaxed package requirements across the board
+- Migrated from VitePress to Sphinx
 
 ## 2026/05/17 v0.0.0
 

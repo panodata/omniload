@@ -8,7 +8,7 @@ omniload supports Hostaway as a source.
 
 The URI format for Hostaway is as follows:
 
-```plaintext
+```text
 hostaway://?api_key=<api-key-here>
 ```
 

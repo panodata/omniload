@@ -12,7 +12,7 @@ omniload supports AppsFlyer as a source.
 
 The URI format for AppsFlyer is as follows:
 
-```plaintext
+```text
 appsflyer://?api_key=<api-key>
 ```
 
@@ -50,7 +50,7 @@ You can also ingest custom tables by providing a list of dimensions and metrics.
 
 The format for the custom table is:
 
-```plaintext
+```text
 custom:<dimension1>,<dimension2>,<metric1>,<metric2>
 ```
 Parameters:

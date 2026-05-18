@@ -6,7 +6,7 @@ omniload supports Redshift as both a source and destination.
 ## URI format
 The URI format for Redshift is as follows:
 
-```plaintext
+```text
 redshift://user:password@host:port/dbname?sslmode=require
 ```
 

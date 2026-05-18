@@ -7,7 +7,7 @@ omniload supports PhantomBuster as a source.
 
 The URI format for PhantomBuster is as follows:
 
-```plaintext
+```text
 PhantomBuster://?api_key=<api_key>
 ```
 

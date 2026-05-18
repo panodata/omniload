@@ -8,7 +8,7 @@ omniload supports Slack as a source.
 
 The URI format for Slack is as follows:
 
-```plaintext
+```text
 slack://?api_key=<api-key-here>
 ```
 

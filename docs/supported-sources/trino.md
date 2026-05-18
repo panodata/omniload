@@ -9,7 +9,7 @@ omniload supports Trino as both a source and destination.
 ## URI format
 The URI format for Trino is as follows:
 
-```plaintext
+```text
 trino://<username>:<password>@<host>:<port>/<catalog>
 ```
 
@@ -40,7 +40,7 @@ Trino supports various authentication methods:
 ## Table naming
 When specifying tables for Trino (both source and destination), use the format:
 
-```plaintext
+```text
 schema.table_name
 ```
 

@@ -6,7 +6,7 @@ omniload supports SAP HANA as both a source and destination. It uses the [SQLAlc
 ## URI format
 The URI format for SAP HANA is as follows:
 
-```plaintext
+```text
 hana://user:password@host:port/dbname
 ```
 

@@ -8,7 +8,7 @@ omniload supports Plus Vibe AI as a source.
 
 The URI format for Plus Vibe AI is as follows:
 
-```plaintext
+```text
 plusvibeai://?api_key=<api-key-here>&workspace_id=<workspace-id-here>
 ```
 

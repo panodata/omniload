@@ -6,7 +6,7 @@ omniload supports Reddit Ads as a source.
 ## URI format
 The URI format for Reddit Ads as a source is as follows:
 
-```plaintext
+```text
 redditads://?access_token=<access_token>&account_ids=<account_ids>
 ```
 ## URI parameters:

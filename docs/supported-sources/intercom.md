@@ -8,7 +8,7 @@ omniload supports Intercom as a source.
 
 The URI format for Intercom is as follows:
 
-```plaintext
+```text
 intercom://?access_token=<access_token>&region=<region>
 ```
 

@@ -6,7 +6,7 @@ omniload supports DuckDB as both a source and destination.
 ## URI format
 The URI format for DuckDB is as follows:
 
-```plaintext
+```text
 duckdb:///<database-file>
 ```
 

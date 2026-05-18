@@ -8,7 +8,7 @@ omniload supports Cursor as a source.
 
 The URI format for Cursor is as follows:
 
-```plaintext
+```text
 cursor://?api_key=<api-key-here>
 ```
 

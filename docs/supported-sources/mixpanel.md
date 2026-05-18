@@ -6,7 +6,7 @@ omniload supports Mixpanel as a source.
 
 ## URI format
 
-```plaintext
+```text
 mixpanel://?username=<service_account_username>&password=<service_account_secret>&project_id=<project_id>&server=<server>
 ```
 

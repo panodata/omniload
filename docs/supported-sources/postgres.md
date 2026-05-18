@@ -6,7 +6,7 @@ omniload supports Postgres as both a source and destination.
 ## URI format
 The URI format for Postgres is as follows:
 
-```plaintext
+```text
 postgresql://<username>:<password>@<host>:<port>/<database-name>?sslmode=<sslmode>
 ```
 

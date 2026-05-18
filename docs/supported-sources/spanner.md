@@ -7,11 +7,11 @@ omniload supports GCP Spanner as a source.
 The URI format for Spanner is as follows:
 
 
-```plaintext
+```text
 spanner://?project_id=<project_id>&instance_id=<instance_id>&database=<database>&credentials_path=</path/to/service/account.json>
 ```
 or
-```plaintext
+```text
 spanner://?project_id=<project_id>&instance_id=<instance_id>&database=<database>&credentials_base64=<base64_encoded_credentials>
 ```
 

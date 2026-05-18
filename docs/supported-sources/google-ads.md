@@ -6,12 +6,12 @@
 Google Ads supports two authentication methods: **service account** and **OAuth2**. Both require a [developer token](https://developers.google.com/google-ads/api/docs/get-started/dev-token).
 
 ### Service Account
-```plaintext
+```text
 googleads://<customer_id>?credentials_path=/path/to/service-account.json&dev_token=<dev_token>
 ```
 
 ### OAuth2
-```plaintext
+```text
 googleads://<customer_id>?client_id=<client_id>&client_secret=<client_secret>&refresh_token=<refresh_token>&dev_token=<dev_token>
 ```
 

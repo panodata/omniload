@@ -8,7 +8,7 @@ SFTP (SSH File Transfer Protocol) is a secure file transfer protocol that runs o
 
 The URI for connecting to an SFTP server is structured as follows:
 
-```plaintext
+```text
 sftp://<username>:<password>@<host>:<port>
 ```
 

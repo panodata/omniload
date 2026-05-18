@@ -7,7 +7,7 @@ omniload supports Attio as a source.
 
 The URI format for Attio is as follows:
 
-```plaintext
+```text
 attio://?api_key=<api_key>
 ```
 

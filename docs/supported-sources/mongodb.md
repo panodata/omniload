@@ -8,7 +8,7 @@ omniload supports MongoDB as both a source and destination.
 MongoDB supports two connection string formats:
 
 ### Standard format (local/self-hosted)
-```plaintext
+```text
 mongodb://user:password@host:port
 ```
 
@@ -19,7 +19,7 @@ URI parameters:
 - `port`: the port number the database server is listening on, default is 27017 for MongoDB
 
 ### SRV format (MongoDB Atlas)
-```plaintext
+```text
 mongodb+srv://user:password@cluster.xxxxx.mongodb.net/?retryWrites=true&w=majority
 ```
 
@@ -39,14 +39,14 @@ The same URI structure can be used both for sources and destinations. You can re
 The `--source-table` option for MongoDB supports two formats:
 
 ### Basic format
-```plaintext
+```text
 database.collection
 ```
 
 This performs a simple collection scan, equivalent to `db.collection.find()`.
 
 ### Custom aggregation format
-```plaintext
+```text
 database.collection:[aggregation_pipeline]
 ```
 

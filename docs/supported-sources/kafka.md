@@ -6,7 +6,7 @@ omniload supports Apache Kafka as a source.
 ## URI format
 The URI format for Apache Kafka is as follows:
 
-```plaintext
+```text
 kafka://?bootstrap_servers=localhost:9092&group_id=test_group&security_protocol=SASL_SSL&sasl_mechanisms=PLAIN&sasl_username=example_username&sasl_password=example_secret&batch_size=1000&batch_timeout=3
 ```
 

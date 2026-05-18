@@ -8,7 +8,7 @@ omniload supports Docebo as a source.
 
 The URI format for Docebo is as follows:
 
-```plaintext
+```text
 docebo://?base_url=<base_url>&client_id=<client_id>&client_secret=<client_secret>&username=<username>&password=<password>
 ```
 

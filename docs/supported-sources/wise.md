@@ -6,7 +6,7 @@ omniload supports Wise as a source.
 
 ## URI format
 
-```plaintext
+```text
 wise://?api_key=<api_token>
 ```
 

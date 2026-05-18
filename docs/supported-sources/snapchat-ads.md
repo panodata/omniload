@@ -8,7 +8,7 @@ omniload supports Snapchat Ads as a source using [Snapchat ADS API](https://deve
 
 The URI format for Snapchat Ads is as follows:
 
-```plaintext
+```text
 snapchatads://?refresh_token=<refresh_token>&client_id=<client_id>&client_secret=<client_secret>&organization_id=<organization_id>
 ```
 
@@ -93,7 +93,7 @@ Snapchat Ads source supports fetching stats/measurement data for campaigns, ad s
 
 #### Stats Table Format
 
-```plaintext
+```text
 <resource_name>:<granularity>:<fields>
 <resource_name>:<breakdown>,<granularity>:<fields>
 ```

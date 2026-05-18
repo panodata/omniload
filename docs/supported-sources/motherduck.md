@@ -6,12 +6,12 @@ omniload supports MotherDuck as both a source and destination.
 ## URI format
 The URI format for MotherDuck is as follows:
 
-```plaintext
+```text
 motherduck://<database-name>?token=<your-token>
 ```
 
 Alternatively, you can use the `md://` scheme:
-```plaintext
+```text
 md://<database-name>?token=<your-token>
 ```
 
@@ -23,13 +23,13 @@ URI parameters:
 
 ### Using Token in URI
 Include the token directly in the URI:
-```plaintext
+```text
 md://<database-name>?token=<your-token>
 ```
 
 ### Connection without Database Name
 If you want to connect without specifying a specific database:
-```plaintext
+```text
 md://?token=<your-token>
 ```
 

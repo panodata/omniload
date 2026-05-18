@@ -6,7 +6,7 @@ omniload supports QuickBooks as a source.
 
 ## URI format
 
-```plaintext
+```text
 quickbooks://?company_id=<company_id>client_id=<client_id>&client_secret=<client_secret>&refresh_token=<refresh_token>&access_token=<access_token>&environment=<environment>&minor_version=<minor_version>
 ```
 

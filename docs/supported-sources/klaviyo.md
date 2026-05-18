@@ -8,7 +8,7 @@ omniload supports Klaviyo as a source.
 
 The URI format for Klaviyo is as follows:
 
-```plaintext
+```text
 klaviyo://?api_key=<api-key>
 ```
 

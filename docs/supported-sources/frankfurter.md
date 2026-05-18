@@ -8,7 +8,7 @@ omniload supports Frankfurter as a source primarily to demonstrate omniload's fe
 
 The URI format for Frankfurter is as follows:
 
-```plaintext
+```text
 frankfurter://?base=<currency-code-here>
 ```
 

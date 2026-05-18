@@ -6,7 +6,7 @@ omniload supports BigQuery as both a source and destination.
 ## URI format
 The URI format for BigQuery is as follows:
 
-```plaintext
+```text
 bigquery://<project-name>?credentials_path=/path/to/service/account.json&location=<location>
 ```
 
@@ -21,12 +21,12 @@ URI parameters:
 omniload supports multiple authentication methods for BigQuery:
 
 1. **Explicit credentials** (via `credentials_path` or `credentials_base64` in URI):
-   ```plaintext
+   ```text
    bigquery://my-project?credentials_path=/path/to/service-account.json
    ```
 
 2. **Application Default Credentials** (recommended for local development and GCP environments):
-   ```plaintext
+   ```text
    bigquery://my-project
    ```
    

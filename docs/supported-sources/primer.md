@@ -8,7 +8,7 @@ omniload supports Primer as a source.
 
 The URI format for Primer is as follows:
 
-```plaintext
+```text
 primer://?api_key=<your-api-key>
 ```
 

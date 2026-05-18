@@ -1,4 +1,4 @@
-# Development sandbox
+# Sandbox
 
 Acquire sources and install package in development mode.
 ```shell

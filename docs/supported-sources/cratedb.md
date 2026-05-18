@@ -16,7 +16,7 @@ by default.
 ### URI format
 
 The URI format for CrateDB as a source is as follows:
-```plaintext
+```text
 crate://<username>:<password>@<host>:<port>?ssl=<ssl>
 ```
 > [!INFO]
@@ -24,12 +24,12 @@ crate://<username>:<password>@<host>:<port>?ssl=<ssl>
 > `crate://crate@localhost:4200?ssl=false` when just using `crate://`.
 >
 > When connecting to CrateDB on localhost, use:
-> ```plaintext
+> ```text
 > crate://crate@localhost:4200?ssl=false
 > ```
 >
 > When connecting to [CrateDB Cloud], the URI looks like this:
-> ```plaintext
+> ```text
 > crate://admin:<PASSWORD>@<CLUSTERNAME>.eks1.eu-west-1.aws.cratedb.net:4200?ssl=true
 > ```
 
@@ -73,17 +73,17 @@ wire protocol on port 5432 by default.
 ### URI format
 
 The URI format for CrateDB as a destination is as follows:
-```plaintext
+```text
 cratedb://<username>:<password>@<host>:<port>?sslmode=<sslmode>
 ```
 > [!INFO]
 > When connecting to CrateDB on localhost, use:
-> ```plaintext
+> ```text
 > cratedb://crate:@localhost:5432?sslmode=disable
 > ```
 >
 > When connecting to [CrateDB Cloud], the URI looks like this:
-> ```plaintext
+> ```text
 > cratedb://admin:<PASSWORD>@<CLUSTERNAME>.eks1.eu-west-1.aws.cratedb.net:5432?sslmode=require
 > ```
 

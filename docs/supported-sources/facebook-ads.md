@@ -8,7 +8,7 @@ omniload supports Facebook Ads as a source using [Facebook Marketing API](https:
 
 The URI format for Facebook Ads is as follows:
 
-```plaintext
+```text
 facebookads://?access_token=<access_token>&account_id=<account_id>
 ```
 
@@ -208,7 +208,7 @@ Use `facebook_insights_with_account_ids` to fetch insights from multiple account
 
 #### Format
 
-```plaintext
+```text
 facebook_insights_with_account_ids:account_id1,account_id2
 facebook_insights_with_account_ids:account_id1,account_id2:breakdown_type
 facebook_insights_with_account_ids:account_id1,account_id2:breakdown_type:field1,field2

@@ -6,13 +6,13 @@ omniload supports ClickHouse as a source and destination.
 ## URI format
 The URI format for ClickHouse as a source is as follows:
 
-```plaintext
+```text
 clickhouse://<username>:<password>@<host>:<port>?secure=<secure>
 ```
 
 The URI format for ClickHouse as a destination is as follows:
 
-```plaintext
+```text
 clickhouse://<username>:<password>@<host>:<port>?http_port=<http_port>&secure=<secure>
 ```
 

@@ -6,7 +6,7 @@
 
 The URI format for Anthropic is:
 
-```plaintext
+```text
 anthropic://?api_key=<admin_api_key>
 ```
 

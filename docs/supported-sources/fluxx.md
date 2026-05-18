@@ -8,7 +8,7 @@ omniload supports Fluxx as a source.
 
 The URI format for Fluxx is:
 
-```plaintext
+```text
 fluxx://<instance>?client_id=<client_id>&client_secret=<client_secret>
 ```
 

@@ -6,7 +6,7 @@ omniload supports reading CSV, JSON, and Parquet files from public HTTP/HTTPS UR
 
 The URI format for HTTP sources is as follows:
 
-```plaintext
+```text
 http://example.com/path/to/file.csv
 https://example.com/path/to/file.json
 https://example.com/path/to/file.parquet

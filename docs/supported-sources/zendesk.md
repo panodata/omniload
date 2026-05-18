@@ -14,11 +14,11 @@ For all resources except chat resources, you can use either the [API Token](http
 
 The URI format for Zendesk based on the authentication method:
 ### For OAuth token authentication:
-```plaintext
+```text
 zendesk://:<oauth_token>@<sub-domain>
 ```
 ### For API token authentication:
-```plaintext
+```text
 zendesk://<email>:<api_token>@<sub-domain>
 ```
 

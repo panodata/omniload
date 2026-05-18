@@ -6,7 +6,7 @@ omniload supports TikTok Ads as a Source.
 ## URI format
 The URI format for TikTok Ads as a Source is as follows:
 
-```plaintext
+```text
 tiktok://?access_token=<ACCESS_TOKEN>&advertiser_ids=<advertiser_ids>&timezone=<timezone>
 ```
 ## URI parameters:

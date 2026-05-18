@@ -6,7 +6,7 @@ omniload supports Elasticsearch as both a source and destination.
 ## URI format
 The URI format for Elasticsearch is as follows:
 
-```plaintext
+```text
 elasticsearch://username:password@host:port?secure=<secure>&verify_certs=<verify_certs>
 ```
 

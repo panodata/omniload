@@ -8,7 +8,7 @@ omniload supports Fireflies as a source.
 
 The URI format for Fireflies is as follows:
 
-```plaintext
+```text
 fireflies://?api_key=<api-key-here>
 ```
 

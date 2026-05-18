@@ -8,7 +8,7 @@ omniload supports Indeed as a source using the [Indeed Ads API](https://docs.ind
 
 The URI format for Indeed is as follows:
 
-```plaintext
+```text
 indeed://?client_id=<client_id>&client_secret=<client_secret>&employer_id=<employer_id>
 ```
 

@@ -6,7 +6,7 @@ omniload supports Snowflake as both a source and destination.
 ## URI format
 The URI format for Snowflake is as follows:
 
-```plaintext
+```text
 snowflake://user:password@account/dbname?warehouse=COMPUTE_WH&role=data_scientist
 ```
 
@@ -24,13 +24,13 @@ The same URI structure can be used both for sources and destinations. You can re
 
 Snowflake supports key-pair (JWT) authentication as an alternative to password-based authentication. To use it, pass the private key via the `private_key` query parameter instead of a password:
 
-```plaintext
+```text
 snowflake://user@account/dbname?warehouse=COMPUTE_WH&role=data_scientist&private_key=<private-key>
 ```
 
 If your private key is encrypted with a passphrase, add the `private_key_passphrase` parameter:
 
-```plaintext
+```text
 snowflake://user@account/dbname?private_key=<key>&private_key_passphrase=<passphrase>
 ```
 
