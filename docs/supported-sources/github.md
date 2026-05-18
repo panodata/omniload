@@ -8,7 +8,7 @@ omniload supports GitHub as a source.
 
 The URI format for GitHub is as follows:
 
-```plaintext
+```text
 github://?access_token=<access_token>&owner=<owner>&repo=<repo>
 ```
 

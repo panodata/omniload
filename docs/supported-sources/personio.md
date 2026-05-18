@@ -9,7 +9,7 @@ omniload supports Personio as a source.
 
 The URI format for Personio is as follows:
 
-```plaintext
+```text
 personio://?client_id=<client-id>&client_secret=<client-secret>
 ```
 

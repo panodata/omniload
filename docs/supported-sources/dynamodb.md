@@ -7,7 +7,7 @@ omniload supports DynamoDB as both a source and destination.
 ## URI format
 
 The URI format for DynamoDB is as follows:
-```plaintext
+```text
 dynamodb://dynamodb.<region>.amazonaws.com?access_key_id=<aws_access_key_id>&secret_access_key=<aws_secret_access_key>
 ```
 

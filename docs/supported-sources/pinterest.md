@@ -9,7 +9,7 @@ omniload supports Pinterest as a source.
 
 The URI format for Pinterest is as follows:
 
-```plaintext
+```text
 pinterest://?access_token=<access_token>
 ```
 

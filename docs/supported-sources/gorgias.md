@@ -6,7 +6,7 @@ omniload supports Gorgias as a source.
 ## URI format
 The URI format for Gorgias is as follows:
 
-```plaintext
+```text
 gorgias://<domain>?api_key=<api-key>&email=<email>
 ```
 

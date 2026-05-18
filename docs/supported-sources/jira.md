@@ -8,7 +8,7 @@ omniload supports Jira as a source through [Jira's REST API v3](https://develope
 
 The URI format for Jira is:
 
-```plaintext
+```text
 jira://your-domain.atlassian.net?email=<email>&api_token=<api_token>
 ```
 

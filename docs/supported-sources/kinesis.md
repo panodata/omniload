@@ -8,7 +8,7 @@ omniload supports Kinesis as a source.
 ## URI format
 The URI format for Kinesis is as follows:
 
-```plaintext
+```text
 kinesis://?aws_access_key_id=<aws-access-key-id>&aws_secret_access_key=<aws-secret-access-key>&region_name=<region-name>
 ``` 
 

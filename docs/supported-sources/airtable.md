@@ -8,7 +8,7 @@ omniload supports Airtable as a source.
 
 The URI format for Airtable is as follows:
 
-```plaintext
+```text
  airtable://?access_token=<access_token>
 ```
 
@@ -36,7 +36,7 @@ To find your Base ID and Table ID:
 4. The Table IDs start with "tbl" and appears before the next `/`.
 
 For example, in this URL:
-```plaintext
+```text
 https://airtable.com/appve10kl227BIT4GV/tblOUnZVLFWbemTP1/viw3qtF76bRQC3wKx/rec9khXgeTotgCQ62?blocks=hide 
 ```
 In this case base_id is `appve10kl227BIT4GV` and table_id is `tblOUnZVLFWbemTP1`

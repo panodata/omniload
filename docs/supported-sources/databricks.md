@@ -8,7 +8,7 @@ omniload supports Databricks as both a source and destination.
 ### Access Token Authentication
 The traditional URI format for Databricks using an access token:
 
-```plaintext
+```text
 databricks://token:<access_token>@<server_hostname>?http_path=<http_path>&catalog=<catalog>&schema=<schema>
 ```
 
@@ -22,7 +22,7 @@ URI parameters:
 ### OAuth M2M Authentication (Service Principal)
 You can also authenticate using OAuth machine-to-machine (M2M) credentials with a service principal's client ID and client secret:
 
-```plaintext
+```text
 databricks://@<server_hostname>?http_path=<http_path>&catalog=<catalog>&schema=<schema>&client_id=<client_id>&client_secret=<client_secret>
 ```
 

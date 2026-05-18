@@ -6,7 +6,7 @@ omniload supports LinkedIn Ads as a source.
 ## URI format
 The URI format for LinkedIn Ads as a source is as follows:
 
-```plaintext
+```text
 linkedinads://?access_token=<access_token>&account_ids=<account_ids>
 ```
 ## URI parameters:

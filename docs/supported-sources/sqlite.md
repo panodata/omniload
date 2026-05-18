@@ -6,7 +6,7 @@ omniload supports SQLite as a source and a destination.
 ## URI format
 The URI format for SQLite is as follows:
 
-```plaintext
+```text
 sqlite:///<database-file>
 ```
 

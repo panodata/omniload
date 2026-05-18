@@ -8,7 +8,7 @@ omniload supports Bruin as a source.
 
 The URI format for Bruin is as follows:
 
-```plaintext
+```text
 bruin://?api_key=<api-key-here>
 ```
 

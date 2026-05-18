@@ -14,7 +14,7 @@ pip install omniload[ibm-db]
 ## URI format
 The URI format for DB2 is as follows:
 
-```plaintext
+```text
 db2://<username>:<password>@<host>:<port>/<database-name>
 ```
 

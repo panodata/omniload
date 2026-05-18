@@ -6,7 +6,7 @@ omniload supports RabbitMQ as a source.
 ## URI format
 The URI format for RabbitMQ is as follows:
 
-```plaintext
+```text
 amqp://username:password@host:port/vhost
 ```
 
@@ -22,7 +22,7 @@ The `source-table` parameter specifies the queue name to consume messages from.
 ## TLS
 For TLS-encrypted connections, use the `amqps://` scheme:
 
-```plaintext
+```text
 amqps://username:password@host:5671/vhost
 ```
 

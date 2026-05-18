@@ -23,7 +23,7 @@ omniload supports Zoom as a source.
 - Go to **Activation** and activate your app. Your app will not work until it is activated.
 
 ## URI format
-```plaintext
+```text
 zoom://?client_id=<client_id>&client_secret=<client_secret>&account_id=<account_id>
 ```
 

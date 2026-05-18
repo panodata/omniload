@@ -8,7 +8,7 @@ omniload supports Dune as a source.
 
 The URI format for Dune is as follows:
 
-```plaintext
+```text
 dune://?api_key=<api-key>
 ```
 

@@ -8,7 +8,7 @@ omniload supports Mailchimp as a source.
 
 The URI format for Mailchimp is as follows:
 
-```plaintext
+```text
 mailchimp://?api_key=<api-key>&server=<server-prefix>
 ```
 

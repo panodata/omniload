@@ -8,7 +8,7 @@ omniload supports Stripe as a source.
 
 The URI format for Stripe is as follows:
 
-```plaintext
+```text
 stripe://?api_key=<api-key-here>
 ```
 

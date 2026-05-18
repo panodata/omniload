@@ -8,7 +8,7 @@ omniload supports Athena as a destination.
 ## URI format
 The URI format for Athena is as follows:
 
-```plaintext
+```text
 athena://?bucket=<your-destination-bucket> \
     access_key_id=<your-aws-access-key-id> \
     secret_access_key=<your-aws-secret-access-key> \

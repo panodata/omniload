@@ -6,7 +6,7 @@ omniload supports MySQL as a source and a destination.
 ## URI format
 The URI format for MySQL is as follows:
 
-```plaintext
+```text
 mysql://user:password@host:port/dbname
 ```
 

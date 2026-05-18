@@ -8,7 +8,7 @@ omniload supports Solidgate as a source.
 
 The URI format for Solidgate is as follows:
 
-```plaintext
+```text
 solidgate://?public_key=<your-public-key>&secret_key=<your-secret-key>
 ```
 

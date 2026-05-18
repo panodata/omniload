@@ -6,7 +6,7 @@ omniload supports Oracle as a source through `oracle+cx_oracle` driver. Under th
 ## URI format
 The URI format for Oracle is as follows:
 
-```plaintext
+```text
 oracle+cx_oracle://user:password@host:port/dbname
 ```
 

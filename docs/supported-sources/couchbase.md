@@ -7,17 +7,17 @@ omniload supports Couchbase as a source.
 ## URI format
 
 ### Standard format (without SSL)
-```plaintext
+```text
 couchbase://username:password@host
 ```
 
 ### With SSL/TLS enabled
-```plaintext
+```text
 couchbase://username:password@host?ssl=true
 ```
 
 ### Including bucket in URI
-```plaintext
+```text
 couchbase://username:password@host/bucket
 couchbase://username:password@host/bucket?ssl=true
 ```
@@ -43,17 +43,17 @@ The URI structure can be used for connecting to both local/self-hosted Couchbase
 The `--source-table` option for Couchbase supports two formats depending on whether the bucket is specified in the URI:
 
 ### When bucket is NOT in URI
-```plaintext
+```text
 bucket.scope.collection
 ```
 
 ### When bucket IS in URI path
-```plaintext
+```text
 scope.collection
 ```
 
 For default scope and collection, you can use:
-```plaintext
+```text
 bucket._default._default
 ```
 

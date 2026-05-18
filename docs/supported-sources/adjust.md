@@ -8,7 +8,7 @@ omniload supports Adjust as a source.
 
 The URI format for Adjust is as follows:
 
-```plaintext
+```text
 adjust://?api_key=<api-key-here>&lookback_days=40
 ```
 Parameters:
@@ -67,7 +67,7 @@ Adjust source allows ingesting data from various sources:
 The custom table allows you to retrieve data based on specific dimensions and metrics, and apply filters to the data.
 
 The format for the custom table is: 
-```plaintext
+```text
 custom:<dimensions>:<metrics>[:<filters>]
 ```
 

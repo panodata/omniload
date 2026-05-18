@@ -8,7 +8,7 @@
 
 The URI format for Google Cloud Storage is as follows:
 
-```plaintext
+```text
 gs://?credentials_path=/path/to/service-account.json
 ```
 

@@ -6,7 +6,7 @@ omniload supports Notion as a source.
 ## URI format
 The URI format for Notion is as follows:
 
-```plaintext
+```text
 notion://?api_key=token
 ```
 

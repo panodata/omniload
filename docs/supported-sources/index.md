@@ -8,13 +8,10 @@
 Feel free to [create an issue][Issues] if you'd like to see support for another source or destination.
 
 <table>
-    <tr>
-        <th></th>
-        <th>Source</th>
-        <th>Destination</th>
-    </tr>
-    <tr>
-        <td colspan="3" style='text-align:center;'><strong>Databases</strong></td>
+    <tr style="text-align: left;">
+        <th style="width: 8em">Database</th>
+        <th style="width: 5em">Source</th>
+        <th style="width: 5em">Destination</th>
     </tr>
     <tr>
         <td>BigQuery</td>
@@ -121,12 +118,16 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>✅</td>
         <td>✅</td>
     </tr>
-    <tr>
-        <td colspan="3" style='text-align:center;'><strong>Platforms</strong></td>
+    <tr style="text-align: left;">
+        <th style="width: 8em">Platform</th>
+        <th style="width: 5em">Source</th>
+        <th style="width: 5em">Destination</th>
     </tr>
+    <tr>
         <td>Adjust</td>
         <td>✅</td>
         <td>-</td>
+    </tr>
     <tr>
         <td>Airtable</td>
         <td>✅</td>
@@ -273,6 +274,14 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>-</td>
     </tr>
 </table>
+
+
+```{toctree}
+:maxdepth: 1
+:hidden:
+:glob:
+*
+```
 
 
 [Issues]: https://github.com/panodata/omniload/issues

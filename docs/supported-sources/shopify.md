@@ -6,7 +6,7 @@ omniload supports Shopify as a source.
 ## URI format
 The URI format for Shopify is as follows:
 
-```plaintext
+```text
 shopify://<shopify store URL>?api_key=token
 ```
 

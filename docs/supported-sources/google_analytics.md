@@ -6,7 +6,7 @@ omniload supports Google Analytics as a source.
 ## URI format
 The URI format for Google Analytics is as follows:
 
-```plaintext
+```text
 googleanalytics://?credentials_path=/path/to/service/account.json&property_id=<property_id>
 ```
 Alternatively, you can use base64 encoded credentials:

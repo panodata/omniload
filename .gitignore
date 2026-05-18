@@ -15,6 +15,7 @@ pipeline_data
 dist
 docs/.vitepress/dist
 docs/.vitepress/cache
+docs/_build
 node_modules
 *.duckdb
 *.duckdb.wal

@@ -8,7 +8,7 @@ omniload supports Smartsheet as a source.
 
 The URI format for Smartsheet is as follows:
 
-```plaintext
+```text
 smartsheet://?access_token=<access_token>
 ```
 

@@ -1,4 +1,4 @@
-mak # Customer.io
+# Customer\.io
 
 [Customer.io](https://customer.io/) is a customer engagement platform that enables businesses to send automated messages across email, push, SMS, and more.
 
@@ -8,7 +8,7 @@ omniload supports Customer.io as a source.
 
 The URI format for Customer.io is as follows:
 
-```plaintext
+```text
 customerio://?api_key=<api-key>&region=<region>
 ```
 

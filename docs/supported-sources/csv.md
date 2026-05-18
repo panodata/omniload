@@ -4,6 +4,6 @@ omniload supports CSV files as source and destination. This allows copying data 
 ## URI format
 The URI format for CSV files is as follows:
 
-```plaintext
+```text
 csv://path/to/csv/file.csv
 ```

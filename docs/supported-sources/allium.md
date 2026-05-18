@@ -8,7 +8,7 @@ omniload supports Allium as a source.
 
 The URI format for Allium is as follows:
 
-```plaintext
+```text
 allium://?api_key=<api-key>
 ```
 

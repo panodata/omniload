@@ -8,7 +8,7 @@ omniload supports Internet Society Pulse as a source.
 
 The URI format for Internet Society Pulse is as follows:
 
-```plaintext
+```text
 isoc-pulse://?token=<your-token>
 ```
 
