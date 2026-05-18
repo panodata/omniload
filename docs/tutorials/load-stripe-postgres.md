@@ -1,18 +1,20 @@
-# Load Data from Stripe to PostgreSQL
+# Load data from Stripe to PostgreSQL
 
-Welcome! 👋 This beginner-friendly guide will help you load data from `Stripe` into `PostgreSQL` using omniload — a simple yet powerful command-line tool. No prior experience is needed, and best of all, no coding required! 🚀
+This guide will help you load data from `Stripe` into `PostgreSQL`
+using omniload — a simple yet powerful data loader tool.
 
-By the end of this guide, you'll have your Stripe data securely stored in PostgreSQL. But before we dive in, let’s take a quick look at omniload.
+By the end of this guide, you'll have your Stripe data securely
+stored in PostgreSQL.
 
 ## Overview of `omniload`
-`omniload` is a command-line tool that simplifies data ingestion by allowing users to load data from a source to a destination.
+`omniload` is a polyglot data loader framework and command-line tool that simplifies data ingestion by allowing users to load data from a source to a destination.
 
 ### `omniload` Command
 ```bash
 omniload ingest \
-   --source-uri '<your-source-uri-here>' \
+   --source-uri '<your-source-uri>' \
    --source-table '<your-schema>.<your-table>' \
-   --dest-uri '<your-destination-uri-here>' \
+   --dest-uri '<your-destination-uri>' \
    --dest-table '<your-schema>.<your-table>'
 ```
 - `omniload ingest`: Executes the data ingestion process.
@@ -23,12 +25,12 @@ omniload ingest \
 
 With this command, we connect to the source, retrieve the specified data, and load it into the destination database.
 
-## Let's Load Data from Stripe into PostgreSQL Together!
+## Step-by-step instructions
 
 Stripe is a popular payment processing platform used by e-commerce and SaaS applications. If you need to analyze Stripe data, you can load it into PostgreSQL, a reliable and widely used relational database.
 
 ## Step 1: Install `omniload`
-Ensure `omniload` is installed on your system. If not, follow the installation guide [here](../getting-started/quickstart.md#Installation).
+Ensure `omniload` is installed on your system. If not, follow the {ref}`installation guide <installation>`.
 
 ```bash
 pip install omniload
@@ -97,5 +99,6 @@ Once the command runs successfully, let's verify that the Stripe data has been l
 3. Ensure that the retrieved data matches what was expected from Stripe.
 
 ![Stripe to Postgresql](../media/stripe_postgres.png)
-🎉 Congratulations!
-Your Stripe data is now securely stored in PostgreSQL 🚀
+
+### Congratulations
+Your Stripe data is now securely stored in PostgreSQL.

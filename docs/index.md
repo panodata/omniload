@@ -4,13 +4,13 @@ outline: deep
 
 # Introduction
 
-omniload is a command-line app that allows you to ingest data from any source into any destination using simple command-line flags, no code necessary.
+omniload is a polyglot data loader framework based on dlt.
+It allows you to load data from any source into any destination,
+either using a concise CLI from your shell,
+or the Python API from your own applications.
 
-- ✨ copy data from your database into any destination
-- ➕ incremental loading: `append`, `merge` or `delete+insert`
-- 🐍 single-command installation
-
-omniload takes away the complexity of managing any backend or writing any code for ingesting data, simply run the command and watch the data land on its destination.
+omniload provides the same efficient incremental data loading modes
+inherited by [dlt]: `append`, `merge`, and `delete+insert`.
 
 ## Installation
 
@@ -37,12 +37,19 @@ Check out the [Quickstart](/getting-started/quickstart.md) guide to get started 
 The project is licensed under the MIT License, see the [LICENSE] file for details.
 Some components are licensed under the Apache 2.0 license, see the [NOTICE] file for details.
 
+### Acknowledgements
+
+This project would not have been possible without the amazing work by the
+authors and contributors to [SQLAlchemy], [dlt], and [ingestr], turtles all
+the way down. Kudos.
+
 
 ```{toctree}
 :caption: Commands and adapters
 :maxdepth: 1
 :hidden:
 :glob:
+commands/ingest
 commands/*
 ```
 
@@ -78,5 +85,8 @@ backlog
 ```
 
 
+[dlt]: https://github.com/dlt-hub/dlt
+[ingestr]: https://bruin-data.github.io/ingestr/
 [LICENSE]: https://github.com/panodata/omniload/blob/main/LICENSE.md
 [NOTICE]: https://github.com/panodata/omniload/blob/main/NOTICE
+[SQLAlchemy]: https://www.sqlalchemy.org/

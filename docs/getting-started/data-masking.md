@@ -1,4 +1,4 @@
-# Data Masking
+# Data masking
 
 Data masking is a critical security feature that allows you to protect sensitive information while maintaining data utility for development, testing, and analytics purposes. omniload provides comprehensive masking capabilities that can be applied to any column during the ingestion process.
 

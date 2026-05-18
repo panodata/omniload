@@ -1,21 +1,23 @@
-# Load Data from Amazon Kinesis to Google BigQuery
+# Load data from Amazon Kinesis to Google BigQuery
 
-Welcome! 👋  
- This beginner-friendly guide will help you load data from `Amazon Kinesis` into `Google BigQuery` using `omniload` — a simple yet powerful command-line tool. No prior experience is needed, and best of all, no coding required!
+This guide will help you load data from `Amazon Kinesis` into
+`Google BigQuery` using `omniload` — a simple yet powerful data
+loader tool.
 
-By the end of this guide, you'll have your Kinesis data securely stored in BigQuery. But before we dive in, let’s take a quick look at `omniload`.
+By the end of this guide, you'll have your Kinesis data securely
+stored in BigQuery.
 
 ## Overview of omniload
 
-`omniload` is a command-line tool that simplifies data ingestion by allowing users to load data from a source to a destination using simple command-line flags.
+`omniload` is a polyglot data loader framework and command-line tool that simplifies data ingestion by allowing users to load data from a source to a destination using simple command-line flags.
 
 ### omniload Command
 
 ```bash
 omniload ingest \
-   --source-uri '<your-source-uri-here>' \   
-   --source-table '<your-schema>.<your-table>' \   
-   --dest-uri '<your-destination-uri-here>' \   
+   --source-uri '<your-source-uri>' \
+   --source-table '<your-schema>.<your-table>' \
+   --dest-uri '<your-destination-uri>' \
    --dest-table '<your-schema>.<your-table>'
 ```
 
@@ -27,13 +29,13 @@ omniload ingest \
 
 With this command, we connect to the source, retrieve the specified data, and load it into the destination database.
 
-## Let's Load Data from Kinesis to BigQuery Together!
+## Step-by-step instructions
 
 Amazon Kinesis is a cloud-based service for real-time data streaming and analytics that processes large data streams. To analyze this data, you may need to load it into a data warehouse like Google BigQuery. `omniload` makes this process simple.
 
 ### Step 1: Install omniload
 
-Ensure `omniload` is installed. If not, follow the installation guide [here](../getting-started/quickstart.md#Installation).
+Ensure `omniload` is installed. If not, follow the {ref}`installation guide <installation>`.
 
 ### Step 2: Get AWS Credentials
 Kinesis will be our data source. To access it, you need AWS credentials.
@@ -126,5 +128,5 @@ After running the ingestion process, your Kinesis data will be available in BigQ
 
 <img alt="kinesis_bigquery" src="../media/kinesis.bigquery.png" />
 
-## 🎉 Congratulations!
+## Congratulations
 You have successfully loaded data from Amazon Kinesis to BigQuery using `omniload`.

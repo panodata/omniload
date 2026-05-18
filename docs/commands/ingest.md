@@ -2,7 +2,7 @@
 
 The `ingest` command is a core feature of the `omniload` tool, allowing users to transfer data from a source to a destination with optional support for incremental updates.
 
-## Example
+## Synopsis
 
 The following example demonstrates how to use the `ingest` command to transfer data from a source to a destination.
 
@@ -45,7 +45,7 @@ The `interval-start` and `interval-end` options support various datetime formats
 
 - `--help`: Displays the help message and exits the command.
 
-## Examples
+## Example gallery
 
 ### Ingesting a CSV file to DuckDB
 

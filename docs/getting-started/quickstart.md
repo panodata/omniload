@@ -9,6 +9,8 @@ It allows you to load data from any source into any destination,
 either using a concise CLI from your shell,
 or the Python API from your own applications.
 
+(installation)=
+
 ## Installation
 
 We recommend using [uv] to install or run `omniload`.

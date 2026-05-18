@@ -1,19 +1,20 @@
-# Load Data from Personio to DuckDB
+# Load data from Personio to DuckDB
 
-Welcome! 👋  
- This beginner-friendly guide will help you load data from `Personio` into `DuckDB` using omniload — a simple yet powerful command-line tool. No prior experience is needed, and best of all, no coding required!
+This guide will help you load data from `Personio` into `DuckDB`
+using omniload — a simple yet powerful data loader tool.
 
-By the end of this guide, you'll have your Personio data securely stored in DuckDB. But before we dive in, let’s take a quick look at `omniload`
+By the end of this guide, you'll have your Personio data securely
+stored in DuckDB.
 
 ## Overview of omniload
-`omniload` is a command-line tool that simplifies data ingestion by allowing users to load data from a source to a destination using simple command-line flags.
+`omniload` is a polyglot data loader framework and command-line tool that simplifies data ingestion by allowing users to load data from a source to a destination using simple command-line flags.
 
 ### `omniload` Command
 ```bash
 omniload ingest \
-   --source-uri '<your-source-uri-here>' \
+   --source-uri '<your-source-uri>' \
    --source-table '<your-schema>.<your-table>' \
-   --dest-uri '<your-destination-uri-here>' \
+   --dest-uri '<your-destination-uri>' \
    --dest-table '<your-schema>.<your-table>'
 ```
 - `omniload ingest`: Executes the data ingestion process.
@@ -23,12 +24,13 @@ omniload ingest \
 - `--dest-table TEXT`: Specifies the destination table. If not provided, it defaults to `--source-table`.
 
 With this command, we connect to the source, retrieve the specified data, and load it into the destination database.
-## Let's Load Data from Personio to DuckDB Together!
+
+## Step-by-step instructions
 
 Personio is a human resources management platform that helps businesses handle recruitment and employee data. To analyze this data, you may need to load it into an analytics database like DuckDB. `omniload` makes this process simple.
 
 ### Step 1: Install `omniload`
-Ensure `omniload` is installed. If not, follow the installation guide [here](../getting-started/quickstart.md#Installation).
+Ensure `omniload` is installed. If not, follow the {ref}`installation guide <installation>`.
 
 ### Step 2: Get Personio Credentials
 Personio will be our data source.
@@ -91,4 +93,5 @@ Example output:
 
 ![Personio to DuckDB](../media/personio_duckdb.png)
 
-🎉 **Congratulations!** You have successfully loaded data from Personio to DuckDB using `omniload`.
+### Congratulations
+You have successfully loaded data from Personio to DuckDB using `omniload`.

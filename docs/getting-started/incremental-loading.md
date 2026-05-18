@@ -2,7 +2,7 @@
 outline: deep
 ---
 
-# Incremental Loading
+# Incremental loading
 omniload supports incremental loading, which means you can choose to append, merge or delete+insert data into the destination table. Incremental loading allows you to ingest only the new rows from the source table into the destination table, which means that you don't have to ingest the entire table every time you run omniload.
 
 Before you use incremental loading, you should understand 3 important keys:

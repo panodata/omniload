@@ -2,7 +2,7 @@
 outline: deep
 ---
 
-# Core Concepts
+# Concepts
 omniload has a few simple concepts that you should understand before you start using it.
 
 ## Source & destination URIs
