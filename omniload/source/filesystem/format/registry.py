@@ -8,6 +8,7 @@ BASE_FILE_FORMATS: dict[str, str] = {
     "parquet": "read_parquet",
     # bson is read-only: the file:// destination's WRITE_FORMATS is a separate tuple.
     "bson": "read_bson",
+    "xlsx": "read_excel",
 }
 
 # Formats backed by the optional `iterable` extra (msgpack via iterabledata; cbor via cbor2

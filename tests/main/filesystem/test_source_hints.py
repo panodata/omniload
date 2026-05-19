@@ -30,9 +30,9 @@ def _captured_ref(rfr: MagicMock):
         # no fragment -> hints default to {}
         ("file://book.csv", {}),
         # a named hint on a plain resolvable file
-        ("file://book.csv#sheet=foo", {"sheet": "foo"}),
-        # format hint (#csv resolves the reader) and named hint coexist
-        ("file://feed.dat#csv&sheet=foo", {"sheet": "foo"}),
+        ("file://book.xlsx#sheet_name=foo", {"sheet_name": "foo"}),
+        # format hint (#xlsx resolves the reader) and named hint coexist
+        ("file://feed.dat#xlsx&sheet_name=foo", {"sheet_name": "foo"}),
     ],
 )
 def test_local_threads_hints(uri: str, expected_hints: dict[str, str]):
@@ -48,8 +48,8 @@ def test_local_threads_hints(uri: str, expected_hints: dict[str, str]):
     ("table", "expected_hints"),
     [
         ("bucket/book.csv", {}),
-        ("bucket/book.csv#sheet=foo", {"sheet": "foo"}),
-        ("bucket/feed.dat#csv&sheet=foo", {"sheet": "foo"}),
+        ("bucket/book.xlsx#sheet_name=foo", {"sheet_name": "foo"}),
+        ("bucket/feed.dat#xlsx&sheet_name=foo", {"sheet_name": "foo"}),
     ],
 )
 def test_gcs_threads_hints(table: str, expected_hints: dict[str, str]):
@@ -65,8 +65,8 @@ def test_gcs_threads_hints(table: str, expected_hints: dict[str, str]):
     ("table", "expected_hints"),
     [
         ("bucket/book.csv", {}),
-        ("bucket/book.csv#sheet=foo", {"sheet": "foo"}),
-        ("bucket/feed.dat#csv&sheet=foo", {"sheet": "foo"}),
+        ("bucket/book.xlsx#sheet_name=foo", {"sheet_name": "foo"}),
+        ("bucket/feed.dat#xlsx&sheet_name=foo", {"sheet_name": "foo"}),
     ],
 )
 def test_s3_threads_hints(table: str, expected_hints: dict[str, str]):
@@ -87,10 +87,10 @@ def test_s3_threads_hints_from_uri_path_form():
         pytest.warns(DeprecationWarning),
     ):
         S3Source().dlt_source(
-            "s3://bucket/book.csv?access_key_id=KEY&secret_access_key=SECRET#sheet=foo",
+            "s3://bucket/book.xlsx?access_key_id=KEY&secret_access_key=SECRET#sheet_name=foo",
             "",
         )
-    assert _captured_ref(rfr).hints == {"sheet": "foo"}
+    assert _captured_ref(rfr).hints == {"sheet_name": "foo"}
 
 
 def test_s3_blob_hints_track_the_loaded_file_when_both_forms_given():
@@ -103,18 +103,18 @@ def test_s3_blob_hints_track_the_loaded_file_when_both_forms_given():
         pytest.warns(DeprecationWarning),
     ):
         S3Source().dlt_source(
-            "s3://bucket/loaded.csv?access_key_id=KEY&secret_access_key=SECRET#sheet=uri",
-            "ignored/other.csv#sheet=table",
+            "s3://bucket/loaded.xlsx?access_key_id=KEY&secret_access_key=SECRET#sheet_name=uri",
+            "ignored/other.xlsx#sheet_name=table",
         )
-    assert _captured_ref(rfr).hints == {"sheet": "uri"}
+    assert _captured_ref(rfr).hints == {"sheet_name": "uri"}
 
 
 @pytest.mark.parametrize(
     ("table", "expected_hints"),
     [
         ("/book.csv", {}),
-        ("/book.csv#sheet=foo", {"sheet": "foo"}),
-        ("/feed.dat#csv&sheet=foo", {"sheet": "foo"}),
+        ("/book.xlsx#sheet_name=foo", {"sheet_name": "foo"}),
+        ("/feed.dat#xlsx&sheet_name=foo", {"sheet_name": "foo"}),
     ],
 )
 def test_sftp_threads_hints(table: str, expected_hints: dict[str, str]):

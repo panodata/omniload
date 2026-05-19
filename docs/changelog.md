@@ -10,6 +10,7 @@
   aborting at the end of a load because the required `post_load` hook was
   missing from the shared base class. Thanks, @hampsterx.
 - Filesystem: Added `#key=value` reader hint channel to source URIs
+- Filesystem: Added reader for Excel XLSX workbook files
 
 ## 2026/07/06 v0.6.0
 

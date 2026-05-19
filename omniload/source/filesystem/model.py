@@ -35,7 +35,7 @@ class FilesystemReference:
         file_glob (str): The filter to apply to the files in glob format.
         reader_name (str): The name of the reader resource to build, e.g. `read_csv`.
         hints (dict[str, str]): Free-form per-URI reader hints parsed from the
-            `#key=value` fragment (e.g. `{"sheet": "ticker-symbols"}`). The
+            `#key=value` fragment (e.g. `{"sheet_name": "ticker-symbols"}`). The
             key a reader looks up is that reader's contract; no reader consumes
             hints yet, so this is currently populated but unread.
         column_types (dict[str, Any], optional): Column name to type mapping, e.g. used by `read_csv_headless`.

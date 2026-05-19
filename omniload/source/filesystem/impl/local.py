@@ -54,7 +54,7 @@ class LocalFilesystemSource(FilesystemSource):
 
         # Strip the trailing #fragment (format hint and/or #key=value reader
         # hints) before splitting into dir/glob, so file://feed.dat#csv and
-        # file://book.xlsx#sheet=foo glob the bare path. Literal '#' in a path is
+        # file://book.xlsx#sheet_name=foo glob the bare path. Literal '#' in a path is
         # preserved by parse_fragment when the fragment isn't a valid directive.
         path, _, hints = parse_fragment(spec)
 

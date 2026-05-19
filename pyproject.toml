@@ -90,6 +90,7 @@ dependencies = [
   "duckdb-engine<0.18",
   "elasticsearch<10",
   "facebook-business<26",
+  "fastexcel<1",
   "flatten-json<0.2",
   "gcsfs",
   "google-ads<32",
@@ -135,6 +136,7 @@ dependencies = [
   "trino[sqlalchemy]==0.338.0",
   "typer<0.27",
   "urllib3<2.8",
+  "xlsxwriter<4",
 ]
 optional-dependencies.develop = [
   "pkginfo<2",

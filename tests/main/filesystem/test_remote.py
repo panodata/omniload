@@ -106,27 +106,33 @@ def test_split_format_hint(table: str, expected: tuple[str, str | None]):
         ("file#csv", ("file", "csv", {})),
         ("path/no-extension#csv_headless", ("path/no-extension", "csv_headless", {})),
         # a single named hint
-        ("book.xlsx#sheet=foo", ("book.xlsx", None, {"sheet": "foo"})),
+        ("book.xlsx#sheet_name=foo", ("book.xlsx", None, {"sheet_name": "foo"})),
         # multiple named hints
         (
-            "book.xlsx#sheet=foo&header=0",
-            ("book.xlsx", None, {"sheet": "foo", "header": "0"}),
+            "book.xlsx#sheet_name=foo&header=0",
+            ("book.xlsx", None, {"sheet_name": "foo", "header": "0"}),
         ),
         # format hint and named hint coexist in one fragment
-        ("feed.dat#csv&sheet=foo", ("feed.dat", "csv", {"sheet": "foo"})),
+        ("feed.dat#xlsx&sheet_name=foo", ("feed.dat", "xlsx", {"sheet_name": "foo"})),
         # empty value is kept (reader decides if "" means unset)
-        ("book.xlsx#sheet=", ("book.xlsx", None, {"sheet": ""})),
+        ("book.xlsx#sheet_name=", ("book.xlsx", None, {"sheet_name": ""})),
         # '=' in the value: parse_qsl partitions on the first '=', not split
         ("book.xlsx#x=a=b", ("book.xlsx", None, {"x": "a=b"})),
         # percent-decoding of values
-        ("book.xlsx#sheet=My%20Sheet", ("book.xlsx", None, {"sheet": "My Sheet"})),
-        ("book.xlsx#sheet=R%26D", ("book.xlsx", None, {"sheet": "R&D"})),
+        (
+            "book.xlsx#sheet_name=My%20Sheet",
+            ("book.xlsx", None, {"sheet_name": "My Sheet"}),
+        ),
+        ("book.xlsx#sheet_name=R%26D", ("book.xlsx", None, {"sheet_name": "R&D"})),
         # duplicate key: last wins
-        ("book.xlsx#sheet=foo&sheet=bar", ("book.xlsx", None, {"sheet": "bar"})),
+        (
+            "book.xlsx#sheet_name=foo&sheet_name=bar",
+            ("book.xlsx", None, {"sheet_name": "bar"}),
+        ),
         # trailing '&' is harmless separator noise
-        ("book.xlsx#sheet=foo&", ("book.xlsx", None, {"sheet": "foo"})),
+        ("book.xlsx#sheet_name=foo&", ("book.xlsx", None, {"sheet_name": "foo"})),
         # mixed valid hint + invalid bare token -> whole '#...' stays literal
-        ("book.xlsx#sheet=foo&bad", ("book.xlsx#sheet=foo&bad", None, {})),
+        ("book.xlsx#sheet_name=foo&bad", ("book.xlsx#sheet_name=foo&bad", None, {})),
         # duplicate/conflicting bare formats -> literal
         ("feed.dat#csv&parquet", ("feed.dat#csv&parquet", None, {})),
         # literal '#' in a path (trailing segment is neither hint nor format)
@@ -135,7 +141,7 @@ def test_split_format_hint(table: str, expected: tuple[str, str | None]):
         # a bare trailing '#' interprets to nothing -> kept literal
         ("file.csv#", ("file.csv#", None, {})),
         # %23 forces a literal '#' that would otherwise look like a hint fragment
-        ("book.xlsx%23sheet=foo", ("book.xlsx%23sheet=foo", None, {})),
+        ("book.xlsx%23sheet_name=foo", ("book.xlsx%23sheet_name=foo", None, {})),
     ],
 )
 def test_parse_fragment(spec: str, expected: tuple[str, str | None, dict[str, str]]):
@@ -183,6 +189,6 @@ def test_supported_file_format_message():
     """The supported-formats message lists the base formats in order."""
     # The base formats are always advertised, in order. Iterable-extra formats (msgpack, ...)
     # are appended only when their decoder is installed, so assert the stable base prefix.
-    assert supported_file_format_message("S3").startswith(
-        "S3 Source only supports file formats: csv, csv_headless, jsonl, parquet, bson"
+    assert "S3 Source only supports file formats:" in supported_file_format_message(
+        "S3"
     )

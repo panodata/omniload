@@ -83,12 +83,12 @@ def parse_fragment(spec: str) -> Tuple[str, Optional[str], Dict[str, str]]:
     reader-directive channel. It may carry, in any combination:
 
     - a bare **format hint** -- a single known-format token (``#csv``); and/or
-    - **named hints** -- ``key=value`` pairs (``#sheet=foo&header=0``), parsed
+    - **named hints** -- ``key=value`` pairs (``#sheet_name=foo&header=0``), parsed
       with :func:`urllib.parse.parse_qsl`. That means ``=``-partition semantics
       (``#x=a=b`` -> ``{"x": "a=b"}``, not a split), percent-decoding of keys
-      and values (``#sheet=My%20Sheet`` -> ``My Sheet``; and, form-encoding
+      and values (``#sheet_name=My%20Sheet`` -> ``My Sheet``; and, form-encoding
       style, a literal ``+`` decodes to a space), and empty values are kept
-      (``#sheet=`` -> ``{"sheet": ""}``; a reader decides whether that means
+      (``#sheet_name=`` -> ``{"sheet_name": ""}``; a reader decides whether that means
       "unset"). Duplicate keys are last-wins.
 
     Grammar of the fragment (``&``-separated segments):
@@ -98,7 +98,7 @@ def parse_fragment(spec: str) -> Tuple[str, Optional[str], Dict[str, str]]:
     - empty segments (from a trailing/doubled ``&``) are ignored.
 
     **All-or-nothing.** If any segment is neither a ``key=value`` pair nor a
-    single known-format token -- an unknown bare token (``#sheet=foo&bad``), a
+    single known-format token -- an unknown bare token (``#sheet_name=foo&bad``), a
     second/duplicate bare format (``#csv&parquet``) -- the whole ``#...`` is
     treated as a *literal part of the path* and returned unchanged as
     ``(spec, None, {})``. A malformed tail never silently drops a valid hint,
@@ -155,8 +155,8 @@ def blob_hints(parsed_uri: ParseResult, table: str) -> Dict[str, str]:
 
     Mirrors :func:`parse_uri`'s carrier choice so hints always track the file
     that is actually loaded. In the recommended form the fragment rides
-    ``--source-table`` (``s3://?...`` + table ``bucket/book.xlsx#sheet=foo``); in
-    the deprecated URI-path form (``s3://bucket/book.xlsx#sheet=foo``)
+    ``--source-table`` (``s3://?...`` + table ``bucket/book.xlsx#sheet_name=foo``); in
+    the deprecated URI-path form (``s3://bucket/book.xlsx#sheet_name=foo``)
     :func:`urllib.parse.urlparse` strips it into ``parsed_uri.fragment``.
     ``parse_uri`` uses the URI-path form whenever ``parsed_uri.path`` is set (or
     ``table`` is empty), so the fragment is read from there in that case and only

@@ -12,6 +12,7 @@ from omniload.target.filesystem.api import (
     LocalFilesystemDestination,
 )
 from omniload.target.filesystem.util import _resolve_output_target
+from omniload.target.model import DEFAULT_DATASET_NAME
 from tests.util import invoke_ingest_command
 
 # Normalized so the relative-form expectations hold on Windows too (os.getcwd() there
@@ -96,7 +97,14 @@ def test_glob_in_destination_path_is_rejected(uri):
         _resolve_output_target(uri)
 
 
-@pytest.mark.parametrize("table", ["justtable", "a.b.c", ""])
+@pytest.mark.parametrize("uri", ["file://out.csv", "out.csv"])
+def test_dlt_run_params_requires_uri(uri):
+    destination = LocalFilesystemDestination().dlt_run_params(uri, "")
+    assert destination["dataset_name"] == DEFAULT_DATASET_NAME
+    assert destination["table_name"] == "out"
+
+
+@pytest.mark.parametrize("table", ["justtable", "a.b.c"])
 def test_dlt_run_params_requires_two_part_table(table):
     with pytest.raises(ValueError, match=re.escape("<schema>.<table>")):
         LocalFilesystemDestination().dlt_run_params("file://out.csv", table)

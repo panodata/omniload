@@ -1,3 +1,6 @@
+DEFAULT_DATASET_NAME = "public"
+
+
 class GenericSqlDestination:
     """Base implementation for SQL destinations that load into schema tables."""
 

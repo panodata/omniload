@@ -14,10 +14,9 @@
 
 """Reads files in s3, gs or azure buckets using fsspec and provides convenience resources for chunked reading of various file formats"""
 
-from typing import Any, Iterator, List, Optional, Tuple, Union
+from typing import Iterator, List, Optional, Tuple, Union
 
 import dlt
-from dlt.common.typing import TDataItems
 from dlt.extract import DltSource
 from dlt.sources import DltResource
 from dlt.sources.credentials import FileSystemCredentials
@@ -31,6 +30,7 @@ from omniload.source.filesystem.format.readers import (
     read_csv,
     read_csv_duckdb,
     read_csv_headless,
+    read_excel,
     read_jsonl,
     read_msgpack,
     read_parquet,
@@ -71,6 +71,8 @@ def readers(
         | dlt.transformer(name="read_csv_headless", max_table_nesting=0)(
             read_csv_headless
         ),
+        filesystem_resource
+        | dlt.transformer(name="read_excel", max_table_nesting=0)(read_excel),
         filesystem_resource
         | dlt.transformer(name="read_jsonl", max_table_nesting=0)(read_jsonl),
         filesystem_resource
@@ -136,27 +138,20 @@ def resource_for_reader(ref: FilesystemReference) -> DltSource | DltResource:
 
     Threads ``column_types`` into ``read_csv_headless``; every other reader is selected as-is.
     """
-    if ref.reader_name != "read_csv_headless":
-        return readers(ref.bucket_url, ref.fs, ref.file_glob).with_resources(
-            ref.reader_name
-        )
 
-    column_names = list(ref.column_types.keys()) if ref.column_types else None
-
-    def read_csv_headless_with_cols(
-        items: Iterator[FileItemDict],
-        chunksize: int = 10000,
-        **pandas_kwargs: Any,
-    ) -> Iterator[TDataItems]:
-        """Read header-less CSV with the column names derived from ``ref.column_types``."""
-        yield from read_csv_headless(
-            items,
-            chunksize=chunksize,
-            column_names=column_names,
-            **pandas_kwargs,
-        )
-
+    # Establish filesystem and reader elements.
     filesystem_resource = filesystem(ref.bucket_url, ref.fs, file_glob=ref.file_glob)
-    return filesystem_resource | dlt.transformer(
-        name="read_csv_headless", max_table_nesting=0
-    )(read_csv_headless_with_cols)
+    all_readers = readers(
+        ref.bucket_url, ref.fs, file_glob=ref.file_glob
+    ).with_resources(ref.reader_name)
+    reader = all_readers.selected_resources[ref.reader_name]
+
+    # Apply parameter bindings for certain readers.
+    if ref.reader_name == "read_csv_headless":
+        column_names = list(ref.column_types.keys()) if ref.column_types else None
+        reader = reader.bind(column_names=column_names)
+    elif ref.reader_name == "read_excel":
+        reader = reader.bind(**ref.hints)
+
+    # Connect and propagate elements.
+    return filesystem_resource | reader

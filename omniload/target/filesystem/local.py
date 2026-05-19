@@ -19,9 +19,11 @@ CSV / JSONL / Parquet.
 import os
 import shutil
 import tempfile
+from pathlib import Path
 
 from omniload.target.filesystem.registry import writer_for_format
 from omniload.target.filesystem.util import _resolve_output_target, _strip_dlt_columns
+from omniload.target.model import DEFAULT_DATASET_NAME
 from omniload.util.loader import load_dlt_file
 
 
@@ -40,7 +42,6 @@ class LocalFilesystemDestination:
     table_name: str
 
     def dlt_dest(self, uri: str, **kwargs):
-        from pathlib import Path
 
         import dlt.destinations
 
@@ -55,11 +56,21 @@ class LocalFilesystemDestination:
         return dlt.destinations.filesystem(bucket_url=Path(self.temp_path).as_uri())
 
     def dlt_run_params(self, uri: str, table: str, **kwargs) -> dict:
-        table_fields = table.split(".")
-        if len(table_fields) != 2:
-            raise ValueError("Table name must be in the format <schema>.<table>")
+        """Decode dataset and table name from `--dest-table` or `--dest-uri` parameters."""
 
-        self.dataset_name, self.table_name = table_fields
+        # When a destination table name is given, decode from a tuple.
+        if table:
+            table_fields = table.split(".")
+            if len(table_fields) != 2:
+                raise ValueError("Table name must be in the format <schema>.<table>")
+            self.dataset_name, self.table_name = table_fields
+
+        # If it's empty, use a fixed dataset name (`public`), and derive
+        # the table name from the filename path component in the URI.
+        else:
+            self.dataset_name = DEFAULT_DATASET_NAME
+            self.table_name = Path(uri).stem
+
         return {
             "dataset_name": self.dataset_name,
             "table_name": self.table_name,
