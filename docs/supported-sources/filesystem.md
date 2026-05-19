@@ -24,6 +24,7 @@ URI does not include file extensions.
 | [CSV] (headless) | Comma-separated values without a header row     | .csv       | #csv_headless | ✅   | ❌    |
 | [JSONL]          | Newline-delimited JSON                          | .jsonl     | #jsonl        | ✅   | ✅    |
 | {ref}`msgpack`   | Efficient binary serialization format           | .msgpack   | #msgpack      | ✅   | ❌    |
+| {ref}`ods`       | OpenDocument spreadsheet format                 | .ods       | #ods          | ✅   | ❌    |
 | [Parquet]        | Apache Parquet format                           | .parquet   | #parquet      | ✅   | ✅    |
 | {ref}`xlsx`      | Excel spreadsheet format                        | .xlsx      | #xlsx         | ✅   | ❌    |
 

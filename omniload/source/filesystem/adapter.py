@@ -33,6 +33,7 @@ from omniload.source.filesystem.format.readers import (
     read_excel,
     read_jsonl,
     read_msgpack,
+    read_ods,
     read_parquet,
 )
 
@@ -73,6 +74,8 @@ def readers(
         ),
         filesystem_resource
         | dlt.transformer(name="read_excel", max_table_nesting=0)(read_excel),
+        filesystem_resource
+        | dlt.transformer(name="read_ods", max_table_nesting=0)(read_ods),
         filesystem_resource
         | dlt.transformer(name="read_jsonl", max_table_nesting=0)(read_jsonl),
         filesystem_resource
@@ -150,7 +153,7 @@ def resource_for_reader(ref: FilesystemReference) -> DltSource | DltResource:
     if ref.reader_name == "read_csv_headless":
         column_names = list(ref.column_types.keys()) if ref.column_types else None
         reader = reader.bind(column_names=column_names, **ref.hints)
-    elif ref.reader_name in ("read_csv", "read_excel"):
+    else:
         reader = reader.bind(**ref.hints)
 
     # Connect and propagate elements.

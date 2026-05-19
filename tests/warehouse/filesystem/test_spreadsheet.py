@@ -1,4 +1,5 @@
 import sys
+from collections import OrderedDict
 from importlib.resources import as_file, files
 from pathlib import Path
 
@@ -6,6 +7,24 @@ import polars as pl
 import pytest
 
 from tests.util import invoke_ingest_command
+
+
+@pytest.fixture(scope="session")
+def ods_testfile(tmp_path_factory) -> Path:
+    """Supply an OpenOffice workbook file (ODS) for testing purposes, synthesized from an existing CSV file asset."""
+    import pyexcel_ods3
+
+    csv_traversable = files("omniload.testdata") / "create_replace.csv"
+    tmp_path = tmp_path_factory.mktemp("testdrive")
+    ods = tmp_path / "test.ods"
+    with as_file(csv_traversable) as csv:
+        workbook = OrderedDict()
+        df = pl.read_csv(csv)
+        data = [df.columns]
+        data.extend(df.rows())
+        workbook.update({"ticker-symbols": data})
+        pyexcel_ods3.save_data(str(ods), workbook)
+    return ods
 
 
 @pytest.fixture(scope="session")
@@ -19,15 +38,17 @@ def xlsx_testfile(tmp_path_factory) -> Path:
     return xlsx
 
 
-def test_excel_source_with_sheet_name(xlsx_testfile, tmp_path):
-    """Read a specific worksheet from an Excel workbook file by name"""
+@pytest.mark.parametrize("spreadsheet_fixture", ["ods_testfile", "xlsx_testfile"])
+def test_spreadsheet_source_with_sheet_name(request, spreadsheet_fixture, tmp_path):
+    """Read a specific worksheet from a workbook file by name"""
 
-    # Define output file.
+    # Define input and output files.
+    spreadsheet_testfile = request.getfixturevalue(spreadsheet_fixture)
     csv_outfile = tmp_path / "output.csv"
 
     # Invoke data loading.
     result = invoke_ingest_command(
-        source_uri=f"file://{xlsx_testfile}#sheet_name=ticker-symbols",
+        source_uri=f"file://{spreadsheet_testfile}#sheet_name=ticker-symbols",
         dest_uri=f"file://{csv_outfile}",
         print_output=False,
     )
@@ -39,15 +60,17 @@ def test_excel_source_with_sheet_name(xlsx_testfile, tmp_path):
     assert content[1] == "A,2024-04-19,True,AGILENT TECHNOLOGIES INC"
 
 
-def test_excel_source_without_sheet(xlsx_testfile, tmp_path):
-    """Without worksheet name, read the first worksheet from an Excel workbook file"""
+@pytest.mark.parametrize("spreadsheet_fixture", ["ods_testfile", "xlsx_testfile"])
+def test_spreadsheet_source_without_sheet(request, spreadsheet_fixture, tmp_path):
+    """Without worksheet name, read the first worksheet from a workbook file"""
 
-    # Define output file.
+    # Define input and output files.
+    spreadsheet_testfile = request.getfixturevalue(spreadsheet_fixture)
     csv_outfile = tmp_path / "output.csv"
 
     # Invoke data loading.
     result = invoke_ingest_command(
-        source_uri=f"file://{xlsx_testfile}",
+        source_uri=f"file://{spreadsheet_testfile}",
         dest_uri=f"file://{csv_outfile}",
         print_output=False,
     )
@@ -59,15 +82,19 @@ def test_excel_source_without_sheet(xlsx_testfile, tmp_path):
     assert content[1] == "A,2024-04-19,True,AGILENT TECHNOLOGIES INC"
 
 
-def test_excel_source_with_unknown_sheet_name(xlsx_testfile, tmp_path):
-    """Reading an unknown worksheet from an Excel workbook fails"""
+@pytest.mark.parametrize("spreadsheet_fixture", ["ods_testfile", "xlsx_testfile"])
+def test_spreadsheet_source_with_unknown_sheet_name(
+    request, spreadsheet_fixture, tmp_path
+):
+    """Reading an unknown worksheet from a workbook fails"""
 
-    # Define output file.
+    # Define input and output files.
+    spreadsheet_testfile = request.getfixturevalue(spreadsheet_fixture)
     csv_outfile = tmp_path / "output.csv"
 
     # Invoke data loading.
     result = invoke_ingest_command(
-        source_uri=f"file://{xlsx_testfile}#sheet_name=unknown",
+        source_uri=f"file://{spreadsheet_testfile}#sheet_name=unknown",
         dest_uri=f"file://{csv_outfile}",
         print_output=False,
     )
@@ -83,15 +110,17 @@ def test_excel_source_with_unknown_sheet_name(xlsx_testfile, tmp_path):
 @pytest.mark.skipif(
     sys.version_info < (3, 14), reason="requires Python 3.14 or greater"
 )
-def test_excel_source_with_sheet_id(xlsx_testfile, tmp_path):
-    """Read a specific worksheet from an Excel workbook file by id"""
+@pytest.mark.parametrize("spreadsheet_fixture", ["ods_testfile", "xlsx_testfile"])
+def test_spreadsheet_source_with_sheet_id(request, spreadsheet_fixture, tmp_path):
+    """Read a specific worksheet from a workbook file by id"""
 
-    # Define output file.
+    # Define input and output files.
+    spreadsheet_testfile = request.getfixturevalue(spreadsheet_fixture)
     csv_outfile = tmp_path / "output.csv"
 
     # Invoke data loading.
     result = invoke_ingest_command(
-        source_uri=f"file://{xlsx_testfile}#sheet_id=1",
+        source_uri=f"file://{spreadsheet_testfile}#sheet_id=1",
         dest_uri=f"file://{csv_outfile}",
         print_output=True,
     )
@@ -106,15 +135,19 @@ def test_excel_source_with_sheet_id(xlsx_testfile, tmp_path):
 @pytest.mark.skipif(
     sys.version_info < (3, 14), reason="requires Python 3.14 or greater"
 )
-def test_excel_source_with_unknown_sheet_id(xlsx_testfile, tmp_path):
-    """Read a specific worksheet from an Excel workbook file by id that does not exist"""
+@pytest.mark.parametrize("spreadsheet_fixture", ["ods_testfile", "xlsx_testfile"])
+def test_spreadsheet_source_with_unknown_sheet_id(
+    request, spreadsheet_fixture, tmp_path
+):
+    """Read a specific worksheet from a workbook file by id that does not exist"""
 
-    # Define output file.
+    # Define input and output files.
+    spreadsheet_testfile = request.getfixturevalue(spreadsheet_fixture)
     csv_outfile = tmp_path / "output.csv"
 
     # Invoke data loading.
     result = invoke_ingest_command(
-        source_uri=f"file://{xlsx_testfile}#sheet_id=99",
+        source_uri=f"file://{spreadsheet_testfile}#sheet_id=99",
         dest_uri=f"file://{csv_outfile}",
         print_output=True,
     )
@@ -128,15 +161,17 @@ def test_excel_source_with_unknown_sheet_id(xlsx_testfile, tmp_path):
 @pytest.mark.skipif(
     sys.version_info < (3, 14), reason="requires Python 3.14 or greater"
 )
-def test_excel_source_without_header(xlsx_testfile, tmp_path):
-    """Read a specific worksheet from an Excel workbook file using the `has_header=false` option"""
+@pytest.mark.parametrize("spreadsheet_fixture", ["ods_testfile", "xlsx_testfile"])
+def test_spreadsheet_source_without_header(request, spreadsheet_fixture, tmp_path):
+    """Read a specific worksheet from a workbook file using the `has_header=false` option"""
 
-    # Define output file.
+    # Define input and output files.
+    spreadsheet_testfile = request.getfixturevalue(spreadsheet_fixture)
     csv_outfile = tmp_path / "output.csv"
 
     # Invoke data loading.
     result = invoke_ingest_command(
-        source_uri=f"file://{xlsx_testfile}#sheet_name=ticker-symbols&has_header=false",
+        source_uri=f"file://{spreadsheet_testfile}#sheet_name=ticker-symbols&has_header=false",
         dest_uri=f"file://{csv_outfile}",
         print_output=False,
     )
@@ -152,15 +187,17 @@ def test_excel_source_without_header(xlsx_testfile, tmp_path):
 @pytest.mark.skipif(
     sys.version_info < (3, 14), reason="requires Python 3.14 or greater"
 )
-def test_excel_source_with_columns(xlsx_testfile, tmp_path):
-    """Read a specific worksheet from an Excel workbook file using the `columns=a,b,c` option"""
+@pytest.mark.parametrize("spreadsheet_fixture", ["ods_testfile", "xlsx_testfile"])
+def test_spreadsheet_source_with_columns(request, spreadsheet_fixture, tmp_path):
+    """Read a specific worksheet from a workbook file using the `columns=a,b,c` option"""
 
-    # Define output file.
+    # Define input and output files.
+    spreadsheet_testfile = request.getfixturevalue(spreadsheet_fixture)
     csv_outfile = tmp_path / "output.csv"
 
     # Invoke data loading.
     result = invoke_ingest_command(
-        source_uri=f'file://{xlsx_testfile}#columns=["symbol","date"]',
+        source_uri=f'file://{spreadsheet_testfile}#columns=["symbol","date"]',
         dest_uri=f"file://{csv_outfile}",
         print_output=False,
     )
@@ -175,15 +212,17 @@ def test_excel_source_with_columns(xlsx_testfile, tmp_path):
 @pytest.mark.skipif(
     sys.version_info < (3, 14), reason="requires Python 3.14 or greater"
 )
-def test_excel_source_with_wrong_columns(xlsx_testfile, tmp_path):
-    """Read a specific worksheet from an Excel workbook file using the `columns=a,b,c` option"""
+@pytest.mark.parametrize("spreadsheet_fixture", ["ods_testfile", "xlsx_testfile"])
+def test_spreadsheet_source_with_wrong_columns(request, spreadsheet_fixture, tmp_path):
+    """Read a specific worksheet from a workbook file using the `columns=a,b,c` option"""
 
-    # Define output file.
+    # Define input and output files.
+    spreadsheet_testfile = request.getfixturevalue(spreadsheet_fixture)
     csv_outfile = tmp_path / "output.csv"
 
     # Invoke data loading.
     result = invoke_ingest_command(
-        source_uri=f'file://{xlsx_testfile}#columns=["unknown","date"]',
+        source_uri=f'file://{spreadsheet_testfile}#columns=["unknown","date"]',
         dest_uri=f"file://{csv_outfile}",
         print_output=False,
     )

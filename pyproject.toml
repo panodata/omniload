@@ -90,7 +90,6 @@ dependencies = [
   "duckdb-engine<0.18",
   "elasticsearch<10",
   "facebook-business<26",
-  "fastexcel<1",
   "flatten-json<0.2",
   "gcsfs",
   "google-ads<32",
@@ -105,7 +104,7 @@ dependencies = [
   "oracledb<5",
   "orjson<4",
   "pendulum>=3,<4",
-  "polars<2",
+  "polars[excel]<2",
   "psycopg2-binary<3",
   "py-machineid<2",
   "pyairtable<4",
@@ -136,7 +135,6 @@ dependencies = [
   "trino[sqlalchemy]==0.338.0",
   "typer<0.28",
   "urllib3<2.8",
-  "xlsxwriter<4",
 ]
 optional-dependencies.develop = [
   "pkginfo<2",
@@ -175,6 +173,7 @@ optional-dependencies.release = [
 optional-dependencies.test = [
   "boto3<2",
   "pendulum[test]>=3,<4",
+  "pyexcel-ods3<0.7",
   "pytest<10",
   "pytest-asyncio<2",
   "pytest-cov<8",

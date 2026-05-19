@@ -3,6 +3,7 @@
 # XLSX
 
 `omniload` reads [Excel Workbook] XLSX spreadsheet files.
+
 XLSX is currently supported for read operations only.
 
 ## Where it works
@@ -42,5 +43,5 @@ omniload ingest \
 ```
 
 
-[Excel Workbook]: https://en.wikipedia.org/wiki/Microsoft_Excel#Current_file_extensions
+[Excel workbook (XLSX)]: https://en.wikipedia.org/wiki/Microsoft_Excel#Current_file_extensions
 [polars.read_excel]: https://docs.pola.rs/api/python/stable/reference/api/polars.read_excel.html
