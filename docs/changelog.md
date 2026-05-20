@@ -5,6 +5,7 @@
 - Dependencies: Permitted installation of SQLAlchemy 2.0
 - Dependencies: Relaxed package requirements across the board
 - Documentation: Migrated from VitePress to Sphinx
+- Runtime: Used tqdm progress bar instead of spinner
 
 ## 2026/05/17 v0.0.0
 

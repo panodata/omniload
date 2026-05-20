@@ -110,7 +110,6 @@ dependencies = [
   "pyrate-limiter<4",
   "python-quickbooks<0.10",
   "requests<3",
-  "rich<16",
   "rudder-sdk-python<2.2",
   "s3fs",
   "simple-salesforce<2",

@@ -1,15 +1,16 @@
-from typing import Optional
+from typing import Any, Optional
 
 from dlt.common.runtime.collector import Collector
-from rich.status import Status
 
 
 class SpinnerCollector(Collector):
-    status: Status
+    status: Any
     current_step: str
     started: bool
 
     def __init__(self) -> None:
+        from rich.status import Status
+
         self.status = Status("Ingesting data...", spinner="dots")
         self.started = False
 

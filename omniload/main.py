@@ -4,7 +4,6 @@ from enum import Enum
 from typing import Optional
 
 import typer
-from rich.console import Console
 from typing_extensions import Annotated
 
 try:
@@ -21,9 +20,6 @@ app = typer.Typer(
     rich_markup_mode="rich",
     pretty_exceptions_enable=False,
 )
-
-console = Console()
-print = console.print
 
 DATE_FORMATS = [
     "%Y-%m-%d",
@@ -74,6 +70,7 @@ class SqlBackend(str, Enum):
 class Progress(str, Enum):
     interactive = "interactive"
     log = "log"
+    spinner = "spinner"
 
 
 class SchemaNaming(str, Enum):
@@ -297,7 +294,7 @@ def ingest(
     import humanize
     import typer
     from dlt.common.pipeline import LoadInfo
-    from dlt.common.runtime.collector import Collector, LogCollector
+    from dlt.common.runtime.collector import Collector, LogCollector, TqdmCollector
     from dlt.common.schema.typing import TColumnSchema
     from dlt.pipeline.exceptions import PipelineStepFailed
 
@@ -439,9 +436,11 @@ def ingest(
         m = hashlib.sha256()
         m.update(dest_table.encode("utf-8"))
 
-        progressInstance: Collector = SpinnerCollector()
+        progressInstance: Collector = TqdmCollector()
         if progress == Progress.log:
             progressInstance = LogCollector()
+        elif progress == Progress.spinner:
+            progressInstance = SpinnerCollector()
 
         is_pipelines_dir_temp = False
         if pipelines_dir is None:
