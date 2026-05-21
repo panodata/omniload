@@ -94,7 +94,7 @@ def kinesis_stream(
             stream_name,
             shard_id,
             last_msg,  # type: ignore
-            initial_at_datetime,  # type: ignore
+            initial_at_datetime,
         )
 
         while shard_iterator:
@@ -147,7 +147,7 @@ def kinesis_stream(
             records_ms_behind_latest = records_response.get("MillisBehindLatest", 0)
             if records_ms_behind_latest < milliseconds_behind_latest:
                 # stop taking messages from shard
-                shard_iterator = None  # type: ignore
+                shard_iterator = None
             else:
                 # continue taking messages
                 shard_iterator = records_response["NextShardIterator"]

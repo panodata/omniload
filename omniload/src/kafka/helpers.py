@@ -14,8 +14,8 @@
 
 from typing import Any, Dict, List, Optional, cast
 
-from confluent_kafka import Consumer, Message, TopicPartition  # type: ignore
-from confluent_kafka.admin import TopicMetadata  # type: ignore
+from confluent_kafka import Consumer, Message, TopicPartition
+from confluent_kafka.admin import TopicMetadata
 from dlt import config
 from dlt.common import pendulum
 from dlt.common.configuration import configspec
@@ -77,7 +77,7 @@ def default_msg_processor(msg: Message) -> Dict[str, Any]:
     }
 
 
-class OffsetTracker(dict):  # type: ignore
+class OffsetTracker(dict):
     """Object to control offsets of the given topics.
 
     Tracks all the partitions of the given topics with two params:

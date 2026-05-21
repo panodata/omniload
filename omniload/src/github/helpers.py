@@ -121,7 +121,7 @@ def _extract_top_connection(data: StrAny, node_type: str) -> StrAny:
         f"The data with list of {node_type} must be a dictionary and contain only one element"
     )
     data = next(iter(data.values()))
-    return data[node_type]  # type: ignore
+    return data[node_type]
 
 
 def _extract_nested_nodes(item: DictStrAny) -> DictStrAny:

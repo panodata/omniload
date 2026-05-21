@@ -92,21 +92,21 @@ def ingest(
             help="The URI of the [green]source[/green]",
             envvar=["SOURCE_URI", "OMNILOAD_SOURCE_URI"],
         ),
-    ],  # type: ignore
+    ],
     dest_uri: Annotated[
         str,
         typer.Option(
             help="The URI of the [cyan]destination[/cyan]",
             envvar=["DESTINATION_URI", "OMNILOAD_DESTINATION_URI"],
         ),
-    ],  # type: ignore
+    ],
     source_table: Annotated[
         str,
         typer.Option(
             help="The table name in the [green]source[/green] to fetch",
             envvar=["SOURCE_TABLE", "OMNILOAD_SOURCE_TABLE"],
         ),
-    ],  # type: ignore
+    ],
     dest_table: Annotated[
         str,
         typer.Option(
@@ -120,14 +120,14 @@ def ingest(
             help="The incremental key from the table to be used for incremental strategies",
             envvar=["INCREMENTAL_KEY", "OMNILOAD_INCREMENTAL_KEY"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     incremental_strategy: Annotated[
         IncrementalStrategy,
         typer.Option(
             help="The incremental strategy to use",
             envvar=["INCREMENTAL_STRATEGY", "OMNILOAD_INCREMENTAL_STRATEGY"],
         ),
-    ] = IncrementalStrategy.create_replace,  # type: ignore
+    ] = IncrementalStrategy.create_replace,
     interval_start: Annotated[
         Optional[datetime],
         typer.Option(
@@ -135,7 +135,7 @@ def ingest(
             formats=DATE_FORMATS,
             envvar=["INTERVAL_START", "OMNILOAD_INTERVAL_START"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     interval_end: Annotated[
         Optional[datetime],
         typer.Option(
@@ -143,147 +143,147 @@ def ingest(
             formats=DATE_FORMATS,
             envvar=["INTERVAL_END", "OMNILOAD_INTERVAL_END"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     primary_key: Annotated[
         Optional[list[str]],
         typer.Option(
             help="The key that will be used to deduplicate the resulting table",
             envvar=["PRIMARY_KEY", "OMNILOAD_PRIMARY_KEY"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     partition_by: Annotated[
         Optional[str],
         typer.Option(
             help="The partition key to be used for partitioning the destination table",
             envvar=["PARTITION_BY", "OMNILOAD_PARTITION_BY"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     cluster_by: Annotated[
         Optional[str],
         typer.Option(
             help="The clustering key to be used for clustering the destination table, not every destination supports clustering.",
             envvar=["CLUSTER_BY", "OMNILOAD_CLUSTER_BY"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     dry_run: Annotated[
         Optional[bool],
         typer.Option(
             help="Display data transfer plan but don't invoke it",
             envvar=["DRY_RUN", "OMNILOAD_DRY_RUN"],
         ),
-    ] = False,  # type: ignore
+    ] = False,
     full_refresh: Annotated[
         bool,
         typer.Option(
             help="Ignore the state and refresh the destination table completely",
             envvar=["FULL_REFRESH", "OMNILOAD_FULL_REFRESH"],
         ),
-    ] = False,  # type: ignore
+    ] = False,
     progress: Annotated[
         Progress,
         typer.Option(
             help="The progress display type, must be one of 'interactive', 'log'",
             envvar=["PROGRESS", "OMNILOAD_PROGRESS"],
         ),
-    ] = Progress.interactive,  # type: ignore
+    ] = Progress.interactive,
     sql_backend: Annotated[
         SqlBackend,
         typer.Option(
             help="The SQL backend to use",
             envvar=["SQL_BACKEND", "OMNILOAD_SQL_BACKEND"],
         ),
-    ] = SqlBackend.default,  # type: ignore
+    ] = SqlBackend.default,
     loader_file_format: Annotated[
         Optional[LoaderFileFormat],
         typer.Option(
             help="The file format to use when loading data",
             envvar=["LOADER_FILE_FORMAT", "OMNILOAD_LOADER_FILE_FORMAT"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     page_size: Annotated[
         Optional[int],
         typer.Option(
             help="The page size to be used when fetching data from SQL sources",
             envvar=["PAGE_SIZE", "OMNILOAD_PAGE_SIZE"],
         ),
-    ] = 50000,  # type: ignore
+    ] = 50000,
     loader_file_size: Annotated[
         Optional[int],
         typer.Option(
             help="The file size to be used by the loader to split the data into multiple files. This can be set independent of the page size, since page size is used for fetching the data from the sources whereas this is used for the processing/loading part.",
             envvar=["LOADER_FILE_SIZE", "OMNILOAD_LOADER_FILE_SIZE"],
         ),
-    ] = 100000,  # type: ignore
+    ] = 100000,
     schema_naming: Annotated[
         SchemaNaming,
         typer.Option(
             help="The naming convention to use when moving the tables from source to destination. The default behavior is explained here: https://dlthub.com/docs/general-usage/schema#naming-convention",
             envvar=["SCHEMA_NAMING", "OMNILOAD_SCHEMA_NAMING"],
         ),
-    ] = SchemaNaming.default,  # type: ignore
+    ] = SchemaNaming.default,
     pipelines_dir: Annotated[
         Optional[str],
         typer.Option(
             help="The path to store dlt-related pipeline metadata. By default, omniload will create a temporary directory and delete it after the execution is done in order to make retries stateless.",
             envvar=["PIPELINES_DIR", "OMNILOAD_PIPELINES_DIR"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     extract_parallelism: Annotated[
         Optional[int],
         typer.Option(
             help="The number of parallel jobs to run for extracting data from the source, only applicable for certain sources",
             envvar=["EXTRACT_PARALLELISM", "OMNILOAD_EXTRACT_PARALLELISM"],
         ),
-    ] = 5,  # type: ignore
+    ] = 5,
     sql_reflection_level: Annotated[
         SqlReflectionLevel,
         typer.Option(
             help="The reflection level to use when reflecting the table schema from the source",
             envvar=["SQL_REFLECTION_LEVEL", "OMNILOAD_SQL_REFLECTION_LEVEL"],
         ),
-    ] = SqlReflectionLevel.full,  # type: ignore
+    ] = SqlReflectionLevel.full,
     sql_limit: Annotated[
         Optional[int],
         typer.Option(
             help="The limit to use when fetching data from the source",
             envvar=["SQL_LIMIT", "OMNILOAD_SQL_LIMIT"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     sql_exclude_columns: Annotated[
         Optional[list[str]],
         typer.Option(
             help="The columns to exclude from the source table",
             envvar=["SQL_EXCLUDE_COLUMNS", "OMNILOAD_SQL_EXCLUDE_COLUMNS"],
         ),
-    ] = [],  # type: ignore
+    ] = [],
     columns: Annotated[
         Optional[list[str]],
         typer.Option(
             help="The column types to be used for the destination table in the format of 'column_name:column_type'",
             envvar=["OMNILOAD_COLUMNS"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     yield_limit: Annotated[
         Optional[int],
         typer.Option(
             help="Limit the number of pages yielded from the source",
             envvar=["YIELD_LIMIT", "OMNILOAD_YIELD_LIMIT"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     staging_bucket: Annotated[
         Optional[str],
         typer.Option(
             help="The staging bucket to be used for the ingestion, must be prefixed with 'gs://' or 's3://'",
             envvar=["STAGING_BUCKET", "OMNILOAD_STAGING_BUCKET"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     mask: Annotated[
         Optional[list[str]],
         typer.Option(
             help="Column masking configuration in format 'column:algorithm[:param]'. Can be specified multiple times.",
             envvar=["MASK", "OMNILOAD_MASK"],
         ),
-    ] = [],  # type: ignore
+    ] = [],
 ):
     import hashlib
     import tempfile
@@ -471,7 +471,7 @@ def ingest(
 
                 column_hints[key]["primary_key"] = True
 
-        pipeline = dlt.pipeline(  # type: ignore
+        pipeline = dlt.pipeline(
             pipeline_name=m.hexdigest(),
             destination=dlt_dest,
             progress=progressInstance,
@@ -656,13 +656,13 @@ def ingest(
                     table=dest_table,
                     staging_bucket=staging_bucket,
                 ),
-                write_disposition=write_disposition,  # type: ignore
+                write_disposition=write_disposition,
                 primary_key=(
                     primary_key if primary_key and len(primary_key) > 0 else None
-                ),  # type: ignore
+                ),
                 loader_file_format=(
-                    loader_file_format.value if loader_file_format is not None else None  # type: ignore
-                ),  # type: ignore
+                    loader_file_format.value if loader_file_format is not None else None
+                ),
             )
 
         # Databricks concurrency error patterns that are safe to retry
@@ -795,7 +795,7 @@ def example_uris():
 
 @app.command()
 def version():
-    from omniload import __version__  # type: ignore
+    from omniload import __version__
 
     print(f"v{__version__}")
 

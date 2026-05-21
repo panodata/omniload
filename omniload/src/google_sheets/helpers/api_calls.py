@@ -32,7 +32,7 @@ except ImportError:
 
 def is_retry_status_code(exception: BaseException) -> bool:
     """Retry condition on HttpError"""
-    from googleapiclient.errors import HttpError  # type: ignore
+    from googleapiclient.errors import HttpError
 
     # print(f"RETRY ON {str(HttpError)} = {isinstance(exception, HttpError) and exception.resp.status in DEFAULT_RETRY_STATUS}")
     # if isinstance(exception, HttpError):

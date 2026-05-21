@@ -19,7 +19,7 @@ from typing import (
 )
 from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 
-import fsspec  # type: ignore
+import fsspec
 import pendulum
 from dlt.common.time import ensure_pendulum_datetime
 from dlt.extract import Incremental
@@ -315,10 +315,10 @@ class SqlSource:
                 query_adapter_callback: Optional[TQueryAdapter] = None,
                 resolve_foreign_keys: bool = False,
             ) -> Iterator[TDataItem]:
-                hints = {  # type: ignore
+                hints = {
                     "columns": [],
                 }
-                cols = []  # type: ignore
+                cols = []
 
                 if incremental:
                     switchDict = {
@@ -333,11 +333,11 @@ class SqlSource:
                         cols.append(
                             Column(
                                 incremental.cursor_path,
-                                switchDict[type(incremental.last_value)],  # type: ignore
+                                switchDict[type(incremental.last_value)],
                             )
                         )
                     else:
-                        cols.append(Column(incremental.cursor_path, sa.TIMESTAMP))  # type: ignore
+                        cols.append(Column(incremental.cursor_path, sa.TIMESTAMP))
 
                 table = Table(
                     "query_result",
@@ -373,7 +373,7 @@ class SqlSource:
             params = parse_qs(parsed_uri.query)
             params = {k.lower(): v for k, v in params.items()}
             if params.get("authentication") == ["ActiveDirectoryAccessToken"]:
-                import pyodbc  # type: ignore
+                import pyodbc
                 from sqlalchemy import create_engine
 
                 from omniload.src.destinations import (
@@ -746,7 +746,7 @@ class LocalCsvSource:
 
         return resource(
             csv_file,
-            merge_key=kwargs.get("merge_key"),  # type: ignore
+            merge_key=kwargs.get("merge_key"),
         )(
             incremental=dlt_incremental(
                 kwargs.get("incremental_key", ""),
@@ -1609,12 +1609,12 @@ class KafkaSource:
                 group_id=group_id[0],
                 security_protocol=(
                     security_protocol[0] if len(security_protocol) > 0 else None
-                ),  # type: ignore
+                ),
                 sasl_mechanisms=(
                     sasl_mechanisms[0] if len(sasl_mechanisms) > 0 else None
-                ),  # type: ignore
-                sasl_username=sasl_username[0] if len(sasl_username) > 0 else None,  # type: ignore
-                sasl_password=sasl_password[0] if len(sasl_password) > 0 else None,  # type: ignore
+                ),
+                sasl_username=sasl_username[0] if len(sasl_username) > 0 else None,
+                sasl_password=sasl_password[0] if len(sasl_password) > 0 else None,
             ),
             start_from=start_date,
             batch_size=int(batch_size[0]),
@@ -1860,7 +1860,7 @@ class S3Source:
 
         bucket_url = f"s3://{bucket_name}/"
 
-        import s3fs  # type: ignore
+        import s3fs
 
         endpoint_url = source_fields.get("endpoint_url")
         fs_kwargs: dict = {
@@ -2112,7 +2112,7 @@ class JiraSource:
             "skip_archived": False,
         }
         if ":" in table:
-            table, rest = table.split(":", 1)  # type: ignore
+            table, rest = table.split(":", 1)
             for k in rest.split(":"):
                 flags[k] = True
 
@@ -2529,7 +2529,7 @@ class GCSSource:
         # (The RECOMMENDED way of passing service account credentials)
         # directly with gcsfs. As a workaround, we construct the GCSFileSystem
         # and pass it directly to filesystem.readers.
-        import gcsfs  # type: ignore
+        import gcsfs
 
         fs = gcsfs.GCSFileSystem(
             token=credentials,
@@ -2587,7 +2587,7 @@ class GoogleAdsSource:
         return False
 
     def init_client(self, params: Dict[str, List[str]]):
-        from google.ads.googleads.client import GoogleAdsClient  # type: ignore
+        from google.ads.googleads.client import GoogleAdsClient
 
         dev_token = params.get("dev_token")
         if dev_token is None or len(dev_token) == 0:
@@ -2653,7 +2653,7 @@ class GoogleAdsSource:
             client = GoogleAdsClient.load_from_dict(conf)
         finally:
             if fd is not None:
-                os.remove(path)  # type: ignore
+                os.remove(path)
 
         return client
 

@@ -117,7 +117,7 @@ def players_games(
     def _get_archive(url: str) -> List[TDataItem]:
         try:
             games = get_url_with_retry(url).get("games", [])
-            return games  # type: ignore
+            return games
         except requests.HTTPError as http_err:
             # sometimes archives are not available and the error seems to be permanent
             if http_err.response.status_code == 404:

@@ -170,7 +170,7 @@ class CollectionLoader:
 
         return projection_dict
 
-    def _limit(self, cursor: Cursor, limit: Optional[int] = None) -> TCursor:  # type: ignore
+    def _limit(self, cursor: Cursor, limit: Optional[int] = None) -> TCursor:
         """Apply a limit to the cursor, if needed.
 
         Args:
@@ -368,7 +368,7 @@ class CollectionArrowLoader(CollectionLoader):
         if self._sort_op:
             cursor = cursor.sort(self._sort_op)  # type: ignore
 
-        cursor = self._limit(cursor, limit)  # type: ignore
+        cursor = self._limit(cursor, limit)
 
         context = PyMongoArrowContext.from_schema(
             schema=pymongoarrow_schema, codec_options=self.collection.codec_options
@@ -715,23 +715,23 @@ def collection_documents(
             if data_item_format == "arrow":
                 LoaderClass = CollectionAggregationArrowLoaderParallel
             else:
-                LoaderClass = CollectionAggregationLoaderParallel  # type: ignore
+                LoaderClass = CollectionAggregationLoaderParallel
         else:
             if data_item_format == "arrow":
-                LoaderClass = CollectionAggregationArrowLoader  # type: ignore
+                LoaderClass = CollectionAggregationArrowLoader
             else:
-                LoaderClass = CollectionAggregationLoader  # type: ignore
+                LoaderClass = CollectionAggregationLoader
     else:
         if parallel:
             if data_item_format == "arrow":
                 LoaderClass = CollectionArrowLoaderParallel
             else:
-                LoaderClass = CollectionLoaderParallel  # type: ignore
+                LoaderClass = CollectionLoaderParallel
         else:
             if data_item_format == "arrow":
-                LoaderClass = CollectionArrowLoader  # type: ignore
+                LoaderClass = CollectionArrowLoader
             else:
-                LoaderClass = CollectionLoader  # type: ignore
+                LoaderClass = CollectionLoader
 
     loader = LoaderClass(
         client, collection, incremental=incremental, chunk_size=chunk_size

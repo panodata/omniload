@@ -222,7 +222,7 @@ def build_mssql_dest():
             ):
                 return super().open_connection()
 
-            import pyodbc  # type: ignore
+            import pyodbc
 
             dsn = ";".join(
                 [f"{k}={v}" for k, v in cfg.items() if k not in self.SKIP_CREDENTIALS]
@@ -561,7 +561,7 @@ class AthenaDestination:
         region_name = source_params.get("region_name", [None])[0]
 
         if not access_key_id and not secret_access_key:
-            import botocore.session  # type: ignore
+            import botocore.session
 
             session = botocore.session.Session(profile=profile_name)
             default = session.get_credentials()

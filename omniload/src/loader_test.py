@@ -6,7 +6,7 @@ import os
 import tempfile
 from typing import List
 
-import pyarrow.parquet  # type: ignore
+import pyarrow.parquet
 import pytest
 
 from omniload.src.loader import load_dlt_file

@@ -1,10 +1,10 @@
 from typing import Iterable
 
 import dlt
-import smartsheet  # type: ignore
+import smartsheet
 from dlt.extract import DltResource
-from smartsheet.models.enums import ColumnType  # type: ignore
-from smartsheet.models.sheet import Sheet  # type: ignore
+from smartsheet.models.enums import ColumnType
+from smartsheet.models.sheet import Sheet
 
 TYPE_MAPPING = {
     ColumnType.TEXT_NUMBER: "text",

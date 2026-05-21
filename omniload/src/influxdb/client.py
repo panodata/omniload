@@ -1,6 +1,6 @@
 from typing import Any, Dict, Iterable
 
-from influxdb_client import InfluxDBClient  # type: ignore
+from influxdb_client import InfluxDBClient
 
 
 class InfluxClient:

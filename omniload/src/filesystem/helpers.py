@@ -27,7 +27,7 @@ from dlt.sources.credentials import (
     FileSystemCredentials,
 )
 from dlt.sources.filesystem import fsspec_filesystem
-from fsspec import AbstractFileSystem  # type: ignore
+from fsspec import AbstractFileSystem
 
 
 @configspec
@@ -82,7 +82,7 @@ def add_columns(columns: List[str], rows: List[List[Any]]) -> List[Dict[str, Any
     return result
 
 
-def fetch_arrow(file_data, chunk_size: int) -> Iterable[TDataItem]:  # type: ignore
+def fetch_arrow(file_data, chunk_size: int) -> Iterable[TDataItem]:
     """Fetches data from the given CSV file.
 
     Args:

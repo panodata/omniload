@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from omniload.src.blob import parse_uri  # type: ignore
+from omniload.src.blob import parse_uri
 
 
 @dataclass

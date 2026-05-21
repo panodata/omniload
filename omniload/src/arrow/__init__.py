@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
 import dlt
-import pyarrow as pa  # type: ignore
+import pyarrow as pa
 from dlt.common.schema.typing import TColumnNames, TTableSchemaColumns
 from dlt.extract.items import TTableHintTemplate
 
@@ -22,7 +22,7 @@ def memory_mapped_arrow(
     def arrow_mmap(
         incremental: Optional[dlt.sources.incremental[Any]] = incremental,
     ):
-        import pyarrow.ipc as ipc  # type: ignore
+        import pyarrow.ipc as ipc
 
         with pa.memory_map(path, "rb") as mmap:
             reader: ipc.RecordBatchFileReader = ipc.open_file(mmap)

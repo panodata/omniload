@@ -17,12 +17,12 @@ from datetime import date, datetime
 from typing import Any, Iterator, Optional
 
 import dlt
-import proto  # type: ignore
+import proto
 from dlt.common.exceptions import MissingDependencyException
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
-from flatten_json import flatten  # type: ignore
-from googleapiclient.discovery import Resource  # type: ignore
+from flatten_json import flatten
+from googleapiclient.discovery import Resource
 
 from . import field
 from .metrics import dlt_metrics_schema
@@ -30,7 +30,7 @@ from .predicates import date_predicate
 from .reports import BUILTIN_REPORTS, Report
 
 try:
-    from google.ads.googleads.client import GoogleAdsClient  # type: ignore
+    from google.ads.googleads.client import GoogleAdsClient
 except ImportError:
     raise MissingDependencyException("Requests-OAuthlib", ["google-ads"])
 
@@ -47,7 +47,7 @@ def google_ads(
     date_range = dlt.sources.incremental(
         "segments_date",
         initial_value=start_date.date(),  # type: ignore
-        end_value=end_date.date() if end_date is not None else None,  # type: ignore
+        end_value=end_date.date() if end_date is not None else None,
         range_start="closed",
         range_end="closed",
     )

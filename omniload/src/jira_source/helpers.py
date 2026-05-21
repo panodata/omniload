@@ -140,7 +140,7 @@ class JiraClient:
                         logger.warning(
                             f"Rate limit exceeded. Waiting {retry_after} seconds before retry."
                         )
-                        time.sleep(retry_after)  # type: ignore
+                        time.sleep(retry_after)
                         continue
                     else:
                         raise JiraRateLimitError(
@@ -155,7 +155,7 @@ class JiraClient:
                         logger.warning(
                             f"Server error {response.status_code}. Retrying in {wait_time} seconds."
                         )
-                        time.sleep(wait_time)  # type: ignore
+                        time.sleep(wait_time)
                         continue
                     else:
                         raise JiraAPIError(
@@ -183,7 +183,7 @@ class JiraClient:
                     logger.warning(
                         f"Request failed: {str(e)}. Retrying in {wait_time} seconds."
                     )
-                    time.sleep(wait_time)  # type: ignore
+                    time.sleep(wait_time)
                     continue
                 else:
                     raise JiraAPIError(

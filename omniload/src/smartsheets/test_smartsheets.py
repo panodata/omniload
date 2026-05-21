@@ -2,8 +2,8 @@ import sys
 import unittest
 from unittest.mock import patch
 
-import smartsheet  # type: ignore
-from smartsheet.models import Cell, Column, Row, Sheet  # type: ignore
+import smartsheet
+from smartsheet.models import Cell, Column, Row, Sheet
 
 from omniload.src.smartsheets import _get_sheet_data, smartsheet_source
 

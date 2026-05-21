@@ -5,7 +5,7 @@ import subprocess
 from contextlib import contextmanager
 from typing import Generator
 
-from pyarrow.parquet import ParquetFile  # type: ignore
+from pyarrow.parquet import ParquetFile
 
 PARQUET_BATCH_SIZE = 64
 

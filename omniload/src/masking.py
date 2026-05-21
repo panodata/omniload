@@ -256,7 +256,7 @@ class MaskingEngine:
 
         # Try to parse string dates
         try:
-            from dateutil import parser  # type: ignore
+            from dateutil import parser
 
             dt = parser.parse(str(value))
             shift_days = random.randint(-max_days, max_days)
@@ -312,7 +312,7 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
     def apply_masks(data: Any) -> Any:
         # Handle PyArrow tables
         try:
-            import pyarrow as pa  # type: ignore
+            import pyarrow as pa
 
             if isinstance(data, pa.Table):
                 # Convert to pandas for easier manipulation

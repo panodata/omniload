@@ -23,28 +23,28 @@ from urllib.parse import urlparse
 
 import duckdb
 import numpy as np
-import pandas as pd  # type: ignore
+import pandas as pd
 import pendulum
-import pyarrow as pa  # type: ignore
-import pyarrow.csv  # type: ignore
-import pyarrow.ipc as ipc  # type: ignore
-import pyarrow.parquet as pya_parquet  # type: ignore
+import pyarrow as pa
+import pyarrow.csv
+import pyarrow.ipc as ipc
+import pyarrow.parquet as pya_parquet
 import pytest
 import requests
 import sqlalchemy
-from confluent_kafka import Producer  # type: ignore
+from confluent_kafka import Producer
 from dlt.sources.filesystem import glob_files
 from elasticsearch import Elasticsearch
-from fsspec.implementations.memory import MemoryFileSystem  # type: ignore
+from fsspec.implementations.memory import MemoryFileSystem
 from sqlalchemy.pool import NullPool
-from testcontainers.clickhouse import ClickHouseContainer  # type: ignore
-from testcontainers.core.container import DockerContainer  # type: ignore
-from testcontainers.core.waiting_utils import wait_for_logs  # type: ignore
-from testcontainers.kafka import KafkaContainer  # type: ignore
-from testcontainers.localstack import LocalStackContainer  # type: ignore
-from testcontainers.mongodb import MongoDbContainer  # type: ignore
-from testcontainers.mysql import MySqlContainer  # type: ignore
-from testcontainers.postgres import PostgresContainer  # type: ignore
+from testcontainers.clickhouse import ClickHouseContainer
+from testcontainers.core.container import DockerContainer
+from testcontainers.core.waiting_utils import wait_for_logs
+from testcontainers.kafka import KafkaContainer
+from testcontainers.localstack import LocalStackContainer
+from testcontainers.mongodb import MongoDbContainer
+from testcontainers.mysql import MySqlContainer
+from testcontainers.postgres import PostgresContainer
 from typer.testing import CliRunner
 
 from omniload.main import app
@@ -737,9 +737,9 @@ class CouchbaseContainer(DockerContainer):
         """Insert documents using Couchbase Python SDK from test machine."""
         from datetime import timedelta
 
-        from couchbase.auth import PasswordAuthenticator  # type: ignore
-        from couchbase.cluster import Cluster  # type: ignore
-        from couchbase.options import ClusterOptions  # type: ignore
+        from couchbase.auth import PasswordAuthenticator
+        from couchbase.cluster import Cluster
+        from couchbase.options import ClusterOptions
 
         # Connect using SDK (from test machine to container)
         auth = PasswordAuthenticator(self.username, self.password)

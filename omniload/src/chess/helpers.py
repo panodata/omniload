@@ -22,7 +22,7 @@ from .settings import OFFICIAL_CHESS_API_URL
 
 def get_url_with_retry(url: str) -> StrAny:
     r = requests.get(url)
-    return r.json()  # type: ignore
+    return r.json()
 
 
 def get_path_with_retry(path: str) -> StrAny:

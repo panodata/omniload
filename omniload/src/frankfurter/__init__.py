@@ -114,7 +114,7 @@ def frankfurter_source(
             end_date = pendulum.now()
 
         # Ensure start_date.last_value is a pendulum.DateTime object
-        start_date_obj = ensure_pendulum_datetime(start_date)  # type: ignore
+        start_date_obj = ensure_pendulum_datetime(start_date)
         start_date_str = start_date_obj.format("YYYY-MM-DD")
 
         # Ensure end_date is a pendulum.DateTime object

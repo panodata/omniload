@@ -23,7 +23,7 @@ from contextlib import closing
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union
 
 import dlt
-from confluent_kafka import Consumer, Message  # type: ignore
+from confluent_kafka import Consumer, Message
 from dlt.common import logger
 from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import TAnyDateTime, TDataItem

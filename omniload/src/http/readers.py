@@ -67,7 +67,7 @@ class HttpReader:
         self, content: bytes, chunksize: int = 10000, **pandas_kwargs: Any
     ) -> Iterator[TDataItems]:
         """Read CSV file with Pandas chunk by chunk"""
-        import pandas as pd  # type: ignore
+        import pandas as pd
 
         kwargs = {**{"header": "infer", "chunksize": chunksize}, **pandas_kwargs}
 
@@ -79,7 +79,7 @@ class HttpReader:
         self, content: bytes, chunksize: int = 10000, **pandas_kwargs: Any
     ) -> Iterator[TDataItems]:
         """Read CSV file without headers, using provided column names or generating them"""
-        import pandas as pd  # type: ignore
+        import pandas as pd
 
         # Determine column names
         if self.column_names:
@@ -137,7 +137,7 @@ class HttpReader:
         self, content: bytes, chunksize: int = 10000, **kwargs: Any
     ) -> Iterator[TDataItems]:
         """Read Parquet file"""
-        from pyarrow import parquet as pq  # type: ignore
+        from pyarrow import parquet as pq
 
         file_obj = io.BytesIO(content)
         parquet_file = pq.ParquetFile(file_obj)
