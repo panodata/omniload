@@ -5,6 +5,10 @@
 - Connectors: Migrated filesystem CSV reader from pandas to Polars
 - Connectors: Added a `file://` destination that writes local CSV / JSONL /
   Parquet files, the write-side twin of the `file://` source. Thanks, @hampsterx.
+- CI: Validated preliminary support for Python 3.15. A few connectors had to
+  be excluded from the bundle, but only for Python 3.15. If your system includes
+  a build environment, you can install the missing packages alongside omniload
+  to use the same connectors without much ado.
 
 ## 2026/07/02 v0.5.0
 
