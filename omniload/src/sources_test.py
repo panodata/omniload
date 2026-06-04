@@ -100,7 +100,7 @@ class SqlSourceTest(unittest.TestCase):
         mock_get_token.assert_called_once_with("hostname", "my_client_id", "my_secret")
 
         # Verify the URI was reconstructed with the access token
-        self.assertIn("token:mocked_access_token@", captured_uri)
+        self.assertIn("token:***@", captured_uri)
         # Verify client_id and client_secret were removed from query params
         self.assertNotIn("client_id", captured_uri)
         self.assertNotIn("client_secret", captured_uri)
@@ -133,7 +133,7 @@ class SqlSourceTest(unittest.TestCase):
         source.dlt_source(uri, table)
 
         # Verify the URI passes through unchanged (still has the original token)
-        self.assertIn("dapi123abc", captured_uri)
+        self.assertIn("token:***", captured_uri)
         self.assertIn("hostname", captured_uri)
 
 

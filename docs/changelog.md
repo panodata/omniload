@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Dependencies: Permitted installation of SQLAlchemy 2.0
+
 ## 2026/05/17 v0.0.0
 
 - Imported code from [ingestr v0.14.155]

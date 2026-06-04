@@ -8,6 +8,7 @@ import os
 import random
 import shutil
 import string
+import sys
 import tempfile
 import time
 import traceback
@@ -821,7 +822,8 @@ def autocreate_db_for_clickhouse():
     def patched_dlt_dest(uri, **kwargs):
         db, _ = kwargs["dest_table"].split(".")
         dest_engine = sqlalchemy.create_engine(uri)
-        dest_engine.execute(f"CREATE DATABASE IF NOT EXISTS {db}")
+        dest_conn = dest_engine.connect()
+        dest_conn.exec_driver_sql(f"CREATE DATABASE IF NOT EXISTS {db}")
         return dlt_dest(uri, **kwargs)
 
     patcher = patch("omniload.src.factory.ClickhouseDestination.dlt_dest")
@@ -915,18 +917,18 @@ def db_to_db_create_replace(source_connection_url: str, dest_connection_url: str
 
     source_engine = sqlalchemy.create_engine(source_connection_url)
     with source_engine.begin() as conn:
-        conn.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-        conn.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-        conn.execute(
+        conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        conn.exec_driver_sql(
             f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER, val VARCHAR(20), updated_at DATE)"
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"INSERT INTO {schema_rand_prefix}.input VALUES (1, 'val1', '2022-01-01')"
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"INSERT INTO {schema_rand_prefix}.input VALUES (2, 'val2', '2022-02-01')"
         )
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select count(*) from {schema_rand_prefix}.input"
         ).fetchall()
         assert res[0][0] == 2
@@ -942,7 +944,8 @@ def db_to_db_create_replace(source_connection_url: str, dest_connection_url: str
     assert result.exit_code == 0
 
     dest_engine = sqlalchemy.create_engine(dest_connection_url)
-    res = dest_engine.execute(
+    dest_conn = dest_engine.connect()
+    res = dest_conn.exec_driver_sql(
         f"select id, val, updated_at from {schema_rand_prefix}.output"
     ).fetchall()
     dest_engine.dispose()
@@ -960,16 +963,18 @@ def db_to_db_append(source_connection_url: str, dest_connection_url: str):
         pass
 
     source_engine = sqlalchemy.create_engine(source_connection_url)
+    dest_engine = sqlalchemy.create_engine(dest_connection_url)
+
     with source_engine.begin() as conn:
-        conn.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-        conn.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-        conn.execute(
+        conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        conn.exec_driver_sql(
             f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER, val VARCHAR(20), updated_at DATE)"
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"INSERT INTO {schema_rand_prefix}.input VALUES (1, 'val1', '2022-01-01'), (2, 'val2', '2022-01-02')"
         )
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select count(*) from {schema_rand_prefix}.input"
         ).fetchall()
         assert res[0][0] == 2
@@ -988,10 +993,10 @@ def db_to_db_append(source_connection_url: str, dest_connection_url: str):
         assert res.exit_code == 0
 
     def get_output_table():
-        dest_engine = sqlalchemy.create_engine(dest_connection_url)
-        results = dest_engine.execute(
-            f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
-        ).fetchall()
+        with dest_engine.connect() as dest_conn:
+            results = dest_conn.exec_driver_sql(
+                f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
+            ).fetchall()
         dest_engine.dispose()
         return results
 
@@ -1022,19 +1027,19 @@ def db_to_db_merge_with_primary_key(
 
     source_engine = sqlalchemy.create_engine(source_connection_url)
     with source_engine.begin() as conn:
-        conn.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-        conn.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-        conn.execute(
+        conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        conn.exec_driver_sql(
             f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER NOT NULL, val VARCHAR(20), updated_at DATE NOT NULL)"
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"INSERT INTO {schema_rand_prefix}.input VALUES (1, 'val1', '2022-01-01')"
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"INSERT INTO {schema_rand_prefix}.input VALUES (2, 'val2', '2022-02-01')"
         )
 
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select count(*) from {schema_rand_prefix}.input"
         ).fetchall()
         assert res[0][0] == 2
@@ -1058,9 +1063,10 @@ def db_to_db_merge_with_primary_key(
     dest_engine = sqlalchemy.create_engine(dest_connection_url)
 
     def get_output_rows():
-        return dest_engine.execute(
-            f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
-        ).fetchall()
+        with dest_engine.connect() as dest_conn:
+            return dest_conn.exec_driver_sql(
+                f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
+            ).fetchall()
 
     def assert_output_equals(expected):
         res = get_output_rows()
@@ -1074,9 +1080,10 @@ def db_to_db_merge_with_primary_key(
         [(1, "val1", as_datetime("2022-01-01")), (2, "val2", as_datetime("2022-02-01"))]
     )
 
-    first_run_id = dest_engine.execute(
-        f"select _dlt_load_id from {schema_rand_prefix}.output limit 1"
-    ).fetchall()[0][0]
+    with dest_engine.connect() as dest_conn:
+        first_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id from {schema_rand_prefix}.output limit 1"
+        ).fetchall()[0][0]
 
     dest_engine.dispose()
 
@@ -1088,9 +1095,10 @@ def db_to_db_merge_with_primary_key(
     )
 
     # we also ensure that the other rows were not touched
-    count_by_run_id = dest_engine.execute(
-        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        count_by_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc"
+        ).fetchall()
     assert len(count_by_run_id) == 1
     assert count_by_run_id[0][1] == 2
     assert count_by_run_id[0][0] == first_run_id
@@ -1099,9 +1107,10 @@ def db_to_db_merge_with_primary_key(
 
     ##############################
     # now we'll modify the source data but not the updated at, the output table should not be updated
-    source_engine.execute(
-        f"UPDATE {schema_rand_prefix}.input SET val = 'val1_modified' WHERE id = 2"
-    )
+    with source_engine.begin() as conn:
+        conn.exec_driver_sql(
+            f"UPDATE {schema_rand_prefix}.input SET val = 'val1_modified' WHERE id = 2"
+        )
     source_engine.dispose()
 
     run()
@@ -1110,9 +1119,10 @@ def db_to_db_merge_with_primary_key(
     )
 
     # we also ensure that the other rows were not touched
-    count_by_run_id = dest_engine.execute(
-        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        count_by_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1"
+        ).fetchall()
     assert len(count_by_run_id) == 1
     assert count_by_run_id[0][1] == 2
     assert count_by_run_id[0][0] == first_run_id
@@ -1121,9 +1131,10 @@ def db_to_db_merge_with_primary_key(
 
     ##############################
     # now we'll insert a new row but with an old date, the new row will not show up
-    source_engine.execute(
-        f"INSERT INTO {schema_rand_prefix}.input VALUES (3, 'val3', '2022-01-01')"
-    )
+    with source_engine.begin() as conn:
+        conn.exec_driver_sql(
+            f"INSERT INTO {schema_rand_prefix}.input VALUES (3, 'val3', '2022-01-01')"
+        )
     source_engine.dispose()
 
     run()
@@ -1132,9 +1143,10 @@ def db_to_db_merge_with_primary_key(
     )
 
     # we also ensure that the other rows were not touched
-    count_by_run_id = dest_engine.execute(
-        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        count_by_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1"
+        ).fetchall()
     assert len(count_by_run_id) == 1
     assert count_by_run_id[0][1] == 2
     assert count_by_run_id[0][0] == first_run_id
@@ -1143,9 +1155,10 @@ def db_to_db_merge_with_primary_key(
 
     ##############################
     # now we'll insert a new row but with a new date, the new row will show up
-    source_engine.execute(
-        f"INSERT INTO {schema_rand_prefix}.input VALUES (3, 'val3', '2022-02-02')"
-    )
+    with source_engine.begin() as conn:
+        conn.exec_driver_sql(
+            f"INSERT INTO {schema_rand_prefix}.input VALUES (3, 'val3', '2022-02-02')"
+        )
     source_engine.dispose()
 
     run()
@@ -1158,9 +1171,10 @@ def db_to_db_merge_with_primary_key(
     )
 
     # we have a new run that inserted rows to this table, so the run count should be 2
-    count_by_run_id = dest_engine.execute(
-        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        count_by_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc"
+        ).fetchall()
     assert len(count_by_run_id) == 2
     assert count_by_run_id[0][1] == 2
     assert count_by_run_id[0][0] == first_run_id
@@ -1171,9 +1185,10 @@ def db_to_db_merge_with_primary_key(
 
     ##############################
     # lastly, let's try modifying the updated_at of an old column, it should be updated in the output table
-    source_engine.execute(
-        f"UPDATE {schema_rand_prefix}.input SET val='val2_modified', updated_at = '2022-02-03' WHERE id = 2"
-    )
+    with source_engine.begin() as conn:
+        conn.exec_driver_sql(
+            f"UPDATE {schema_rand_prefix}.input SET val='val2_modified', updated_at = '2022-02-03' WHERE id = 2"
+        )
     source_engine.dispose()
 
     run()
@@ -1186,9 +1201,10 @@ def db_to_db_merge_with_primary_key(
     )
 
     # we have a new run that inserted rows to this table, so the run count should be 2
-    count_by_run_id = dest_engine.execute(
-        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc, 1 asc"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        count_by_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc, 1 asc"
+        ).fetchall()
     assert len(count_by_run_id) == 3
     assert count_by_run_id[0][1] == 1
     assert count_by_run_id[0][0] == first_run_id
@@ -1209,20 +1225,20 @@ def db_to_db_delete_insert_without_primary_key(
         pass
 
     source_engine = sqlalchemy.create_engine(source_connection_url)
-    with source_engine.begin() as conn:
-        conn.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-        conn.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-        conn.execute(
+    with source_engine.begin() as source_conn:
+        source_conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        source_conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        source_conn.exec_driver_sql(
             f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER, val VARCHAR(20), updated_at DATE)"
         )
-        conn.execute(
+        source_conn.exec_driver_sql(
             f"INSERT INTO {schema_rand_prefix}.input VALUES (1, 'val1', '2022-01-01')"
         )
-        conn.execute(
+        source_conn.exec_driver_sql(
             f"INSERT INTO {schema_rand_prefix}.input VALUES (2, 'val2', '2022-02-01')"
         )
 
-        res = conn.execute(
+        res = source_conn.exec_driver_sql(
             f"select count(*) from {schema_rand_prefix}.input"
         ).fetchall()
         assert res[0][0] == 2
@@ -1240,15 +1256,16 @@ def db_to_db_delete_insert_without_primary_key(
         )
         if res.exit_code != 0:
             traceback.print_exception(*res.exc_info)
-        assert res.exit_code == 0
+        assert res.exit_code == 0, res.output
         return res
 
     dest_engine = sqlalchemy.create_engine(dest_connection_url)
 
     def get_output_rows():
-        results = dest_engine.execute(
-            f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
-        ).fetchall()
+        with dest_engine.connect() as dest_conn:
+            results = dest_conn.exec_driver_sql(
+                f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
+            ).fetchall()
         dest_engine.dispose()
         return results
 
@@ -1263,9 +1280,10 @@ def db_to_db_delete_insert_without_primary_key(
         [(1, "val1", as_datetime("2022-01-01")), (2, "val2", as_datetime("2022-02-01"))]
     )
 
-    first_run_id = dest_engine.execute(
-        f"select _dlt_load_id from {schema_rand_prefix}.output limit 1"
-    ).fetchall()[0][0]
+    with dest_engine.connect() as dest_conn:
+        first_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id from {schema_rand_prefix}.output limit 1"
+        ).fetchall()[0][0]
     dest_engine.dispose()
 
     ##############################
@@ -1276,9 +1294,10 @@ def db_to_db_delete_insert_without_primary_key(
     )
 
     # we ensure that one of the rows is updated with a new run
-    count_by_run_id = dest_engine.execute(
-        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 1 asc"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        count_by_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 1 asc"
+        ).fetchall()
     assert len(count_by_run_id) == 2
     assert count_by_run_id[0][0] == first_run_id
     assert count_by_run_id[0][1] == 1
@@ -1289,9 +1308,10 @@ def db_to_db_delete_insert_without_primary_key(
 
     ##############################
     # now we'll insert a few more lines for the same day, the new rows should show up
-    source_engine.execute(
-        f"INSERT INTO {schema_rand_prefix}.input VALUES (3, 'val3', '2022-02-01'), (4, 'val4', '2022-02-01')"
-    )
+    with source_engine.begin() as source_conn:
+        source_conn.exec_driver_sql(
+            f"INSERT INTO {schema_rand_prefix}.input VALUES (3, 'val3', '2022-02-01'), (4, 'val4', '2022-02-01')"
+        )
     source_engine.dispose()
 
     run()
@@ -1305,9 +1325,10 @@ def db_to_db_delete_insert_without_primary_key(
     )
 
     # the new rows should have a new run ID, there should be 2 distinct runs now
-    count_by_run_id = dest_engine.execute(
-        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc, 1 asc"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        count_by_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc, 1 asc"
+        ).fetchall()
     assert len(count_by_run_id) == 2
     assert count_by_run_id[0][0] != first_run_id
     assert count_by_run_id[0][1] == 3  # 2 new rows + 1 old row
@@ -1322,33 +1343,36 @@ def db_to_db_delete_insert_with_timerange(
 ):
     schema_rand_prefix = f"testschema_delete_insert_timerange_{get_random_string(5)}"
     source_engine = sqlalchemy.create_engine(source_connection_url)
+    with source_engine.begin() as source_conn:
+        source_conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        source_conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        try:
+            source_conn.exec_driver_sql(
+                f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER, val VARCHAR(20), updated_at DATETIME)"
+            )
+        except Exception:
+            # hello postgres
+            source_conn.exec_driver_sql("ROLLBACK;")
+            source_conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+            source_conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+            source_conn.exec_driver_sql(
+                f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER, val VARCHAR(20), updated_at TIMESTAMP)"
+            )
 
-    source_engine.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-    source_engine.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-    try:
-        source_engine.execute(
-            f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER, val VARCHAR(20), updated_at DATETIME)"
+        source_conn.exec_driver_sql(
+            f"""INSERT INTO {schema_rand_prefix}.input VALUES 
+            (1, 'val1', '2022-01-01T00:00:00'),
+            (2, 'val2', '2022-01-01T00:00:00'),
+            (3, 'val3', '2022-01-02T00:00:00'),
+            (4, 'val4', '2022-01-02T00:00:00'),
+            (5, 'val5', '2022-01-03T00:00:00'),
+            (6, 'val6', '2022-01-03T00:00:00')
+        """
         )
-    except Exception:
-        # hello postgres
-        source_engine.execute(
-            f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER, val VARCHAR(20), updated_at TIMESTAMP)"
-        )
 
-    source_engine.execute(
-        f"""INSERT INTO {schema_rand_prefix}.input VALUES 
-        (1, 'val1', '2022-01-01T00:00:00'),
-        (2, 'val2', '2022-01-01T00:00:00'),
-        (3, 'val3', '2022-01-02T00:00:00'),
-        (4, 'val4', '2022-01-02T00:00:00'),
-        (5, 'val5', '2022-01-03T00:00:00'),
-        (6, 'val6', '2022-01-03T00:00:00')
-    """
-    )
-
-    res = source_engine.execute(
-        f"select count(*) from {schema_rand_prefix}.input"
-    ).fetchall()
+        res = source_conn.exec_driver_sql(
+            f"select count(*) from {schema_rand_prefix}.input"
+        ).fetchall()
     assert res[0][0] == 6
     source_engine.dispose()
 
@@ -1367,15 +1391,18 @@ def db_to_db_delete_insert_with_timerange(
         assert res.exit_code == 0
         return res
 
+    run("2022-01-01", "2022-01-02")  # dlt runs them with the end date exclusive
+
     dest_engine = sqlalchemy.create_engine(dest_connection_url, poolclass=NullPool)
 
     def get_output_rows():
-        if "clickhouse" not in dest_connection_url:
-            dest_engine.execute("CHECKPOINT")
-        rows = dest_engine.execute(
-            f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
-        ).fetchall()
-        return [(row[0], row[1], row[2].date()) for row in rows]
+        with dest_engine.connect() as dest_conn:
+            if "clickhouse" not in dest_connection_url:
+                dest_conn.exec_driver_sql("CHECKPOINT")
+            rows = dest_conn.exec_driver_sql(
+                f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
+            ).fetchall()
+            return [(row[0], row[1], row[2].date()) for row in rows]
 
     def assert_output_equals(expected):
         res = get_output_rows()
@@ -1383,7 +1410,6 @@ def db_to_db_delete_insert_with_timerange(
         for i, row in enumerate(expected):
             assert res[i] == row
 
-    run("2022-01-01", "2022-01-02")  # dlt runs them with the end date exclusive
     assert_output_equals(
         [
             (1, "val1", as_datetime("2022-01-01")),
@@ -1393,10 +1419,10 @@ def db_to_db_delete_insert_with_timerange(
         ]
     )
 
-    first_run_id = dest_engine.execute(
-        f"select _dlt_load_id from {schema_rand_prefix}.output limit 1"
-    ).fetchall()[0][0]
-    dest_engine.dispose()
+    with dest_engine.connect() as dest_conn:
+        first_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id from {schema_rand_prefix}.output limit 1"
+        ).fetchall()[0][0]
 
     ##############################
     # we'll run again, since this is a delete+insert, we expect the run ID to change for the last one
@@ -1412,13 +1438,13 @@ def db_to_db_delete_insert_with_timerange(
     )
 
     # both rows should have a new run ID
-    count_by_run_id = dest_engine.execute(
-        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 1 asc"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        count_by_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 1 asc"
+        ).fetchall()
     assert len(count_by_run_id) == 1
     assert count_by_run_id[0][0] != first_run_id
     assert count_by_run_id[0][1] == 4
-    dest_engine.dispose()
     ##############################
 
     ##############################
@@ -1436,13 +1462,13 @@ def db_to_db_delete_insert_with_timerange(
     )
 
     # there should be 4 rows with 2 distinct run IDs
-    count_by_run_id = dest_engine.execute(
-        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 1 asc"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        count_by_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 1 asc"
+        ).fetchall()
     assert len(count_by_run_id) == 2
     assert count_by_run_id[0][1] == 2
     assert count_by_run_id[1][1] == 4
-    dest_engine.dispose()
     ##############################
 
     ##############################
@@ -1460,21 +1486,22 @@ def db_to_db_delete_insert_with_timerange(
     )
 
     # there should be 6 rows with 3 distinct run IDs
-    count_by_run_id = dest_engine.execute(
-        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 1 asc"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        count_by_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 1 asc"
+        ).fetchall()
     assert len(count_by_run_id) == 3
     assert count_by_run_id[0][1] == 2
     assert count_by_run_id[1][1] == 2
     assert count_by_run_id[2][1] == 2
-    dest_engine.dispose()
     ##############################
 
     ##############################
     # now let's do a backfill for the first day again, the rows should be updated
-    source_engine.execute(
-        f"UPDATE {schema_rand_prefix}.input SET val = 'val1_modified' WHERE id = 1"
-    )
+    with source_engine.begin() as source_conn:
+        source_conn.exec_driver_sql(
+            f"UPDATE {schema_rand_prefix}.input SET val = 'val1_modified' WHERE id = 1"
+        )
     source_engine.dispose()
 
     run("2022-01-01", "2022-01-02")
@@ -1490,13 +1517,13 @@ def db_to_db_delete_insert_with_timerange(
     )
 
     # there should still be 6 rows with 3 distinct run IDs
-    count_by_run_id = dest_engine.execute(
-        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 1 asc"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        count_by_run_id = dest_conn.exec_driver_sql(
+            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 1 asc"
+        ).fetchall()
     assert len(count_by_run_id) == 2
     assert count_by_run_id[0][1] == 2
     assert count_by_run_id[1][1] == 4
-    dest_engine.dispose()
     ##############################
 
 
@@ -1545,7 +1572,7 @@ def test_kafka_to_db(dest):
     def get_output_table():
         dest_engine = sqlalchemy.create_engine(dest_uri)
         with dest_engine.connect() as conn:
-            res = conn.execute(
+            res = conn.exec_driver_sql(
                 "select _kafka__data from testschema.output order by _kafka_msg_id asc"
             ).fetchall()
         dest_engine.dispose()
@@ -1634,10 +1661,10 @@ def test_arrow_mmap_to_db_create_replace(dest):
 
     dest_engine = sqlalchemy.create_engine(dest_uri)
     with dest_engine.begin() as conn:
-        res = conn.execute(f"select count(*) from {schema}.output").fetchall()
+        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
         assert res[0][0] == row_count
 
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select date, count(*) from {schema}.output group by 1 order by 1 asc"
         ).fetchall()
         assert res[0][0] == as_datetime("2024-11-05")
@@ -1651,16 +1678,16 @@ def test_arrow_mmap_to_db_create_replace(dest):
 
     # there should be no change, just a new column
     with dest_engine.begin() as conn:
-        res = conn.execute(f"select count(*) from {schema}.output").fetchall()
+        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
         assert res[0][0] == row_count
 
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select date, count(*) from {schema}.output group by 1 order by 1 asc"
         ).fetchall()
         assert res[0][0] == as_datetime("2024-11-05")
         assert res[0][1] == row_count
 
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select new_col, count(*) from {schema}.output group by 1 order by 1 asc"
         ).fetchall()
         assert res[0][0] == "some value"
@@ -1736,10 +1763,10 @@ def test_arrow_mmap_to_db_delete_insert(dest):
 
     # the first load, it should be loaded correctly
     with dest_engine.begin() as conn:
-        res = conn.execute(f"select count(*) from {schema}.output").fetchall()
+        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
         assert res[0][0] == row_count
 
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select date, count(*) from {schema}.output group by 1 order by 1 asc"
         ).fetchall()
         assert compare_dates(res[0][0], "2024-11-05")
@@ -1750,10 +1777,10 @@ def test_arrow_mmap_to_db_delete_insert(dest):
     # run again, it should be deleted and reloaded
     run_command(df, "date")
     with dest_engine.begin() as conn:
-        res = conn.execute(f"select count(*) from {schema}.output").fetchall()
+        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
         assert res[0][0] == row_count
 
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select date, count(*) from {schema}.output group by 1 order by 1 asc"
         ).fetchall()
         assert compare_dates(res[0][0], "2024-11-05")
@@ -1774,10 +1801,10 @@ def test_arrow_mmap_to_db_delete_insert(dest):
     run_command(df, "date")
 
     with dest_engine.begin() as conn:
-        res = conn.execute(f"select count(*) from {schema}.output").fetchall()
+        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
         assert res[0][0] == row_count + 1000
 
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select date, count(*) from {schema}.output group by 1 order by 1 asc"
         ).fetchall()
         assert compare_dates(res[0][0], "2024-11-05")
@@ -1799,10 +1826,10 @@ def test_arrow_mmap_to_db_delete_insert(dest):
 
     run_command(df, "date")
     with dest_engine.begin() as conn:
-        res = conn.execute(f"select count(*) from {schema}.output").fetchall()
+        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
         assert res[0][0] == row_count + 1000
 
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select date, count(*) from {schema}.output group by 1 order by 1 asc"
         ).fetchall()
         assert compare_dates(res[0][0], "2024-11-05")
@@ -1848,10 +1875,10 @@ def test_arrow_mmap_to_db_merge_without_incremental(dest):
 
     # the first load, it should be loaded correctly
     with dest_engine.begin() as conn:
-        res = conn.execute(f"select count(*) from {schema}.output").fetchall()
+        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
         assert res[0][0] == row_count
 
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select value, count(*) from {schema}.output group by 1 order by 1 asc"
         ).fetchall()
         assert res[0][0] == "a"
@@ -1861,10 +1888,10 @@ def test_arrow_mmap_to_db_merge_without_incremental(dest):
     # run again, no change
     run_command(df)
     with dest_engine.begin() as conn:
-        res = conn.execute(f"select count(*) from {schema}.output").fetchall()
+        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
         assert res[0][0] == row_count
 
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select value, count(*) from {schema}.output group by 1 order by 1 asc"
         ).fetchall()
         assert res[0][0] == "a"
@@ -1883,11 +1910,11 @@ def test_arrow_mmap_to_db_merge_without_incremental(dest):
     run_command(df)
 
     with dest_engine.begin() as conn:
-        res = conn.execute(f"select count(*) from {schema}.output").fetchall()
+        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
 
         assert res[0][0] == row_count + 1000
 
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select value, count(*) from {schema}.output group by 1 order by 1 asc"
         ).fetchall()
         assert res[0][0] == "a"
@@ -1906,9 +1933,9 @@ def test_arrow_mmap_to_db_merge_without_incremental(dest):
     )
     run_command(old_rows)
     with dest_engine.begin() as conn:
-        res = conn.execute(f"select count(*) from {schema}.output").fetchall()
+        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
         assert res[0][0] == row_count + 1000
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select value, count(*) from {schema}.output group by 1 order by 1 asc"
         ).fetchall()
         assert res[0][0] == "a"
@@ -1931,18 +1958,18 @@ def test_db_to_db_exclude_columns(source, dest):
 
     source_engine = sqlalchemy.create_engine(source_uri)
     with source_engine.begin() as conn:
-        conn.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-        conn.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-        conn.execute(
+        conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        conn.exec_driver_sql(
             f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER, val VARCHAR(20), updated_at DATE, col_to_exclude1 VARCHAR(20), col_to_exclude2 VARCHAR(20))"
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"INSERT INTO {schema_rand_prefix}.input VALUES (1, 'val1', '2022-01-01', 'col1', 'col2')"
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"INSERT INTO {schema_rand_prefix}.input VALUES (2, 'val2', '2022-02-01', 'col1', 'col2')"
         )
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select count(*) from {schema_rand_prefix}.input"
         ).fetchall()
         assert res[0][0] == 2
@@ -1958,7 +1985,8 @@ def test_db_to_db_exclude_columns(source, dest):
     assert result.exit_code == 0
 
     dest_engine = sqlalchemy.create_engine(dest_uri)
-    res = dest_engine.execute(
+    dest_conn = dest_engine.connect()
+    res = dest_conn.exec_driver_sql(
         f"select id, val, updated_at from {schema_rand_prefix}.output"
     ).fetchall()
 
@@ -1967,7 +1995,7 @@ def test_db_to_db_exclude_columns(source, dest):
     assert res[1] == (2, "val2", as_datetime("2022-02-01"))
 
     # Verify excluded columns don't exist in destination schema
-    columns = dest_engine.execute(
+    columns = dest_conn.exec_driver_sql(
         f"SELECT column_name FROM information_schema.columns WHERE table_schema = '{schema_rand_prefix}' AND table_name = 'output'"
     ).fetchall()
     assert columns == [("id",), ("val",), ("updated_at",)]
@@ -1988,12 +2016,12 @@ def test_sql_limit():
     schema_rand_prefix = f"test_sql_limit_{get_random_string(5)}"
     source_engine = sqlalchemy.create_engine(source_uri, poolclass=NullPool)
     with source_engine.begin() as conn:
-        conn.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-        conn.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-        conn.execute(
+        conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        conn.exec_driver_sql(
             f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER, val VARCHAR(20), updated_at DATE)"
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"""INSERT INTO {schema_rand_prefix}.input VALUES 
                 (1, 'val1', '2024-01-01'),
                 (2, 'val2', '2024-01-01'),
@@ -2001,7 +2029,7 @@ def test_sql_limit():
                 (4, 'val4', '2024-01-02'),
                 (5, 'val5', '2024-01-02')"""
         )
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select count(*) from {schema_rand_prefix}.input"
         ).fetchall()
         assert res[0][0] == 5
@@ -2019,7 +2047,8 @@ def test_sql_limit():
     assert result.exit_code == 0
 
     dest_engine = sqlalchemy.create_engine(dest_uri, poolclass=NullPool)
-    res = dest_engine.execute(
+    dest_conn = dest_engine.connect()
+    res = dest_conn.exec_driver_sql(
         f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
     ).fetchall()
 
@@ -2050,12 +2079,12 @@ def test_date_coercion_issue():
     schema_rand_prefix = f"test_date_coercion_{get_random_string(5)}"
     source_engine = sqlalchemy.create_engine(source_uri, poolclass=NullPool)
     with source_engine.begin() as conn:
-        conn.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-        conn.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-        conn.execute(
+        conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        conn.exec_driver_sql(
             f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER, val VARCHAR(20), updated_at DATE)"
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"""INSERT INTO {schema_rand_prefix}.input VALUES 
                 (1, 'val1', '2024-01-01'),
                 (2, 'val2', '2024-01-01'),
@@ -2067,7 +2096,7 @@ def test_date_coercion_issue():
                 (8, 'val8', '2024-01-03'),
                 (9, 'val9', '2024-01-03')"""
         )
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select count(*) from {schema_rand_prefix}.input"
         ).fetchall()
         assert res[0][0] == 9
@@ -2089,7 +2118,8 @@ def test_date_coercion_issue():
     assert result.exit_code == 0
 
     dest_engine = sqlalchemy.create_engine(dest_uri, poolclass=NullPool)
-    res = dest_engine.execute(
+    dest_conn = dest_engine.connect()
+    res = dest_conn.exec_driver_sql(
         f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
     ).fetchall()
 
@@ -2122,9 +2152,9 @@ def test_duckdb_masking_basic():
 
     # Create test data with sensitive information
     with source_engine.begin() as conn:
-        conn.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-        conn.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-        conn.execute(
+        conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        conn.exec_driver_sql(
             f"""CREATE TABLE {schema_rand_prefix}.customers (
                 id INTEGER,
                 name VARCHAR(100),
@@ -2135,7 +2165,7 @@ def test_duckdb_masking_basic():
                 created_date DATE
             )"""
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"""INSERT INTO {schema_rand_prefix}.customers VALUES 
                 (1, 'John Doe', 'john.doe@example.com', '555-123-4567', '123-45-6789', 52300, '2024-01-15'),
                 (2, 'Jane Smith', 'jane.smith@gmail.com', '555-987-6543', '987-65-4321', 67800, '2024-02-20'),
@@ -2156,7 +2186,8 @@ def test_duckdb_masking_basic():
 
     # Verify masked data
     dest_engine = sqlalchemy.create_engine(dest_uri, poolclass=NullPool)
-    res = dest_engine.execute(
+    dest_conn = dest_engine.connect()
+    res = dest_conn.exec_driver_sql(
         f"SELECT id, name, email, phone, ssn, salary FROM {schema_rand_prefix}.masked_customers ORDER BY id"
     ).fetchall()
 
@@ -2208,16 +2239,16 @@ def test_duckdb_masking_consistency():
 
     # Create test data
     with source_engine.begin() as conn:
-        conn.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-        conn.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-        conn.execute(
+        conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        conn.exec_driver_sql(
             f"""CREATE TABLE {schema_rand_prefix}.users (
                 id INTEGER,
                 username VARCHAR(100),
                 email VARCHAR(100)
             )"""
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"""INSERT INTO {schema_rand_prefix}.users VALUES 
                 (1, 'user1', 'user1@example.com'),
                 (2, 'user2', 'user2@example.com')
@@ -2246,14 +2277,16 @@ def test_duckdb_masking_consistency():
 
     # Get results from both destinations
     dest_engine1 = sqlalchemy.create_engine(dest_uri1, poolclass=NullPool)
-    res1 = dest_engine1.execute(
-        f"SELECT id, username, email FROM {schema_rand_prefix}.masked_users ORDER BY id"
-    ).fetchall()
+    with dest_engine1.begin() as conn:
+        res1 = conn.exec_driver_sql(
+            f"SELECT id, username, email FROM {schema_rand_prefix}.masked_users ORDER BY id"
+        ).fetchall()
 
     dest_engine2 = sqlalchemy.create_engine(dest_uri2, poolclass=NullPool)
-    res2 = dest_engine2.execute(
-        f"SELECT id, username, email FROM {schema_rand_prefix}.masked_users ORDER BY id"
-    ).fetchall()
+    with dest_engine2.begin() as conn:
+        res2 = conn.exec_driver_sql(
+            f"SELECT id, username, email FROM {schema_rand_prefix}.masked_users ORDER BY id"
+        ).fetchall()
 
     # Check that hashes are consistent between runs
     assert res1 == res2
@@ -2284,9 +2317,9 @@ def test_duckdb_masking_format_preserving():
 
     # Create test data
     with source_engine.begin() as conn:
-        conn.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-        conn.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-        conn.execute(
+        conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        conn.exec_driver_sql(
             f"""CREATE TABLE {schema_rand_prefix}.contacts (
                 id INTEGER,
                 email VARCHAR(100),
@@ -2296,7 +2329,7 @@ def test_duckdb_masking_format_preserving():
                 name VARCHAR(100)
             )"""
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"""INSERT INTO {schema_rand_prefix}.contacts VALUES 
                 (1, 'alice@example.com', '555-123-4567', '4111-1111-1111-1111', '123-45-6789', 'Alice Brown'),
                 (2, 'bob@company.org', '555-987-6543', '5500-0000-0000-0004', '987-65-4321', 'Bob Smith')
@@ -2322,7 +2355,8 @@ def test_duckdb_masking_format_preserving():
 
     # Verify masked data
     dest_engine = sqlalchemy.create_engine(dest_uri, poolclass=NullPool)
-    res = dest_engine.execute(
+    dest_conn = dest_engine.connect()
+    res = dest_conn.exec_driver_sql(
         f"SELECT id, email, phone, credit_card, ssn, name FROM {schema_rand_prefix}.masked_contacts ORDER BY id"
     ).fetchall()
 
@@ -2370,9 +2404,9 @@ def test_duckdb_masking_numeric_and_date():
 
     # Create test data
     with source_engine.begin() as conn:
-        conn.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-        conn.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-        conn.execute(
+        conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        conn.exec_driver_sql(
             f"""CREATE TABLE {schema_rand_prefix}.transactions (
                 id INTEGER,
                 amount DOUBLE,
@@ -2381,7 +2415,7 @@ def test_duckdb_masking_numeric_and_date():
                 notes VARCHAR(100)
             )"""
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"""INSERT INTO {schema_rand_prefix}.transactions VALUES 
                 (1, 12345.67, 34, 456, 'Transaction notes 1'),
                 (2, 98765.43, 57, 789, 'Transaction notes 2'),
@@ -2402,7 +2436,8 @@ def test_duckdb_masking_numeric_and_date():
 
     # Verify masked data
     dest_engine = sqlalchemy.create_engine(dest_uri, poolclass=NullPool)
-    res = dest_engine.execute(
+    dest_conn = dest_engine.connect()
+    res = dest_conn.exec_driver_sql(
         f"SELECT id, amount, age, score, notes FROM {schema_rand_prefix}.masked_transactions ORDER BY id"
     ).fetchall()
 
@@ -2668,7 +2703,7 @@ def test_dynamodb(dest, dynamodb, testcase):
 def get_query_result(uri: str, query: str):
     engine = sqlalchemy.create_engine(uri, poolclass=NullPool)
     with engine.connect() as conn:
-        res = conn.execute(query).fetchall()
+        res = conn.exec_driver_sql(query).fetchall()
     engine.dispose()
     return res
 
@@ -2678,24 +2713,28 @@ def custom_query_tests():
         schema = f"testschema_cr_cust_{get_random_string(5)}"
         with sqlalchemy.create_engine(
             source_connection_url, poolclass=NullPool
-        ).connect() as conn:
-            conn.execute(f"DROP SCHEMA IF EXISTS {schema}")
-            conn.execute(f"CREATE SCHEMA {schema}")
-            conn.execute(
+        ).begin() as conn:
+            conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema}")
+            conn.exec_driver_sql(f"CREATE SCHEMA {schema}")
+            conn.exec_driver_sql(
                 f"CREATE TABLE {schema}.orders (id INTEGER, name VARCHAR(255) NOT NULL, updated_at DATE)"
             )
-            conn.execute(
+            conn.exec_driver_sql(
                 f"CREATE TABLE {schema}.order_items (id INTEGER, order_id INTEGER NOT NULL, subname VARCHAR(255) NOT NULL)"
             )
-            conn.execute(
+            conn.exec_driver_sql(
                 f"INSERT INTO {schema}.orders (id, name, updated_at) VALUES (1, 'First Order', '2024-01-01'), (2, 'Second Order', '2024-01-01'), (3, 'Third Order', '2024-01-01'), (4, 'Fourth Order', '2024-01-01')"
             )
-            conn.execute(
+            conn.exec_driver_sql(
                 f"INSERT INTO {schema}.order_items (id, order_id, subname) VALUES (1, 1, 'Item 1 for First Order'), (2, 1, 'Item 2 for First Order'), (3, 2, 'Item 1 for Second Order'), (4, 3, 'Item 1 for Third Order')"
             )
-            res = conn.execute(f"select count(*) from {schema}.orders").fetchall()
+            res = conn.exec_driver_sql(
+                f"select count(*) from {schema}.orders"
+            ).fetchall()
             assert res[0][0] == 4
-            res = conn.execute(f"select count(*) from {schema}.order_items").fetchall()
+            res = conn.exec_driver_sql(
+                f"select count(*) from {schema}.order_items"
+            ).fetchall()
             assert res[0][0] == 4
 
         if dest_connection_url.startswith("clickhouse"):
@@ -2730,18 +2769,18 @@ def custom_query_tests():
             source_connection_url, poolclass=NullPool
         )
         with source_engine.begin() as conn:
-            conn.execute(f"DROP SCHEMA IF EXISTS {schema}")
-            conn.execute(f"CREATE SCHEMA {schema}")
-            conn.execute(
+            conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema}")
+            conn.exec_driver_sql(f"CREATE SCHEMA {schema}")
+            conn.exec_driver_sql(
                 f"CREATE TABLE {schema}.orders (id INTEGER, name VARCHAR(255) NOT NULL, updated_at DATE)"
             )
-            conn.execute(
+            conn.exec_driver_sql(
                 f"CREATE TABLE {schema}.order_items (id INTEGER, order_id INTEGER NOT NULL, subname VARCHAR(255) NOT NULL)"
             )
-            conn.execute(
+            conn.exec_driver_sql(
                 f"INSERT INTO {schema}.orders (id, name, updated_at) VALUES (1, 'First Order', '2024-01-01'), (2, 'Second Order', '2024-01-01'), (3, 'Third Order', '2024-01-01'), (4, 'Fourth Order', '2024-01-01')"
             )
-            conn.execute(
+            conn.exec_driver_sql(
                 f"INSERT INTO {schema}.order_items (id, order_id, subname) VALUES (1, 1, 'Item 1 for First Order'), (2, 1, 'Item 2 for First Order'), (3, 2, 'Item 1 for Second Order'), (4, 3, 'Item 1 for Third Order')"
             )
 
@@ -2814,10 +2853,10 @@ def custom_query_tests():
 
         # Update an order item and its order's updated_at
         with source_engine.begin() as conn:
-            conn.execute(
+            conn.exec_driver_sql(
                 f"UPDATE {schema}.order_items SET subname = 'Item 1 for Second Order - new' WHERE id = 3"
             )
-            conn.execute(
+            conn.exec_driver_sql(
                 f"UPDATE {schema}.orders SET updated_at = '2024-01-02' WHERE id = 2"
             )
 
@@ -2895,7 +2934,7 @@ def test_custom_query(testcase, source, dest):
 
 #     assert res.exit_code == 0
 #     dest_engine = sqlalchemy.create_engine(dest_uri, poolclass=NullPool)
-#     res = dest_engine.execute(f"select count(*) from {dest_table}").fetchall()
+#     res = dest_conn.exec_driver_sql(f"select count(*) from {dest_table}").fetchall()
 #     dest_engine.dispose()
 #     assert len(res) > 0
 
@@ -3171,7 +3210,10 @@ def appstore_test_cases() -> Iterable[Callable]:
         assert result.exit_code == 0
 
         dest_engine = sqlalchemy.create_engine(dest_uri)
-        count = dest_engine.execute(f"select count(*) from {dest_table}").fetchone()[0]
+        dest_conn = dest_engine.connect()
+        count = dest_conn.exec_driver_sql(
+            f"select count(*) from {dest_table}"
+        ).fetchone()[0]
         dest_engine.dispose()
         assert count == 3
 
@@ -3273,7 +3315,10 @@ def appstore_test_cases() -> Iterable[Callable]:
         assert result.exit_code == 0
 
         dest_engine = sqlalchemy.create_engine(dest_uri)
-        count = dest_engine.execute(f"select count(*) from {dest_table}").fetchone()[0]
+        with dest_engine.connect() as dest_conn:
+            count = dest_conn.exec_driver_sql(
+                f"select count(*) from {dest_table}"
+            ).fetchone()[0]
         dest_engine.dispose()
         assert count == 3
 
@@ -3299,16 +3344,19 @@ def appstore_test_cases() -> Iterable[Callable]:
         assert result.exit_code == 0
 
         dest_engine = sqlalchemy.create_engine(dest_uri)
-        count = dest_engine.execute(f"select count(*) from {dest_table}").fetchone()[0]
-        assert count == 6
-        assert (
-            len(
-                dest_engine.execute(
-                    f"select processing_date from {dest_table} group by 1"
-                ).fetchall()
+        with dest_engine.connect() as dest_conn:
+            count = dest_conn.exec_driver_sql(
+                f"select count(*) from {dest_table}"
+            ).fetchone()[0]
+            assert count == 6
+            assert (
+                len(
+                    dest_conn.exec_driver_sql(
+                        f"select processing_date from {dest_table} group by 1"
+                    ).fetchall()
+                )
+                == 2
             )
-            == 2
-        )
         dest_engine.dispose()
 
     return [
@@ -3396,7 +3444,7 @@ def fs_test_cases(
     def assert_rows(dest_uri, dest_table, n):
         engine = sqlalchemy.create_engine(dest_uri)
         with engine.connect() as conn:
-            rows = conn.execute(f"select count(*) from {dest_table}").fetchall()
+            rows = conn.exec_driver_sql(f"select count(*) from {dest_table}").fetchall()
             assert len(rows) == 1
             assert rows[0] == (n,)
         engine.dispose()
@@ -3808,7 +3856,7 @@ def frankfurter_test_cases() -> Iterable[Callable]:
 
         query = f"SELECT rate FROM {dest_table} WHERE currency_code = 'GBP'"
         with dest_engine.connect() as conn:
-            rows = conn.execute(query).fetchall()
+            rows = conn.exec_driver_sql(query).fetchall()
         dest_engine.dispose()
 
         # Assert that the rate for GBP is 0.82993
@@ -3863,27 +3911,27 @@ def test_mysql_zero_dates(source, dest):
 
     source_engine = sqlalchemy.create_engine(source_uri)
     with source_engine.begin() as conn:
-        conn.execute(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
-        conn.execute(f"CREATE SCHEMA {schema_rand_prefix}")
-        conn.execute(
+        conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
+        conn.exec_driver_sql(f"CREATE SCHEMA {schema_rand_prefix}")
+        conn.exec_driver_sql(
             f"""
             CREATE TABLE {schema_rand_prefix}.input (
                 name VARCHAR(255),
                 created_at DATETIME
             );"""
         )
-        conn.execute(
+        conn.exec_driver_sql(
             f"INSERT INTO {schema_rand_prefix}.input VALUES ('Row 1', null), ('Row 2', '2024-01-01 12:00:00'), ('Row 3', null), ('Row 4', '2025-04-05 08:30:00'), ('Row 5', null)"
         )
 
-        conn.execute("SET sql_mode = '';")
+        conn.exec_driver_sql("SET sql_mode = '';")
 
         # this is the crucial step of this test: once the field becomes non-nullable, MySQL starts returning `0000-00-00 00:00:00` for empty dates.
-        conn.execute(
+        conn.exec_driver_sql(
             f"ALTER TABLE {schema_rand_prefix}.input MODIFY created_at DATETIME NOT NULL"
         )
 
-        res = conn.execute(
+        res = conn.exec_driver_sql(
             f"select count(*) from {schema_rand_prefix}.input"
         ).fetchall()
         assert res[0][0] == 5
@@ -3900,7 +3948,10 @@ def test_mysql_zero_dates(source, dest):
     assert result.exit_code == 0
 
     dest_engine = sqlalchemy.create_engine(dest_uri)
-    res = dest_engine.execute(f"select * from {schema_rand_prefix}.output").fetchall()
+    dest_conn = dest_engine.connect()
+    res = dest_conn.exec_driver_sql(
+        f"select * from {schema_rand_prefix}.output"
+    ).fetchall()
     dest_engine.dispose()
 
     # assert there are no new rows, since DBs like DuckDB accept NULL and dlt adds a separate string column for the value `0000-00-00 00:00:00`
@@ -3952,13 +4003,13 @@ def appsflyer_test_cases():
         assert result.exit_code == 0
 
         with sqlalchemy.create_engine(dest_uri).connect() as conn:
-            res = conn.execute(
+            res = conn.exec_driver_sql(
                 f"select * from {schema_rand_prefix}.creatives"
             ).fetchall()
             assert len(res) > 0
             columns = [
                 col[0]
-                for col in conn.execute(
+                for col in conn.exec_driver_sql(
                     f"select * from {schema_rand_prefix}.creatives limit 0"
                 ).cursor.description
             ]
@@ -3998,13 +4049,13 @@ def appsflyer_test_cases():
         assert result.exit_code == 0
 
         with sqlalchemy.create_engine(dest_uri).connect() as conn:
-            res = conn.execute(
+            res = conn.exec_driver_sql(
                 f"select * from {schema_rand_prefix}.campaigns"
             ).fetchall()
             assert len(res) > 0
             columns = [
                 col[0]
-                for col in conn.execute(
+                for col in conn.exec_driver_sql(
                     f"select * from {schema_rand_prefix}.campaigns limit 0"
                 ).cursor.description
             ]
@@ -4052,11 +4103,13 @@ def appsflyer_test_cases():
         assert result.exit_code == 0
 
         with sqlalchemy.create_engine(dest_uri).connect() as conn:
-            res = conn.execute(f"select * from {schema_rand_prefix}.custom").fetchall()
+            res = conn.exec_driver_sql(
+                f"select * from {schema_rand_prefix}.custom"
+            ).fetchall()
             assert len(res) > 0
             columns = [
                 col[0]
-                for col in conn.execute(
+                for col in conn.exec_driver_sql(
                     f"select * from {schema_rand_prefix}.custom limit 0"
                 ).cursor.description
             ]
@@ -4114,7 +4167,7 @@ def airtable_test_cases():
         assert result.exit_code == 0
 
         with sqlalchemy.create_engine(dest_uri).connect() as conn:
-            res = conn.execute(f"select count(*) from {dest_table}").fetchall()
+            res = conn.exec_driver_sql(f"select count(*) from {dest_table}").fetchall()
             assert len(res) > 0
             assert res[0][0] > 0
 
@@ -4136,8 +4189,6 @@ def test_airtable_source(testcase, dest):
 
 
 def pp(x):
-    import sys
-
     print(x, file=sys.stderr)
 
 
@@ -4212,7 +4263,7 @@ def test_couchbase_source_local(dest):
         )
 
         with sqlalchemy.create_engine(dest_uri).connect() as conn:
-            res = conn.execute(
+            res = conn.exec_driver_sql(
                 "select * from raw.test_couchbase_collection order by id"
             ).fetchall()
 
@@ -4328,7 +4379,7 @@ def test_mongodb_source(dest):
         )
 
         with sqlalchemy.create_engine(dest_uri).connect() as conn:
-            res = conn.execute(
+            res = conn.exec_driver_sql(
                 "select id, name, nested_parent__key1, nested_parent__key2, nested_parent__key3, key4, value from raw.test_collection"
             ).fetchall()
 
@@ -4463,7 +4514,7 @@ def mongodb_custom_query_test_cases():
             assert result.exit_code == 0
 
             with sqlalchemy.create_engine(dest_uri).connect() as conn:
-                res = conn.execute(
+                res = conn.exec_driver_sql(
                     f"select event_id, event_type, user_id, value from {schema_rand_prefix}.events_success order by event_id"
                 ).fetchall()
 
@@ -4540,7 +4591,7 @@ def mongodb_custom_query_test_cases():
             assert result.exit_code == 0
 
             with sqlalchemy.create_engine(dest_uri).connect() as conn:
-                res = conn.execute(
+                res = conn.exec_driver_sql(
                     f"select _id, total_value, event_count from {schema_rand_prefix}.user_stats order by _id"
                 ).fetchall()
 
@@ -4630,7 +4681,7 @@ def mongodb_custom_query_test_cases():
             assert result.exit_code == 0
 
             with sqlalchemy.create_engine(dest_uri).connect() as conn:
-                res = conn.execute(
+                res = conn.exec_driver_sql(
                     f"select event_id, event_type, user_id, value from {schema_rand_prefix}.events_incremental order by event_id"
                 ).fetchall()
 
@@ -4727,7 +4778,7 @@ def mongodb_custom_query_test_cases():
             assert result.exit_code == 0
 
             with sqlalchemy.create_engine(dest_uri).connect() as conn:
-                res = conn.execute(
+                res = conn.exec_driver_sql(
                     f"select event_id, event_type, user_id, value from {schema_rand_prefix}.events_multi order by event_id"
                 ).fetchall()
 
@@ -4965,7 +5016,7 @@ def trustpilot_test_case(dest_uri):
 
         engine = sqlalchemy.create_engine(dest_uri)
         with engine.connect() as conn:
-            rows = conn.execute(f"SELECT * FROM {dest_table}").fetchall()
+            rows = conn.exec_driver_sql(f"SELECT * FROM {dest_table}").fetchall()
             assert len(rows) > 0, "No data ingested into the destination"
         engine.dispose()
 
@@ -5066,7 +5117,7 @@ def pinterest_test_case(dest_uri):
 
         engine = sqlalchemy.create_engine(dest_uri)
         with engine.connect() as conn:
-            rows = conn.execute(f"SELECT * FROM {dest_table}").fetchall()
+            rows = conn.exec_driver_sql(f"SELECT * FROM {dest_table}").fetchall()
             assert len(rows) > 0, "No data ingested into the destination"
         engine.dispose()
 
@@ -5135,7 +5186,9 @@ def linear_test_cases():
             assert result.exit_code == 0
 
             with sqlalchemy.create_engine(dest_uri).connect() as conn:
-                res = conn.execute(f"select count(*) from {dest_table}").fetchall()
+                res = conn.exec_driver_sql(
+                    f"select count(*) from {dest_table}"
+                ).fetchall()
                 assert len(res) > 0
                 count = res[0][0]
                 print(f"Linear {table_name} count: {count}")
@@ -5216,7 +5269,9 @@ def jira_test_cases():
             assert result.exit_code == 0
 
             with sqlalchemy.create_engine(dest_uri).connect() as conn:
-                res = conn.execute(f"select count(*) from {dest_table}").fetchall()
+                res = conn.exec_driver_sql(
+                    f"select count(*) from {dest_table}"
+                ).fetchall()
                 assert len(res) >= 0  # Just verify the table exists and query works
                 count = res[0][0]
                 print(f"Jira {table_name} count: {count}")
@@ -5310,7 +5365,9 @@ def revenuecat_test_cases():
             assert result.exit_code == 0
 
             with sqlalchemy.create_engine(dest_uri).connect() as conn:
-                res = conn.execute(f"select count(*) from {dest_table}").fetchall()
+                res = conn.exec_driver_sql(
+                    f"select count(*) from {dest_table}"
+                ).fetchall()
                 assert len(res) > 0
                 count = res[0][0]
                 print(f"RevenueCat {table_name} count: {count}")
@@ -5652,7 +5709,7 @@ def test_couchbase_capella_source(dest):
 
         # Verify data was ingested
         with sqlalchemy.create_engine(dest_uri).connect() as conn:
-            res = conn.execute(f"select * from {dest_table}").fetchall()
+            res = conn.exec_driver_sql(f"select * from {dest_table}").fetchall()
             assert len(res) > 0, "No data was ingested from Couchbase Capella"
             print(
                 f"Successfully ingested {len(res)} documents from Couchbase Capella (bucket in URI)"
@@ -5702,7 +5759,7 @@ def test_couchbase_capella_source_without_bucket_in_uri(dest):
 
         # Verify data was ingested
         with sqlalchemy.create_engine(dest_uri).connect() as conn:
-            res = conn.execute(f"select * from {dest_table}").fetchall()
+            res = conn.exec_driver_sql(f"select * from {dest_table}").fetchall()
             assert len(res) > 0, "No data was ingested from Couchbase Capella"
             print(
                 f"Successfully ingested {len(res)} documents from Couchbase Capella (bucket in table name)"
@@ -5757,7 +5814,7 @@ def test_couchbase_server_source(dest):
 
         # Verify data was ingested
         with sqlalchemy.create_engine(dest_uri).connect() as conn:
-            res = conn.execute(f"select * from {dest_table}").fetchall()
+            res = conn.exec_driver_sql(f"select * from {dest_table}").fetchall()
             assert len(res) > 0, "No data was ingested from Couchbase Server"
             print(f"Successfully ingested {len(res)} documents from Couchbase Server")
     finally:
