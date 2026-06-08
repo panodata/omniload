@@ -43,7 +43,6 @@ from testcontainers.core.waiting_utils import wait_for_logs  # type: ignore
 from testcontainers.kafka import KafkaContainer  # type: ignore
 from testcontainers.localstack import LocalStackContainer  # type: ignore
 from testcontainers.mongodb import MongoDbContainer  # type: ignore
-from testcontainers.mssql import SqlServerContainer  # type: ignore
 from testcontainers.mysql import MySqlContainer  # type: ignore
 from testcontainers.postgres import PostgresContainer  # type: ignore
 from typer.testing import CliRunner
@@ -789,11 +788,6 @@ SOURCES = {
     "postgres": pgDocker,
     "duckdb": EphemeralDuckDb(),
     "mysql8": mysqlDocker,
-    "sqlserver": DockerImage(
-        "sqlserver",
-        lambda: SqlServerContainer(MSSQL22_IMAGE, dialect="mssql").start(),
-        "?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=Yes",
-    ),
 }
 
 DESTINATIONS = {
@@ -801,6 +795,20 @@ DESTINATIONS = {
     "duckdb": EphemeralDuckDb(),
     "clickhouse+native": clickHouseDocker,
 }
+
+if sys.platform == "linux":
+    # [unixODBC][Driver Manager] Can't open lib 'ODBC Driver 18 for SQL Server' : file not found (0) (SQLDriverConnect)
+    from testcontainers.mssql import SqlServerContainer  # type: ignore
+
+    SOURCES.update(
+        {
+            "sqlserver": DockerImage(
+                "sqlserver",
+                lambda: SqlServerContainer(MSSQL22_IMAGE, dialect="mssql").start(),
+                "?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=Yes",
+            )
+        }
+    )
 
 
 @pytest.fixture(scope="session", autouse=True)
