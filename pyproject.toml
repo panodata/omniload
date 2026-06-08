@@ -72,14 +72,14 @@ classifiers = [
 dynamic = [ "version" ]
 dependencies = [
   "aiohttp<4",
-  "asana<3.3",
+  "asana<4",
   "click<8.2",
   "clickhouse-connect>=0.8,<1",
   "clickhouse-driver<0.3",
   "clickhouse-sqlalchemy<0.4",
   "confluent-kafka<2.13",
   "couchbase>=4,<5",
-  "databricks-sql-connector<4.3",
+  "databricks-sql-connector<5",
   "databricks-sqlalchemy<3",
   "dataclasses-json<0.7",
   "dlt<1.22",
@@ -89,7 +89,7 @@ dependencies = [
   "elasticsearch<9",
   "facebook-business<24",
   "flatten-json<0.2",
-  "gcsfs==2025.3.2",
+  "gcsfs",
   "google-ads<29",
   "google-analytics-data<0.19",
   "google-api-python-client<3",
@@ -100,34 +100,33 @@ dependencies = [
   "mysql-connector-python<10",
   "oracledb<4",
   "pendulum>=3,<4",
-  "psutil<7",
   "psycopg2-binary<3",
-  "py-machineid<1",
+  "py-machineid<2",
   "pyairtable<3",
   "pyarrow>=18,<25",
   "pyathena<4",
   "pymongo<5",
   "pymysql<2",
-  "pyrate-limiter<3.8",
+  "pyrate-limiter<4",
   "python-quickbooks<0.10",
   "requests<3",
-  "rich<14",
+  "rich<16",
   "rudder-sdk-python<2.2",
-  "s3fs==2025.3.2",
+  "s3fs",
   "simple-salesforce<2",
   "smartsheet-python-sdk<4",
   "snowflake-connector-python>=3.18,<5",
-  "snowflake-sqlalchemy<1.10",
+  "snowflake-sqlalchemy<2",
   "sqlalchemy<2.1",
-  "sqlalchemy-bigquery<1.13",
+  "sqlalchemy-bigquery<2",
   "sqlalchemy-cratedb<1",
-  "sqlalchemy-hana<2.1",
+  "sqlalchemy-hana<5",
   "sqlalchemy-redshift<2",
   "sqlalchemy-spanner<2",
-  "stripe<10.8",
-  "tldextract<5.2",
+  "stripe<11",
+  "tldextract<6",
   "tqdm<5",
-  "trino[sqlalchemy]==0.336.0",
+  "trino[sqlalchemy]==0.337.0",
   "typer<0.14",
   "urllib3<2.8",
 ]
@@ -138,7 +137,6 @@ optional-dependencies.develop = [
   "pyproject-fmt<3",
   "pytest-repeat<1",
   "ruff<0.12",
-  "sqlalchemy2-stubs==0.0.2a38",
   "validate-pyproject<1",
 ]
 optional-dependencies.full = [ "omniload[ibm-db,odbc,oracle]" ]
@@ -158,12 +156,12 @@ optional-dependencies.release = [
 ]
 optional-dependencies.test = [
   "pendulum[test]>=3,<4",
-  "pytest<9",
+  "pytest<10",
   "pytest-asyncio<2",
-  "pytest-cov<5",
+  "pytest-cov<8",
   "pytest-xdist[psutil]<4",
   "testcontainers[mysql,postgres]<4.9",
-  "types-requests==2.32.0.20240907",
+  "types-requests<3",
   "verlib2",
 ]
 urls.Homepage = "https://github.com/panodata/omniload"
@@ -264,6 +262,7 @@ exclude = [
 ]
 namespace_packages = true
 explicit_package_bases = true
+check_untyped_defs = false
 
 [[tool.mypy.overrides]]
 module = [
