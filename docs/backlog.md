@@ -4,6 +4,8 @@
 
 - Migrate from VitePress to Sphinx
 - Migrate from GitHub Pages to Read the Docs
+- Remove spinner in `omniload/src/collector/spinner.py`?
+  Then, remove `rich` dependency?
 
 ## Iteration +2
 
