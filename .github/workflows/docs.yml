@@ -1,0 +1,49 @@
+name: "Docs: Link checker"
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch: {}
+  workflow_call: {}
+  pull_request:
+  schedule:
+    - cron: '0 3 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - 'ubuntu-latest'
+        python-version:
+          - '3.14'
+
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - name: Acquire sources
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: 'true'
+          cache-suffix: ${{ matrix.python-version }}
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install requirements
+        run: |
+          uv pip install poethepoet -r docs/requirements.txt
+
+      - name: Run link checker
+        run: poe docs-linkcheck
