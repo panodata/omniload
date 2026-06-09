@@ -12,7 +12,7 @@ clickup://?api_token=<token>
 URI parameters:
 - `api_token` is a personal token used to authenticate with the ClickUp API.
 
-ClickUp requires a `api_token` to connect to the ClickUP API. For more information, read [here](https://developer.clickup.com/docs/authentication#generate-your-personal-api-token) to get credentail. 
+ClickUp requires a `api_token` to connect to the ClickUP API. For more information, read [here](https://developer.clickup.com/docs/authentication#generate-or-regenerate-a-personal-api-token) to get credentail. 
 
 Once you've completed the guide, you should have `api_token`. Let's say your API Token  is `token_123`, here's a sample command that will copy the data from Clickup into a DuckDB database:
 

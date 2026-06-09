@@ -25,4 +25,4 @@ URI parameters:
 - `port`: The port number the database server is listening
 - `database-name`: the name of the database to connect to
 
-The same URI structure can be used both for sources and destinations. You can read more about SQLAlchemy's Db2 dialect [here](https://github.com/ibmdb/python-ibmdbsa?tab=readme-ov-file#connecting).
+The same URI structure can be used both for sources and destinations. You can read more about SQLAlchemy's Db2 dialect [here](https://github.com/ibmdb/python-ibmdbsa#connecting).

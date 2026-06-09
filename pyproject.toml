@@ -340,7 +340,7 @@ tasks.docs-html = [
 ]
 tasks.docs-linkcheck = [
   { cmd = "uv pip install -r docs/requirements.txt;" },
-  { cmd = "sphinx-build -W --keep-going -b linkcheck docs docs/_build" },
+  { cmd = "sphinx-build -j auto -W --keep-going -b linkcheck docs docs/_build" },
 ]
 tasks.docs-lint = { cmd = "vale docs --glob='!**/.vitepress/**'" }
 tasks.format = [

@@ -8,7 +8,7 @@ The Zendesk supports two authentication methods when connecting through omniload
 - OAuth Token 
 - API Token
 
-For all resources except chat resources, you can use either the [API Token](https://dlthub.com/docs/dlt-ecosystem/verified-sources/zendesk#grab-zendesk-support-api-token) or the Zendesk Support [OAuth Token](https://dlthub.com/docs/dlt-ecosystem/verified-sources/zendesk#zendesk-support-oauth-token) to fetch data. However, for chat resources, you must use the [OAuth Token](https://dlthub.com/docs/dlt-ecosystem/verified-sources/zendesk#zendesk-chat) specific to Zendesk Chat.
+For all resources except chat resources, you can use either the [API Token](https://dlthub.com/docs/dlt-ecosystem/verified-sources/zendesk#grab-zendesk-support-api-token) or the Zendesk Support [OAuth Token](https://dlthub.com/docs/dlt-ecosystem/verified-sources/zendesk#grab-zendesk-support-oauth-token) to fetch data. However, for chat resources, you must use the OAuth Token specific to [Zendesk Chat](https://dlthub.com/docs/dlt-ecosystem/verified-sources/zendesk#zendesk-chat).
 
 ## URI format
 

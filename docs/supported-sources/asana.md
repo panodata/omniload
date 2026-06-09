@@ -22,7 +22,7 @@ In this example `fake-123456789` is your workspace id.
 
 ## Setting up an Asana Integration
 
-You can obtain a personal access token from the [developer console](https://app.asana.com/0/my-apps). For more information, see [Asana developers documentation](https://developers.asana.com/docs/personal-access-token).
+You can obtain a personal access token from the [developer console](https://app.asana.com/). For more information, see [Asana developers documentation](https://developers.asana.com/docs/personal-access-token).
 
 ## Example
 Let's say you have a workspace with id `workspace-1337` and you want to ingest all tasks into a duckdb database called `work.db`. For this example the value of `access_token` will be `fake_token`

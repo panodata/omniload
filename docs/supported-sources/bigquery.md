@@ -35,7 +35,7 @@ omniload supports multiple authentication methods for BigQuery:
    - User credentials set via `gcloud auth application-default login`
    - Service account credentials when running on Google Cloud (Compute Engine, App Engine, Cloud Run, etc.)
 
-The same URI structure can be used both for sources and destinations. You can read more about SQLAlchemy's BigQuery dialect [here](https://github.com/googleapis/python-bigquery-sqlalchemy?tab=readme-ov-file#connection-string-parameters).
+The same URI structure can be used both for sources and destinations. You can read more about SQLAlchemy's BigQuery dialect [here](https://github.com/googleapis/python-bigquery-sqlalchemy/#connection-string-parameters).
 
 ### Using GCS as a staging area
 

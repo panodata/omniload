@@ -38,9 +38,9 @@ Frankfurter source allows ingesting the following sources into separate tables:
 
 | Table           | PK | Inc Key | Inc Strategy | Details                                                                                                                                        |
 | --------------- | ----------- | --------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| [currencies](https://www.frankfurter.dev/docs/#currencies)  | - | –                | replace               | Retrieves list of available currencies with ISO 4217 codes and names. |
-| [latest](https://www.frankfurter.dev/docs/#latest)    | ["date", "currency_code", "base_currency"] | –                | merge               | Fetches latest exchange rates for all currencies. |
-| [exchange_rates](https://www.frankfurter.dev/docs/#historical) | ["date", "currency_code", "base_currency"] | date    | merge               | Retrieves historical exchange rates for specified date range.|
+| [currencies](https://frankfurter.dev/currencies/)  | - | –                | replace               | Retrieves list of available currencies with ISO 4217 codes and names. |
+| [latest](https://frankfurter.dev/#rates)    | ["date", "currency_code", "base_currency"] | –                | merge               | Fetches latest exchange rates for all currencies. |
+| [exchange_rates](https://frankfurter.dev/#historical-rates) | ["date", "currency_code", "base_currency"] | date    | merge               | Retrieves historical exchange rates for specified date range.|
 
 Use these as `--source-table` parameter in the `omniload ingest` command.
 

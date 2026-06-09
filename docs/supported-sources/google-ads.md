@@ -1,5 +1,5 @@
 # Google Ads
-[Google Ads](https://ads.google.com/), formerly known as Google Adwords, is an online advertising platform developed by Google, where advertisers bid to display brief advertisements, service offerings, product listings, and videos to web users. It can place ads in the results of search engines like Google Search (the Google Search Network), mobile apps, videos, and on non-search websites.
+[Google Ads](https://business.google.com/en-all/google-ads/), formerly known as Google Adwords, is an online advertising platform developed by Google, where advertisers bid to display brief advertisements, service offerings, product listings, and videos to web users. It can place ads in the results of search engines like Google Search (the Google Search Network), mobile apps, videos, and on non-search websites.
 
 ## URI format
 
@@ -170,13 +170,13 @@ Notes:
 For this example, we will ingest data from `ad_group_ad_asset_view`.
 We want to obtain the following info:
 **dimensions**
-  * ad_group.id
-  * campagin.id
-  * customer.id
+  * `ad_group.id`
+  * `campagin.id`
+  * `customer.id`
 **metrics**
-  * metrics.clicks
-  * metrics.conversions
-  * metrics.impressions
+  * `metrics.clicks`
+  * `metrics.conversions`
+  * `metrics.impressions`
 
 To achieve this, we pass a `daily` report specification to `omniload` source table as follows:
 ```sh

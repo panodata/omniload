@@ -11,12 +11,12 @@ applovin://?api_key=<your_api_key>
 ```
 
 URI Parameters:
-* `api_key`. report key generated from your [applovin account](https://www.applovin.com/analytics#keys).
+* `api_key`. report key generated from your [applovin account](https://www.applovin.com/).
 
 ## Setting up Applovin Integration
 
 ### Generate a Report Key
-You can generate a report key from your [analytics dashboard](https://www.applovin.com/analytics#keys).
+You can generate a report key from your [analytics dashboard](https://www.applovin.com/).
 
 ### Example: Loading Publisher Report
 
@@ -118,8 +118,8 @@ custom:{endpoint}:{report_type}:{columns}
 ```
 Where:
 * `{endpoint}` is the API endpoint for applovin reports (one of `report`, `probabilisticReport` or `skaReport`)
-* `{report_type}` is the [report type](https://developers.applovin.com/en/app-discovery/api/reporting-api#required-parameters) (one of `publisher` or `advertiser`)
-* `{columns}` are the [columns](https://developers.applovin.com/en/app-discovery/api/reporting-api#allowed-publisher-columns) of the given report type.
+* `{report_type}` is the [report type](https://support.axon.ai/en/growth/promoting-your-apps/api/reporting-api#required-parameters) (one of `publisher` or `advertiser`)
+* `{columns}` are the [columns](https://support.axon.ai/en/growth/promoting-your-apps/api/reporting-api#allowed-publisher-columns) of the given report type.
 
 
 ### Custom Report Example

@@ -2,7 +2,7 @@
 
 Facebook Ads is the advertising platform that helps users to create targeted ads on Facebook, Instagram and Messenger.
 
-omniload supports Facebook Ads as a source using [Facebook Marketing API](https://developers.facebook.com/docs/marketing-api/).
+omniload supports Facebook Ads as a source using [Facebook Marketing API](https://developers.facebook.com/documentation/ads-commerce/marketing-api).
 
 ## URI format
 
@@ -133,7 +133,7 @@ When using **custom dimensions** (not predefined breakdowns), you can use any va
 **Important Notes:**
 - Custom dimensions **must always be accompanied by fields** (after the second colon)
 - Predefined breakdown names (like `ads_insights_age_and_gender`) cannot be used as custom dimensions
-- Not all dimension combinations are valid according to Facebook's API. Refer to [Facebook's Marketing API](https://developers.facebook.com/docs/marketing-api/insights/breakdowns/) documentation for valid dimension combinations
+- Not all dimension combinations are valid according to Facebook's API. Refer to [Facebook's Marketing API](https://developers.facebook.com/documentation/ads-commerce/marketing-api/insights/breakdowns) documentation for valid dimension combinations
 
 #### Examples
 

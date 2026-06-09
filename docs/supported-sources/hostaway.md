@@ -16,7 +16,7 @@ URI parameters:
 
 - `api_key`: the API access token used for authentication with the Hostaway API
 
-The URI is used to connect to the Hostaway API for extracting data. More details on the Hostaway API can be found in the [official API documentation](https://api-docs.hostaway.com/).
+The URI is used to connect to the Hostaway API for extracting data. More details on the Hostaway API can be found in the [official API documentation](https://api.hostaway.com/).
 
 ## Setting up a Hostaway Integration
 

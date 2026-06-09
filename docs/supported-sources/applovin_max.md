@@ -28,7 +28,7 @@ user_ad_revenue:com.example.app1,com.example.app2
 ## Setting up Applovin Integration
 
 ### Generate a Report Key
-You can generate a report key from your [AppLovin dashboard](https://developers.applovin.com/en/max/max-dashboard/account/account-info/#keys).
+You can generate a report key from your [AppLovin dashboard](https://support.axon.ai/en/max/max-dashboard/account/account-info#keys).
 
 ### Example:
 To retrieve `user ad revenue` data for an application `com.example.app` with api key `key_123`, and to store it in a DuckDB database, use the following command:
@@ -49,4 +49,4 @@ By default, `omniload` retrieves data for the last 30 days. For a custom date ra
 Applovin Max source allows ingesting the following sources into separate tables:
 | Table           | PK | Inc Key | Inc Strategy | Details                                                                                                                                        |
 | --------------- | ----------- | --------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| [user_ad_revenue](https://developers.applovin.com/en/max/reporting-apis/user-level-ad-revenue-api/)       | `partition_date` (extracts date-only portion from the timestamp-based date column) |        partition_date      | merge              |  Provides daily metrics from the user level ad revenue API. User-level revenue data is available eight hours after UTC day end. So, for example, data for UTC 2025-01-01 is available on UTC 2025-01-02 after 08:00.
+| [user_ad_revenue](https://support.axon.ai/en/max/reporting-apis/user-level-ad-revenue-api)       | `partition_date` (extracts date-only portion from the timestamp-based date column) |        partition_date      | merge              |  Provides daily metrics from the user level ad revenue API. User-level revenue data is available eight hours after UTC day end. So, for example, data for UTC 2025-01-01 is available on UTC 2025-01-02 after 08:00.

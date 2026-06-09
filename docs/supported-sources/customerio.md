@@ -45,37 +45,37 @@ Customer.io source allows ingesting the following sources into separate tables:
 
 | Table | PK | Inc Key | Inc Strategy | Details |
 | ----- | -- | ------- | ------------ | ------- |
-| [activities](https://customer.io/docs/api/app/#operation/listActivities) | id | – | replace | Retrieves account activity log. |
-| [broadcasts](https://customer.io/docs/api/app/#operation/listBroadcasts) | id | updated | merge | Retrieves broadcast campaigns. |
-| [broadcast_actions](https://customer.io/docs/api/app/#operation/listBroadcastActions) | id | updated | merge | Retrieves actions for broadcasts. |
+| [activities](https://docs.customer.io/integrations/api/app/#tag/activities/listActivities) | id | – | replace | Retrieves account activity log. |
+| [broadcasts](https://docs.customer.io/integrations/api/app/#tag/broadcasts/listBroadcasts) | id | updated | merge | Retrieves broadcast campaigns. |
+| [broadcast_actions](https://docs.customer.io/integrations/api/app/#operation/listBroadcastActions) | id | updated | merge | Retrieves actions for broadcasts. |
 | broadcast_action_metrics:period | broadcast_id, action_id, period, step_index | – | replace | Retrieves metrics for broadcast actions. Period: `hours`, `days`, `weeks`, `months`. |
-| [broadcast_messages](https://customer.io/docs/api/app/#operation/listBroadcastMessages) | id | – | merge | Retrieves messages sent by broadcasts. |
+| [broadcast_messages](https://docs.customer.io/integrations/api/app/#tag/broadcasts/listBroadcasts) | id | – | merge | Retrieves messages sent by broadcasts. |
 | broadcast_metrics:period | broadcast_id, period, step_index | – | replace | Retrieves metrics for all broadcasts. Period: `hours`, `days`, `weeks`, `months`. |
-| [campaigns](https://customer.io/docs/api/app/#operation/listCampaigns) | id | updated | merge | Retrieves triggered campaigns. |
-| [campaign_actions](https://customer.io/docs/api/app/#operation/listCampaignActions) | id | updated | merge | Retrieves actions for campaigns. |
+| [campaigns](https://docs.customer.io/integrations/api/app/#tag/campaigns/listCampaigns) | id | updated | merge | Retrieves triggered campaigns. |
+| [campaign_actions](https://docs.customer.io/integrations/api/app/#tag/campaigns/listCampaignActions) | id | updated | merge | Retrieves actions for campaigns. |
 | campaign_action_metrics:period | campaign_id, action_id, period, step_index | – | replace | Retrieves metrics for campaign actions. Period: `hours`, `days`, `weeks`, `months`. |
-| [campaign_messages](https://customer.io/docs/api/app/#operation/getCampaignMessages) | id | – | merge | Retrieves messages/deliveries sent from campaigns. |
+| [campaign_messages](https://docs.customer.io/integrations/api/app/#tag/campaigns/getCampaignMessages) | id | – | merge | Retrieves messages/deliveries sent from campaigns. |
 | campaign_metrics:period | campaign_id, period, step_index | – | replace | Retrieves metrics for all campaigns. Period: `hours`, `days`, `weeks`, `months`. |
-| [collections](https://customer.io/docs/api/app/#operation/listCollections) | id | updated_at | merge | Retrieves data collections. |
-| [customers](https://customer.io/docs/api/app/#operation/getPeopleFilter) | cio_id | – | replace | Retrieves all customers/people in the workspace. |
-| [customer_activities](https://customer.io/docs/api/app/#operation/getPersonActivities) | id | – | replace | Retrieves activities performed by each customer. |
-| [customer_attributes](https://customer.io/docs/api/app/#operation/getPersonAttributes) | customer_id | – | replace | Retrieves attributes for each customer. |
-| [customer_messages](https://customer.io/docs/api/app/#operation/getPersonMessages) | id | – | merge | Retrieves messages sent to each customer. |
-| [customer_relationships](https://customer.io/docs/api/app/#operation/getPersonRelationships) | customer_id, object_type_id, object_id | – | replace | Retrieves object relationships for each customer. |
-| [exports](https://customer.io/docs/api/app/#operation/listExports) | id | updated_at | merge | Retrieves export jobs. |
-| [info_ip_addresses](https://customer.io/docs/api/app/#operation/listIPAddresses) | ip | – | replace | Retrieves IP addresses used by Customer.io. |
-| [messages](https://customer.io/docs/api/app/#operation/listMessages) | id | – | merge | Retrieves sent messages. |
-| [newsletters](https://customer.io/docs/api/app/#operation/listNewsletters) | id | updated | merge | Retrieves newsletters. |
+| [collections](https://docs.customer.io/integrations/api/app/#tag/collections/getCollections) | id | updated_at | merge | Retrieves data collections. |
+| [customers](https://docs.customer.io/integrations/api/app/#tag/customers/getPeopleFilter) | cio_id | – | replace | Retrieves all customers/people in the workspace. |
+| [customer_activities](https://docs.customer.io/integrations/api/app/#tag/customers/getPersonActivities) | id | – | replace | Retrieves activities performed by each customer. |
+| [customer_attributes](https://docs.customer.io/integrations/api/app/#tag/customers/getPersonAttributes) | customer_id | – | replace | Retrieves attributes for each customer. |
+| [customer_messages](https://docs.customer.io/integrations/api/app/#tag/customers/getPersonMessages) | id | – | merge | Retrieves messages sent to each customer. |
+| [customer_relationships](https://docs.customer.io/integrations/api/app/#tag/customers/getPersonRelationships) | customer_id, object_type_id, object_id | – | replace | Retrieves object relationships for each customer. |
+| [exports](https://docs.customer.io/integrations/api/app/#tag/exports/listExports) | id | updated_at | merge | Retrieves export jobs. |
+| [info_ip_addresses](https://docs.customer.io/integrations/api/app/#tag/info/getCioAllowlist) | ip | – | replace | Retrieves IP addresses used by Customer.io. |
+| [messages](https://docs.customer.io/integrations/api/app/#tag/messages/listMessages) | id | – | merge | Retrieves sent messages. |
+| [newsletters](https://docs.customer.io/integrations/api/app/#tag/newsletters/listNewsletters) | id | updated | merge | Retrieves newsletters. |
 | newsletter_metrics:period | newsletter_id, period, step_index | – | replace | Retrieves metrics for all newsletters. Period: `hours`, `days`, `weeks`, `months`. |
-| [newsletter_test_groups](https://customer.io/docs/api/app/#operation/listNewsletterTestGroups) | id | – | replace | Retrieves test groups for newsletters. |
-| [object_types](https://customer.io/docs/api/app/#operation/getObjectTypes) | id | – | replace | Retrieves object types in the workspace. |
-| [objects](https://customer.io/docs/api/app/#operation/getObjectsFilter) | object_type_id, object_id | – | replace | Retrieves all objects for each object type. |
-| [reporting_webhooks](https://customer.io/docs/api/app/#operation/listReportingWebhooks) | id | – | replace | Retrieves reporting webhooks. |
-| [segments](https://customer.io/docs/api/app/#operation/listSegments) | id | updated_at | merge | Retrieves customer segments. |
-| [sender_identities](https://customer.io/docs/api/app/#operation/listSenderIdentities) | id | – | replace | Retrieves sender identities. |
-| [subscription_topics](https://customer.io/docs/api/app/#operation/getTopics) | id | – | replace | Retrieves subscription topics. |
-| [transactional_messages](https://customer.io/docs/api/app/#operation/listTransactional) | id | – | replace | Retrieves transactional message templates. |
-| [workspaces](https://customer.io/docs/api/app/#operation/listWorkspaces) | id | – | replace | Retrieves workspaces in your account. |
+| [newsletter_test_groups](https://docs.customer.io/integrations/api/app/#tag/newsletter-variants/getNewsletterTestGroups) | id | – | replace | Retrieves test groups for newsletters. |
+| [object_types](https://docs.customer.io/integrations/api/app/#tag/objects/getObjectTypes) | id | – | replace | Retrieves object types in the workspace. |
+| [objects](https://docs.customer.io/integrations/api/app/#tag/objects/getObjectsFilter) | object_type_id, object_id | – | replace | Retrieves all objects for each object type. |
+| [reporting_webhooks](https://docs.customer.io/integrations/api/app/#tag/reporting-webhooks) | id | – | replace | Retrieves reporting webhooks. |
+| [segments](https://docs.customer.io/integrations/api/app/#tag/segments/listSegments) | id | updated_at | merge | Retrieves customer segments. |
+| [sender_identities](https://docs.customer.io/integrations/api/app/#tag/sender-identities) | id | – | replace | Retrieves sender identities. |
+| [subscription_topics](https://docs.customer.io/integrations/api/app/#tag/subscription-center/getTopics) | id | – | replace | Retrieves subscription topics. |
+| [transactional_messages](https://docs.customer.io/integrations/api/app/#tag/transactional/listTransactional) | id | – | replace | Retrieves transactional message templates. |
+| [workspaces](https://docs.customer.io/integrations/api/app/#tag/workspaces/listWorkspaces) | id | – | replace | Retrieves workspaces in your account. |
 
 Use these as `--source-table` parameter in the `omniload ingest` command.
 

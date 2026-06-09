@@ -80,7 +80,33 @@ intersphinx_mapping = {
     "guide": ("https://cratedb.com/docs/guide/", None),
     "influxio": ("https://influxio.readthedocs.io/", None),
 }
-linkcheck_ignore = []
+linkcheck_ignore = [
+    r"https://pulse.internetsociety.org/",
+    r"https://www.g2.com/",
+    r"https://www.trustpilot.com/",
+    r"https://developer.eu.surveymonkey.com/",
+    r"https://developer.salesforce.com/",
+    r"https://developers.facebook.com/",
+    r"https://docs.indeed.com/",
+    r"https://quickbooks.intuit.com/",
+    r"https://app.asana.com/",
+    r"https://developer.ca.surveymonkey.com/",
+    r"https://docs.customer.io/",
+    r"https://personio.de/",
+    r"https://www.adjust.com/",
+    r"https://support.appsflyer.com/",
+    r"https://help.docebo.com/",
+    r"https://www.reddit.com/",
+]
+linkcheck_anchors_ignore_for_url = [
+    r"https://developers.zoom.us/",
+    r"https://docs.customer.io/",
+    r"https://github.com/",
+    r"https://support.appsflyer.com/",
+    r"https://support.axon.ai/",
+    r"https://developers.zoom.us/",
+    r"https://docs.customer.io/",
+]
 
 # Disable caching remote inventories completely.
 # http://www.sphinx-doc.org/en/stable/ext/intersphinx.html#confval-intersphinx_cache_limit
