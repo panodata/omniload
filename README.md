@@ -83,7 +83,7 @@ the way down. Kudos.
 [Documentation]: https://github.com/panodata/omniload/blob/main/docs/getting-started/quickstart.md
 [ingestr]: https://bruin-data.github.io/ingestr/
 [Issues]: https://github.com/panodata/omniload/issues
-[LICENSE]: https://github.com/panodata/omniload/blob/main/LICENSE.md
+[LICENSE]: https://github.com/panodata/omniload/blob/main/LICENSE
 [NOTICE]: https://github.com/panodata/omniload/blob/main/NOTICE
 [sources and destinations]: https://github.com/panodata/omniload/blob/main/docs/supported-sources/index.md
 [SQLAlchemy]: https://www.sqlalchemy.org/

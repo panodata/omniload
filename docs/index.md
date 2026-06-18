@@ -87,6 +87,6 @@ backlog
 
 [dlt]: https://github.com/dlt-hub/dlt
 [ingestr]: https://bruin-data.github.io/ingestr/
-[LICENSE]: https://github.com/panodata/omniload/blob/main/LICENSE.md
+[LICENSE]: https://github.com/panodata/omniload/blob/main/LICENSE
 [NOTICE]: https://github.com/panodata/omniload/blob/main/NOTICE
 [SQLAlchemy]: https://www.sqlalchemy.org/
