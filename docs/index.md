@@ -30,7 +30,7 @@ While installation with vanilla `pip` is possible, it's an order of magnitude sl
 
 ## Next Steps
 
-Check out the [Quickstart](/getting-started/quickstart.md) guide to get started with omniload.
+Check out the {ref}`Quickstart` guide to get started with omniload.
 
 ### License
 

@@ -4,6 +4,10 @@
 <p>Copy data between any source and any destination.</p>
 <img src="https://github.com/panodata/omniload/blob/main/resources/demo.gif?raw=true" width="750" />
 
+[![License](https://img.shields.io/github/license/panodata/omniload.svg)](https://github.com/panodata/omniload/blob/main/LICENSE)
+[![Downloads / month](https://pepy.tech/badge/omniload/month)](https://pepy.tech/project/omniload/)
+[![Python versions](https://img.shields.io/pypi/pyversions/omniload.svg)](https://pypi.org/project/omniload/)
+
 </div>
 
 ## About
@@ -47,15 +51,15 @@ omniload ingest \
 
 ## Handbook
 
-Please visit the [full documentation][Documentation], or inspect the
+Please visit the [quickstart documentation], or inspect the
 list of supported [sources and destinations].
 
 ## Project
 
 ### Contribute
 
-Contributions are very much welcome. Please visit the [Documentation]
-to learn how to spin up a sandbox environment on your workstation and submit
+Contributions are very much welcome. Please visit the [sandbox documentation]
+to learn how to spin up a development environment on your workstation and submit
 patches, or create a [ticket][Issues] to report a bug or propose a feature.
 
 ### Status
@@ -80,11 +84,12 @@ the way down. Kudos.
 
 
 [dlt]: https://github.com/dlt-hub/dlt
-[Documentation]: https://github.com/panodata/omniload/blob/main/docs/getting-started/quickstart.md
+[quickstart documentation]: https://omniload.readthedocs.io/getting-started/quickstart.html
 [ingestr]: https://bruin-data.github.io/ingestr/
 [Issues]: https://github.com/panodata/omniload/issues
 [LICENSE]: https://github.com/panodata/omniload/blob/main/LICENSE
 [NOTICE]: https://github.com/panodata/omniload/blob/main/NOTICE
-[sources and destinations]: https://github.com/panodata/omniload/blob/main/docs/supported-sources/index.md
+[sandbox documentation]: https://omniload.readthedocs.io/sandbox.html
+[sources and destinations]: https://omniload.readthedocs.io/supported-sources/
 [SQLAlchemy]: https://www.sqlalchemy.org/
 [uv]: https://docs.astral.sh/uv/

@@ -164,8 +164,10 @@ optional-dependencies.test = [
   "types-requests<3",
   "verlib2",
 ]
-urls.Homepage = "https://github.com/panodata/omniload"
+urls.Changelog = "https://omniload.readthedocs.io/changelog.html"
+urls.Documentation = "https://omniload.readthedocs.io/"
 urls.Issues = "https://github.com/panodata/omniload/issues"
+urls.Repository = "https://github.com/panodata/omniload"
 scripts.omniload = "omniload.main:main"
 
 [tool.setuptools]
