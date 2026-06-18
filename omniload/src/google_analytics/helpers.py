@@ -112,7 +112,10 @@ def get_realtime_report(
         )
         # import pdb; pdb.set_trace()
         for row in processed_response_generator:
-            row["property_id"] = str(property_id)
+            if isinstance(row, dict):
+                row["property_id"] = str(property_id)
+            elif isinstance(row, list):
+                raise ValueError("Unexpected row type")
             yield row
         offset += per_page
         if len(response.rows) < per_page or offset > 1000000:
@@ -168,7 +171,10 @@ def get_report(
 
         # import pdb; pdb.set_trace()
         for row in processed_response_generator:
-            row["property_id"] = str(property_id)
+            if isinstance(row, dict):
+                row["property_id"] = str(property_id)
+            elif isinstance(row, list):
+                raise ValueError("Unexpected row type")
             yield row
         offset += per_page
         if len(response.rows) < per_page or offset > 1000000:

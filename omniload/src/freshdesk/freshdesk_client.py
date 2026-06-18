@@ -16,7 +16,7 @@
 
 import logging
 import time
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional, cast
 
 import pendulum
 from dlt.common.typing import TDataItem
@@ -139,7 +139,8 @@ class FreshdeskClient:
                 item
                 for item in data
                 if "updated_at" in item
-                and pendulum.parse(item["updated_at"]) <= end_date
+                and cast(pendulum.DateTime, pendulum.parse(item["updated_at"]))
+                <= end_date
             ]
             if not filtered_data:
                 break

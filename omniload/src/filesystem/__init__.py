@@ -103,14 +103,15 @@ def filesystem(
         Iterator[List[FileItem]]: The list of files.
     """
 
+    fs_client: AbstractFileSystem
     if isinstance(credentials, AbstractFileSystem):
         fs_client = credentials
     else:
         fs_client = fsspec_filesystem(bucket_url, credentials)[0]
 
     files_chunk: List[FileItem] = []
-    for file_model in glob_files(fs_client, bucket_url, file_glob):
-        file_dict = FileItemDict(file_model, credentials)
+    for file_model in glob_files(fs_client, bucket_url, file_glob or "**"):
+        file_dict = FileItemDict(file_model, fs_client)
         if extract_content:
             file_dict["file_content"] = file_dict.read_bytes()
         files_chunk.append(file_dict)  # type: ignore

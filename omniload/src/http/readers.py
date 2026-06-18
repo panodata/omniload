@@ -72,7 +72,7 @@ class HttpReader:
         kwargs = {**{"header": "infer", "chunksize": chunksize}, **pandas_kwargs}
 
         file_obj = io.BytesIO(content)
-        for df in pd.read_csv(file_obj, **kwargs):
+        for df in pd.read_csv(file_obj, **kwargs):  # ty: ignore[no-matching-overload]
             yield df.to_dict(orient="records")
 
     def _read_csv_headless(
@@ -96,7 +96,7 @@ class HttpReader:
         }
 
         file_obj = io.BytesIO(content)
-        for df in pd.read_csv(file_obj, **kwargs):
+        for df in pd.read_csv(file_obj, **kwargs):  # ty: ignore[no-matching-overload]
             yield df.to_dict(orient="records")
 
     def _read_json(

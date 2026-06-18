@@ -5,6 +5,7 @@ import pendulum
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 
+from ..errors import MissingValueError
 from .client import HostawayClient
 
 
@@ -46,6 +47,8 @@ def hostaway_source(
         Fetch listings from Hostaway API with incremental loading.
         Uses latestActivityOn field as the incremental cursor.
         """
+        if datetime.last_value is None:
+            raise MissingValueError("datetime.last_value", "Hostaway")
         start_dt = datetime.last_value
         end_dt = (
             datetime.end_value
@@ -73,6 +76,8 @@ def hostaway_source(
         Fetch listing fee settings from Hostaway API with incremental loading.
         Uses updatedOn field as the incremental cursor.
         """
+        if datetime.last_value is None:
+            raise MissingValueError("datetime.last_value", "Hostaway")
         start_dt = datetime.last_value
         end_dt = (
             datetime.end_value

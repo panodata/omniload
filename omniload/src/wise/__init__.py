@@ -1,10 +1,11 @@
-from typing import Iterable
+from typing import Iterable, Optional
 
 import dlt
 import pendulum
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 
+from ..errors import MissingValueError
 from .client import WiseClient
 
 
@@ -12,7 +13,7 @@ from .client import WiseClient
 def wise_source(
     api_key: str,
     start_date: pendulum.DateTime,
-    end_date: pendulum.DateTime | None = None,
+    end_date: Optional[pendulum.DateTime] = None,
 ) -> Iterable[DltResource]:
     client = WiseClient(api_key)
 
@@ -40,6 +41,11 @@ def wise_source(
 
         start_dt = datetime.last_value
 
+        if start_dt is None:
+            raise MissingValueError("start_dt", "Wise")
+        if end_dt is None:
+            raise MissingValueError("end_dt", "Wise")
+
         for profile in profiles:
             yield from client.fetch_transfers(profile["id"], start_dt, end_dt)
 
@@ -61,6 +67,9 @@ def wise_source(
             end_dt = datetime.end_value
 
         start_dt = datetime.last_value
+
+        if start_dt is None:
+            raise MissingValueError("start_dt", "Wise")
 
         for profile in profiles:
             yield from client.fetch_balances(profile["id"], start_dt, end_dt)

@@ -6,6 +6,7 @@ from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 from pendulum import Date
 
+from ..errors import MissingValueError
 from .helpers import (
     BASE_URL,
     LEVEL_ID_FIELDS,
@@ -149,6 +150,10 @@ def reddit_ads_analytics_source(
                 breakdowns=breakdowns,
                 metrics=metrics,
             )
+            if dateTime.end_value is None:
+                raise MissingValueError("dateTime.end_value", "Reddit")
+            if dateTime.last_value is None:
+                raise MissingValueError("dateTime.last_value", "Reddit")
 
             actual_end = (
                 dateTime.end_value

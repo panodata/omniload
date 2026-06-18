@@ -8,6 +8,7 @@ from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 from intuitlib.client import AuthClient
+from pendulum import DateTime
 
 from quickbooks import QuickBooks
 
@@ -64,7 +65,7 @@ def quickbooks_source(
 
     def fetch_object(
         obj_name: str,
-        updated_at: dlt.sources.incremental[str] = dlt.sources.incremental(
+        updated_at: dlt.sources.incremental[DateTime] = dlt.sources.incremental(
             "lastupdatedtime",
             initial_value=start_date,
             end_value=end_date,

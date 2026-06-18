@@ -1,10 +1,13 @@
 import json
 import os
 import unittest
+from typing import Any, Type
 from unittest.mock import patch
 
 import dlt
 import pytest
+from dlt.common.destination import Destination
+from dlt.common.destination.client import JobClientBase
 
 from omniload.src.destinations import (
     BigQueryDestination,
@@ -16,6 +19,7 @@ from omniload.src.destinations import (
     RedshiftDestination,
     SnowflakeDestination,
 )
+from omniload.src.factory import DestinationProtocol
 
 
 class BigQueryDestinationTest(unittest.TestCase):
@@ -60,7 +64,10 @@ class BigQueryDestinationTest(unittest.TestCase):
         self.assertEqual(result, {"dataset_name": "dataset", "table_name": "sometable"})
 
 
-class GenericSqlDestinationFixture(object):
+class GenericSqlDestinationFixture(unittest.TestCase):
+    destination: DestinationProtocol
+    expected_class: Type[Destination[Any, JobClientBase]]
+
     def test_credentials_are_passed_correctly(self):
         uri = "some-uri"
         result = self.destination.dlt_dest(uri)
@@ -80,27 +87,27 @@ class GenericSqlDestinationFixture(object):
         self.assertEqual(result, {"dataset_name": "dataset", "table_name": "sometable"})
 
 
-class PostgresDestinationTest(unittest.TestCase, GenericSqlDestinationFixture):
+class PostgresDestinationTest(GenericSqlDestinationFixture, unittest.TestCase):
     destination = PostgresDestination()
     expected_class = dlt.destinations.postgres
 
 
-class SnowflakeDestinationTest(unittest.TestCase, GenericSqlDestinationFixture):
+class SnowflakeDestinationTest(GenericSqlDestinationFixture, unittest.TestCase):
     destination = SnowflakeDestination()
     expected_class = dlt.destinations.snowflake
 
 
-class RedshiftDestinationTest(unittest.TestCase, GenericSqlDestinationFixture):
+class RedshiftDestinationTest(GenericSqlDestinationFixture, unittest.TestCase):
     destination = RedshiftDestination()
     expected_class = dlt.destinations.redshift
 
 
-class DuckDBDestinationTest(unittest.TestCase, GenericSqlDestinationFixture):
+class DuckDBDestinationTest(GenericSqlDestinationFixture, unittest.TestCase):
     destination = DuckDBDestination()
     expected_class = dlt.destinations.duckdb
 
 
-class MsSQLDestinationTest(unittest.TestCase, GenericSqlDestinationFixture):
+class MsSQLDestinationTest(GenericSqlDestinationFixture, unittest.TestCase):
     destination = MsSQLDestination()
     expected_class = dlt.destinations.mssql
 

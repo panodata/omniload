@@ -17,7 +17,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
-from typing import Callable, Dict, Iterable, List, Optional
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 from unittest.mock import MagicMock, patch
 from urllib.parse import urlparse
 
@@ -193,10 +193,12 @@ def invoke_ingest_command(
         result = CliRunner().invoke(
             app,
             args,
-            input="y\n",
         )
         if result.exit_code != 0 and print_output:
-            traceback.print_exception(*result.exc_info)
+            if result.exc_info is not None:
+                traceback.print_exception(*result.exc_info)
+            else:
+                raise RuntimeError(f"Command failed with output: {result.stdout}")
 
         return result
 
@@ -801,7 +803,7 @@ DESTINATIONS = {
 
 if sys.platform == "linux":
     # [unixODBC][Driver Manager] Can't open lib 'ODBC Driver 18 for SQL Server' : file not found (0) (SQLDriverConnect)
-    from testcontainers.mssql import SqlServerContainer  # type: ignore
+    from testcontainers.mssql import SqlServerContainer
 
     SOURCES.update(
         {
@@ -818,7 +820,7 @@ if sys.platform == "linux":
 def manage_containers(request, shared_directory):
     unique_containers = set(SOURCES.values()) | set(DESTINATIONS.values())
     for container in unique_containers:
-        container.container_lock_dir = shared_directory
+        container.container_lock_dir = shared_directory  # ty: ignore[invalid-assignment]
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -3222,7 +3224,7 @@ def appstore_test_cases() -> Iterable[Callable]:
         dest_conn = dest_engine.connect()
         count = dest_conn.exec_driver_sql(
             f"select count(*) from {dest_table}"
-        ).fetchone()[0]
+        ).scalar_one()
         dest_engine.dispose()
         assert count == 3
 
@@ -3327,7 +3329,7 @@ def appstore_test_cases() -> Iterable[Callable]:
         with dest_engine.connect() as dest_conn:
             count = dest_conn.exec_driver_sql(
                 f"select count(*) from {dest_table}"
-            ).fetchone()[0]
+            ).scalar_one()
         dest_engine.dispose()
         assert count == 3
 
@@ -3356,7 +3358,7 @@ def appstore_test_cases() -> Iterable[Callable]:
         with dest_engine.connect() as dest_conn:
             count = dest_conn.exec_driver_sql(
                 f"select count(*) from {dest_table}"
-            ).fetchone()[0]
+            ).scalar_one()
             assert count == 6
             assert (
                 len(
@@ -4865,6 +4867,7 @@ def test_stripe_source_full_refresh(stripe_table):
     # Verify data was loaded
     conn = duckdb.connect(abs_db_path)
     res = conn.sql(f"select count(*) from raw.{stripe_table}s").fetchone()
+    assert res, "Database result is empty"
     assert res[0] > 0, f"No {stripe_table} records found"
 
     # Clean up
@@ -4905,6 +4908,7 @@ def test_stripe_source_incremental(stripe_table):
     # Verify data was loaded
     conn = duckdb.connect(abs_db_path)
     res = conn.sql(f"select count(*) from raw.{stripe_table}s").fetchone()
+    assert res, "Database result is empty"
     assert res[0] > 0, f"No {stripe_table} records found"
 
     # Clean up
@@ -5882,7 +5886,7 @@ def test_hostaway_source_full_refresh(hostaway_table):
 
     conn = duckdb.connect(abs_db_path)
     result = conn.sql(f"select count(*) from raw.{hostaway_table}").fetchone()
-    assert result is not None
+    assert result is not None, "Database result is empty"
 
     conn.close()
     try:
@@ -6257,11 +6261,16 @@ def test_csv_to_elasticsearch_cloud():
         parsed = urlparse(es_cloud_url.replace("elasticsearch://", "https://"))
         username = parsed.username
         password = parsed.password
+        credentials: Union[Tuple[str, str], None]
+        if username and password:
+            credentials = (username, password)
+        else:
+            credentials = None
         host = parsed.hostname
         port = parsed.port if parsed.port else 443
 
         es_url = f"https://{host}:{port}"
-        es_client = Elasticsearch([es_url], basic_auth=(username, password))
+        es_client = Elasticsearch([es_url], basic_auth=credentials)
 
         # Wait for indexing
         es_client.indices.refresh(index="OMNILOAD_test_cloud_index")
@@ -6290,11 +6299,16 @@ def test_csv_to_elasticsearch_cloud():
             parsed = urlparse(es_cloud_url.replace("elasticsearch://", "https://"))
             username = parsed.username
             password = parsed.password
+            credentials: Union[Tuple[str, str], None]
+            if username and password:
+                credentials = (username, password)
+            else:
+                credentials = None
             host = parsed.hostname
             port = parsed.port if parsed.port else 443
 
             es_url = f"https://{host}:{port}"
-            es_client = Elasticsearch([es_url], basic_auth=(username, password))
+            es_client = Elasticsearch([es_url], basic_auth=credentials)
             if es_client.indices.exists(index="OMNILOAD_test_cloud_index"):
                 es_client.indices.delete(index="OMNILOAD_test_cloud_index")
         except Exception:
@@ -6374,9 +6388,11 @@ def test_snapchat_ads_merge_strategy():
         print(f"\n✓ Columns after first ingest: {column_names}")
 
         # Get total count
-        first_ingest_total = conn.execute(
+        result = conn.execute(
             "SELECT COUNT(*) FROM snapchat_ads.campaigns_stats"
-        ).fetchone()[0]
+        ).fetchone()
+        assert result is not None, "Database result is empty"
+        first_ingest_total = result[0]
 
         assert first_ingest_total > 0, "First ingest should have data"
 
@@ -6391,6 +6407,7 @@ def test_snapchat_ads_merge_strategy():
                 "COUNT(CASE WHEN adsquad_id IS NULL THEN 1 END) as null_adsquad_ids "
                 "FROM snapchat_ads.campaigns_stats"
             ).fetchone()
+            assert result is not None, "Database result is empty"
             first_ingest_null_ad_ids = result[0]
             print(
                 f"✓ First ingest: {first_ingest_total} records with NULL ad_id and adsquad_id"
@@ -6424,6 +6441,7 @@ def test_snapchat_ads_merge_strategy():
             "COUNT(CASE WHEN ad_id IS NOT NULL THEN 1 END) as non_null_ad_ids "
             "FROM snapchat_ads.campaigns_stats"
         ).fetchone()
+        assert result is not None, "Database result is empty"
         total_records = result[0]
         null_ad_ids = result[1]
         non_null_ad_ids = result[2]
@@ -6525,7 +6543,7 @@ def test_linkedin_ads_source_full_refresh(linkedin_ads_table):
 
     conn = duckdb.connect(abs_db_path)
     result = conn.sql(f"select count(*) from raw.{linkedin_ads_table}").fetchone()
-    assert result is not None
+    assert result is not None, "Database result is empty"
 
     conn.close()
     try:

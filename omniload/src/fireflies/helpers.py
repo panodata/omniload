@@ -451,15 +451,13 @@ class FirefliesAPI:
         self, from_date: Optional[str], to_date: Optional[str]
     ) -> tuple[pendulum.DateTime, pendulum.DateTime]:
         """Parse date strings into pendulum DateTime objects."""
-        start: pendulum.DateTime = (
-            pendulum.parse(from_date)  # type: ignore[assignment]
+        start: pendulum.DateTime = (  # ty: ignore[invalid-assignment]
+            pendulum.parse(from_date)
             if from_date
             else pendulum.datetime(1970, 1, 1, tz="UTC")
         )
-        end: pendulum.DateTime = (
-            pendulum.parse(to_date)  # type: ignore[assignment]
-            if to_date
-            else pendulum.now(tz="UTC")
+        end: pendulum.DateTime = (  # ty: ignore[invalid-assignment]
+            pendulum.parse(to_date) if to_date else pendulum.now(tz="UTC")
         )
         return start, end
 

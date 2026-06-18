@@ -46,7 +46,8 @@ def dynamodb(
     db = sesh.resource("dynamodb", endpoint_url=credentials.endpoint_url)
     table = db.Table(table_name)
     schema = parseSchema(table)
-    resource = dlt.resource(
+    # FIXME: Does this invocation really work?
+    resource = dlt.resource(  # ty: ignore[no-matching-overload]
         dynamodb_table,
         primary_key=schema.primary_key,
     )

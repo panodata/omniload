@@ -1,9 +1,9 @@
-from typing import Iterable
+from typing import Iterable, cast
 
 import dlt
 import pendulum
 from dlt.common.time import ensure_pendulum_datetime
-from dlt.common.typing import TDataItem
+from dlt.common.typing import TDataItem, TTableHintTemplate
 from dlt.sources import DltResource
 
 from .tiktok_helpers import TikTokAPI
@@ -105,7 +105,7 @@ def tiktok_source(
     @dlt.resource(
         write_disposition="merge",
         primary_key=dimensions + ["advertiser_id"],
-        columns=type_hints,
+        columns=cast(TTableHintTemplate, type_hints),
         parallelized=True,
     )
     def custom_reports(
@@ -124,7 +124,11 @@ def tiktok_source(
         start_date_tz_adjusted = start_date.in_tz(timezone)
         end_date_tz_adjusted = end_date.in_tz(timezone)
 
-        if datetime is not None:
+        if (
+            datetime is not None
+            and datetime.last_value is not None
+            and datetime.end_value is not None
+        ):
             start_date_tz_adjusted = ensure_pendulum_datetime(
                 datetime.last_value
             ).in_tz(timezone)

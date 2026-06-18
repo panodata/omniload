@@ -1,6 +1,6 @@
 """Fetches Gorgias data."""
 
-from typing import Iterable
+from typing import Iterable, Optional
 
 import dlt
 from dlt.common.time import ensure_pendulum_datetime
@@ -16,7 +16,7 @@ def gorgias_source(
     email: str = dlt.config.value,
     api_key: str = dlt.secrets.value,
     start_date: TAnyDateTime = "2000-01-01",
-    end_date: TAnyDateTime = None,
+    end_date: Optional[TAnyDateTime] = None,
 ) -> Iterable[DltResource]:
     """
     The source for the Gorgias pipeline. Available resources include tickets, users, and conversations.

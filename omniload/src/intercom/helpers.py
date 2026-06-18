@@ -2,6 +2,7 @@
 Helper functions and API client for Intercom integration.
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Dict, Iterator, Optional, Union
@@ -534,7 +535,7 @@ def create_resource_from_config(
     api_client: "IntercomAPIClient",
     start_timestamp: int,
     end_timestamp: Optional[int],
-    transform_functions: Dict[str, Callable],
+    transform_functions: Mapping[str, Callable],
 ) -> Any:
     """
     Create a DLT resource from configuration.

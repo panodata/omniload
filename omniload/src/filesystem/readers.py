@@ -19,7 +19,7 @@ from dlt.common.typing import copy_sig
 from dlt.sources import DltResource, DltSource, TDataItems
 from dlt.sources.filesystem import FileItemDict
 
-from .helpers import fetch_arrow, fetch_json
+from .helpers import DEFAULT_CHUNK_SIZE, fetch_arrow, fetch_json
 
 
 def _read_csv(
@@ -42,7 +42,7 @@ def _read_csv(
         # Here we use pandas chunksize to read the file in chunks and avoid loading the whole file
         # in memory.
         with file_obj.open() as file:
-            for df in pd.read_csv(file, **kwargs):
+            for df in pd.read_csv(file, **kwargs):  # ty: ignore[no-matching-overload]
                 yield df.to_dict(orient="records")
 
 
@@ -81,7 +81,7 @@ def _read_csv_headless(
                 **pandas_kwargs,
             }
 
-            for df in pd.read_csv(file, **kwargs):
+            for df in pd.read_csv(file, **kwargs):  # ty: ignore[no-matching-overload]
                 yield df.to_dict(orient="records")
 
 
@@ -131,7 +131,7 @@ def _read_parquet(
 
 def _read_csv_duckdb(
     items: Iterator[FileItemDict],
-    chunk_size: Optional[int] = 5000,
+    chunk_size: Optional[int] = DEFAULT_CHUNK_SIZE,
     use_pyarrow: bool = False,
     **duckdb_kwargs: Any,
 ) -> Iterator[TDataItems]:

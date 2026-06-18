@@ -14,7 +14,7 @@
 
 """A source loading player profiles and games from chess.com api"""
 
-from typing import Any, Callable, Dict, Iterator, List, Sequence
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
 
 import dlt
 from dlt.common import pendulum
@@ -28,7 +28,9 @@ from .settings import UNOFFICIAL_CHESS_API_URL
 
 @dlt.source(name="chess", max_table_nesting=0)
 def source(
-    players: List[str], start_month: str = None, end_month: str = None
+    players: List[str],
+    start_month: Optional[str] = None,
+    end_month: Optional[str] = None,
 ) -> Sequence[DltResource]:
     """
     A dlt source for the chess.com api. It groups several resources (in this case chess.com API endpoints) containing
@@ -92,7 +94,9 @@ def players_archives(players: List[str]) -> Iterator[List[TDataItem]]:
     write_disposition="replace", columns={"end_time": {"data_type": "timestamp"}}
 )
 def players_games(
-    players: List[str], start_month: str = None, end_month: str = None
+    players: List[str],
+    start_month: Optional[str] = None,
+    end_month: Optional[str] = None,
 ) -> Iterator[Callable[[], List[TDataItem]]]:
     """
     Yields `players` games that happened between `start_month` and `end_month`.

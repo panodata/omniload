@@ -141,23 +141,24 @@ def incremental_stripe_source(
             default_start_ts = int(pendulum.datetime(2010, 1, 1).timestamp())
             start_ts = (
                 created.last_value
-                if created.last_value is not None
+                if created is not None and created.last_value is not None
                 else start_date_unix
             )
             if start_ts < 0:
                 start_ts = default_start_ts
             end_ts = (
                 created.end_value
-                if created.end_value is not None
+                if created is not None and created.end_value is not None
                 else int(pendulum.now().timestamp())
             )
+            date_range: dict[str, Any]
             for date_range in generate_date_ranges(start_ts, end_ts):
                 date_range["endpoint"] = endpoint
                 date_range["created"] = date_range["end_ts"]
                 yield date_range
 
         def fetch_date_range(
-            date_range: Dict[str, int],
+            date_range: Dict[str, Any],
         ) -> Generator[Dict[Any, Any], Any, None]:
             """Transformer that fetches data for a given date range."""
             yield from pagination(

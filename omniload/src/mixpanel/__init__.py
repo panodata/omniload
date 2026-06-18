@@ -5,6 +5,7 @@ import pendulum
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 
+from ..errors import MissingValueError
 from .client import MixpanelClient
 
 
@@ -34,6 +35,9 @@ def mixpanel_source(
         else:
             end_dt = pendulum.from_timestamp(date.end_value)
 
+        if date.last_value is None:
+            raise MissingValueError("date.last_value", "Mixpanel")
+
         start_dt = pendulum.from_timestamp(date.last_value)
 
         yield from client.fetch_events(
@@ -57,6 +61,8 @@ def mixpanel_source(
             end_dt = last_seen.end_value
 
         start_dt = last_seen.last_value
+        if start_dt is None:
+            raise MissingValueError("start_dt", "Mixpanel")
         yield from client.fetch_profiles(start_dt, end_dt)
 
     return events, profiles

@@ -10,12 +10,14 @@ from dlt.sources.helpers import requests
 from pyrate_limiter import Duration, Limiter, Rate
 from requests.auth import HTTPBasicAuth
 
+from omniload.src.errors import MissingValueError
+
 RETRY_COUNT = 10
 
 
 def get_max_datetime_from_datetime_fields(
     item: Dict[str, Any],
-) -> Tuple[str, Optional[pendulum.DateTime]]:
+) -> Tuple[Optional[str], Optional[pendulum.DateTime]]:
     """Get the maximum datetime from any field that ends with _datetime"""
 
     max_field_name = None
@@ -23,7 +25,12 @@ def get_max_datetime_from_datetime_fields(
     for field in item:
         if field.endswith("_datetime") and item[field] is not None:
             dt = ensure_pendulum_datetime(item[field])
-            if not max_field_name or dt > max_field_value:
+            use_max = False
+            if max_field_value is None:
+                use_max = True
+            elif dt > max_field_value:
+                use_max = True
+            if use_max:
                 max_field_name = field
                 max_field_value = dt
 
@@ -44,11 +51,13 @@ def convert_datetime_fields(item: Dict[str, Any]) -> Dict[str, Any]:
 
 def find_latest_timestamp_from_page(
     items: list[Dict[str, Any]],
-) -> Optional[Dict[str, Any]]:
+) -> Optional[pendulum.DateTime]:
     latest_time = None
     for item in items:
         _, max_field_value = get_max_datetime_from_datetime_fields(item)
-        if not latest_time or ensure_pendulum_datetime(max_field_value) > latest_time:
+        if not latest_time or (
+            max_field_value and ensure_pendulum_datetime(max_field_value) > latest_time
+        ):
             latest_time = max_field_value
 
     return latest_time
@@ -80,7 +89,7 @@ class GorgiasApi:
         resource: str,
         params: Optional[Dict[str, Any]] = None,
         start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
+        end_date: Optional[pendulum.DateTime] = None,
     ) -> Iterable[TDataItems]:
         """Get all pages from Gorgias using requests.
         Iterates through all pages and yield each page items.
@@ -142,6 +151,8 @@ class GorgiasApi:
 
             if start_date_obj:
                 max_datetime = find_latest_timestamp_from_page(json["data"])
+                if max_datetime is None:
+                    raise MissingValueError("max_datetime", "Gorgias")
                 if start_date_obj > ensure_pendulum_datetime(max_datetime):
                     break
 
@@ -149,7 +160,7 @@ class GorgiasApi:
         self,
         items: list[Dict[str, Any]],
         start_date: Optional[str],
-        end_date: Optional[str],
+        end_date: Optional[pendulum.DateTime],
     ) -> list[Dict[str, Any]]:
         start_date_obj = ensure_pendulum_datetime(start_date) if start_date else None
         end_date_obj = ensure_pendulum_datetime(end_date) if end_date else None

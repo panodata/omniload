@@ -7,6 +7,8 @@ from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 from dlt.sources.helpers import requests
 
+from omniload.src.errors import MissingValueError
+
 
 @dlt.source(name="pinterest", max_table_nesting=0)
 def pinterest_source(
@@ -62,6 +64,8 @@ def pinterest_source(
             _end_date = pendulum.now("UTC")
         else:
             _end_date = datetime.end_value
+        if _end_date is None:
+            raise MissingValueError("_end_date", "Pinterest")
         yield from fetch_data("pins", _start_date, _end_date)
 
     @dlt.resource(write_disposition="merge", primary_key="id")
@@ -77,6 +81,8 @@ def pinterest_source(
             _end_date = pendulum.now("UTC")
         else:
             _end_date = datetime.end_value
+        if _end_date is None:
+            raise MissingValueError("_end_date", "Pinterest")
         yield from fetch_data("boards", _start_date, _end_date)
 
     return pins, boards

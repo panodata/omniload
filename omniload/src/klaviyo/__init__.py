@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, cast
 
 import dlt
 import pendulum
@@ -19,7 +19,7 @@ def retry_on_limit(response: requests.Response, exception: BaseException) -> boo
 def create_client() -> requests.Session:
     return Client(
         raise_for_status=False,
-        retry_condition=retry_on_limit,
+        retry_condition=retry_on_limit,  # ty: ignore[invalid-argument-type]
         request_max_attempts=12,
         request_backoff_factor=2,
     ).session
@@ -40,7 +40,8 @@ def klaviyo_source(api_key: str, start_date: TAnyDateTime) -> Iterable[DltResour
         ),
     ) -> Iterable[TDataItem]:
         intervals = split_date_range(
-            pendulum.parse(datetime.start_value), pendulum.now()
+            cast(pendulum.DateTime, pendulum.parse(datetime.start_value)),
+            pendulum.now(),
         )
 
         for start, end in intervals:
@@ -56,7 +57,7 @@ def klaviyo_source(api_key: str, start_date: TAnyDateTime) -> Iterable[DltResour
         ),
     ) -> Iterable[TDataItem]:
         intervals = split_date_range(
-            pendulum.parse(updated.start_value), pendulum.now()
+            cast(pendulum.DateTime, pendulum.parse(updated.start_value)), pendulum.now()
         )
 
         for start, end in intervals:
@@ -72,7 +73,8 @@ def klaviyo_source(api_key: str, start_date: TAnyDateTime) -> Iterable[DltResour
         ),
     ) -> Iterable[TDataItem]:
         intervals = split_date_range(
-            pendulum.parse(updated_at.start_value), pendulum.now()
+            cast(pendulum.DateTime, pendulum.parse(updated_at.start_value)),
+            pendulum.now(),
         )
 
         for campaign_type in ["email", "sms"]:
@@ -145,7 +147,8 @@ def klaviyo_source(api_key: str, start_date: TAnyDateTime) -> Iterable[DltResour
         ),
     ) -> Iterable[TDataItem]:
         intervals = split_date_range(
-            pendulum.parse(updated_at.start_value), pendulum.now()
+            cast(pendulum.DateTime, pendulum.parse(updated_at.start_value)),
+            pendulum.now(),
         )
 
         for start, end in intervals:
@@ -172,7 +175,8 @@ def klaviyo_source(api_key: str, start_date: TAnyDateTime) -> Iterable[DltResour
         ),
     ) -> Iterable[TDataItem]:
         intervals = split_date_range(
-            pendulum.parse(updated_at.start_value), pendulum.now()
+            cast(pendulum.DateTime, pendulum.parse(updated_at.start_value)),
+            pendulum.now(),
         )
         for start, end in intervals:
             yield lambda s=start, e=end: client.fetch_images(create_client(), s, e)
@@ -198,7 +202,7 @@ def klaviyo_source(api_key: str, start_date: TAnyDateTime) -> Iterable[DltResour
         ),
     ) -> Iterable[TDataItem]:
         intervals = split_date_range(
-            pendulum.parse(updated.start_value), pendulum.now()
+            cast(pendulum.DateTime, pendulum.parse(updated.start_value)), pendulum.now()
         )
         for start, end in intervals:
             yield lambda s=start, e=end: client.fetch_flows(create_client(), s, e)
@@ -213,7 +217,7 @@ def klaviyo_source(api_key: str, start_date: TAnyDateTime) -> Iterable[DltResour
         ),
     ) -> Iterable[TDataItem]:
         intervals = split_date_range(
-            pendulum.parse(updated.start_value), pendulum.now()
+            cast(pendulum.DateTime, pendulum.parse(updated.start_value)), pendulum.now()
         )
         for start, end in intervals:
             yield lambda s=start, e=end: client.fetch_templates(create_client(), s, e)

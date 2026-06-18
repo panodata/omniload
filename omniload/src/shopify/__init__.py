@@ -23,6 +23,7 @@ from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import TAnyDateTime, TDataItem
 from dlt.sources import DltResource
 
+from ..errors import MissingValueError
 from .helpers import ShopifyApi, ShopifyGraphQLApi, TOrderStatus
 from .settings import (
     DEFAULT_API_VERSION,
@@ -187,6 +188,8 @@ def shopify_source(
         Returns:
             Iterable[TDataItem]: A generator of products.
         """
+        if updated_at.last_value is None:
+            raise MissingValueError("updated_at.last_value", "Shopify")
         params = dict(
             updated_at_min=updated_at.last_value.isoformat(),
             limit=items_per_page,
@@ -638,6 +641,8 @@ def shopify_source(
         Returns:
             Iterable[TDataItem]: A generator of orders.
         """
+        if updated_at.last_value is None:
+            raise MissingValueError("updated_at.last_value", "Shopify")
         params = dict(
             updated_at_min=updated_at.last_value.isoformat(),
             limit=items_per_page,
@@ -673,6 +678,8 @@ def shopify_source(
         Returns:
             Iterable[TDataItem]: A generator of customers.
         """
+        if updated_at.last_value is None:
+            raise MissingValueError("updated_at.last_value", "Shopify")
         params = dict(
             updated_at_min=updated_at.last_value.isoformat(),
             limit=items_per_page,
@@ -696,6 +703,8 @@ def shopify_source(
         ),
         items_per_page: int = items_per_page,
     ) -> Iterable[TDataItem]:
+        if created_at.last_value is None:
+            raise MissingValueError("created_at.last_value", "Shopify")
         params = dict(
             created_at_min=created_at.last_value.isoformat(),
             limit=items_per_page,
@@ -716,6 +725,8 @@ def shopify_source(
         ),
         items_per_page: int = items_per_page,
     ) -> Iterable[TDataItem]:
+        if updated_at.last_value is None:
+            raise MissingValueError("updated_at.last_value", "Shopify")
         params = dict(
             updated_at_min=updated_at.last_value.isoformat(),
             limit=items_per_page,
@@ -840,6 +851,9 @@ def shopify_source(
                 }
             }
         }"""
+
+        if updated_at.last_value is None:
+            raise MissingValueError("updated_at.last_value", "Shopify")
 
         yield from client.get_graphql_pages(
             query,
@@ -1924,6 +1938,10 @@ query products($after: String, $query: String, $first: Int)  {
   }
 }
 """
+
+        if updated_at.last_value is None:
+            raise MissingValueError("updated_at.last_value", "Shopify")
+
         variables = {
             "first": items_per_page,
             "query": f"updated_at:>'{updated_at.last_value.isoformat()}'",

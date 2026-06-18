@@ -1,3 +1,5 @@
+from typing import cast
+
 import pendulum
 
 from omniload.src.appsflyer.client import (
@@ -18,7 +20,7 @@ def test_exclude_metrics_for_date_range():
     to_date = "2024-01-11"
     now = "2024-01-12"
 
-    pendulum.travel_to(pendulum.parse(now))
+    pendulum.travel_to(cast(pendulum.DateTime, pendulum.parse(now)))
 
     excluded_metrics = exclude_metrics_for_date_range(metrics, from_date, to_date)
     assert excluded_metrics == [

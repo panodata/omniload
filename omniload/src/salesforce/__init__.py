@@ -28,7 +28,7 @@ def salesforce_source(
     password: str,
     token: str,
     domain: str,
-    custom_object: str = None,
+    custom_object: str,
 ) -> Iterable[DltResource]:
     """
     Retrieves data from Salesforce using the Salesforce API.

@@ -15,13 +15,14 @@
 """Source that load github issues, pull requests and reactions for a specific repository via customizable graphql query. Loads events incrementally."""
 
 import urllib.parse
-from typing import Iterator, Optional, Sequence
+from typing import Iterator, Optional, Sequence, cast
 
 import dlt
 import pendulum
 from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
 
+from ..errors import MissingValueError
 from .helpers import get_reactions_data, get_rest_pages, get_stargazers
 
 
@@ -123,20 +124,26 @@ def github_repo_events(
         )
 
         # Get the date range from the incremental state
-        start_filter = pendulum.parse(
-            last_created_at.last_value or last_created_at.initial_value
-        )
-        end_filter = (
-            pendulum.parse(last_created_at.end_value)
-            if last_created_at.end_value
-            else pendulum.now()
+        start_filter_value = last_created_at.last_value or last_created_at.initial_value
+        if start_filter_value is None:
+            raise MissingValueError("start_filter_value", "GitHub")
+        start_filter = cast(pendulum.DateTime, pendulum.parse(start_filter_value))
+        end_filter = cast(
+            pendulum.DateTime,
+            (
+                pendulum.parse(last_created_at.end_value)
+                if last_created_at.end_value
+                else pendulum.now()
+            ),
         )
 
         for page in get_rest_pages(access_token, repos_path + "?per_page=100"):
             # Filter events by date range
             filtered_events = []
             for event in page:
-                event_date = pendulum.parse(event["created_at"])
+                event_date = cast(
+                    pendulum.DateTime, pendulum.parse(event["created_at"])
+                )
 
                 # Check if event is within the date range
                 if event_date >= start_filter:

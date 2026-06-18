@@ -1,7 +1,7 @@
 import warnings
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import typer
 from typing_extensions import Annotated
@@ -476,7 +476,7 @@ def ingest(
             destination=dlt_dest,
             progress=progressInstance,
             pipelines_dir=pipelines_dir,
-            refresh="drop_resources" if full_refresh else None,
+            refresh="drop_resources" if full_refresh else None,  # ty: ignore[invalid-argument-type]
         )
 
         if source.handles_incrementality():
@@ -608,7 +608,7 @@ def ingest(
             engine_type = ClickhouseDestination.engine_type(dest_uri)
 
             def apply_clickhouse_adapter(x):
-                kwargs = {"settings": settings}
+                kwargs: Dict[str, Any] = {"settings": settings}
                 if engine_type:
                     kwargs["table_engine_type"] = engine_type
                 clickhouse_adapter(x, **kwargs)

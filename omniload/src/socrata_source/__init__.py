@@ -39,8 +39,8 @@ def source(
     """
 
     @dlt.resource(
-        write_disposition=write_disposition or "replace",
-        primary_key=primary_key,  # type: ignore[call-overload]
+        write_disposition=write_disposition or "replace",  # ty: ignore[invalid-argument-type]
+        primary_key=primary_key,  # ty: ignore[invalid-argument-type]
     )
     def dataset(
         incremental: Optional[dlt.sources.incremental] = incremental,  # type: ignore[type-arg]

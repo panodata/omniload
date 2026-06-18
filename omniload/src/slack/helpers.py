@@ -55,7 +55,9 @@ def update_jsonpath(expression: str, json_data: TDataItem, value: Any) -> Any:
     return jsonpath.update_or_create(json_data, value)
 
 
-def ensure_dt_type(dt: TAnyDateTime, to_ts: bool = False) -> Any:
+def ensure_dt_type(
+    dt: Optional[TAnyDateTime] = None, to_ts: Optional[bool] = False
+) -> Any:
     """Converts a datetime to a pendulum datetime or timestamp.
     Args:
         dt: The datetime to convert.
@@ -95,7 +97,7 @@ class SlackAPI:
         return {"Authorization": f"Bearer {self.access_token}"}
 
     def parameters(
-        self, params: Optional[Dict[str, Any]] = None, next_cursor: str = None
+        self, params: Optional[Dict[str, Any]] = None, next_cursor: Optional[str] = None
     ) -> Dict[str, str]:
         """
         Generate the query parameters to use for the request.
@@ -133,7 +135,9 @@ class SlackAPI:
         return next(extract_jsonpath(cursor_jsonpath, response), None)
 
     def _convert_datetime_fields(
-        self, item: Dict[str, Any], datetime_fields: List[str]
+        self,
+        item: Dict[str, Any],
+        datetime_fields: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Convert timestamp fields in the item to pendulum datetime objects.
 
@@ -162,10 +166,10 @@ class SlackAPI:
     def get_pages(
         self,
         resource: str,
-        response_path: str = None,
-        params: Dict[str, Any] = None,
-        datetime_fields: List[str] = None,
-        context: Dict[str, Any] = None,
+        response_path: str,
+        params: Optional[Dict[str, Any]] = None,
+        datetime_fields: Optional[List[str]] = None,
+        context: Optional[Dict[str, Any]] = None,
     ) -> Iterable[TDataItem]:
         """Get all pages from slack using requests.
         Iterates through all pages and yield each page items.\

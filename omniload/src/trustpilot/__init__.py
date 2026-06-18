@@ -6,6 +6,7 @@ import dlt
 import pendulum
 from dlt.sources import DltResource
 
+from ..errors import MissingValueError
 from .client import TrustpilotClient
 
 
@@ -38,6 +39,10 @@ def trustpilot_source(
         else:
             end_dt = dateTime.end_value
         start_dt = dateTime.last_value
+        if start_dt is None:
+            raise MissingValueError("start_dt", "Trustpilot")
+        if end_dt is None:
+            raise MissingValueError("end_dt", "Trustpilot")
         yield from client.paginated_reviews(
             business_unit_id=business_unit_id,
             per_page=per_page,

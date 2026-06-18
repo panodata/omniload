@@ -66,7 +66,7 @@ def fundraiseup_source(api_key: str) -> Iterable[DltResource]:
         def generic_resource() -> Generator[Dict[str, Any], None, None]:
             """Generic resource that yields batches directly."""
             for batch in client.get_paginated_data(resource_name):
-                yield batch  # type: ignore[misc]
+                yield batch  # ty: ignore[invalid-yield]
 
         return generic_resource()
 

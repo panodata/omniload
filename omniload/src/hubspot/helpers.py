@@ -111,7 +111,7 @@ def fetch_data(
     endpoint: str,
     api_key: str,
     params: Optional[Dict[str, Any]] = None,
-    resource_name: str = None,
+    resource_name: Optional[str] = None,
 ) -> Iterator[List[Dict[str, Any]]]:
     """
     Fetch data from HUBSPOT endpoint using a specified API key and yield the properties of each result.
@@ -410,7 +410,7 @@ def fetch_data_search(
 
 def fetch_data_raw(
     endpoint: str, api_key: str, params: Optional[Dict[str, Any]] = None
-) -> Iterator[List[Dict[str, Any]]]:
+) -> Dict[str, Any]:
     url = get_url(endpoint)
     headers = _get_headers(api_key)
     r = requests.get(url, headers=headers, params=params)

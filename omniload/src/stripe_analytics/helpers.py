@@ -185,7 +185,7 @@ def _fetch_chunk_data_streaming(
 
 async def async_pagination(
     endpoint: str, start_date: Optional[Any] = None, end_date: Optional[Any] = None
-) -> Iterable[TDataItem]:
+) -> Iterable[TDataItem]:  # ty: ignore[invalid-return-type]
     """
     Async version of pagination that retrieves data from an endpoint with pagination.
 
@@ -218,7 +218,7 @@ async def async_parallel_pagination(
     endpoint: str,
     max_workers: int = 8,
     rate_limit_delay: float = 5,
-) -> Iterable[TDataItem]:
+) -> Iterable[TDataItem]:  # ty: ignore[invalid-return-type]
     """
     ULTRA-FAST async parallel pagination - yields data in random order for maximum speed.
     No ordering constraints - pure performance optimization.
@@ -282,13 +282,13 @@ async def _fetch_chunk_data_async_fast(
         List[List[TDataItem]]: Raw batches with zero overhead
     """
     chunk_data = []
-    async for batch in async_pagination(endpoint, start_ts, end_ts):
+    async for batch in async_pagination(endpoint, start_ts, end_ts):  # ty: ignore[not-iterable]
         chunk_data.append(batch)
 
     return chunk_data
 
 
-def generate_date_ranges(start_ts: int, end_ts: int) -> Iterable[Dict[str, int]]:
+def generate_date_ranges(start_ts: int, end_ts: int) -> Iterable[Dict[str, Any]]:
     """Generate hourly date range dicts for parallel processing.
 
     Args:

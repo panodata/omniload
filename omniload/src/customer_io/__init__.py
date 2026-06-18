@@ -59,9 +59,9 @@ def _to_timestamp(dt: TAnyDateTime | None) -> int | None:
     if dt is None:
         return None
     if hasattr(dt, "timestamp"):
-        return int(dt.timestamp())  # type: ignore[union-attr, attr-defined]
+        return int(dt.timestamp())  # ty: ignore[call-non-callable]
     # Handle other types by converting through pendulum
-    return int(pendulum.instance(dt).timestamp())  # type: ignore[arg-type, attr-defined]
+    return int(pendulum.instance(dt).timestamp())  # ty: ignore[no-matching-overload]
 
 
 @dlt.source(max_table_nesting=0)
@@ -101,11 +101,11 @@ def customer_io_source(
     def broadcast_actions(broadcast: TDataItem) -> Iterable[TDataItem]:
         broadcast_id = broadcast.get("id")
         start_val = (
-            pendulum.instance(start_date).in_tz("UTC")  # type: ignore[arg-type, union-attr, attr-defined]
+            pendulum.instance(start_date).in_tz("UTC")  # ty: ignore[no-matching-overload]
             if start_date
             else pendulum.datetime(1970, 1, 1, tz="UTC")
         )
-        end_val = pendulum.instance(end_date).in_tz("UTC") if end_date else None  # type: ignore[arg-type, union-attr, attr-defined]
+        end_val = pendulum.instance(end_date).in_tz("UTC") if end_date else None  # ty: ignore[no-matching-overload]
         yield from _filter_by_timestamp(
             client.fetch_broadcast_actions(create_client(), broadcast_id),
             "updated",

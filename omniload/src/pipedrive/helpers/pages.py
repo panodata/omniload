@@ -19,6 +19,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Optional,
     TypeVar,
     Union,
 )
@@ -26,12 +27,13 @@ from typing import (
 import dlt
 from dlt.sources.helpers import requests
 
+from ...errors import MissingValueError
 from ..typing import TDataPage
 from .custom_fields_munger import rename_fields
 
 
 def get_pages(
-    entity: str, pipedrive_api_key: str, extra_params: Dict[str, Any] = None
+    entity: str, pipedrive_api_key: str, extra_params: Optional[Dict[str, Any]] = None
 ) -> Iterator[List[Dict[str, Any]]]:
     """
     Generic method to retrieve endpoint data based on the required headers and params.
@@ -60,6 +62,8 @@ def get_recent_items_incremental(
     ),
 ) -> Iterator[TDataPage]:
     """Get a specific entity type from /recents with incremental state."""
+    if since_timestamp.last_value is None:
+        raise MissingValueError("since_timestamp.last_value", "Pipedrive")
     yield from _get_recent_pages(entity, pipedrive_api_key, since_timestamp.last_value)
 
 

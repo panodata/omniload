@@ -17,7 +17,7 @@ Defines all the sources and resources needed for ZendeskSupport, ZendeskChat and
 """
 
 from itertools import chain
-from typing import Iterable, Iterator, Optional
+from typing import Iterable, Iterator, Optional, Union
 
 import dlt
 from dlt.common import pendulum
@@ -25,8 +25,13 @@ from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import TAnyDateTime, TDataItem, TDataItems
 from dlt.sources import DltResource
 
+from ..errors import MissingValueError
 from .helpers.api_helpers import process_ticket, process_ticket_field
-from .helpers.credentials import TZendeskCredentials, ZendeskCredentialsOAuth
+from .helpers.credentials import (
+    TZendeskCredentials,
+    ZendeskCredentialsOAuth,
+    ZendeskCredentialsToken,
+)
 from .helpers.talk_api import PaginationType, ZendeskAPIClient
 from .settings import (
     CUSTOM_FIELDS_STATE_KEY,
@@ -41,7 +46,7 @@ from .settings import (
 @dlt.source(max_table_nesting=0)
 def zendesk_talk(
     credentials: TZendeskCredentials = dlt.secrets.value,
-    start_date: Optional[TAnyDateTime] = DEFAULT_START_DATE,
+    start_date: TAnyDateTime = DEFAULT_START_DATE,
     end_date: Optional[TAnyDateTime] = None,
 ) -> Iterable[DltResource]:
     """
@@ -141,6 +146,9 @@ def talk_incremental_resource(
     Yields:
         TDataItem: Dictionary containing the data from the endpoint.
     """
+    if updated_at is None or updated_at.last_value is None:
+        raise MissingValueError("updated_at.last_value", "Zendesk")
+
     # send the request and process it
     for page in zendesk_client.get_pages(
         talk_endpoint,
@@ -157,8 +165,8 @@ def talk_incremental_resource(
 
 @dlt.source(max_table_nesting=0)
 def zendesk_chat(
-    credentials: ZendeskCredentialsOAuth,
-    start_date: Optional[TAnyDateTime] = DEFAULT_START_DATE,
+    credentials: Union[ZendeskCredentialsOAuth, ZendeskCredentialsToken],
+    start_date: TAnyDateTime = DEFAULT_START_DATE,
     end_date: Optional[TAnyDateTime] = None,
 ) -> Iterable[DltResource]:
     """
@@ -209,6 +217,9 @@ def chats_table_resource(
     Yields:
         dict: A dictionary representing each row of data.
     """
+    if update_timestamp is None or update_timestamp.last_value is None:
+        raise MissingValueError("update_timestamp.last_value", "Zendesk")
+
     chat_pages = zendesk_client.get_pages(
         "/api/v2/incremental/chats",
         "chats",
@@ -232,7 +243,7 @@ def zendesk_support(
     credentials: TZendeskCredentials,
     load_all: bool = True,
     pivot_ticket_fields: bool = True,
-    start_date: Optional[TAnyDateTime] = DEFAULT_START_DATE,
+    start_date: TAnyDateTime = DEFAULT_START_DATE,
     end_date: Optional[TAnyDateTime] = None,
 ) -> Iterable[DltResource]:
     """
@@ -254,6 +265,9 @@ def zendesk_support(
     Returns:
         Sequence[DltResource]: Multiple dlt resources.
     """
+
+    if start_date is None:
+        raise MissingValueError("start_date", "Zendesk")
 
     start_date_obj = ensure_pendulum_datetime(start_date)
     end_date_obj = ensure_pendulum_datetime(end_date) if end_date else None
@@ -328,6 +342,8 @@ def zendesk_support(
         Yields:
             TDataItem: Dictionary containing the ticket data.
         """
+        if updated_at.last_value is None:
+            raise MissingValueError("updated_at.last_value", "Zendesk")
         # grab the custom fields from dlt state if any
         if pivot_fields:
             load_ticket_fields_state(zendesk_client)
@@ -376,6 +392,8 @@ def zendesk_support(
             TDataItem: Dictionary containing the ticket metric event data.
         """
         # "https://example.zendesk.com/api/v2/incremental/ticket_metric_events?start_time=1332034771"
+        if time.last_value is None:
+            raise MissingValueError("time.last_value", "Zendesk")
         metric_event_pages = zendesk_client.get_pages(
             "/api/v2/incremental/ticket_metric_events",
             "ticket_metric_events",

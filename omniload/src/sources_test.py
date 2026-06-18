@@ -6,7 +6,6 @@ import pendulum
 import pytest
 from dlt.sources.credentials import ConnectionStringCredentials
 
-from omniload.src import sources
 from omniload.src.sources import AdjustSource, FluxxSource, MongoDbSource, SqlSource
 
 
@@ -78,7 +77,7 @@ class SqlSourceTest(unittest.TestCase):
         table = "schema.table"
 
         # Track the URI that gets passed to sql_table
-        captured_uri = None
+        captured_uri: str = ""
 
         def sql_table(
             credentials: ConnectionStringCredentials,
@@ -114,7 +113,7 @@ class SqlSourceTest(unittest.TestCase):
         table = "schema.table"
 
         # Track the URI that gets passed to sql_table
-        captured_uri = None
+        captured_uri: str = ""
 
         def sql_table(
             credentials: ConnectionStringCredentials,
@@ -180,7 +179,7 @@ class MongoDbSourceTest(unittest.TestCase):
 
 
 class AdjustSourceTest(unittest.TestCase):
-    def test_table_instance_is_created(self):
+    def test_table_instance_is_created(self, monkeypatch):
         uri = "adjust://?api_key=my-api-key"
         table = "creatives"
 
@@ -209,14 +208,14 @@ class AdjustSourceTest(unittest.TestCase):
 
             return creatives
 
-        sources.adjust_source = adjust
+        monkeypatch.setattr("omniload.src.adjust", "adjust_source", adjust)
         source = AdjustSource()
         res = source.dlt_source(
             uri, table, interval_start="2024-11-05", interval_end="2024-11-12"
         )
         self.assertIsNotNone(res)
 
-    def test_custom_table_with_dimensions_and_metrics(self):
+    def test_custom_table_with_dimensions_and_metrics(self, monkeypatch):
         uri = "adjust://?api_key=my-api-key"
         table = "custom:hour,day:impressions,cost"
 
@@ -236,12 +235,12 @@ class AdjustSourceTest(unittest.TestCase):
 
             return custom
 
-        sources.adjust_source = adjust
+        monkeypatch.setattr("omniload.src.adjust", "adjust_source", adjust)
         source = AdjustSource()
         res = source.dlt_source(uri, table)
         self.assertIsNotNone(res)
 
-    def test_custom_table_with_dimensions_and_metrics_and_filters(self):
+    def test_custom_table_with_dimensions_and_metrics_and_filters(self, monkeypatch):
         uri = "adjust://?api_key=my-api-key"
         table = "custom:hour,day:impressions,cost:campaign=campaign1,campaign2,key1=value1,key2=value2"
 
@@ -268,7 +267,7 @@ class AdjustSourceTest(unittest.TestCase):
 
             return custom
 
-        sources.adjust_source = adjust
+        monkeypatch.setattr("omniload.src.adjust", "adjust_source", adjust)
         source = AdjustSource()
         res = source.dlt_source(uri, table)
         self.assertIsNotNone(res)

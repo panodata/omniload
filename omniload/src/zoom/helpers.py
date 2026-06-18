@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, Iterator, Optional
+from typing import Any, Dict, Iterator, Optional, cast
 
 import pendulum
 
@@ -25,7 +25,10 @@ class ZoomClient:
 
     def _refresh_access_token(self) -> None:
         token_url = "https://zoom.us/oauth/token"
-        auth = (self.client_id, self.client_secret)
+        if self.client_id and self.client_secret:
+            auth = (self.client_id, self.client_secret)
+        else:
+            auth = None
         resp = self.session.post(
             token_url,
             params={"grant_type": "account_credentials", "account_id": self.account_id},
@@ -93,10 +96,19 @@ class ZoomClient:
             response.raise_for_status()
             data = response.json()
             for item in data.get("participants", []):
-                join_time = pendulum.parse(item["join_time"])
+                join_time: pendulum.DateTime = cast(
+                    pendulum.DateTime, pendulum.parse(item["join_time"])
+                )
                 if join_time >= start_date and join_time <= end_date:
                     yield item
             token = data.get("next_page_token")
             if not token:
                 break
             params["next_page_token"] = token
+
+
+def read_date(date) -> pendulum.DateTime:
+    if isinstance(date, str):
+        return cast(pendulum.DateTime, pendulum.parse(date))
+    else:
+        return date

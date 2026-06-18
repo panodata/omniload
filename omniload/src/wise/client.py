@@ -21,7 +21,10 @@ class WiseClient:
 
     # https://docs.wise.com/api-docs/api-reference/transfer#list-transfers
     def fetch_transfers(
-        self, profile_id: str, start_time=pendulum.DateTime, end_time=pendulum.DateTime
+        self,
+        profile_id: str,
+        start_time: pendulum.DateTime,
+        end_time: pendulum.DateTime,
     ):
         offset = 0
 
@@ -49,7 +52,10 @@ class WiseClient:
 
     # https://docs.wise.com/api-docs/api-reference/balance#list
     def fetch_balances(
-        self, profile_id: str, start_time=pendulum.DateTime, end_time=pendulum.DateTime
+        self,
+        profile_id: str,
+        start_time: pendulum.DateTime,
+        end_time: pendulum.DateTime,
     ) -> Iterable[dict]:
         url = f"{self.BASE_URL}/v4/profiles/{profile_id}/balances"
         resp = self.session.get(url, params={"types": "STANDARD,SAVINGS"})

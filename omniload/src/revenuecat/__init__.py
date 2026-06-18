@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Iterator
+from typing import Any, Dict, Iterable, Iterator, Optional
 
 import aiohttp
 import dlt
@@ -15,7 +15,7 @@ from .helpers import (
 @dlt.source(name="revenuecat", max_table_nesting=0)
 def revenuecat_source(
     api_key: str,
-    project_id: str = None,
+    project_id: Optional[str] = None,
 ) -> Iterable[dlt.sources.DltResource]:
     """
     RevenueCat source for extracting data from RevenueCat API v2.
@@ -53,7 +53,11 @@ def revenuecat_source(
     @dlt.transformer(
         data_from=customer_ids, write_disposition="replace", parallelized=True
     )
-    async def customers(customers) -> Iterator[Dict[str, Any]]:
+    async def customers(
+        customers,
+    ) -> Iterator[Dict[str, Any]]:  # ty: ignore[invalid-return-type]
+        if project_id is None:
+            raise ValueError("project_id is required for customer_ids resource")
         async with aiohttp.ClientSession() as session:
             for customer in customers:
                 yield await process_customer_with_nested_resources_async(

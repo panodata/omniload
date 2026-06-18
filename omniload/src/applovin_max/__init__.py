@@ -9,6 +9,8 @@ from dlt.sources import DltResource
 from dlt.sources.helpers.requests import Client
 from pendulum.date import Date
 
+from omniload.src.errors import MissingValueError
+
 
 @dlt.source(max_table_nesting=0)
 def applovin_max_source(
@@ -38,6 +40,9 @@ def applovin_max_source(
     ) -> Iterator[dict]:
         url = "https://r.applovin.com/max/userAdRevenueReport"
         start_date = dateTime.last_value
+
+        if start_date is None:
+            raise MissingValueError("start_date", "Applovin")
 
         if dateTime.end_value is None:
             end_date = (pendulum.yesterday("UTC")).date()

@@ -5,6 +5,7 @@ from dlt.common.pendulum import pendulum
 from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import TAnyDateTime
 
+from omniload.src.errors import MissingValueError
 from omniload.src.frankfurter.helpers import get_path_with_retry
 
 
@@ -103,10 +104,14 @@ def frankfurter_source(
         If only start_date is provided, fetches data until now.
         If both start_date and end_date are provided, fetches data for each day in the range.
         """
+
+        if date_time is None:
+            raise MissingValueError("date_time", "Frankfurter")
+
         if date_time.last_value is not None:
             start_date = date_time.last_value
         else:
-            start_date = start_date
+            start_date = pendulum.now()
 
         if date_time.end_value is not None:
             end_date = date_time.end_value

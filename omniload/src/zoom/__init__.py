@@ -1,11 +1,11 @@
-from typing import Any, Dict, Iterable, Sequence
+from typing import Any, Dict, Iterable, Sequence, cast
 
 import dlt
 import pendulum
 from dlt.common.typing import TAnyDateTime, TDataItem
 from dlt.sources import DltResource
 
-from .helpers import ZoomClient
+from .helpers import ZoomClient, read_date
 
 
 @dlt.source(name="zoom", max_table_nesting=0)
@@ -33,15 +33,18 @@ def zoom_source(
             range_end="closed",
         ),
     ) -> Iterable[TDataItem]:
-        if datetime.last_value:
-            start_dt = pendulum.parse(datetime.last_value)
-        else:
-            start_dt = pendulum.parse(start_date)
+        start_dt: pendulum.DateTime
+        end_dt: pendulum.DateTime
 
-        if end_date is None:
+        if datetime.last_value:
+            start_dt = cast(pendulum.DateTime, pendulum.parse(str(datetime.last_value)))
+        else:
+            start_dt = read_date(start_date)
+
+        if end_date is None or datetime.end_value is None:
             end_dt = pendulum.now("UTC")
         else:
-            end_dt = pendulum.parse(datetime.end_value)
+            end_dt = cast(pendulum.DateTime, pendulum.parse(datetime.end_value))
 
         base_params: Dict[str, Any] = {
             "type": "scheduled",
@@ -68,15 +71,18 @@ def zoom_source(
             range_end="closed",
         ),
     ) -> Iterable[TDataItem]:
-        if datetime.last_value:
-            start_dt = pendulum.parse(datetime.last_value)
-        else:
-            start_dt = pendulum.parse(start_date)
+        start_dt: pendulum.DateTime
+        end_dt: pendulum.DateTime
 
-        if end_date is None:
+        if datetime.last_value:
+            start_dt = cast(pendulum.DateTime, pendulum.parse(str(datetime.last_value)))
+        else:
+            start_dt = read_date(start_date)
+
+        if end_date is None or datetime.end_value is None:
             end_dt = pendulum.now("UTC")
         else:
-            end_dt = pendulum.parse(datetime.end_value)
+            end_dt = cast(pendulum.DateTime, pendulum.parse(datetime.end_value))
 
         participant_params: Dict[str, Any] = {
             "page_size": 300,

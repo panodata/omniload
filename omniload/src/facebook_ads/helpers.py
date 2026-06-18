@@ -18,7 +18,7 @@ import functools
 import itertools
 import time
 from datetime import datetime
-from typing import Any, Iterator, Sequence
+from typing import Any, Iterator, Optional, Sequence, cast
 
 import humanize
 import pendulum
@@ -57,9 +57,9 @@ def process_report_item(item: AbstractObject) -> DictStrAny:
 def get_data_chunked(
     method: TFbMethod,
     fields: Sequence[str],
-    states: Sequence[str],
+    states: Sequence[str] | None,
     chunk_size: int,
-    updated_since: int = None,
+    updated_since: Optional[int] = None,
 ) -> Iterator[TDataItems]:
     # add pagination and chunk into lists
     params: DictStrAny = {"limit": chunk_size}
@@ -104,8 +104,8 @@ def enrich_ad_objects(fb_obj_type: AbstractObject, fields: Sequence[str]) -> Any
             raise resp.error()
 
         for item in items:
-            o: AbstractCrudObject = fb_obj_type(item["id"])
-            o.api_get(
+            o: AbstractCrudObject = fb_obj_type(item["id"])  # ty: ignore[call-non-callable]
+            o.api_get(  # ty: ignore[unresolved-attribute]
                 fields=fields,
                 batch=api_batch,
                 success=functools.partial(update_item, item=item),
@@ -127,12 +127,12 @@ def execute_job(
     insights_max_wait_to_finish_seconds: int = 30 * 60,
     insights_max_async_sleep_seconds: int = 5 * 60,
 ) -> AbstractCrudObject:
-    status: str = None
+    status: str = "Unknown"
     time_start = time.time()
     sleep_time = 3
     while status != "Job Completed":
         duration = time.time() - time_start
-        job = job.api_get()
+        job = job.api_get()  # ty: ignore[unresolved-attribute]
         status = job["async_status"]
         percent_complete = job["async_percent_completion"]
 
@@ -171,7 +171,7 @@ def execute_job(
 
 
 def _init_facebook_api(
-    access_token: str, request_timeout: float, app_api_version: str
+    access_token: str, request_timeout: float, app_api_version: Optional[str] = None
 ) -> None:
     """Initialize Facebook API with retry session."""
     notify_on_token_expiration()
@@ -206,7 +206,7 @@ def _init_facebook_api(
     retry_session = Client(
         request_timeout=request_timeout,
         raise_for_status=False,
-        retry_condition=retry_on_limit,
+        retry_condition=retry_on_limit,  # ty: ignore[invalid-argument-type]
         request_max_attempts=12,
         request_backoff_factor=2,
     ).session
@@ -219,7 +219,10 @@ def _init_facebook_api(
 
 
 def get_ads_account(
-    account_id: str, access_token: str, request_timeout: float, app_api_version: str
+    account_id: str,
+    access_token: str,
+    request_timeout: float,
+    app_api_version: Optional[str] = None,
 ) -> AdAccount:
     """Get a specific ad account by ID."""
     _init_facebook_api(access_token, request_timeout, app_api_version)
@@ -236,7 +239,7 @@ def get_all_ad_accounts(
 
 
 @with_config(sections=("sources", "facebook_ads"))
-def notify_on_token_expiration(access_token_expires_at: int = None) -> None:
+def notify_on_token_expiration(access_token_expires_at: Optional[int] = None) -> None:
     """Notifies (currently via logger) if access token expires in less than 7 days. Needs `access_token_expires_at` to be configured."""
     if not access_token_expires_at:
         logger.warning(
@@ -263,7 +266,7 @@ def parse_insights_table_to_source_kwargs(table: str) -> DictStrAny:
 
     source_kwargs = {}
 
-    breakdown_type = parts[1]
+    breakdown_type = cast(TInsightsBreakdownOptions, parts[1])
 
     valid_breakdowns = list(typing.get_args(TInsightsBreakdownOptions))
     if breakdown_type in valid_breakdowns:

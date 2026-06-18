@@ -14,7 +14,7 @@
 
 """Loads campaigns, ads sets, ads, leads and insight data from Facebook Marketing API"""
 
-from typing import Iterator, Sequence
+from typing import Iterator, Sequence, cast
 
 import dlt
 from dlt.common import pendulum
@@ -23,6 +23,7 @@ from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
 from facebook_business.adobjects.ad import Ad
 
+from ..errors import MissingValueError
 from .helpers import (
     execute_job,
     get_ads_account,
@@ -69,7 +70,7 @@ def _create_facebook_insights_resource(
         columns=columns,
     )
     def facebook_insights(
-        date_start: dlt.sources.incremental[str] = dlt.sources.incremental(
+        date_start: dlt.sources.incremental[pendulum.Date] = dlt.sources.incremental(
             "date_start",
             initial_value=ensure_pendulum_datetime(start_date).start_of("day").date(),
             end_value=ensure_pendulum_datetime(end_date).end_of("day").date()
@@ -79,7 +80,9 @@ def _create_facebook_insights_resource(
             range_start="closed",
         ),
     ) -> Iterator[TDataItems]:
-        current_start_date = date_start.last_value
+        if date_start.last_value is None:
+            raise MissingValueError("date_start.last_value", "Facebook Ads")
+        current_start_date = ensure_pendulum_datetime(date_start.last_value).date()
         if date_start.end_value:
             end_date_val = pendulum.instance(date_start.end_value)
             current_end_date = (
@@ -115,7 +118,7 @@ def _create_facebook_insights_resource(
                     insights_max_wait_to_finish_seconds=insights_max_wait_to_finish_seconds,
                     insights_max_wait_to_start_seconds=insights_max_wait_to_start_seconds,
                 )
-                output = list(map(process_report_item, job.get_result()))
+                output = list(map(process_report_item, job.get_result()))  # ty: ignore[unresolved-attribute]
                 yield output
             current_start_date = current_start_date.add(days=time_increment_days)
 
@@ -175,7 +178,7 @@ def facebook_ads_source(
     @dlt.resource(primary_key="id", write_disposition="merge")
     def campaigns(
         fields: Sequence[str] = DEFAULT_CAMPAIGN_FIELDS,
-        states: Sequence[str] = None,
+        states: Sequence[str] | None = None,
         updated_at: dlt.sources.incremental[str] = dlt.sources.incremental(
             "updated_time", initial_value=interval_start
         ),
@@ -191,11 +194,13 @@ def facebook_ads_source(
     @dlt.resource(primary_key="id", write_disposition="merge")
     def ads(
         fields: Sequence[str] = DEFAULT_AD_FIELDS,
-        states: Sequence[str] = None,
+        states: Sequence[str] | None = None,
     ) -> Iterator[TDataItems]:
         updated_since = None
         if interval_start:
-            updated_since = int(pendulum.parse(interval_start).timestamp())
+            updated_since = int(
+                cast(pendulum.DateTime, pendulum.parse(interval_start)).timestamp()
+            )
         for account in accounts:
             for chunk in get_data_chunked(
                 account.get_ads, fields, states, chunk_size, updated_since=updated_since
@@ -207,11 +212,13 @@ def facebook_ads_source(
     @dlt.resource(primary_key="id", write_disposition="merge")
     def ad_sets(
         fields: Sequence[str] = DEFAULT_ADSET_FIELDS,
-        states: Sequence[str] = None,
+        states: Sequence[str] | None = None,
     ) -> Iterator[TDataItems]:
         updated_since = None
         if interval_start:
-            updated_since = int(pendulum.parse(interval_start).timestamp())
+            updated_since = int(
+                cast(pendulum.DateTime, pendulum.parse(interval_start)).timestamp()
+            )
         for account in accounts:
             for chunk in get_data_chunked(
                 account.get_ad_sets,
@@ -230,7 +237,7 @@ def facebook_ads_source(
     def leads(
         items: TDataItems,
         fields: Sequence[str] = DEFAULT_LEAD_FIELDS,
-        states: Sequence[str] = None,
+        states: Sequence[str] | None = None,
         updated_at: dlt.sources.incremental[str] = dlt.sources.incremental(
             "created_time", initial_value=None
         ),
@@ -245,7 +252,7 @@ def facebook_ads_source(
     @dlt.resource(primary_key="id", write_disposition="replace")
     def ad_creatives(
         fields: Sequence[str] = DEFAULT_ADCREATIVE_FIELDS,
-        states: Sequence[str] = None,
+        states: Sequence[str] | None = None,
     ) -> Iterator[TDataItems]:
         for account in accounts:
             for chunk in get_data_chunked(
@@ -261,15 +268,15 @@ def facebook_insights_source(
     account_id: str = dlt.config.value,
     access_token: str = dlt.secrets.value,
     initial_load_past_days: int = 1,
-    dimensions: Sequence[str] = None,
-    fields: Sequence[str] = None,
+    dimensions: Sequence[str] | None = None,
+    fields: Sequence[str] | None = None,
     time_increment_days: int = 1,
     action_breakdowns: Sequence[str] = ALL_ACTION_BREAKDOWNS,
     level: TInsightsLevels | None = "ad",
     action_attribution_windows: Sequence[str] = ALL_ACTION_ATTRIBUTION_WINDOWS,
     batch_size: int = 50,
     request_timeout: int = 300,
-    app_api_version: str = None,
+    app_api_version: str | None = None,
     start_date: pendulum.DateTime | None = None,
     end_date: pendulum.DateTime | None = None,
     insights_max_wait_to_finish_seconds: int = 60 * 60 * 4,
@@ -337,15 +344,15 @@ def facebook_insights_with_account_ids_source(
     account_ids: list[str],
     access_token: str = dlt.secrets.value,
     initial_load_past_days: int = 1,
-    dimensions: Sequence[str] = None,
-    fields: Sequence[str] = None,
+    dimensions: Sequence[str] | None = None,
+    fields: Sequence[str] | None = None,
     time_increment_days: int = 1,
     action_breakdowns: Sequence[str] = ALL_ACTION_BREAKDOWNS,
     level: TInsightsLevels | None = "ad",
     action_attribution_windows: Sequence[str] = ALL_ACTION_ATTRIBUTION_WINDOWS,
     batch_size: int = 50,
     request_timeout: int = 300,
-    app_api_version: str = None,
+    app_api_version: str | None = None,
     start_date: pendulum.DateTime | None = None,
     end_date: pendulum.DateTime | None = None,
     insights_max_wait_to_finish_seconds: int = 60 * 60 * 4,

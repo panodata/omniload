@@ -1,7 +1,8 @@
-from typing import Optional, Sequence
+from typing import Generator, Optional, Sequence
 
 import dlt
 import pendulum
+from dlt.common.typing import TTableHintTemplate
 from dlt.sources import DltResource
 
 from .adjust_helpers import DEFAULT_DIMENSIONS, DEFAULT_METRICS, AdjustAPI
@@ -46,7 +47,7 @@ def adjust_source(
     filters: Optional[dict] = None,
 ) -> Sequence[DltResource]:
     @dlt.resource(write_disposition="merge", merge_key="day")
-    def campaigns() -> DltResource:
+    def campaigns() -> Generator[DltResource, None, None]:
         adjust_api = AdjustAPI(api_key=api_key)
         yield from adjust_api.fetch_report_data(
             start_date=start_date,
@@ -57,12 +58,12 @@ def adjust_source(
         )
 
     @dlt.resource(write_disposition="replace", primary_key="id")
-    def events() -> DltResource:
+    def events() -> Generator[DltResource, None, None]:
         adjust_api = AdjustAPI(api_key=api_key)
         yield adjust_api.fetch_events()
 
     @dlt.resource(write_disposition="merge", merge_key="day")
-    def creatives() -> DltResource:
+    def creatives() -> Generator[DltResource, None, None]:
         adjust_api = AdjustAPI(api_key=api_key)
         yield from adjust_api.fetch_report_data(
             start_date=start_date,
@@ -75,8 +76,7 @@ def adjust_source(
     if not dimensions:
         return campaigns, creatives, events
 
-    merge_key = merge_key
-    type_hints = {}
+    type_hints: TTableHintTemplate = {}
     for dimension in REQUIRED_CUSTOM_DIMENSIONS:
         if dimension in dimensions:
             merge_key = dimension
@@ -85,17 +85,20 @@ def adjust_source(
     for dimension in dimensions:
         if dimension in KNOWN_TYPE_HINTS:
             type_hints[dimension] = KNOWN_TYPE_HINTS[dimension]
-    for metric in metrics:
-        if metric in KNOWN_TYPE_HINTS:
-            type_hints[metric] = KNOWN_TYPE_HINTS[metric]
 
+    if metrics:
+        for metric in metrics:
+            if metric in KNOWN_TYPE_HINTS:
+                type_hints[metric] = KNOWN_TYPE_HINTS[metric]
+
+    # FIXME: Please review this invocation re. `merge_key`.
     @dlt.resource(
         write_disposition={"disposition": "merge", "strategy": "delete-insert"},
-        merge_key=merge_key,
+        merge_key=merge_key,  # ty: ignore[invalid-argument-type]
         primary_key=dimensions,
         columns=type_hints,
     )
-    def custom() -> DltResource:
+    def custom() -> Generator[DltResource, None, None]:
         adjust_api = AdjustAPI(api_key=api_key)
         yield from adjust_api.fetch_report_data(
             start_date=start_date,

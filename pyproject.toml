@@ -72,7 +72,7 @@ classifiers = [
 dynamic = [ "version" ]
 dependencies = [
   "aiohttp<4",
-  "asana<6",
+  "asana<3.3",
   "click<8.5",
   "clickhouse-connect>=0.8,<1",
   "clickhouse-driver<0.3",
@@ -106,8 +106,9 @@ dependencies = [
   "pyarrow>=18,<25",
   "pyathena<4",
   "pymongo<5",
+  "pymongoarrow<2",
   "pymysql<2",
-  "pyrate-limiter<5",
+  "pyrate-limiter<4",
   "python-quickbooks<0.10",
   "requests<3",
   "rudder-sdk-python<2.2",
@@ -130,12 +131,12 @@ dependencies = [
   "urllib3<2.8",
 ]
 optional-dependencies.develop = [
-  "mypy<2.2",
   "pkginfo<2",
   "poethepoet<1",
   "pyproject-fmt<3",
   "pytest-repeat<1",
   "ruff<0.16",
+  "ty==0.0.46",
   "validate-pyproject<1",
 ]
 optional-dependencies.full = [ "omniload[ibm-db,odbc,oracle]" ]
@@ -267,6 +268,9 @@ check_untyped_defs = false
 
 [[tool.mypy.overrides]]
 module = [
+  "couchbase.*",
+  "google.*",
+  "googleapiclient.*",
   "omniload.src.adjust.*",
   "omniload.src.airtable.*",
   "omniload.src.appsflyer",
@@ -298,7 +302,11 @@ module = [
   "omniload.src.wise",
   "omniload.src.zendesk.*",
   "omniload.src.zoom.*",
+  "proto.*",
+  "smartsheet.*",
+  "testcontainers.*",
 ]
+follow_untyped_imports = "true"
 follow_imports = "skip"
 
 [tool.pytest]
@@ -357,7 +365,7 @@ tasks.lint = [
   { cmd = "ruff format --check" },
   { cmd = "ruff check" },
   { cmd = "validate-pyproject pyproject.toml" },
-  { cmd = "mypy omniload" },
+  { cmd = "ty check omniload" },
 ]
 tasks.release = [
   { cmd = "python -m build" },

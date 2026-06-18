@@ -7,6 +7,7 @@ from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 from pendulum import Date, DateTime
 
+from ..errors import MissingValueError
 from .dimension_time_enum import Dimension, TimeGranularity
 from .helpers import LinkedInAdsAnalyticsAPI, LinkedInAdsAPI, find_intervals
 
@@ -52,6 +53,9 @@ def linked_in_ads_analytics_source(
             end_date = pendulum.now().date()
         else:
             end_date = dateTime.end_value
+
+        if dateTime.last_value is None:
+            raise MissingValueError("dateTime.last_value", "LinkedIn")
 
         list_of_interval = find_intervals(
             start_date=dateTime.last_value,

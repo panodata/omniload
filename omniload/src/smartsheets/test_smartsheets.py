@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import patch
 
 import smartsheet
+import smartsheet.exceptions
 from smartsheet.models import Cell, Column, Row, Sheet
 
 from omniload.src.smartsheets import _get_sheet_data, smartsheet_source

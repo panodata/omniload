@@ -25,7 +25,7 @@ from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponen
 from .data_processing import ParsedRange, trim_range_top_left
 
 try:
-    from apiclient.discovery import Resource, build
+    from googleapiclient.discovery import Resource, build
 except ImportError:
     raise MissingDependencyException("Google API Client", ["google-api-python-client"])
 
@@ -85,7 +85,7 @@ def get_meta_for_ranges(
 ) -> Any:
     """Retrieves `spreadsheet_id` cell metadata for `range_names`"""
     return (
-        service.spreadsheets()
+        service.spreadsheets()  # ty: ignore[unresolved-attribute]
         .get(
             spreadsheetId=spreadsheet_id,
             ranges=range_names,
@@ -109,7 +109,7 @@ def get_known_range_names(
     Returns:
         Tuple[List[str], List[str], str] sheet names, named ranges, spreadheet title
     """
-    metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()  # ty: ignore[unresolved-attribute]
     sheet_names: List[str] = [s["properties"]["title"] for s in metadata["sheets"]]
     named_ranges: List[str] = [r["name"] for r in metadata.get("namedRanges", {})]
     title: str = metadata["properties"]["title"]
@@ -132,7 +132,7 @@ def get_data_for_ranges(
         List[DictStrAny]: A list of ranges with data in the same order as `range_names`
     """
     range_batch_resp = (
-        service.spreadsheets()
+        service.spreadsheets()  # ty: ignore[unresolved-attribute]
         .values()
         .batchGet(
             spreadsheetId=spreadsheet_id,
@@ -150,7 +150,7 @@ def get_data_for_ranges(
     rv = []
     for name, range_ in zip(range_names, range_batch):
         parsed_range = ParsedRange.parse_range(range_["range"])
-        values: List[List[Any]] = range_.get("values", None)
+        values: List[List[Any]] = range_.get("values", [])
         if values:
             parsed_range, values = trim_range_top_left(parsed_range, values)
         # create a new range to get first two rows

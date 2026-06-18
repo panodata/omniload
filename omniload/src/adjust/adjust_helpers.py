@@ -39,7 +39,7 @@ class AdjustAPI:
         self.request_client = Client(
             request_timeout=1000,  # Adjust support recommends 1000 seconds of read timeout.
             raise_for_status=False,
-            retry_condition=retry_on_limit,
+            retry_condition=retry_on_limit,  # ty: ignore[invalid-argument-type]
             request_max_attempts=12,
             request_backoff_factor=2,
         ).session

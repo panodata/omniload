@@ -24,3 +24,8 @@ class InvalidBlobTableError(Exception):
 class HTTPError(Exception):
     def __init__(self, source: requests.HTTPError):
         super().__init__(f"HTTP {source.response.status_code}: {source.response.text}")
+
+
+class ProcessingError(Exception):
+    def __init__(self, message, source):
+        super().__init__(f"Processing error in {source} source: {message}")

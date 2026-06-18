@@ -9,12 +9,20 @@ def for_each(
     """
     Apply a function to each resource in a source.
     """
-    if hasattr(source, "selected_resources") and source.selected_resources:
+    if (
+        hasattr(source, "selected_resources")
+        and source.selected_resources
+        and isinstance(source.selected_resources, dict)
+    ):
         resource_names = list(source.selected_resources.keys())
         for res in resource_names:
-            ex(source.resources[res])  # type: ignore[union-attr]
+            ex(
+                source.resources[  # ty: ignore[unresolved-attribute,invalid-argument-type]
+                    res
+                ]
+            )
     else:
-        ex(source)  # type: ignore[arg-type]
+        ex(source)  # ty: ignore[invalid-argument-type]
 
 
 class TypeHintMap:
@@ -34,7 +42,12 @@ class TypeHintMap:
 
             source = dlt.current.source()
             columns = [{"name": col, "data_type": "json"} for col in array_cols]
-            for_each(source, lambda x: x.apply_hints(columns=columns))
+            for_each(
+                source,
+                lambda x: x.apply_hints(
+                    columns=columns  # ty: ignore[invalid-argument-type]
+                ),
+            )
 
         self.handled_typehints = True
         return item

@@ -211,8 +211,8 @@ async def process_customer_with_nested_resources_async(
 def create_project_resource(
     resource_name: str,
     api_key: str,
-    project_id: str = None,
-    timestamp_fields: List[str] = None,
+    project_id: Optional[str] = None,
+    timestamp_fields: Optional[List[str]] = None,
 ) -> Iterator[Dict[str, Any]]:
     """
     Helper function to create DLT resources for project-dependent endpoints.

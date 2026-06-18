@@ -5,9 +5,11 @@ import hmac
 import json
 import time
 from io import StringIO
+from typing import Optional
 
 import pendulum
 
+from omniload.src.errors import MissingValueError
 from omniload.src.http_client import create_client
 
 
@@ -21,9 +23,14 @@ class SolidgateClient:
     def fetch_data(
         self,
         path: str,
-        date_from: pendulum.DateTime,
-        date_to: pendulum.DateTime,
+        date_from: Optional[pendulum.DateTime] = None,
+        date_to: Optional[pendulum.DateTime] = None,
     ):
+        if date_from is None:
+            raise MissingValueError("date_from", "Solidgate")
+        if date_to is None:
+            raise MissingValueError("date_to", "Solidgate")
+
         request_payload = {
             "date_from": date_from.format("YYYY-MM-DD HH:mm:ss"),
             "date_to": date_to.format("YYYY-MM-DD HH:mm:ss"),
@@ -70,8 +77,15 @@ class SolidgateClient:
                 break
 
     def fetch_financial_entry_data(
-        self, date_from: pendulum.DateTime, date_to: pendulum.DateTime
+        self,
+        date_from: Optional[pendulum.DateTime] = None,
+        date_to: Optional[pendulum.DateTime] = None,
     ):
+        if date_from is None:
+            raise MissingValueError("date_from", "Solidgate")
+        if date_to is None:
+            raise MissingValueError("date_to", "Solidgate")
+
         request_payload = {
             "date_from": date_from.format("YYYY-MM-DD HH:mm:ss"),
             "date_to": date_to.format("YYYY-MM-DD HH:mm:ss"),

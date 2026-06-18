@@ -40,7 +40,7 @@ from .typing import TDataPage
 @dlt.source(name="pipedrive", max_table_nesting=0)
 def pipedrive_source(
     pipedrive_api_key: str = dlt.secrets.value,
-    since_timestamp: Optional[Union[pendulum.DateTime, str]] = "1970-01-01 00:00:00",
+    since_timestamp: Union[pendulum.DateTime, str] = "1970-01-01 00:00:00",
 ) -> Iterator[DltResource]:
     """
     Get data from the Pipedrive API. Supports incremental loading and custom fields mapping.
@@ -107,7 +107,10 @@ def pipedrive_source(
         name="deals_flow", write_disposition="merge", primary_key="id"
     )(_get_deals_flow)(pipedrive_api_key)
 
-    yield leads(pipedrive_api_key, update_time=since_timestamp)
+    yield leads(
+        pipedrive_api_key,
+        update_time=since_timestamp,  # ty: ignore[invalid-argument-type]
+    )
 
 
 def _get_deals_flow(

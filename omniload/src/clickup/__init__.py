@@ -1,22 +1,26 @@
 """Simple ClickUp source."""
 
 from datetime import datetime
-from typing import Iterable
+from typing import Iterable, Optional
 
 import dlt
 import pendulum
 from dlt.common.time import ensure_pendulum_datetime
 from dlt.sources import DltResource
 
+from ..errors import MissingValueError
 from .helpers import ClickupClient
 
 
 @dlt.source(max_table_nesting=0)
 def clickup_source(
     api_token: str = dlt.secrets.value,
-    start_date: datetime = None,
-    end_date: datetime = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
 ) -> Iterable[DltResource]:
+    if start_date is None:
+        raise MissingValueError("start_date", "ClickUp")
+
     client = ClickupClient(api_token)
 
     @dlt.resource(
@@ -50,7 +54,9 @@ def clickup_source(
         columns={"date_updated": {"data_type": "timestamp"}},
     )
     def tasks(
-        date_updated: dlt.sources.incremental[str] = dlt.sources.incremental(
+        date_updated: dlt.sources.incremental[
+            pendulum.DateTime
+        ] = dlt.sources.incremental(
             "date_updated",
             initial_value=ensure_pendulum_datetime(start_date).in_timezone("UTC"),
             range_end="closed",

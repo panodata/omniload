@@ -22,7 +22,6 @@ from dlt.common.exceptions import MissingDependencyException
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 from flatten_json import flatten
-from googleapiclient.discovery import Resource
 
 from . import field
 from .metrics import dlt_metrics_schema
@@ -80,7 +79,7 @@ def google_ads(
 
 
 def daily_report(
-    client: Resource,
+    client: GoogleAdsClient,
     customer_ids: list[str],
     report: Report,
     date: dlt.sources.incremental[date],

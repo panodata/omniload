@@ -19,9 +19,9 @@ class SpinnerCollector(Collector):
         name: str,
         inc: int = 1,
         total: Optional[int] = None,
+        inc_total: Optional[int] = None,
         message: Optional[str] = None,
-        label: str = "",
-        **kwargs,
+        label: Optional[str] = None,
     ) -> None:
         self.status.update(self.current_step)
 

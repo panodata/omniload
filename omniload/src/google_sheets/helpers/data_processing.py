@@ -15,7 +15,7 @@
 """This is a helper module that contains function which validate and process data"""
 
 import re
-from typing import Any, Iterator, List, NamedTuple, Tuple, Union
+from typing import Any, Iterator, List, NamedTuple, Optional, Tuple, Union
 
 import dlt
 from dlt.common import logger, pendulum
@@ -152,7 +152,7 @@ def get_range_headers(headers_metadata: List[DictStrAny], range_name: str) -> Li
     """
     headers = []
     for idx, header in enumerate(headers_metadata):
-        header_val: str = None
+        header_val: Optional[str] = None
         if header:
             if "stringValue" in header.get("effectiveValue", {}):
                 header_val = header["formattedValue"]
@@ -165,12 +165,14 @@ def get_range_headers(headers_metadata: List[DictStrAny], range_name: str) -> Li
                     logger.warning(
                         f"In range {range_name}, header value: {header_val} at position {idx + 1} is not a string!"
                     )
-                    return None
+                    # FIXME: Review: Shouldn't this raise an exception?
+                    return []
         else:
             logger.warning(
                 f"In range {range_name}, header at position {idx + 1} is not missing!"
             )
-            return None
+            # FIXME: Review: Shouldn't this raise an exception?
+            return []
         headers.append(header_val)
 
     # make sure that headers are unique, first normalize the headers
@@ -185,7 +187,8 @@ def get_range_headers(headers_metadata: List[DictStrAny], range_name: str) -> Li
             + ", ".join([f"{k}->{v}" for k, v in header_mappings.items()])
             + ". Please use make your header names unique."
         )
-        return None
+        # FIXME: Review: Shouldn't this raise an exception?
+        return []
 
     return headers
 
@@ -203,16 +206,16 @@ def get_data_types(data_row_metadata: List[DictStrAny]) -> List[TDataType]:
 
     # get data for 1st column and process them, if empty just return an empty list
     try:
-        data_types: List[TDataType] = [None] * len(data_row_metadata)
+        data_types: List[TDataType] = []
         for idx, val_dict in enumerate(data_row_metadata):
             try:
                 data_type = val_dict["effectiveFormat"]["numberFormat"]["type"]
                 if data_type in ["DATE_TIME", "TIME"]:
-                    data_types[idx] = "timestamp"
+                    data_types.append("timestamp")
                 elif data_type == "DATE":
-                    data_types[idx] = "date"
+                    data_types.append("date")
             except KeyError:
-                pass
+                data_types.append(None)  # ty: ignore[invalid-argument-type]
         return data_types
     except IndexError:
         return []

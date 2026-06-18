@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import text
 from sqlalchemy import types as sa
@@ -26,7 +27,7 @@ def chained_query_adapter_callback(query_adapters):
     return callback
 
 
-def limit_callback(sql_limit: int, incremental_key: str):
+def limit_callback(sql_limit: int, incremental_key: Optional[str] = None):
     def callback(query, table):
         query = query.limit(sql_limit)
         if incremental_key:

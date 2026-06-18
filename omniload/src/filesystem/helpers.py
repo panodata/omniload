@@ -14,7 +14,7 @@
 
 """Helpers for the filesystem resource."""
 
-from typing import Any, Dict, Iterable, List, Optional, Type, Union
+from typing import Any, Dict, Generator, Iterable, List, Optional, Type, Union
 
 import dlt
 from dlt.common.configuration import resolve_type
@@ -29,10 +29,12 @@ from dlt.sources.credentials import (
 from dlt.sources.filesystem import fsspec_filesystem
 from fsspec import AbstractFileSystem
 
+DEFAULT_CHUNK_SIZE = 5_000
+
 
 @configspec
 class FilesystemConfigurationResource(FilesystemConfiguration):
-    credentials: Union[FileSystemCredentials, AbstractFileSystem] = None
+    credentials: Optional[Union[FileSystemCredentials, AbstractFileSystem]] = None
     file_glob: Optional[str] = "*"
     files_per_page: int = 100
     extract_content: bool = False
@@ -40,11 +42,11 @@ class FilesystemConfigurationResource(FilesystemConfiguration):
     @resolve_type("credentials")
     def resolve_credentials_type(self) -> Type[CredentialsConfiguration]:
         # use known credentials or empty credentials for unknown protocol
-        return Union[
-            self.PROTOCOL_CREDENTIALS.get(self.protocol)
+        return Union[  # ty: ignore[invalid-return-type]
+            self.PROTOCOL_CREDENTIALS.get(self.protocol)  # ty: ignore[invalid-type-form]
             or Optional[CredentialsConfiguration],
             AbstractFileSystem,
-        ]  # type: ignore[return-value]
+        ]
 
 
 def fsspec_from_resource(filesystem_instance: DltResource) -> AbstractFileSystem:
@@ -57,7 +59,10 @@ def fsspec_from_resource(filesystem_instance: DltResource) -> AbstractFileSystem
     def _get_fsspec(
         bucket_url: str, credentials: Optional[FileSystemCredentials]
     ) -> AbstractFileSystem:
-        return fsspec_filesystem(bucket_url, credentials)[0]
+        kwargs: Dict[str, Any] = {}
+        if credentials is not None:
+            kwargs["credentials"] = credentials
+        return fsspec_filesystem(bucket_url, **kwargs)[0]
 
     return _get_fsspec(
         filesystem_instance.explicit_args.get("bucket_url", dlt.config.value),
@@ -82,7 +87,7 @@ def add_columns(columns: List[str], rows: List[List[Any]]) -> List[Dict[str, Any
     return result
 
 
-def fetch_arrow(file_data, chunk_size: int) -> Iterable[TDataItem]:
+def fetch_arrow(file_data, chunk_size: Optional[int] = None) -> Iterable[TDataItem]:
     """Fetches data from the given CSV file.
 
     Args:
@@ -92,11 +97,14 @@ def fetch_arrow(file_data, chunk_size: int) -> Iterable[TDataItem]:
     Yields:
         Iterable[TDataItem]: Data items, read from the given CSV file.
     """
+    chunk_size = chunk_size or DEFAULT_CHUNK_SIZE
     batcher = file_data.fetch_arrow_reader(batch_size=chunk_size)
     yield from batcher
 
 
-def fetch_json(file_data, chunk_size: int) -> List[Dict[str, Any]]:  # type: ignore
+def fetch_json(
+    file_data, chunk_size: Optional[int] = None
+) -> Generator[List[Dict[str, Any]], None, None]:
     """Fetches data from the given CSV file.
 
     Args:
@@ -106,6 +114,7 @@ def fetch_json(file_data, chunk_size: int) -> List[Dict[str, Any]]:  # type: ign
     Yields:
         Iterable[TDataItem]: Data items, read from the given CSV file.
     """
+    chunk_size = chunk_size or DEFAULT_CHUNK_SIZE
     while True:
         batch = file_data.fetchmany(chunk_size)
         if not batch:

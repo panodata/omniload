@@ -56,7 +56,8 @@ else:
     TCursor = Any
 
 try:
-    import pymongoarrow  # type: ignore
+    import pymongoarrow
+    import pymongoarrow.schema
 
     PYMONGOARROW_AVAILABLE = True
 except ImportError:
@@ -68,9 +69,11 @@ class CollectionLoader:
         self,
         client: TMongoClient,
         collection: TCollection,
-        chunk_size: int,
+        chunk_size: Optional[int],
         incremental: Optional[dlt.sources.incremental[Any]] = None,
     ) -> None:
+        chunk_size = chunk_size if chunk_size is not None else 10000
+
         self.client = client
         self.collection = collection
         self.incremental = incremental
@@ -214,7 +217,7 @@ class CollectionLoader:
 
         cursor = self.collection.find(filter=filter_op, projection=projection_op)
         if self._sort_op:
-            cursor = cursor.sort(self._sort_op)
+            cursor = cursor.sort(self._sort_op)  # ty: ignore[invalid-argument-type]
 
         cursor = self._limit(cursor, limit)
 
@@ -269,7 +272,7 @@ class CollectionLoaderParallel(CollectionLoader):
 
         cursor = self.collection.find(filter=filter_op, projection=projection_op)
         if self._sort_op:
-            cursor = cursor.sort(self._sort_op)
+            cursor = cursor.sort(self._sort_op)  # ty: ignore[invalid-argument-type]
 
         return cursor
 
@@ -352,8 +355,7 @@ class CollectionArrowLoader(CollectionLoader):
         Yields:
             Iterator[Any]: An iterator of the loaded documents.
         """
-        from pymongoarrow.context import PyMongoArrowContext  # type: ignore
-        from pymongoarrow.lib import process_bson_stream  # type: ignore
+        from pymongoarrow.context import PyMongoArrowContext
 
         filter_op = self._filter_op
         _raise_if_intersection(filter_op, filter_)
@@ -366,15 +368,15 @@ class CollectionArrowLoader(CollectionLoader):
             filter_, batch_size=self.chunk_size, projection=projection_op
         )
         if self._sort_op:
-            cursor = cursor.sort(self._sort_op)  # type: ignore
+            cursor = cursor.sort(self._sort_op)  # ty: ignore[invalid-argument-type]
 
         cursor = self._limit(cursor, limit)
 
-        context = PyMongoArrowContext.from_schema(
+        context = PyMongoArrowContext(
             schema=pymongoarrow_schema, codec_options=self.collection.codec_options
         )
         for batch in cursor:
-            process_bson_stream(batch, context)
+            context.process_bson_stream(batch)
             table = context.finish()
             yield convert_arrow_columns(table)
 
@@ -461,7 +463,7 @@ class CollectionArrowLoaderParallel(CollectionLoaderParallel):
             filter=filter_op, batch_size=self.chunk_size, projection=projection_op
         )
         if self._sort_op:
-            cursor = cursor.sort(self._sort_op)  # type: ignore
+            cursor = cursor.sort(self._sort_op)  # ty: ignore[invalid-argument-type]
 
         return cursor
 
@@ -473,15 +475,14 @@ class CollectionArrowLoaderParallel(CollectionLoaderParallel):
         pymongoarrow_schema: Any = None,
     ) -> TDataItem:
         from pymongoarrow.context import PyMongoArrowContext
-        from pymongoarrow.lib import process_bson_stream
 
         cursor = cursor.clone()
 
-        context = PyMongoArrowContext.from_schema(
+        context = PyMongoArrowContext(
             schema=pymongoarrow_schema, codec_options=self.collection.codec_options
         )
         for chunk in cursor.skip(batch["skip"]).limit(batch["limit"]):
-            process_bson_stream(chunk, context)
+            context.process_bson_stream(chunk)
             table = context.finish()
             yield convert_arrow_columns(table)
 
@@ -495,9 +496,10 @@ class CollectionAggregationLoader(CollectionLoader):
         self,
         client: TMongoClient,
         collection: TCollection,
-        chunk_size: int,
+        chunk_size: Optional[int] = None,
         incremental: Optional[dlt.sources.incremental[Any]] = None,
     ) -> None:
+        chunk_size = chunk_size if chunk_size is not None else 10000
         super().__init__(client, collection, chunk_size, incremental)
         self.custom_query: Optional[List[Dict[str, Any]]] = None
 
@@ -659,7 +661,7 @@ def collection_documents(
     incremental: Optional[dlt.sources.incremental[Any]] = None,
     parallel: bool = False,
     limit: Optional[int] = None,
-    chunk_size: Optional[int] = 10000,
+    chunk_size: Optional[int] = None,
     data_item_format: Optional[TDataItemFormat] = "object",
     custom_query: Optional[List[Dict[str, Any]]] = None,
 ) -> Iterator[TDataItem]:
@@ -691,6 +693,9 @@ def collection_documents(
     Returns:
         Iterable[DltResource]: A list of DLT resources for each collection to be loaded.
     """
+
+    chunk_size = chunk_size if chunk_size is not None else 10000
+
     if data_item_format == "arrow" and not PYMONGOARROW_AVAILABLE:
         dlt.common.logger.warn(
             "'pymongoarrow' is not installed; falling back to standard MongoDB CollectionLoader."
@@ -739,7 +744,7 @@ def collection_documents(
 
     # Set custom query if provided
     if custom_query and hasattr(loader, "set_custom_query"):
-        loader.set_custom_query(custom_query)
+        loader.set_custom_query(custom_query)  # ty: ignore[call-non-callable]
 
     # Load documents based on loader type
     if isinstance(
@@ -805,7 +810,7 @@ def convert_arrow_columns(table: Any) -> Any:
         pyarrow.lib.Table: The table with the columns converted.
     """
     from dlt.common.libs.pyarrow import pyarrow
-    from pymongoarrow.types import (  # type: ignore
+    from pymongoarrow.types import (
         _is_binary,
         _is_code,
         _is_decimal128,

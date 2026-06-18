@@ -16,9 +16,11 @@ from typing import (
     Optional,
     TypeAlias,
     Union,
+    cast,
 )
 from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 
+import dlt
 import fsspec
 import pendulum
 from dlt.common.time import ensure_pendulum_datetime
@@ -130,8 +132,8 @@ class SqlSource:
 
                 # SQLAlchemy's cx_oracle dialect checks for version >= 5.2
                 # oracledb has a different versioning scheme, so we need to patch it
-                oracledb.version = "8.3.0"  # type: ignore[assignment]
-                sys.modules["cx_Oracle"] = oracledb  # type: ignore[assignment]
+                oracledb.version.__version__ = "8.3.0"  # ty: ignore[invalid-assignment]
+                sys.modules["cx_Oracle"] = oracledb
             except ImportError:
                 # oracledb not installed, will fail later with a clear error
                 pass
@@ -270,7 +272,7 @@ class SqlSource:
         query_adapters = []
         if kwargs.get("sql_limit"):
             query_adapters.append(
-                limit_callback(kwargs.get("sql_limit"), kwargs.get("incremental_key"))
+                limit_callback(kwargs["sql_limit"], kwargs.get("incremental_key"))
             )
 
         defer_table_reflect = False
@@ -636,7 +638,6 @@ class MongoDbSource:
 
     def _substitute_interval_params(self, query: list, kwargs: dict):
         """Substitute :interval_start and :interval_end placeholders with actual datetime values"""
-        from dlt.common.time import ensure_pendulum_datetime
 
         # Get interval values and convert them to datetime objects
         interval_start = kwargs.get("interval_start")
@@ -647,8 +648,8 @@ class MongoDbSource:
             if isinstance(interval_start, str):
                 pendulum_dt = ensure_pendulum_datetime(interval_start)
                 interval_start = (
-                    pendulum_dt.to_datetime()
-                    if hasattr(pendulum_dt, "to_datetime")
+                    pendulum_dt.to_datetime_string()
+                    if hasattr(pendulum_dt, "to_datetime_string")
                     else pendulum_dt
                 )
             elif hasattr(interval_start, "to_datetime"):
@@ -658,8 +659,8 @@ class MongoDbSource:
             if isinstance(interval_end, str):
                 pendulum_dt = ensure_pendulum_datetime(interval_end)
                 interval_end = (
-                    pendulum_dt.to_datetime()
-                    if hasattr(pendulum_dt, "to_datetime")
+                    pendulum_dt.to_datetime_string()
+                    if hasattr(pendulum_dt, "to_datetime_string")
                     else pendulum_dt
                 )
             elif hasattr(interval_end, "to_datetime"):
@@ -744,7 +745,7 @@ class LocalCsvSource:
 
         from dlt import resource
 
-        return resource(
+        return resource(  # ty: ignore[no-matching-overload]
             csv_file,
             merge_key=kwargs.get("merge_key"),
         )(
@@ -879,7 +880,7 @@ class ShopifySource:
         return shopify_source(
             private_app_password=api_key[0],
             shop_url=f"https://{source_fields.netloc}",
-            **date_args,
+            **date_args,  # ty: ignore[invalid-argument-type]
         ).with_resources(resource)
 
 
@@ -926,7 +927,7 @@ class GorgiasSource:
             domain=source_fields.netloc,
             email=email[0],
             api_key=api_key[0],
-            **date_args,
+            **date_args,  # ty: ignore[invalid-argument-type]
         ).with_resources(resource)
 
 
@@ -1080,9 +1081,7 @@ class StripeAnalyticsSource:
 
             endpoint = ENDPOINTS[endpoint]
             return incremental_stripe_source(
-                endpoints=[
-                    endpoint,
-                ],
+                endpoints=(endpoint,),
                 stripe_secret_key=api_key[0],
                 initial_start_date=nullable_date(kwargs.get("interval_start", None)),
                 end_date=nullable_date(kwargs.get("interval_end", None)),
@@ -1093,18 +1092,14 @@ class StripeAnalyticsSource:
                 from omniload.src.stripe_analytics import stripe_source
 
                 return stripe_source(
-                    endpoints=[
-                        endpoint,
-                    ],
+                    endpoints=(endpoint,),
                     stripe_secret_key=api_key[0],
                 ).with_resources(endpoint)
             else:
                 from omniload.src.stripe_analytics import async_stripe_source
 
                 return async_stripe_source(
-                    endpoints=[
-                        endpoint,
-                    ],
+                    endpoints=(endpoint,),
                     stripe_secret_key=api_key[0],
                     max_workers=kwargs.get("extract_parallelism", 4),
                 ).with_resources(endpoint)
@@ -1176,13 +1171,15 @@ class FacebookAdsSource:
                 account_id=account_id[0],
                 start_date=kwargs.get("interval_start"),
                 end_date=kwargs.get("interval_end"),
-                insights_max_wait_to_finish_seconds=insights_max_wait_to_finish_seconds[
-                    0
-                ],
-                insights_max_wait_to_start_seconds=insights_max_wait_to_start_seconds[
-                    0
-                ],
-                insights_max_async_sleep_seconds=insights_max_async_sleep_seconds[0],
+                insights_max_wait_to_finish_seconds=int(
+                    insights_max_wait_to_finish_seconds[0]
+                ),
+                insights_max_wait_to_start_seconds=int(
+                    insights_max_wait_to_start_seconds[0]
+                ),
+                insights_max_async_sleep_seconds=int(
+                    insights_max_async_sleep_seconds[0]
+                ),
             ).with_resources("facebook_insights")
         elif table.startswith("facebook_insights_with_account_ids:"):
             parts = table.split(":")
@@ -1224,7 +1221,7 @@ class FacebookAdsSource:
                 )
 
             return facebook_insights_with_account_ids_source(
-                **source_kwargs
+                **source_kwargs  # ty: ignore[invalid-argument-type]
             ).with_resources("facebook_insights")
         elif table.startswith("facebook_insights:"):
             # Parse custom breakdowns and metrics from table name
@@ -1263,9 +1260,9 @@ class FacebookAdsSource:
             }
 
             source_kwargs.update(parse_insights_table_to_source_kwargs(table))
-            return facebook_insights_source(**source_kwargs).with_resources(
-                "facebook_insights"
-            )
+            return facebook_insights_source(
+                **source_kwargs  # ty: ignore[invalid-argument-type]
+            ).with_resources("facebook_insights")
         else:
             raise ValueError(
                 f"Resource '{table}' is not supported for Facebook Ads source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
@@ -1332,7 +1329,7 @@ class SlackSource:
             access_token=api_key[0],
             table_per_channel=False,
             selected_channels=msg_channels,
-            **date_args,
+            **date_args,  # ty: ignore[invalid-argument-type]
         ).with_resources(endpoint)
 
 
@@ -1556,10 +1553,10 @@ class MixpanelSource:
         from omniload.src.mixpanel import mixpanel_source
 
         if has_service_account:
-            auth_username = username[0]  # type: ignore[index]
-            auth_password = password[0]  # type: ignore[index]
+            auth_username = username[0]  # ty: ignore[not-subscriptable]
+            auth_password = password[0]  # ty: ignore[not-subscriptable]
         else:
-            auth_username = api_secret[0]  # type: ignore[index]
+            auth_username = api_secret[0]  # ty: ignore[not-subscriptable]
             auth_password = ""
 
         return mixpanel_source(
@@ -1662,7 +1659,7 @@ class AdjustSource:
 
         dimensions = None
         metrics = None
-        filters = []
+        filters = {}
         if table.startswith("custom:"):
             fields = table.split(":", 3)
             if len(fields) != 3 and len(fields) != 4:
@@ -2065,8 +2062,6 @@ class AsanaSource:
                 f"Resource '{table}' is not supported for Asana source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
-        import dlt
-
         from omniload.src.asana_source import asana_source
 
         dlt.secrets["sources.asana_source.access_token"] = access_token[0]
@@ -2121,8 +2116,6 @@ class JiraSource:
                 f"Resource '{table}' is not supported for Jira source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
             )
 
-        import dlt
-
         from omniload.src.jira_source import jira_source
 
         dlt.secrets["sources.jira_source.base_url"] = base_url
@@ -2176,11 +2169,10 @@ class DynamoDBSource:
             raise ValueError("secret_access_key is required to connect to Dynamodb")
 
         from dlt.common.configuration.specs import AwsCredentials
-        from dlt.common.typing import TSecretStrValue
 
         creds = AwsCredentials(
             aws_access_key_id=access_key[0],
-            aws_secret_access_key=TSecretStrValue(secret_key[0]),
+            aws_secret_access_key=secret_key[0],
             region_name=region,
             endpoint_url=self.get_endpoint_url(parsed_uri),
         )
@@ -2391,17 +2383,23 @@ class GitHubSource:
             )
             end_date = kwargs.get("interval_end") or None
 
+            start_dt: pendulum.DateTime
+            end_dt: pendulum.DateTime
             if isinstance(start_date, str):
-                start_date = pendulum.parse(start_date)
+                start_dt = cast(pendulum.DateTime, pendulum.parse(start_date))
+            else:
+                start_dt = cast(pendulum.DateTime, start_date)
             if isinstance(end_date, str):
-                end_date = pendulum.parse(end_date)
+                end_dt = cast(pendulum.DateTime, pendulum.parse(end_date))
+            else:
+                end_dt = cast(pendulum.DateTime, end_date)
 
             return github_repo_events(
                 owner=owner,
                 name=repo,
                 access_token=access_token,
-                start_date=start_date,
-                end_date=end_date,
+                start_date=start_dt,
+                end_date=end_dt,
             )
         elif table == "stargazers":
             return github_stargazers(owner=owner, name=repo, access_token=access_token)
@@ -3128,7 +3126,7 @@ class SalesforceSource:
             )
 
         params = parse_qs(urlparse(uri).query)
-        creds = {
+        creds: Dict[str, Union[str, None]] = {
             "username": params.get("username", [None])[0],
             "password": params.get("password", [None])[0],
             "token": params.get("token", [None])[0],
@@ -3144,7 +3142,10 @@ class SalesforceSource:
 
         if table.startswith("custom:"):
             custom_object = table.split(":")[1]
-            src = salesforce_source(**creds, custom_object=custom_object)
+            src = salesforce_source(
+                **creds,  # ty: ignore[invalid-argument-type]
+                custom_object=custom_object,
+            )
             return src.with_resources("custom")
 
         if table not in src.resources:
@@ -3244,6 +3245,9 @@ class KinesisSource:
             region_name=region_name[0],
         )
 
+        if start_date is None:
+            raise ValueError("No start date provided")
+
         return kinesis_stream(
             stream_name=table, credentials=credentials, initial_at_timestamp=start_date
         )
@@ -3265,11 +3269,12 @@ class PipedriveSource:
         if api_key is None:
             raise MissingValueError("api_token", "Pipedrive")
 
+        start_dt: pendulum.DateTime
         start_date = kwargs.get("interval_start")
         if start_date is not None:
-            start_date = ensure_pendulum_datetime(start_date)
+            start_dt = ensure_pendulum_datetime(start_date)
         else:
-            start_date = pendulum.parse("2000-01-01")
+            start_dt = cast(pendulum.DateTime, pendulum.parse("2000-01-01"))
 
         if table not in [
             "users",
@@ -3285,7 +3290,7 @@ class PipedriveSource:
         from omniload.src.pipedrive import pipedrive_source
 
         return pipedrive_source(
-            pipedrive_api_key=api_key, since_timestamp=start_date
+            pipedrive_api_key=str(api_key), since_timestamp=start_dt
         ).with_resources(table)
 
 
@@ -4284,8 +4289,6 @@ class PlusVibeAISource:
         if table not in self.resources:
             raise UnsupportedResourceError(table, "PlusVibeAI")
 
-        import dlt
-
         from omniload.src.plusvibeai import plusvibeai_source
 
         dlt.secrets["sources.plusvibeai.api_key"] = api_key[0]
@@ -4836,8 +4839,6 @@ class CursorSource:
 
         if table not in self.resources:
             raise UnsupportedResourceError(table, "Cursor")
-
-        import dlt
 
         from omniload.src.cursor import cursor_source
 

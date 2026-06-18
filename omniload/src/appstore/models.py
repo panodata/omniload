@@ -89,29 +89,29 @@ class Meta:
 @dataclass
 class AnalyticsReportRequestsResponse:
     data: List[ReportRequest]
-    meta: Meta
-    links: Links
+    meta: Optional[Meta]
+    links: Optional[Links]
 
 
 @dataclass_json
 @dataclass
 class AnalyticsReportResponse:
     data: List[Report]
-    meta: Meta
-    links: Links
+    meta: Optional[Meta]
+    links: Optional[Links]
 
 
 @dataclass_json
 @dataclass
 class AnalyticsReportInstancesResponse:
     data: List[ReportInstance]
-    meta: Meta
-    links: Links
+    meta: Optional[Meta]
+    links: Optional[Links]
 
 
 @dataclass_json
 @dataclass
 class AnalyticsReportSegmentsResponse:
     data: List[ReportSegment]
-    meta: Meta
-    links: Links
+    meta: Optional[Meta]
+    links: Optional[Links]

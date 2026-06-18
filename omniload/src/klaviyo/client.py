@@ -1,3 +1,4 @@
+from typing import cast
 from urllib.parse import urlencode
 
 import pendulum
@@ -68,9 +69,9 @@ class KlaviyoClient:
         url = f"{BASE_URL}/metrics"
         items = self._fetch_pages(session, url)
 
-        last_updated_obj = pendulum.parse(last_updated)
+        last_updated_obj = cast(pendulum.DateTime, pendulum.parse(last_updated))
         for item in items:
-            updated_at = pendulum.parse(item["updated"])
+            updated_at = cast(pendulum.DateTime, pendulum.parse(item["updated"]))
             if updated_at > last_updated_obj:
                 yield item
 
@@ -80,7 +81,7 @@ class KlaviyoClient:
         start_date: str,
         end_date: str,
     ):
-        pendulum_start_date = pendulum.parse(start_date)
+        pendulum_start_date = cast(pendulum.DateTime, pendulum.parse(start_date))
         pendulum_start_date = pendulum_start_date.subtract(seconds=1)
         url = f"{BASE_URL}/profiles/?sort=updated&filter=and(greater-than(updated,{pendulum_start_date.isoformat()}),less-than(updated,{end_date}))"
         return self._fetch_pages(session, url)
@@ -117,10 +118,10 @@ class KlaviyoClient:
     ):
         url = f"{BASE_URL}/catalog-variants"
         items = self._fetch_pages(session, url)
-        last_updated_obj = pendulum.parse(last_updated)
+        last_updated_obj = cast(pendulum.DateTime, pendulum.parse(last_updated))
 
         for item in items:
-            updated_at = pendulum.parse(item["updated"])
+            updated_at = cast(pendulum.DateTime, pendulum.parse(item["updated"]))
             if updated_at > last_updated_obj:
                 yield item
 
@@ -135,10 +136,10 @@ class KlaviyoClient:
     ):
         url = f"{BASE_URL}/catalog-categories"
         items = self._fetch_pages(session, url)
-        last_updated_obj = pendulum.parse(last_updated)
+        last_updated_obj = cast(pendulum.DateTime, pendulum.parse(last_updated))
 
         for item in items:
-            updated_at = pendulum.parse(item["updated"])
+            updated_at = cast(pendulum.DateTime, pendulum.parse(item["updated"]))
             if updated_at > last_updated_obj:
                 yield item
 
@@ -149,10 +150,10 @@ class KlaviyoClient:
     ):
         url = f"{BASE_URL}/catalog-items"
         items = self._fetch_pages(session, url)
-        last_updated_obj = pendulum.parse(last_updated)
+        last_updated_obj = cast(pendulum.DateTime, pendulum.parse(last_updated))
 
         for item in items:
-            updated_at = pendulum.parse(item["updated"])
+            updated_at = cast(pendulum.DateTime, pendulum.parse(item["updated"]))
             if updated_at > last_updated_obj:
                 yield item
 

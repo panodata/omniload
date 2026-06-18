@@ -38,7 +38,7 @@ python
 >>> resources = hubspot(api_key="your_api_key")
 """
 
-from typing import Any, Dict, Iterator, List, Literal, Optional, Sequence
+from typing import Any, Dict, Iterator, List, Literal, Optional, Sequence, cast
 from urllib.parse import parse_qs, quote, urlparse
 
 import dlt
@@ -46,6 +46,7 @@ from dlt.common import pendulum
 from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
 
+from ..errors import MissingValueError
 from .helpers import (
     _get_property_names,
     fetch_data,
@@ -109,10 +110,13 @@ def _last_value_to_ms(last_value) -> Optional[str]:
     """Convert dlt incremental last_value (ISO string or datetime) to ms timestamp string."""
     if last_value is None:
         return None
-    dt = (
-        pendulum.parse(last_value)
-        if isinstance(last_value, str)
-        else pendulum.instance(last_value)
+    dt: pendulum.DateTime = cast(
+        pendulum.DateTime,
+        (
+            pendulum.parse(last_value)
+            if isinstance(last_value, str)
+            else pendulum.instance(last_value)
+        ),
     )
     return str(int(dt.timestamp() * 1000))
 
@@ -122,7 +126,7 @@ def hubspot(
     api_key: str = dlt.secrets.value,
     include_history: bool = False,
     include_custom_props: bool = True,
-    custom_object: str = None,
+    custom_object: Optional[str] = None,
     start_date: Optional[Any] = None,
     end_date: Optional[Any] = None,
 ) -> Sequence[DltResource]:
@@ -622,7 +626,7 @@ def hubspot(
     @dlt.resource(write_disposition="merge", primary_key="hs_object_id")
     def custom(
         api_key: str = api_key,
-        custom_object_name: str = custom_object,
+        custom_object_name: str = custom_object,  # ty: ignore[invalid-parameter-default]
     ) -> Iterator[TDataItems]:
         custom_objects = fetch_data_raw(CRM_SCHEMAS_ENDPOINT, api_key)
         object_type_id = None
@@ -635,15 +639,15 @@ def hubspot(
 
         custom_object_lowercase = custom_object_name.lower()
 
-        for custom_object in custom_objects["results"]:
-            if custom_object["name"].lower() == custom_object_lowercase:
-                object_type_id = custom_object["objectTypeId"]
+        for co in custom_objects["results"]:
+            if co["name"].lower() == custom_object_lowercase:
+                object_type_id = co["objectTypeId"]
                 break
 
             # sometimes people use the plural name of the object type by accident, we should try to match that if we can
-            if "labels" in custom_object:
-                if custom_object_lowercase == custom_object["labels"]["plural"].lower():
-                    object_type_id = custom_object["objectTypeId"]
+            if "labels" in co:
+                if custom_object_lowercase == co["labels"]["plural"].lower():
+                    object_type_id = co["objectTypeId"]
                     break
 
         if object_type_id is None:
@@ -693,19 +697,20 @@ def crm_objects(
     object_type: str,
     api_key: str = dlt.secrets.value,
     include_history: bool = False,
-    props: Sequence[str] = None,
+    props: Optional[Sequence[str]] = None,
     include_custom_props: bool = True,
     start_date_ms: Optional[str] = None,
     end_date_ms: Optional[str] = None,
 ) -> Iterator[TDataItems]:
     """Building blocks for CRM resources."""
+    props_effective: List[str] = []
     if props == ALL:
-        props = list(_get_property_names(api_key, object_type))
+        props_effective = list(_get_property_names(api_key, object_type))
 
     if include_custom_props:
-        props += _get_property_names(api_key, object_type)
+        props_effective.extend(_get_property_names(api_key, object_type))
 
-    props = ",".join(sorted(list(set(props))))
+    props_out = ",".join(sorted(list(set(props_effective))))
 
     if start_date_ms is not None:
         _qs = parse_qs(urlparse(CRM_OBJECT_ENDPOINTS[object_type]).query)
@@ -713,14 +718,14 @@ def crm_objects(
         yield from fetch_data_search(
             object_type,
             api_key,
-            props,
+            props_out,
             start_date_ms,
             end_date_ms=end_date_ms,
             association_types=assoc_types,
         )
         return
 
-    params = {"properties": props, "limit": 100}
+    params = {"properties": props_out, "limit": 100}
 
     yield from fetch_data(CRM_OBJECT_ENDPOINTS[object_type], api_key, params=params)
     if include_history:
@@ -729,7 +734,7 @@ def crm_objects(
         for history_entries in fetch_property_history(
             CRM_OBJECT_ENDPOINTS[object_type],
             api_key,
-            props,
+            props_out,
         ):
             yield dlt.mark.with_table_name(
                 history_entries,
@@ -772,6 +777,8 @@ def hubspot_events_for_objects(
         Yields:
             dict: A dictionary representing a web analytics event.
         """
+        if occurred_at.last_value is None:
+            raise MissingValueError("occurred_at.last_value", "HubSpot")
         for object_id in object_ids:
             yield from fetch_data(
                 WEB_ANALYTICS_EVENTS_ENDPOINT.format(

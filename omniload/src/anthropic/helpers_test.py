@@ -359,6 +359,8 @@ class TestAnthropicHelpers(unittest.TestCase):
         mock_get.return_value = mock_response
 
         result = fetch_organization_info("sk-ant-admin-test")
+        if result is None:
+            raise ValueError("Result is `None`")
 
         self.assertEqual(result["id"], "org-123")
         self.assertEqual(result["name"], "Test Organization")
