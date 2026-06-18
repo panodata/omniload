@@ -2,6 +2,8 @@
 outline: deep
 ---
 
+(quickstart)=
+
 # Quickstart
 
 omniload is a polyglot data loader framework based on dlt.
