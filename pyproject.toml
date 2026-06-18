@@ -342,7 +342,7 @@ tasks.docs-linkcheck = [
   { cmd = "uv pip install -r docs/requirements.txt;" },
   { cmd = "sphinx-build -j auto -W --keep-going -b linkcheck docs docs/_build" },
 ]
-tasks.docs-lint = { cmd = "vale docs --glob='!**/.vitepress/**'" }
+tasks.docs-lint = { cmd = "vale docs" }
 tasks.format = [
   # Format project metadata.
   { cmd = "pyproject-fmt --keep-full-version pyproject.toml" },
