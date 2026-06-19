@@ -311,7 +311,6 @@ ini_options.testpaths = [
 ini_options.pythonpath = [
   ".",
 ]
-# addopts = "-vvv -p no:warnings -rP"
 ini_options.addopts = """
   -rfEXsS -p pytester --strict-markers --verbosity=3
   --cov --cov-report=term-missing --cov-report=xml
@@ -322,6 +321,7 @@ ini_options.xfail_strict = true
 ini_options.log_format = "%(asctime)-15s [%(name)-36s] %(levelname)-8s: %(message)s"
 ini_options.log_level = "DEBUG"
 ini_options.log_cli_level = "DEBUG"
+# addopts = "-vvv -p no:warnings -rP"
 
 [tool.coverage]
 run.omit = [ "*_test.py" ]
