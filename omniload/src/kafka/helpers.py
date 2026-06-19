@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from confluent_kafka import Consumer, Message, TopicPartition  # type: ignore
 from confluent_kafka.admin import TopicMetadata  # type: ignore
@@ -44,9 +44,22 @@ def default_msg_processor(msg: Message) -> Dict[str, Any]:
     ts = msg.timestamp()
     topic = msg.topic()
     partition = msg.partition()
-    key = msg.key()
-    if key is not None:
-        key = key.decode("utf-8")
+
+    # Sanity checks.
+    if topic is None:
+        raise ValueError("A Kafka message without topic is not supported")
+    if partition is None:
+        raise ValueError("A Kafka message without partition is not supported")
+
+    # Decode `key` and `value`.
+    if msg.key() is not None:
+        key = cast(bytes, msg.key()).decode("utf-8")
+    else:
+        key = None
+    if msg.value() is not None:
+        value = cast(bytes, msg.value()).decode("utf-8")
+    else:
+        value = None
 
     return {
         "_kafka": {
@@ -58,7 +71,7 @@ def default_msg_processor(msg: Message) -> Dict[str, Any]:
                 "type": ts[0],
                 "value": ensure_pendulum_datetime(ts[1] / 1e3),
             },
-            "data": msg.value().decode("utf-8"),
+            "data": value,
         },
         "_kafka_msg_id": digest128(topic + str(partition) + str(key)),
     }

@@ -47,7 +47,7 @@ def kafka_consumer(
         Callable[[Message], Dict[str, Any]]
     ] = default_msg_processor,
     batch_size: Optional[int] = 3000,
-    batch_timeout: Optional[int] = 3,
+    batch_timeout: Optional[float] = 3.0,
     start_from: Optional[TAnyDateTime] = None,
 ) -> Iterable[TDataItem]:
     """Extract recent messages from the given Kafka topics.
@@ -77,6 +77,9 @@ def kafka_consumer(
     if not isinstance(topics, list):
         topics = [topics]
 
+    batch_size = batch_size or 3000
+    batch_timeout = batch_timeout or 3.0
+
     if isinstance(credentials, Consumer):
         consumer = credentials
     elif isinstance(credentials, KafkaCredentials):
@@ -104,12 +107,14 @@ def kafka_consumer(
 
             batch = []
             for msg in messages:
-                if msg.error():
-                    err = msg.error()
+                err = msg.error()
+                if err is not None:
                     if err.retriable() or not err.fatal():
                         logger.warning(f"ERROR: {err} - RETRYING")
-                    else:
+                    elif isinstance(err, BaseException):
                         raise err
+                    else:
+                        raise RuntimeError(f"Unknown error: {err}")
                 else:
                     batch.append(msg_processor(msg))  # type: ignore
                     tracker.renew(msg)
