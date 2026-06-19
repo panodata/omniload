@@ -87,7 +87,7 @@ dependencies = [
   "duckdb<1.6",
   "duckdb-engine<0.18",
   "elasticsearch<10",
-  "facebook-business<24",
+  "facebook-business<26",
   "flatten-json<0.2",
   "gcsfs",
   "google-ads<29",
