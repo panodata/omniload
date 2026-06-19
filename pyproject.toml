@@ -77,7 +77,7 @@ dependencies = [
   "clickhouse-connect>=0.8,<1",
   "clickhouse-driver<0.3",
   "clickhouse-sqlalchemy<0.4",
-  "confluent-kafka<2.13",
+  "confluent-kafka<2.15",
   "couchbase>=4,<5",
   "databricks-sql-connector<5",
   "databricks-sqlalchemy<3",
