@@ -122,7 +122,7 @@ dependencies = [
   "sqlalchemy-hana<5",
   "sqlalchemy-redshift<2",
   "sqlalchemy-spanner<2",
-  "stripe<11",
+  "stripe<16",
   "tldextract<6",
   "tqdm<5",
   "trino[sqlalchemy]==0.337.0",
