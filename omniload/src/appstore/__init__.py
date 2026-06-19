@@ -51,16 +51,18 @@ def filter_instances_by_date(
     if start_date is not None:
         instances.data = list(
             filter(
-                lambda x: datetime.fromisoformat(x.attributes.processingDate)
-                >= start_date,
+                lambda x: (
+                    datetime.fromisoformat(x.attributes.processingDate) >= start_date
+                ),
                 instances.data,
             )
         )
     if end_date is not None:
         instances.data = list(
             filter(
-                lambda x: datetime.fromisoformat(x.attributes.processingDate)
-                <= end_date,
+                lambda x: (
+                    datetime.fromisoformat(x.attributes.processingDate) <= end_date
+                ),
                 instances.data,
             )
         )
@@ -92,8 +94,10 @@ def get_report(
     report_requests = client.list_analytics_report_requests(app_id)
     ongoing_requests = list(
         filter(
-            lambda x: x.attributes.accessType == "ONGOING"
-            and not x.attributes.stoppedDueToInactivity,
+            lambda x: (
+                x.attributes.accessType == "ONGOING"
+                and not x.attributes.stoppedDueToInactivity
+            ),
             report_requests.data,
         )
     )
