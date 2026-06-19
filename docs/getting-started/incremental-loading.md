@@ -5,7 +5,7 @@ outline: deep
 # Incremental loading
 omniload supports incremental loading, which means you can choose to append, merge or delete+insert data into the destination table. Incremental loading allows you to ingest only the new rows from the source table into the destination table, which means that you don't have to ingest the entire table every time you run omniload.
 
-Before you use incremental loading, you should understand 3 important keys:
+Before you use incremental loading, you should understand three important settings:
 - `primary_key`: the column or columns that uniquely identify a row in the table, if you give a primary key for an ingestion the resulting rows will be deduplicated based on the primary key, which means there will only be one row for each primary key in the destination.
 - `incremental_key`: the column that will be used to determine the new rows, if you give an incremental key for an ingestion the resulting rows will be filtered based on the incremental key, which means only the new rows will be ingested.
   - A good example of an incremental key is a timestamp column, where you only want to ingest the rows that are newer than the last ingestion, for example `created_at` or `updated_at`.
