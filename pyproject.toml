@@ -73,7 +73,7 @@ dynamic = [ "version" ]
 dependencies = [
   "aiohttp<4",
   "asana<6",
-  "click<8.2",
+  "click<8.5",
   "clickhouse-connect>=0.8,<1",
   "clickhouse-driver<0.3",
   "clickhouse-sqlalchemy<0.4",
