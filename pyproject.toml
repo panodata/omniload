@@ -130,7 +130,7 @@ dependencies = [
   "urllib3<2.8",
 ]
 optional-dependencies.develop = [
-  "mypy<1.16",
+  "mypy<1.21",
   "pkginfo<2",
   "poethepoet<1",
   "pyproject-fmt<3",
