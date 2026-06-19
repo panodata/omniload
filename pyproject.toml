@@ -72,7 +72,7 @@ classifiers = [
 dynamic = [ "version" ]
 dependencies = [
   "aiohttp<4",
-  "asana<4",
+  "asana<6",
   "click<8.2",
   "clickhouse-connect>=0.8,<1",
   "clickhouse-driver<0.3",
