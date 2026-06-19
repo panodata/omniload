@@ -4,7 +4,6 @@
 
 ## Iteration +2
 
-- Enable Renovate
 - Refurbish `example-uris` subcommand
 
 ## Iteration +3
