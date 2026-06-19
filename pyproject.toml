@@ -113,7 +113,7 @@ dependencies = [
   "rudder-sdk-python<2.2",
   "s3fs",
   "simple-salesforce<2",
-  "smartsheet-python-sdk<4",
+  "smartsheet-python-sdk<5",
   "snowflake-connector-python>=3.18,<5",
   "snowflake-sqlalchemy<2",
   "sqlalchemy<2.1",
