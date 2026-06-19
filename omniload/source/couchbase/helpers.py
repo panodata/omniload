@@ -4,9 +4,11 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Iterator, Optional
 
 import dlt
-from couchbase.auth import PasswordAuthenticator  # type: ignore[import-untyped]
-from couchbase.cluster import Cluster  # type: ignore[import-untyped]
-from couchbase.options import (  # type: ignore[import-untyped]
+from couchbase.auth import (  # type: ignore[import-not-found,import-untyped]
+    PasswordAuthenticator,
+)
+from couchbase.cluster import Cluster  # type: ignore[import-not-found,import-untyped]
+from couchbase.options import (  # type: ignore[import-not-found,import-untyped]
     ClusterOptions,
     QueryOptions,
 )
