@@ -107,7 +107,7 @@ dependencies = [
   "pyathena<4",
   "pymongo<5",
   "pymysql<2",
-  "pyrate-limiter<4",
+  "pyrate-limiter<5",
   "python-quickbooks<0.10",
   "requests<3",
   "rudder-sdk-python<2.2",
