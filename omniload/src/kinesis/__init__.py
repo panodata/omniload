@@ -34,7 +34,7 @@ from .helpers import get_shard_iterator, get_stream_address, max_sequence_by_sha
 )
 def kinesis_stream(
     stream_name: str,
-    initial_at_timestamp: TAnyDateTime,
+    initial_at_timestamp: Optional[TAnyDateTime],
     credentials: AwsCredentials,
     last_msg: Optional[dlt.sources.incremental[StrStr]] = dlt.sources.incremental(
         "kinesis", last_value_func=max_sequence_by_shard
