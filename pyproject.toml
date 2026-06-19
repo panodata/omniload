@@ -90,7 +90,7 @@ dependencies = [
   "facebook-business<24",
   "flatten-json<0.2",
   "gcsfs",
-  "google-ads<29",
+  "google-ads<32",
   "google-analytics-data<0.24",
   "google-api-python-client<3",
   "google-auth<3",
