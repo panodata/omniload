@@ -772,7 +772,10 @@ clickHouseDocker = ClickhouseDockerImage(
     "clickhouse", lambda: ClickHouseContainer(CLICKHOUSE_IMAGE).start()
 )
 mysqlDocker = DockerImage(
-    "mysql", lambda: MySqlContainer(MYSQL8_IMAGE, username="root").start()
+    "mysql",
+    lambda: MySqlContainer(
+        image=MYSQL8_IMAGE, dialect="pymysql", username="root"
+    ).start(),
 )
 
 
