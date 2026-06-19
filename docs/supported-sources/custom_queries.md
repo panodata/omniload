@@ -8,8 +8,9 @@ omniload has primarily supported table replication for SQL sources due to that b
 
 In order to support these scenarios, omniload has added experimental support for custom queries.
 
-> [!DANGER]
-> This is an experimental feature, so do not expect it to work for all use cases. Please create an issue if you find a use case that doesn't work.
+:::{danger}
+This is an experimental feature, so do not expect it to work for all use cases. Please create an issue if you find a use case that doesn't work.
+:::
 
 ## How to use custom queries
 

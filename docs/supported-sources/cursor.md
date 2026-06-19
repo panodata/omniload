@@ -136,13 +136,16 @@ The source includes comprehensive error handling for:
 - Rate limiting and server errors
 - Network timeouts and connection issues
 
-> [!TIP]
-> For daily usage data, you can fetch data without specifying dates to get the most recent 30 days automatically.
+:::{tip}
+For daily usage data, you can fetch data without specifying dates to get the most recent 30 days automatically.
+:::
 
-> [!WARNING]
-> The `daily_usage_data` and `filtered_usage_events` endpoints have a 30-day limit per request. If you need more than 30 days of historical data, make multiple requests with different date ranges.
+:::{warning}
+The `daily_usage_data` and `filtered_usage_events` endpoints have a 30-day limit per request. If you need more than 30 days of historical data, make multiple requests with different date ranges.
+:::
 
-> [!NOTE]
-> - `team_members` uses a GET endpoint
-> - All other endpoints use POST with JSON payloads
-> - All data is returned with `max_table_nesting=0` to keep the schema flat
+:::{note}
+- `team_members` uses a GET endpoint
+- All other endpoints use POST with JSON payloads
+- All data is returned with `max_table_nesting=0` to keep the schema flat
+:::

@@ -86,8 +86,9 @@ The source includes comprehensive error handling for:
 - Server errors (5xx) with automatic retries
 - Network timeouts and connection issues
 
-> [!TIP]
-> For optimal performance, use incremental loading for regular syncs and full loading only for initial data extraction or when you need to capture all historical updates.
-
-> [!NOTE]
-> The emails endpoint uses cursor-based pagination with `page_trail` parameter, while other endpoints use standard offset-based pagination.
+:::{tip}
+For optimal performance, use incremental loading for regular syncs and full loading only for initial data extraction or when you need to capture all historical updates.
+:::
+:::{note}
+The emails endpoint uses cursor-based pagination with `page_trail` parameter, while other endpoints use standard offset-based pagination.
+:::

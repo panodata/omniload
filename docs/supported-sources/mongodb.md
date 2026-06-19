@@ -29,8 +29,9 @@ URI parameters:
 - `cluster.xxxxx.mongodb.net`: the cluster hostname provided by MongoDB Atlas
 - Query parameters like `retryWrites` and `w` are optional but recommended for Atlas connections
 
-> [!CAUTION]
-> Do not put the database name at the end of the URI for MongoDB, instead make it a part of `--source-table` or `--dest-table` option as `database.collection` format.
+:::{caution}
+Do not put the database name at the end of the URI for MongoDB, instead make it a part of `--source-table` or `--dest-table` option as `database.collection` format.
+:::
 
 The same URI structure can be used both for sources and destinations. You can read more about MongoDB's connection string format [here](https://docs.mongodb.com/manual/reference/connection-string/).
 
@@ -172,8 +173,9 @@ omniload ingest \
   --dest-table "analytics.users"
 ```
 
-> [!NOTE]
-> When using MongoDB Atlas as a source, ensure your IP address is whitelisted in Network Access settings. You can find this under Security > Network Access in your Atlas dashboard.
+:::{note}
+When using MongoDB Atlas as a source, ensure your IP address is whitelisted in Network Access settings. You can find this under Security > Network Access in your Atlas dashboard.
+:::
 
 All the custom aggregation features described above work with MongoDB Atlas as well:
 
@@ -199,8 +201,9 @@ omniload ingest \
   --dest-table "mydb.users"
 ```
 
-> [!NOTE]
-> When using MongoDB Atlas as a destination, ensure your IP address is whitelisted in Network Access settings.
+:::{note}
+When using MongoDB Atlas as a destination, ensure your IP address is whitelisted in Network Access settings.
+:::
 
 ### Local MongoDB with authentication
 
@@ -222,5 +225,6 @@ omniload ingest \
   --dest-table "mydb.mycollection"
 ```
 
-> [!TIP]
-> By default, omniload uses a "replace" strategy which deletes existing data in the collection before loading new data. The target database and collection will be created automatically if they don't exist.
+:::{tip}
+By default, omniload uses a "replace" strategy which deletes existing data in the collection before loading new data. The target database and collection will be created automatically if they don't exist.
+:::

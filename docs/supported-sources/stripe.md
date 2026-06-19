@@ -136,11 +136,12 @@ All endpoints support the standard async loading mode. The following endpoints a
 
 Use these as `--source-table` parameter in the `omniload ingest` command.
 
-> [!TIP]
-> For time-sensitive data analysis or regular updates, use incremental loading (`:incremental`) with `--interval-start` and `--interval-end` parameters for faster processing. For comprehensive historical analysis, use standard async loading without any suffix.
-
-> [!WARNING]
-> Incremental loading filters data based on the specified time window and does not track updates to records created outside that window. Use standard async loading if you need to capture all historical updates.
-
-> [!NOTE]
-> For backward compatibility, non-underscored versions of table names (e.g., `checkoutsession`, `paymentintent`, `subscriptionitem`) are still supported but will be deprecated in future versions. Please use the underscored versions (e.g., `checkout_session`, `payment_intent`, `subscription_item`) for new integrations.
+:::{tip}
+For time-sensitive data analysis or regular updates, use incremental loading (`:incremental`) with `--interval-start` and `--interval-end` parameters for faster processing. For comprehensive historical analysis, use standard async loading without any suffix.
+:::
+:::{warning}
+Incremental loading filters data based on the specified time window and does not track updates to records created outside that window. Use standard async loading if you need to capture all historical updates.
+:::
+:::{note}
+For backward compatibility, non-underscored versions of table names (e.g., `checkoutsession`, `paymentintent`, `subscriptionitem`) are still supported but will be deprecated in future versions. Please use the underscored versions (e.g., `checkout_session`, `payment_intent`, `subscription_item`) for new integrations.
+:::

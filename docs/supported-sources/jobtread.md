@@ -62,8 +62,9 @@ JobTread source allows ingesting the following resources into separate tables:
 
 Use these as `--source-table` parameter in the `omniload ingest` command.
 
-> [!WARNING]
-> JobTread does not expose an `updatedAt` field on any entity, so most tables use a full replace strategy. Only the `events` table supports incremental loading via `createdAt` since events are immutable.
-
-> [!WARNING]
-> Grant keys expire after 3 months of inactivity.
+:::{warning}
+JobTread does not expose an `updatedAt` field on any entity, so most tables use a full replace strategy. Only the `events` table supports incremental loading via `createdAt` since events are immutable.
+:::
+:::{warning}
+Grant keys expire after 3 months of inactivity.
+:::

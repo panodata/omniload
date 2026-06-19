@@ -76,10 +76,11 @@ Parameters:
 - `metrics`: A comma-separated list of [metrics](https://dev.adjust.com/en/api/rs-api/reports#metrics) to retrieve.
 - `filters`: A comma-separated list of [filters](https://dev.adjust.com/en/api/rs-api/reports#filters) to apply to the data. For example, `app_token__in=abc123` filters results to a specific app.
 
-> [!WARNING]
-> Custom tables require a time-based dimension for efficient operation, such as `hour`, `day`, `week`, `month`, or `year`.
+:::{warning}
+Custom tables require a time-based dimension for efficient operation, such as `hour`, `day`, `week`, `month`, or `year`.
+:::
 
- ## Examples
+## Examples
 
 Copy campaigns data from Adjust into a DuckDB database:
 ```sh

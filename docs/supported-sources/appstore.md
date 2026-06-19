@@ -3,9 +3,11 @@ The [App Store](https://appstore.com/) is an app marketplace developed and maint
 
 `omniload` allows you to ingest analytics, sales and performance data using the [Apple App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi)
 
-> [!NOTE]
-> Sometimes, the data in App Store Analytics reports isn’t fully complete when first provided. This happens because some information takes longer to process and appears in the reports later. For example, certain usage or sales details might be updated after the initial report is generated to correct errors or include missing data. This means that the report for a certain date may include data points from older dates. `omniload` takes care of updating these rows to show the updated values. However, caution should be exercised when analysing current date's data, as it maybe subject to change in the future. 
-> see [Data Completeness and Corrections](https://developer.apple.com/documentation/analytics-reports/data-completeness-corrections) for more information.
+:::{note}
+Sometimes, the data in App Store Analytics reports isn’t fully complete when first provided. This happens because some information takes longer to process and appears in the reports later. For example, certain usage or sales details might be updated after the initial report is generated to correct errors or include missing data. This means that the report for a certain date may include data points from older dates. `omniload` takes care of updating these rows to show the updated values. However, caution should be exercised when analysing current date's data, as it maybe subject to change in the future. 
+see [Data Completeness and Corrections](https://developer.apple.com/documentation/analytics-reports/data-completeness-corrections) for more information.
+:::
+
 ## URI Format
 
 The URI format for App Store is as follows:
@@ -55,8 +57,9 @@ Before you can ingest analytics data from App Store, you need to submit a [Repor
 
 We recommend using `ONGOING` access-type for reports. Please note that it may take upto 48 hours after submitting a Report Request for the data to become available. For more information, see [Request analytics report](https://developer.apple.com/documentation/appstoreconnectapi/downloading-analytics-reports).
 
-> [!NOTE]
-> you have to create a Report Request for each individual App that you want to ingest data for. You can use [list apps](https://developer.apple.com/documentation/appstoreconnectapi/get-v1-apps) API to get the list of all apps in your Apple Account.
+:::{note}
+You have to create a Report Request for each individual App that you want to ingest data for. You can use [list apps](https://developer.apple.com/documentation/appstoreconnectapi/get-v1-apps) API to get the list of all apps in your Apple Account.
+:::
 
 ## Tables
 | Table | PK | Inc Key | Inc Strategy | Details |

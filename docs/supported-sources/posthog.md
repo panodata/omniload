@@ -66,5 +66,6 @@ The PostHog source allows you to ingest the following tables:
 
 Use these as the `--source-table` parameter in the `omniload ingest` command.
 
-> [!NOTE]
-> The `property_definitions` table requires a sub-type suffix (`:event`, `:person`, or `:session`) to specify which type of property definitions to ingest.
+:::{note}
+The `property_definitions` table requires a sub-type suffix (`:event`, `:person`, or `:session`) to specify which type of property definitions to ingest.
+:::

@@ -52,8 +52,9 @@ omniload ingest \
   --dest-table "users_index"
 ```
 
-> [!NOTE]
-> Cloud Elasticsearch instances typically use HTTPS (port 443). The `secure` parameter defaults to `true`, so HTTPS is used automatically.
+:::{note}
+Cloud Elasticsearch instances typically use HTTPS (port 443). The `secure` parameter defaults to `true`, so HTTPS is used automatically.
+:::
 
 ### Local Elasticsearch with authentication
 
@@ -75,6 +76,6 @@ omniload ingest \
   --dest-table "myindex"
 ```
 
-> [!TIP]
-> By default, omniload uses a "replace" strategy which deletes the existing index before loading new data. The target index will be created automatically if it doesn't exist.
-
+:::{tip}
+By default, omniload uses a "replace" strategy which deletes the existing index before loading new data. The target index will be created automatically if it doesn't exist.
+:::

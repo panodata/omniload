@@ -38,8 +38,9 @@ The `interval-start` and `interval-end` options support various datetime formats
 - `%Y-%m-%dT%H:%M:%S.%f`: `2023-01-31T15:00:00.000123`
 - `%Y-%m-%dT%H:%M:%S.%f%z`: `2023-01-31T15:00:00.000123+00:00`
 
-> [!INFO]
-> For the details around the incremental key and the various strategies, please refer to the [Incremental Loading](../getting-started/incremental-loading.md) section.
+:::{note}
+For the details around the incremental key and the various strategies, please refer to the [Incremental Loading](../getting-started/incremental-loading.md) section.
+:::
 
 ## General flags
 
@@ -128,5 +129,6 @@ This example demonstrates masking sensitive customer data:
 - SSNs are completely redacted
 - Salaries are rounded to nearest $5000
 
-> [!INFO]
-> For more examples, please refer to the specific platforms' documentation on the sidebar.
+:::{note}
+For more examples, please refer to the specific platforms' documentation on the sidebar.
+:::

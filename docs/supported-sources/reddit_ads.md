@@ -37,8 +37,9 @@ Reddit Ads requires an `access_token` and `account_ids` to retrieve data from th
    Use HTTP Basic Auth with `client_id:client_secret` and include `grant_type=authorization_code`, `code=<code>`, and `redirect_uri=<redirect_uri>` in the request body.
 4. The response includes an `access_token` and a `refresh_token`.
 
-> [!NOTE]
-> Access tokens expire after approximately 1 hour. Use the `refresh_token` with `grant_type=refresh_token` to obtain a new access token when needed.
+:::{note}
+Access tokens expire after approximately 1 hour. Use the `refresh_token` with `grant_type=refresh_token` to obtain a new access token when needed.
+:::
 
 To find the Ad Account IDs, go to the [Reddit Ads Dashboard](https://ads.reddit.com/) and navigate to your account settings. The account ID is displayed in the URL or account details.
 
@@ -95,11 +96,13 @@ custom:<level>,<breakdowns>:<metrics>
 - `breakdowns`(optional): Comma-separated list of breakdowns after the level. Valid breakdowns: `date`, `country`, `region`, `community`, `placement`, `device_os`, `gender`, `interest`, `keyword`, `carousel_card`. Maximum 2 breakdowns per report.
 - `metrics`(required): A comma-separated list of metrics to retrieve. Common metrics include: `impressions`, `reach`, `clicks`, `spend`, `ecpm`, `ctr`, `cpc`, and various video and conversion metrics.
 
-> [!NOTE]
-> By default, omniload fetches data from January 1, 2020 to today's date. You can specify a custom date range using the `--interval-start` and `--interval-end` parameters.
+:::{note}
+By default, omniload fetches data from January 1, 2020 to today's date. You can specify a custom date range using the `--interval-start` and `--interval-end` parameters.
+:::
 
-> [!NOTE]
-> Monetary metrics (`spend`, `ecpm`, `cpc`) are automatically converted from microcurrency to standard currency values.
+:::{note}
+Monetary metrics (`spend`, `ecpm`, `cpc`) are automatically converted from microcurrency to standard currency values.
+:::
 
 ### Custom Reports Examples
 

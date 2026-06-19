@@ -54,5 +54,6 @@ Personio source allows ingesting the following sources into separate tables:
 Use these as `--source-table` parameter in the `omniload ingest` command.\
 
 
-> [!WARNING]
-> Personio does not support incremental loading for many endpoints, which means omniload will load endpoints incrementally if they support it, and do a full-refresh if not.
+:::{warning}
+Personio does not support incremental loading for many endpoints, which means omniload will load endpoints incrementally if they support it, and do a full-refresh if not.
+:::

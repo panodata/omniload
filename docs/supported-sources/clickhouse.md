@@ -54,5 +54,7 @@ omniload ingest \
 <!-- 
     see https://github.com/dlt-hub/dlt/issues/2248
 -->
-> [!WARNING]
-> Clickhouse currently doesn't support `delete+insert`, `merge` or `scd2` incremental strategies.
+
+:::{warning}
+Clickhouse currently doesn't support `delete+insert`, `merge` or `scd2` incremental strategies.
+:::

@@ -94,6 +94,6 @@ The `lists_segments` table will include an `audiences_id` column that references
 
 ## Notes
 
-> [!NOTE]
-> Nested resources (e.g., `reports_advice`, `lists_segments`) automatically include a reference to their parent resource through an ID column (`reports_id` or `audiences_id`).
-
+:::{note}
+Nested resources (e.g., `reports_advice`, `lists_segments`) automatically include a reference to their parent resource through an ID column (`reports_id` or `audiences_id`).
+:::

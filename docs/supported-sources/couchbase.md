@@ -31,10 +31,11 @@ URI parameters:
   - `ssl=true`: Required for Couchbase Capella (cloud) deployments
   - `ssl=false` or omitted: Use for Couchbase Server (self-hosted/on-premises) deployments
 
-> [!NOTE]
-> **SSL Parameter Usage:**
-> - Use `ssl=true` when connecting to **Couchbase Capella (cloud)**
-> - Use `ssl=false` or omit the parameter when connecting to **Couchbase Server (self-hosted/on-premises)**
+:::{note}
+**SSL Parameter Usage:**
+- Use `ssl=true` when connecting to **Couchbase Capella (cloud)**
+- Use `ssl=false` or omit the parameter when connecting to **Couchbase Server (self-hosted/on-premises)**
+:::
 
 The URI structure can be used for connecting to both local/self-hosted Couchbase instances and Couchbase Capella (cloud).
 
@@ -90,11 +91,13 @@ omniload ingest \
 
 ### Couchbase Capella (Cloud)
 
-> [!IMPORTANT]
-> Couchbase Capella (cloud) **requires SSL connections**. You must use `?ssl=true` in your connection URI and prefix the host with `cb.`
+:::{important}
+Couchbase Capella (cloud) **requires SSL connections**. You must use `?ssl=true` in your connection URI and prefix the host with `cb.`
+:::
 
-> [!TIP]
-> You can obtain the connection string for Capella from the SDK connection details in your Couchbase Capella dashboard.
+:::{tip}
+You can obtain the connection string for Capella from the SDK connection details in your Couchbase Capella dashboard.
+:::
 
 Use the `couchbase://` scheme with `ssl=true` parameter. Note the `cb.` prefix in the hostname:
 
@@ -119,8 +122,9 @@ omniload ingest \
 
 ### With URL-encoded password
 
-> [!IMPORTANT]
-> When using omniload CLI, passwords containing special characters (`@`, `:`, `/`, `#`, `?`, etc.) **must be URL-encoded** in the connection URI.
+:::{important}
+When using omniload CLI, passwords containing special characters (`@`, `:`, `/`, `#`, `?`, etc.) **must be URL-encoded** in the connection URI.
+:::
 
 If your password contains special characters, you need to URL-encode them:
 

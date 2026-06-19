@@ -35,5 +35,6 @@ omniload ingest \
 
 The InfluxDB source accepts any measurement name. Specify the measurement as the `--source-table` option when running `omniload`.
 
-> [!NOTE]
-> Primary Key Required for Merge: When using `--incremental-strategy merge`, you must also specify `--primary-key` Otherwise, the strategy defaults to append.
+:::{note}
+Primary Key Required for Merge: When using `--incremental-strategy merge`, you must also specify `--primary-key` Otherwise, the strategy defaults to append.
+:::

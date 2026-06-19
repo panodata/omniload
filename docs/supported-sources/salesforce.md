@@ -66,8 +66,8 @@ Salesforce source allows ingesting the following objects into separate tables:
 
 Use these as `--source-table` parameters in the `omniload ingest` command.
 
- ## Examples
- Copy user_role data from Salesforce into a DuckDB database:
+## Examples
+Copy user_role data from Salesforce into a DuckDB database:
 ```sh
 omniload ingest \
   --source-uri "salesforce://?username=<username>&password=<password>&token=<token>&domain=<domain>" \
@@ -85,6 +85,6 @@ omniload ingest \
   --dest-table "public.my_community"
 ```
 
-> [!WARNING]
-> Salesforce API limits may affect the frequency and volume of data ingestion. Incremental loading is supported for objects with the `SystemModstamp` field, but some objects may require full-refresh loads. This is indicated by `mode` in the tables above. Tables with mode `replace` don't support incremental loads, while the ones with `merge` do.
-
+:::{warning}
+Salesforce API limits may affect the frequency and volume of data ingestion. Incremental loading is supported for objects with the `SystemModstamp` field, but some objects may require full-refresh loads. This is indicated by `mode` in the tables above. Tables with mode `replace` don't support incremental loads, while the ones with `merge` do.
+:::

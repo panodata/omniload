@@ -43,5 +43,6 @@ omniload ingest \
 
 The result of this command will be a `my_sheet_data` table containing data from your Smartsheet in the `smartsheet_data.duckdb` database.
 
-> [!CAUTION]
-> Smartsheet integration does not currently support incremental loading. Every time you run the command, the entire sheet will be copied from Smartsheet to the destination. This can be slow for large sheets. 
+:::{caution}
+Smartsheet integration does not currently support incremental loading. Every time you run the command, the entire sheet will be copied from Smartsheet to the destination. This can be slow for large sheets. 
+:::

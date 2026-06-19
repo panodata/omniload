@@ -4,9 +4,9 @@
 
 omniload supports AppsFlyer as a source.
 
-> [!WARNING]
-> AppsFlyer uses different names for input dimensions vs their name in the output schema. For instance, in order to obtain campaign information, you need to use the `c` dimension; however, in the output schema, the resulting column will be called `campaign`.
-
+:::{warning}
+AppsFlyer uses different names for input dimensions vs their name in the output schema. For instance, in order to obtain campaign information, you need to use the `c` dimension; however, in the output schema, the resulting column will be called `campaign`.
+:::
 
 ## URI Format
 
@@ -59,11 +59,11 @@ Parameters:
 
 For custom tables, omniload will use the given dimensions as the primary key to deduplicate the data.
 
-> [!NOTE]
-> omniload will add `install_time` as the primary key to the table by default if it is not provided as one of the dimensions.
+:::{note}
+omniload will add `install_time` as the primary key to the table by default if it is not provided as one of the dimensions.
+:::
 
-
- ## Examples
+## Examples
 
 Copy campaigns data from Appsflyer into a DuckDB database:
 ```sh

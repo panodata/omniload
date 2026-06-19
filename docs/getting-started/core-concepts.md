@@ -24,8 +24,9 @@ The URI is composed of the following parts:
 
 omniload can connect to any source or destination using this structure across all databases.
 
-> [!NOTE]
-> omniload uses [dlt](https://github.com/dlt-hub/dlt) & [SQLAlchemy](https://www.sqlalchemy.org/) libraries internally, which means you can get connection URIs by following their documentation as well, they are supposed to work right away in omniload.
+:::{note}
+omniload uses [dlt](https://github.com/dlt-hub/dlt) & [SQLAlchemy](https://www.sqlalchemy.org/) libraries internally, which means you can get connection URIs by following their documentation as well, they are supposed to work right away in omniload.
+:::
 
 ## Source & destination tables
 The source and destination tables are the tables from the source and destination databases, respectively. The source table is the table from where you want to ingest the data from, and the destination table is the table where you want to store the data.

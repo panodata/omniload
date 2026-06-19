@@ -55,9 +55,10 @@ omniload ingest \
     --dest-table 'raw.profiles'
 ```
 
-> [!INFO]
-> The steps here assume you have [DuckDB](https://duckdb.org/install/) installed.
-> DuckDB runs locally with zero setup and keeps the quickstart easy and fast.
+:::{note}
+The steps here assume you have [DuckDB](https://duckdb.org/install/) installed.
+DuckDB runs locally with zero setup and keeps the quickstart easy and fast.
+:::
 
 If you'd like a quick check, you can query the table directly:
 ```shell

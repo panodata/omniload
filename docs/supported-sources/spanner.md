@@ -35,7 +35,6 @@ omniload ingest \
 
 <img alt="GCP Spanner Ingestion Example" src="../media/gcp_spanner_ingestion.png"/>
 
-> [!NOTE]
-> Currently, only GoogleSQL databases are supported.
-
-
+:::{note}
+Currently, only GoogleSQL databases are supported.
+:::

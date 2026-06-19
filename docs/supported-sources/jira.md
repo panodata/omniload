@@ -73,5 +73,6 @@ Will only load versions of non-archived projects.
 
 The `issues` table supports incremental loading based on the `updated` field. This means subsequent runs will only fetch issues that have been modified since the last run, making the data ingestion more efficient for large Jira instances.
 
-> [!NOTE]
-> Most tables use "replace" write disposition, meaning they will overwrite existing data on each run. Only the `issues` table supports incremental loading with "merge" disposition.
+:::{note}
+Most tables use "replace" write disposition, meaning they will overwrite existing data on each run. Only the `issues` table supports incremental loading with "merge" disposition.
+:::

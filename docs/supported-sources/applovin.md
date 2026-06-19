@@ -140,5 +140,6 @@ omniload ingest \
     --dest-table "public.custom_report" 
 ```
 
-> [!NOTE]
-> The `day` column is automatically added to any custom report if it is not specified in the custom report definition.
+:::{note}
+The `day` column is automatically added to any custom report if it is not specified in the custom report definition.
+:::

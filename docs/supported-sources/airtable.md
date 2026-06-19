@@ -53,5 +53,6 @@ omniload ingest \
 
 The result of this command will be an `employee` table containing data from the `employee` source in the `airtable.duckdb` database.
 
-> [!CAUTION]
-> Airtable does not support incremental loading, which means every time you run the command, the entire table will be copied from Airtable to the destination. This can be slow for large tables.
+:::{caution}
+Airtable does not support incremental loading, which means every time you run the command, the entire table will be copied from Airtable to the destination. This can be slow for large tables.
+:::

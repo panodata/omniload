@@ -91,10 +91,11 @@ There are two distinct configuration modes:
 - **Fields are required** - you must always provide fields after the second colon
 - Can optionally specify a level (account, campaign, adset, ad) as the first dimension
 
-> [!TIP]
-> You can include `campaign_id`, `adset_id`, and `ad_id` in your fields list alongside your metrics if you want to have these as part of the output. 
-> 
-> E.g. `facebook_insights:ad:campaign_id,adset_id,ad_id,spend,impressions,clicks`
+:::{tip}
+You can include `campaign_id`, `adset_id`, and `ad_id` in your fields list alongside your metrics if you want to have these as part of the output. 
+
+E.g. `facebook_insights:ad:campaign_id,adset_id,ad_id,spend,impressions,clicks`
+:::
 
 #### Available Predefined Breakdown Types
 
@@ -245,5 +246,6 @@ omniload ingest \
   --interval-end 2024-12-31
 ```
 
-> [!NOTE]
-> When using `facebook_insights_with_account_ids`, the `account_id` parameter in the URI is ignored. Account IDs must be provided in the table name.
+:::{note}
+When using `facebook_insights_with_account_ids`, the `account_id` parameter in the URI is ignored. Account IDs must be provided in the table name.
+:::

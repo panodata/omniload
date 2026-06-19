@@ -33,9 +33,9 @@ Here's how the replace strategy works:
 - The source table is downloaded.
 - The source table is uploaded to the destination, replacing the destination table.
 
-
-> [!CAUTION]
-> This strategy will delete the entire destination table and replace it with the source table, use with caution.
+:::{caution}
+This strategy will delete the entire destination table and replace it with the source table, use with caution.
+:::
 
 ## Append
 Append will simply append the new rows from the source table to the destination table. By default, it will append all the rows. You should provide an `incremental_key` to use it as an incremental strategy.
@@ -53,6 +53,7 @@ omniload ingest \
 ### Example
 
 Let's assume you had the following source table:
+
 | id | name | updated_at |
 |----|------|------------|
 | 1  | John | 2021-01-01 |
@@ -71,6 +72,7 @@ When there's no new data in the source table, the destination table will remain 
 
 #### Third Ingestion, new data
 Let's say John changed his name to Johnny, and Jane's `updated_at` was updated to `2021-01-02`, e.g. your source:
+
 | id | name   | updated_at |
 |----|--------|------------|
 | 1  | Johnny | 2021-01-02 |
@@ -78,6 +80,7 @@ Let's say John changed his name to Johnny, and Jane's `updated_at` was updated t
 
 
 When you run the command again, it will only ingest the new rows into the destination table. Here's how your destination looks like now:
+
 | id | name   | updated_at |
 |----|--------|------------|
 | 1  | John   | 2021-01-01 |
@@ -88,9 +91,9 @@ When you run the command again, it will only ingest the new rows into the destin
 
 The behavior is the same if there were new rows in the source table, they would be appended to the destination table if they have `updated_at` that is **later than the latest record** in the destination table.
 
-> [!TIP]
-> The `append` strategy allows you to keep a version history of your data, as it will keep appending the new rows to the destination table. You can use it to build [Slowly Changing Dimensions (SCD) Type 2](https://en.wikipedia.org/wiki/Slowly_changing_dimension#Type_2:_add_new_row) tables, for example.
-
+:::{tip}
+The `append` strategy allows you to keep a version history of your data, as it will keep appending the new rows to the destination table. You can use it to build [Slowly Changing Dimensions (SCD) Type 2](https://en.wikipedia.org/wiki/Slowly_changing_dimension#Type_2:_add_new_row) tables, for example.
+:::
 
 ## Merge
 Merge will merge the new rows with the existing rows in the destination table, insert the new ones and update the existing ones with the new values. By default, it will merge all the rows. If you'd like to use it as an incremental strategy, you should provide an `incremental_key` as well as a `primary_key` to find the right rows to update.
@@ -115,6 +118,7 @@ Here's how the merge strategy works:
 ### Example
 
 Let's assume you had the following source table:
+
 | id | name | updated_at |
 |----|------|------------|
 | 1  | John | 2021-01-01 |
@@ -133,12 +137,14 @@ When there's no new data in the source table, the destination table will remain 
 
 #### Third Ingestion, new data
 Let's say John changed his name to Johnny, e.g. your source:
+
 | id | name   | updated_at |
 |----|--------|------------|
 | 1  | Johnny | 2021-01-02 |
 | 2  | Jane   | 2021-01-01 |
     
 When you run the command again, it will merge the new rows into the destination table. Here's how your destination looks like now:
+
 | id | name   | updated_at |
 |----|--------|------------|
 | 1  | Johnny | 2021-01-02 |
@@ -148,11 +154,13 @@ When you run the command again, it will merge the new rows into the destination 
 
 The behavior is the same if there were new rows in the source table, they would be merged into the destination table if they have `updated_at` that is **later than the latest record** in the destination table.
 
-> [!TIP]
-> The `merge` strategy is different from the `append` strategy, as it will update the existing rows in the destination table with the new values from the source table. It's useful when you want to keep the latest version of your data in the destination table.
+:::{tip}
+The `merge` strategy is different from the `append` strategy, as it will update the existing rows in the destination table with the new values from the source table. It's useful when you want to keep the latest version of your data in the destination table.
+:::
 
-> [!CAUTION]
-> For the cases where there's a primary key match, the `merge` strategy will **update** the existing rows in the destination table with the new values from the source table. Use with caution, as it can lead to data loss if not used properly, as well as data processing charges if your data warehouse charges for updates.
+:::{caution}
+For the cases where there's a primary key match, the `merge` strategy will **update** the existing rows in the destination table with the new values from the source table. Use with caution, as it can lead to data loss if not used properly, as well as data processing charges if your data warehouse charges for updates.
+:::
 
 ## Delete+Insert
 Delete+Insert will delete the existing rows in the destination table that match the `incremental_key` and then insert the new rows from the source table. By default, it will delete and insert all the rows. If you'd like to use it as an incremental strategy, you should provide an `incremental_key`.
@@ -178,6 +186,7 @@ A few important notes about the `delete+insert` strategy:
 
 ### Example
 Let's assume you had the following source table:
+
 | id | name | updated_at |
 |----|------|------------|
 | 1  | John | 2021-01-01 |
@@ -185,6 +194,7 @@ Let's assume you had the following source table:
 
 #### First Ingestion
 The first time you run the command, it will ingest all the rows into the destination table. Here's how your destination looks like now:
+
 | id | name | updated_at |
 |----|------|------------|
 | 1  | John | 2021-01-01 |
@@ -192,17 +202,20 @@ The first time you run the command, it will ingest all the rows into the destina
 
 #### Second Ingestion, no new data
 Even when there's no new data in the source table, the rows from the source table will be inserted into a staging table in the destination database, and then the existing rows in the destination table that match the `incremental_key` will be deleted, and then the new rows from the staging table will be inserted into the destination table. The destination table will remain the same for the case of this example.
-> [!CAUTION]
-> If you had rows in the destination table that does not exist in the source table, they will be deleted from the destination table.
+:::{caution}
+If you had rows in the destination table that does not exist in the source table, they will be deleted from the destination table.
+:::
 
 #### Third Ingestion, new data
 Let's say John changed his name to Johnny, e.g. your source:
+
 | id | name   | updated_at |
 |----|--------|------------|
 | 1  | Johnny | 2021-01-02 |
 | 2  | Jane   | 2021-01-01 |
 
 When you run the command again, it will delete the existing rows in the destination table that match the `incremental_key` and then insert the new rows from the source table. Here's how your destination looks like now:
+
 | id | name   | updated_at |
 |----|--------|------------|
 | 1  | Johnny | 2021-01-02 |
@@ -212,9 +225,9 @@ When you run the command again, it will delete the existing rows in the destinat
 
 The behavior is the same if there were new rows in the source table, they would be deleted and inserted into the destination table if they have `updated_at` that is **later than the latest record** in the destination table.
 
-> [!TIP]
-> The `delete+insert` strategy is useful when you want to keep the destination table clean, as it will delete the existing rows in the destination table that match the `incremental_key` and then insert the new rows from the source table. `delete+insert` strategy also allows you to backfill the data, e.g. going back to a past date and ingesting the data again.
-
+:::{tip}
+The `delete+insert` strategy is useful when you want to keep the destination table clean, as it will delete the existing rows in the destination table that match the `incremental_key` and then insert the new rows from the source table. `delete+insert` strategy also allows you to backfill the data, e.g. going back to a past date and ingesting the data again.
+:::
 
 ## Conclusion
 Incremental loading is a powerful feature that allows you to ingest only the new rows from the source table into the destination table. It's useful when you want to keep the destination table up-to-date with the source table, as well as when you want to keep a version history of your data in the destination table. However, there are a few things to keep in mind when using incremental loading:
@@ -224,5 +237,6 @@ Incremental loading is a powerful feature that allows you to ingest only the new
 - If you want to keep the latest version of your data in the destination table and your table has a natural primary key, such as a user ID, use the `merge` strategy, as it will update the existing rows in the destination table with the new values from the source table.
 - If you want to keep the destination table clean and you want to backfill the data, use the `delete+insert` strategy, as it will delete the existing rows in the destination table that match the `incremental_key` and then insert the new rows from the source table.
 
-> [!TIP]
-> Even though the document tries to explain, there's no better learning than trying it yourself. You can use the [Quickstart](/getting-started/quickstart.md) to try the incremental loading strategies yourself.
+:::{tip}
+Even though the document tries to explain, there's no better learning than trying it yourself. You can use the [Quickstart](/getting-started/quickstart.md) to try the incremental loading strategies yourself.
+:::

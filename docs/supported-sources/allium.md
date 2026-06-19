@@ -149,16 +149,17 @@ This example combines custom query parameters (`network`) with run config parame
 
 ## Notes
 
-> [!NOTE]
-> - Query execution is asynchronous and may take time depending on the complexity of your query
-> - The connector will wait up to 12 hours for query completion
-> - Use `--interval-start` and `--interval-end` flags to pass date parameters to your Allium query
-> - The dates will be automatically converted to:
->   - `start_date` and `end_date` parameters in the format `YYYY-MM-DD`
->   - `start_timestamp` and `end_timestamp` parameters as Unix timestamps (seconds since epoch)
-> - **Default dates**: If not specified, defaults to 2 days ago (00:00) to yesterday (00:00)
-> - Custom parameters can be added to the source table format: `query:your_query_id:param1=value1&param2=value2`
-> - Run config parameters (`limit`, `compute_profile`) are also passed in the source table format
-> - Custom parameters will override default parameters if they have the same name
-> - The `limit` parameter has a maximum value of 250,000 rows
-> - Make sure your query ID is valid and accessible with your API key
+:::{note}
+- Query execution is asynchronous and may take time depending on the complexity of your query
+- The connector will wait up to 12 hours for query completion
+- Use `--interval-start` and `--interval-end` flags to pass date parameters to your Allium query
+- The dates will be automatically converted to:
+  - `start_date` and `end_date` parameters in the format `YYYY-MM-DD`
+  - `start_timestamp` and `end_timestamp` parameters as Unix timestamps (seconds since epoch)
+- **Default dates**: If not specified, defaults to 2 days ago (00:00) to yesterday (00:00)
+- Custom parameters can be added to the source table format: `query:your_query_id:param1=value1&param2=value2`
+- Run config parameters (`limit`, `compute_profile`) are also passed in the source table format
+- Custom parameters will override default parameters if they have the same name
+- The `limit` parameter has a maximum value of 250,000 rows
+- Make sure your query ID is valid and accessible with your API key
+:::

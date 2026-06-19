@@ -54,6 +54,6 @@ Monday.com source allows ingesting the following resources into separate tables:
 
 Use these as `--source-table` parameter in the `omniload ingest` command.
 
-> [!NOTE]
-> Monday.com has rate limits for API requests. The source handles pagination automatically and respects the API's maximum page size of 100 items.
-
+:::{note}
+Monday.com has rate limits for API requests. The source handles pagination automatically and respects the API's maximum page size of 100 items.
+:::

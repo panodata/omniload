@@ -25,11 +25,13 @@ URI parameters:
 - `refresh_token`: OAuth2 refresh token (OAuth2 auth).
 - `login_customer_id` (optional): The Manager Account (MCC) ID to use when accessing client accounts. Required when your service account has access to an MCC and you want to pull data from a client account under that MCC. See [Google Ads API docs](https://developers.google.com/google-ads/api/docs/concepts/call-structure#cid) for more details.
 
-> [!NOTE]
-> For service account auth, you may specify credentials using `credentials_base64` instead of `credentials_path`.
-> The value of this parameter is the base64 encoded contents of the
-> service account json file. However, we don't recommend using this
-> parameter, unless you're integrating omniload into another system.
+:::{note}
+For service account auth, you may specify credentials using `credentials_base64` instead of `credentials_path`.
+The value of this parameter is the base64 encoded contents of the
+service account json file. However, we don't recommend using this
+parameter, unless you're integrating omniload into another system.
+:::
+
 ## Setting up a Google Ads integration
 
 ### Prerequisites
@@ -259,8 +261,10 @@ omniload ingest \
 --source-table "gaql_query:SELECT search_term_view.search_term, campaign.name, ad_group.name, metrics.impressions, metrics.clicks, metrics.cost_micros FROM search_term_view WHERE segments.date DURING LAST_30_DAYS ORDER BY metrics.impressions DESC LIMIT 100"
 ```
 
-> [!NOTE]
-> GAQL queries use `append` write disposition by default. Each row includes a `customer_id` field to identify which account the data came from.
+:::{note}
+GAQL queries use `append` write disposition by default. Each row includes a `customer_id` field to identify which account the data came from.
+:::
 
-> [!TIP]
-> Use the [Google Ads Query Builder](https://developers.google.com/google-ads/api/fields/v18/overview_query_builder) to construct and validate your GAQL queries before using them with omniload.
+:::{tip}
+Use the [Google Ads Query Builder](https://developers.google.com/google-ads/api/fields/v18/overview_query_builder) to construct and validate your GAQL queries before using them with omniload.
+:::

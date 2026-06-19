@@ -68,8 +68,9 @@ Docebo source supports ingesting the following sources into separate tables:
 
 Use the table name as the `--source-table` parameter in the `omniload ingest` command.
 
-> [!WARNING]
-> Docebo does not currently support incremental loading, which means omniload will do a full-refresh on each run.
-
-> [!NOTE]
-> Date fields containing invalid dates (e.g., '0000-00-00') are automatically normalized to Unix epoch (1970-01-01) for compatibility.
+:::{warning}
+Docebo does not currently support incremental loading, which means omniload will do a full-refresh on each run.
+:::
+:::{note}
+Date fields containing invalid dates (e.g., '0000-00-00') are automatically normalized to Unix epoch (1970-01-01) for compatibility.
+:::

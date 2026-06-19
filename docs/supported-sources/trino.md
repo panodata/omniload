@@ -3,8 +3,9 @@ Trino (formerly PrestoSQL) is a distributed SQL query engine designed for fast a
 
 omniload supports Trino as both a source and destination.
 
-> [!WARNING]
-> Trino is currently supported as a beta platform, which means that some features might not work as expected.
+:::{warning}
+Trino is currently supported as a beta platform, which means that some features might not work as expected.
+:::
 
 ## URI format
 The URI format for Trino is as follows:

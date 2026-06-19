@@ -33,16 +33,16 @@ Google Analytics requires a few steps to set up an integration, please follow th
 ### Custom reports 
 - `Custom reports`: allow you to retrieve data based on specific `dimensions` and  `metrics`.
 
- #### Custom Table Format:
+#### Custom Table Format:
 ```
 custom:<dimensions>:<metrics>
 ```
 
- #### Parameters:
+#### Parameters:
 - `dimensions`(required): A comma-separated list of [dimensions](https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema#dimensions) to retrieve.
 - `metrics`(required): A comma-separated list of [metrics](https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema#metrics) to retrieve.
 
- #### Example
+#### Example
 
 ```sh
 omniload ingest \
@@ -60,7 +60,7 @@ This command will retrieve report and save it to the `dest.custom` table in the 
 ### Realtime reports
 `Realtime reports`: allows you to retrieve data based on specific `dimensions`, `metrics`, with optional `minutes_ranges`.
 
- #### Realtime Report Table Format:
+#### Realtime Report Table Format:
 ```
 realtime:<dimensions>:<metrics>
 
@@ -69,7 +69,7 @@ realtime:<dimensions>:<metrics>
 realtime:<dimensions>:<metrics>:<minutes_ranges>
 ```
 
- #### Parameters:
+#### Parameters:
 - `dimensions`(required): A comma-separated list of [dimensions](https://developers.google.com/analytics/devguides/reporting/data/v1/exploration-api-schema#dimensions) to retrieve.
 - `metrics`(required): A comma-separated list of [metrics](https://developers.google.com/analytics/devguides/reporting/data/v1/exploration-api-schema#metrics) to retrieve.
 - `minutes_ranges`(optional): Allows you to specify time windows for retrieving data. You can define up to two time ranges in your query, formatted as comma-separated values (e.g., "0-5,25-29"). Each range represents minutes in the past from the current time.

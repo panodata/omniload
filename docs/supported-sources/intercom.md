@@ -53,5 +53,6 @@ Intercom source allows ingesting the following sources into separate tables:
 
 Use these as `--source-table` parameter in the `omniload ingest` command.
 
-> [!TIP]
-> Resources marked with "merge" Inc Strategy support incremental loading based on the `updated_at` timestamp, which means subsequent runs will only fetch new or updated records.
+:::{tip}
+Resources marked with "merge" Inc Strategy support incremental loading based on the `updated_at` timestamp, which means subsequent runs will only fetch new or updated records.
+:::

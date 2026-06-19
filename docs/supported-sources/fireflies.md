@@ -52,11 +52,12 @@ omniload ingest \
   --interval-end '2024-12-31'
 ```
 
-> [!NOTE]
-> For `analytics`, the API has a 30-day limit per request. omniload automatically chunks larger date ranges into 30-day intervals.
->
-> [!WARNING]
-> The `analytics` table returns **pre-aggregated data** for each chunk (e.g., average duration, total meetings). When querying periods longer than the chunk size, each chunk is stored as a separate row with its own aggregations.
+:::{note}
+For `analytics`, the API has a 30-day limit per request. omniload automatically chunks larger date ranges into 30-day intervals.
+:::
+:::{warning}
+The `analytics` table returns **pre-aggregated data** for each chunk (e.g., average duration, total meetings). When querying periods longer than the chunk size, each chunk is stored as a separate row with its own aggregations.
+:::
 
 ## Analytics Granularity
 
@@ -81,8 +82,9 @@ omniload ingest \
   --interval-end '2024-01-31'
 ```
 
-> [!NOTE]
-> Smaller granularity means more API requests. Use `analytics:HOUR` only for short date ranges to avoid rate limiting.
+:::{note}
+Smaller granularity means more API requests. Use `analytics:HOUR` only for short date ranges to avoid rate limiting.
+:::
 
 ## Tables
 
@@ -101,8 +103,9 @@ Fireflies source allows ingesting the following sources into separate tables:
 
 Use these as `--source-table` parameter in the `omniload ingest` command.
 
-> [!TIP]
-> For loading meeting transcripts incrementally, use the `transcripts` table with `--interval-start` and `--interval-end` parameters. This is recommended for regular sync jobs to avoid re-fetching all historical data.
->
-> [!NOTE]
-> The `analytics` table uses `start_time` and `end_time` as a composite primary key, so overlapping date ranges will update existing records instead of creating duplicates.
+:::{tip}
+For loading meeting transcripts incrementally, use the `transcripts` table with `--interval-start` and `--interval-end` parameters. This is recommended for regular sync jobs to avoid re-fetching all historical data.
+:::
+:::{note}
+The `analytics` table uses `start_time` and `end_time` as a composite primary key, so overlapping date ranges will update existing records instead of creating duplicates.
+:::

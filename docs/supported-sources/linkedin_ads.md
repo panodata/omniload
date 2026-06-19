@@ -42,9 +42,10 @@ LinkedIn Ads requires an `access_token` and `account_ids` to retrieve reports fr
 7. Click "Request access token"
 8. You will be redirected to an authorization page. Use your LinkedIn credentials to log in and authorize your app and obtain your Access Token and Refresh Token. Copy the Access Token.
 
-> [!NOTE]
-> Access tokens last for 2 months. After they expire, you'll need to make new ones using 
-> [LinkedIn's Token Generator](https://www.linkedin.com/developers/tools/oauth/token-generator).
+:::{note}
+Access tokens last for 2 months. After they expire, you'll need to make new ones using 
+[LinkedIn's Token Generator](https://www.linkedin.com/developers/tools/oauth/token-generator).
+:::
 
 To find the Ad Account IDs, the ad account owner can refer to the detailed instructions provided in this [guide](https://www.linkedin.com/help/linkedin/answer/a424270/find-linkedin-ads-account-details?lang=en).
 
@@ -109,8 +110,9 @@ custom:<dimensions>:<metrics>
   - `month`: group the data in your report by month
 - `metrics`(required): A comma-separated list of [metrics](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/ads-reporting/ads-reporting?view=li-lms-2024-11&tabs=http#metrics-available) to retrieve.
 
-> [!NOTE]
-> By default, omniload fetches data from January 1, 2018 to today's date. You can specify a custom date range using the `--interval-start` and `--interval-end` parameters.
+:::{note}
+By default, omniload fetches data from January 1, 2018 to today's date. You can specify a custom date range using the `--interval-start` and `--interval-end` parameters.
+:::
 
 ### Custom Reports Examples
 

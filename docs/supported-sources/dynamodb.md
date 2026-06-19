@@ -94,11 +94,12 @@ omniload ingest \
 
 Assuming that `absolute-armadillo` table has a datetime field called `updated_at`, whenever you run this command, only rows with value greater than `MAX(updated_at)` from previous load will be fetched from DynamoDB.
 
-> [!WARNING]
-> DynamoDB doesn't support indexed range scans.
-> Whenever you run `omniload ingest`, the whole table is scanned.
-> Although `omniload` does specify a filter criteria, DynamoDB only applies
-> this _after_ running the table scan.
+:::{warning}
+DynamoDB doesn't support indexed range scans.
+Whenever you run `omniload ingest`, the whole table is scanned.
+Although `omniload` does specify a filter criteria, DynamoDB only applies
+this _after_ running the table scan.
+:::
 
 ### Example: Load into DynamoDB
 

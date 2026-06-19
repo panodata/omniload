@@ -42,5 +42,6 @@ omniload ingest --source-uri 'gsheets://?credentials_path=/path/to/file.json' --
 
 The result of this command will be a table in the `gsheets.duckdb` database.
 
-> [!CAUTION]
-> Google Sheets does not support incremental loading, which means every time you run the command, it will copy the entire spreadsheet from Google Sheets to the destination. This can be slow for large spreadsheets.
+:::{caution}
+Google Sheets does not support incremental loading, which means every time you run the command, it will copy the entire spreadsheet from Google Sheets to the destination. This can be slow for large spreadsheets.
+:::

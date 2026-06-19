@@ -43,5 +43,6 @@ Attio source supports ingesting the following sources into separate tables:
 
 Use this as `--source-table` parameter in the `omniload ingest` command.
 
-> [!WARNING]
-> Attio does not support incremental loading, which means omniload will do a full-refresh.
+:::{warning}
+Attio does not support incremental loading, which means omniload will do a full-refresh.
+:::

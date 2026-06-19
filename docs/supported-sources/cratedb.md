@@ -19,19 +19,20 @@ The URI format for CrateDB as a source is as follows:
 ```text
 crate://<username>:<password>@<host>:<port>?ssl=<ssl>
 ```
-> [!INFO]
-> The driver does not require any option, and will default to
-> `crate://crate@localhost:4200?ssl=false` when just using `crate://`.
->
-> When connecting to CrateDB on localhost, use:
-> ```text
-> crate://crate@localhost:4200?ssl=false
-> ```
->
-> When connecting to [CrateDB Cloud], the URI looks like this:
-> ```text
-> crate://admin:<PASSWORD>@<CLUSTERNAME>.eks1.eu-west-1.aws.cratedb.net:4200?ssl=true
-> ```
+:::{note}
+The driver does not require any option, and will default to
+`crate://crate@localhost:4200?ssl=false` when just using `crate://`.
+
+When connecting to CrateDB on localhost, use:
+```text
+crate://crate@localhost:4200?ssl=false
+```
+
+When connecting to [CrateDB Cloud], the URI looks like this:
+```text
+crate://admin:<PASSWORD>@<CLUSTERNAME>.eks1.eu-west-1.aws.cratedb.net:4200?ssl=true
+```
+:::
 
 ### URI parameters
 - `username` (required): The username is required to authenticate with the CrateDB server.
@@ -76,16 +77,17 @@ The URI format for CrateDB as a destination is as follows:
 ```text
 cratedb://<username>:<password>@<host>:<port>?sslmode=<sslmode>
 ```
-> [!INFO]
-> When connecting to CrateDB on localhost, use:
-> ```text
-> cratedb://crate:@localhost:5432?sslmode=disable
-> ```
->
-> When connecting to [CrateDB Cloud], the URI looks like this:
-> ```text
-> cratedb://admin:<PASSWORD>@<CLUSTERNAME>.eks1.eu-west-1.aws.cratedb.net:5432?sslmode=require
-> ```
+:::{note}
+When connecting to CrateDB on localhost, use:
+```text
+cratedb://crate:@localhost:5432?sslmode=disable
+```
+
+When connecting to [CrateDB Cloud], the URI looks like this:
+```text
+cratedb://admin:<PASSWORD>@<CLUSTERNAME>.eks1.eu-west-1.aws.cratedb.net:5432?sslmode=require
+```
+:::
 
 ### URI parameters
 - `username` (required): The username is required to authenticate with the CrateDB server.
@@ -116,9 +118,10 @@ uvx crash -c 'SELECT * FROM doc.sample'
 
 <img alt="CrateDB_img" src="../media/cratedb-destination.png" />
 
-> [!WARNING]
-> CrateDB supports the `replace` incremental materialization strategy, but
-> currently does not support the `delete+insert`, `merge`, or `scd2` strategies.
+:::{warning}
+CrateDB supports the `replace` incremental materialization strategy, but
+currently does not support the `delete+insert`, `merge`, or `scd2` strategies.
+:::
 
 ## Appendix
 

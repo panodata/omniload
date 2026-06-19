@@ -53,5 +53,6 @@ Klaviyo source allows ingesting the following sources into separate tables:
 Use these as `--source-table` parameter in the `omniload ingest` command.
 
 
-> [!WARNING]
-> Klaviyo does not support incremental loading for many endpoints in its APIs, which means omniload will load endpoints incrementally if they support it, and do a full-refresh if not.
+:::{warning}
+Klaviyo does not support incremental loading for many endpoints in its APIs, which means omniload will load endpoints incrementally if they support it, and do a full-refresh if not.
+:::

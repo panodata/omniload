@@ -35,8 +35,9 @@ custom:<dimensions>:<metrics>[:<filter_name,filter_values>]
     - `filter_name`: The name of the filter (e.g. `campaign_ids`).
     - `filter_values`: A comma-separated list of one or more values associated with the filter name (e.g., `camp_id123,camp_id456`). Only the `IN` filter type is supported. Learn more about [filters](https://business-api.tiktok.com/portal/docs?id=1751443975608321.). 
 
-> [!NOTE]
-> omniload will fetch data for the last 30 days and use the default page size of `1000`. You can override this by specifying the `interval_start` and `interval_end` parameters.
+:::{note}
+omniload will fetch data for the last 30 days and use the default page size of `1000`. You can override this by specifying the `interval_start` and `interval_end` parameters.
+:::
 
 ### Example
 
