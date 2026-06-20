@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Dependencies: Updated to dlt v1.22
+
 ## 2026/06/21 v0.2.0
 
 - Kafka: Expanded `default_msg_processor` into a miniature decoding unit

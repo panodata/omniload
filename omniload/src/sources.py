@@ -14,6 +14,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Type,
     TypeAlias,
     Union,
     cast,
@@ -30,6 +31,7 @@ from dlt.sources import incremental as dlt_incremental
 from dlt.sources.credentials import (
     ConnectionStringCredentials,
 )
+from dlt.sources.sql_database import BaseTableLoader
 
 from omniload.src import blob
 from omniload.src.errors import (
@@ -306,8 +308,8 @@ class SqlSource:
                 chunk_size: int,
                 backend: TableBackend,
                 incremental: Optional[Incremental[Any]] = None,
-                table_adapter_callback: Callable[[Table], None] = None,  # type: ignore
                 reflection_level: ReflectionLevel = "minimal",
+                table_adapter_callback: Optional[Callable[[Table], None]] = None,
                 backend_kwargs: Dict[str, Any] = None,  # type: ignore
                 type_adapter_callback: Optional[TTypeAdapter] = None,
                 included_columns: Optional[List[str]] = None,
@@ -316,6 +318,7 @@ class SqlSource:
                 ] = None,  # Added for dlt 1.16.0 compatibility
                 query_adapter_callback: Optional[TQueryAdapter] = None,
                 resolve_foreign_keys: bool = False,
+                table_loader_class: Optional[Type[BaseTableLoader]] = None,
             ) -> Iterator[TDataItem]:
                 hints = {
                     "columns": [],
