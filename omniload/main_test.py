@@ -761,15 +761,15 @@ class CouchbaseContainer(DockerContainer):
         time.sleep(2)
 
 
-POSTGRES_IMAGE = "postgres:16.3-alpine3.20"
-MYSQL8_IMAGE = "mysql:8.4.1"
-MSSQL22_IMAGE = "mcr.microsoft.com/mssql/server:2022-CU13-ubuntu-22.04"
-CLICKHOUSE_IMAGE = "clickhouse/clickhouse-server:24.12"
-MONGODB_IMAGE = "mongo:8.0.13"
-COUCHBASE_IMAGE = "couchbase:community"
+POSTGRESQL_IMAGE = "docker.io/postgres:18-alpine"
+MYSQL_IMAGE = "docker.io/mariadb:12"
+MSSQL_IMAGE = "mcr.microsoft.com/mssql/server:2025-CU6-ubuntu-24.04"
+CLICKHOUSE_IMAGE = "docker.io/clickhouse/clickhouse-server:26.5"
+MONGODB_IMAGE = "docker.io/mongo:8.3"
+COUCHBASE_IMAGE = "docker.io/couchbase:7.6.9"
 
 pgDocker = DockerImage(
-    "postgres", lambda: PostgresContainer(POSTGRES_IMAGE, driver=None).start()
+    "postgres", lambda: PostgresContainer(POSTGRESQL_IMAGE, driver=None).start()
 )
 clickHouseDocker = ClickhouseDockerImage(
     "clickhouse", lambda: ClickHouseContainer(CLICKHOUSE_IMAGE).start()
@@ -777,7 +777,7 @@ clickHouseDocker = ClickhouseDockerImage(
 mysqlDocker = DockerImage(
     "mysql",
     lambda: MySqlContainer(
-        image=MYSQL8_IMAGE, dialect="pymysql", username="root"
+        image=MYSQL_IMAGE, dialect="pymysql", username="root"
     ).start(),
 )
 
@@ -810,7 +810,7 @@ if sys.platform == "linux":
         {
             "sqlserver": DockerImage(
                 "sqlserver",
-                lambda: SqlServerContainer(MSSQL22_IMAGE, dialect="mssql").start(),
+                lambda: SqlServerContainer(MSSQL_IMAGE, dialect="mssql").start(),
                 "?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=Yes",
             )
         }
