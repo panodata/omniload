@@ -4423,7 +4423,7 @@ def test_couchbase_source_local(dest):
             # Check essential fields (id, name, value, and at least one nested field)
             ids = [row[0] for row in res]
             names = [row[1] for row in res]
-            values = [row[5] for row in res]  # value column
+            values = [row[2] for row in res]  # value column
 
             assert ids == [1, 2, 3], f"Expected ids [1, 2, 3], got {ids}"
             assert names == [
@@ -4438,7 +4438,7 @@ def test_couchbase_source_local(dest):
             ], f"Expected values [100, 200, 300], got {values}"
 
             # Check that nested_parent__key1 was flattened correctly
-            nested_values = [row[2] for row in res]
+            nested_values = [row[3] for row in res]
             assert nested_values == [
                 "value1",
                 "value2",
