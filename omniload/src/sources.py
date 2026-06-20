@@ -1590,7 +1590,7 @@ class KafkaSource:
         # Decoding options.
         key_type = source_params.get("key_type", [])
         value_type = source_params.get("value_type", [])
-        format = source_params.get("format", [])
+        output_format = source_params.get("format", [])
         include = source_params.get("include", [])
         select = source_params.get("select", [])
 
@@ -1610,7 +1610,7 @@ class KafkaSource:
         options = KafkaDecodingOptions.from_params(
             key_type=key_type,
             value_type=value_type,
-            format=format,
+            format=output_format,
             include=include,
             select=select,
         )

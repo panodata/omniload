@@ -26,7 +26,7 @@ Transfer options:
 
 Decoding options:
 - `key_type`: The data type of the Kafka event `key` field. Possible values: `json`.
-- `value_type`: The data type of the Kafka event `value_type` field. Possible values: `json`.
+- `value_type`: The data type of the Kafka event `value` field. Possible values: `json`.
 - `include`: A list of event attributes to include in the output, comma-separated.
 - `select`: A single event attribute to select and drill down into.
   Use `select=value` to relay the Kafka event **payload data** only.

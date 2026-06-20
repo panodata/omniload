@@ -32,7 +32,7 @@ import pyarrow.parquet as pya_parquet
 import pytest
 import requests
 import sqlalchemy
-from confluent_kafka import Producer
+from confluent_kafka import KafkaError, KafkaException, Producer
 from confluent_kafka.admin import AdminClient
 from dlt.sources.filesystem import glob_files
 from elasticsearch import Elasticsearch
@@ -1565,8 +1565,14 @@ def kafka(kafka_service):
     Before invoking the test case, delete all relevant topics completely.
     """
     admin = AdminClient({"bootstrap.servers": kafka_service.get_bootstrap_server()})
-    admin.delete_topics(["test_topic"])
-    admin.poll(1)
+    futures = admin.delete_topics(["test_topic"])
+    for topic, fut in futures.items():
+        try:
+            fut.result(10)
+        except KafkaException as exc:
+            # Topic may not exist yet on first test run.
+            if exc.args[0].code() != KafkaError.UNKNOWN_TOPIC_OR_PART:
+                raise
     return kafka_service
 
 
@@ -1739,7 +1745,7 @@ def test_kafka_to_db_include_metadata(kafka, dest):
         with dest_engine.connect() as conn:
             res = (
                 conn.exec_driver_sql(
-                    'SELECT "partition", "topic", "key", "offset" FROM testschema.output ORDER BY "ts__value" ASC'
+                    'SELECT "partition", "topic", "key", "offset" FROM testschema.output ORDER BY "partition" ASC, "offset" ASC'
                 )
                 .mappings()
                 .fetchall()
