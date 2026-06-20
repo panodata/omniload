@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, cast
 
 import requests
 from dlt.sources.helpers.requests import Client
@@ -107,7 +107,9 @@ def exclude_metrics_for_date_range(
     import pendulum
 
     excluded_metrics = []
-    days_between_today_and_end = (pendulum.now() - pendulum.parse(to_date)).days  # type: ignore
+    days_between_today_and_end = (
+        pendulum.now() - cast(pendulum.DateTime, pendulum.parse(to_date))
+    ).days
     for metric in metrics:
         if "cohort_day_" in metric:
             day_count = int(metric.split("_")[2])

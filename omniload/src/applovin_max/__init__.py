@@ -2,7 +2,7 @@ from datetime import timedelta
 from typing import Iterator
 
 import dlt
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 import pendulum
 import requests
 from dlt.sources import DltResource

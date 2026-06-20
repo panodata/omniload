@@ -107,13 +107,13 @@ def ingest(
             envvar=["SOURCE_TABLE", "OMNILOAD_SOURCE_TABLE"],
         ),
     ],
-    dest_table: Annotated[
+    dest_table: Annotated[  # ty: ignore[invalid-parameter-default]
         str,
         typer.Option(
             help="The table in the [cyan]destination[/cyan] to save the data into",
             envvar=["DESTINATION_TABLE", "OMNILOAD_DESTINATION_TABLE"],
         ),
-    ] = None,  # type: ignore
+    ] = None,
     incremental_key: Annotated[
         Optional[str],
         typer.Option(
@@ -532,9 +532,9 @@ def ingest(
             # In order to eliminate this, we have introduced a new option to omniload, --columns, which allows the user to specify the column types for the destination table.
             # This way, omniload will know the data type of the incremental field, and will be able to convert the start and end dates to the correct data type before running the ingestion.
             if interval_start:
-                interval_start = interval_start.date()  # type: ignore
+                interval_start = interval_start.date()  # ty: ignore[invalid-assignment]
             if interval_end:
-                interval_end = interval_end.date()  # type: ignore
+                interval_end = interval_end.date()  # ty: ignore[invalid-assignment]
 
         if factory.source_scheme.startswith("spanner"):
             # we tend to use the 'pyarrow' backend in general, however, it has issues with JSON objects, so we override it to 'sqlalchemy' for Spanner.

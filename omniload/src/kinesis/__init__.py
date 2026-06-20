@@ -39,7 +39,7 @@ def kinesis_stream(
     last_msg: Optional[dlt.sources.incremental[StrStr]] = dlt.sources.incremental(
         "kinesis", last_value_func=max_sequence_by_shard
     ),
-    max_number_of_messages: int = None,  # type: ignore
+    max_number_of_messages: Optional[int] = None,
     milliseconds_behind_latest: int = 1000,
     parse_json: bool = True,
     chunk_size: int = 1000,
@@ -93,7 +93,7 @@ def kinesis_stream(
             kinesis_client,
             stream_name,
             shard_id,
-            last_msg,  # type: ignore
+            last_msg,  # ty: ignore[invalid-argument-type]
             initial_at_datetime,
         )
 

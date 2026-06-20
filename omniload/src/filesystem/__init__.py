@@ -114,7 +114,7 @@ def filesystem(
         file_dict = FileItemDict(file_model, fs_client)
         if extract_content:
             file_dict["file_content"] = file_dict.read_bytes()
-        files_chunk.append(file_dict)  # type: ignore
+        files_chunk.append(file_dict)  # ty: ignore[invalid-argument-type]
         # wait for the chunk to be full
         if len(files_chunk) >= files_per_page:
             yield files_chunk

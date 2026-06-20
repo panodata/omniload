@@ -2321,11 +2321,11 @@ class GoogleAnalyticsSource:
 
         start_date = pendulum.now().subtract(days=30).start_of("day")
         if kwargs.get("interval_start") is not None:
-            start_date = pendulum.instance(kwargs.get("interval_start"))  # type: ignore
+            start_date = pendulum.instance(kwargs.get("interval_start"))  # ty: ignore[no-matching-overload]
 
         end_date = pendulum.now()
         if kwargs.get("interval_end") is not None:
-            end_date = pendulum.instance(kwargs.get("interval_end"))  # type: ignore
+            end_date = pendulum.instance(kwargs.get("interval_end"))  # ty: ignore[no-matching-overload]
 
         from omniload.src.google_analytics import google_analytics
 

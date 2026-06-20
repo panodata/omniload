@@ -120,7 +120,7 @@ def solidgate_source(
         name="subscriptions",
         write_disposition="merge",
         primary_key="id",
-        columns=COLUMN_HINTS["subscriptions"],  # type: ignore
+        columns=COLUMN_HINTS["subscriptions"],  # ty: ignore[invalid-argument-type]
     )
     def fetch_all_subscriptions(
         dateTime=dlt.sources.incremental(
@@ -144,7 +144,7 @@ def solidgate_source(
         name="apm_orders",
         write_disposition="merge",
         primary_key="order_id",
-        columns=COLUMN_HINTS["apm_orders"],  # type: ignore
+        columns=COLUMN_HINTS["apm_orders"],  # ty: ignore[invalid-argument-type]
     )
     def fetch_apm_orders(
         dateTime=dlt.sources.incremental(
@@ -168,7 +168,7 @@ def solidgate_source(
         name="card_orders",
         write_disposition="merge",
         primary_key="order_id",
-        columns=COLUMN_HINTS["card_orders"],  # type: ignore
+        columns=COLUMN_HINTS["card_orders"],  # ty: ignore[invalid-argument-type]
     )
     def fetch_card_orders(
         dateTime=dlt.sources.incremental(
@@ -192,7 +192,7 @@ def solidgate_source(
         name="financial_entries",
         write_disposition="merge",
         primary_key="id",
-        columns=COLUMN_HINTS["financial_entries"],  # type: ignore
+        columns=COLUMN_HINTS["financial_entries"],  # ty: ignore[invalid-argument-type]
     )
     def fetch_financial_entries(
         dateTime=dlt.sources.incremental(

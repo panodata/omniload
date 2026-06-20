@@ -43,9 +43,7 @@ from .helpers import (
 def kafka_consumer(
     topics: Union[str, List[str]],
     credentials: Union[KafkaCredentials, Consumer] = dlt.secrets.value,
-    msg_processor: Optional[
-        Callable[[Message], Dict[str, Any]]
-    ] = default_msg_processor,
+    msg_processor: Optional[Callable[[Message], Dict[str, Any]]] = None,
     batch_size: Optional[int] = 3000,
     batch_timeout: Optional[float] = 3.0,
     start_from: Optional[TAnyDateTime] = None,
@@ -74,6 +72,7 @@ def kafka_consumer(
     Yields:
         Iterable[TDataItem]: Kafka messages.
     """
+    msg_processor = msg_processor or default_msg_processor
     if not isinstance(topics, list):
         topics = [topics]
 
@@ -95,7 +94,7 @@ def kafka_consumer(
     if start_from is not None:
         start_from = ensure_pendulum_datetime(start_from)
 
-    tracker = OffsetTracker(consumer, topics, dlt.current.resource_state(), start_from)  # type: ignore
+    tracker = OffsetTracker(consumer, topics, dlt.current.resource_state(), start_from)
 
     # read messages up to the maximum offsets,
     # not waiting for new messages
@@ -116,7 +115,7 @@ def kafka_consumer(
                     else:
                         raise RuntimeError(f"Unknown error: {err}")
                 else:
-                    batch.append(msg_processor(msg))  # type: ignore
+                    batch.append(msg_processor(msg))
                     tracker.renew(msg)
 
             yield batch

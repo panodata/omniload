@@ -34,7 +34,7 @@ def mongodb(
     connection_url: str = dlt.secrets.value,
     database: Optional[str] = dlt.config.value,
     collection_names: Optional[List[str]] = dlt.config.value,
-    incremental: Optional[dlt.sources.incremental] = None,  # type: ignore[type-arg]
+    incremental: Optional[dlt.sources.incremental] = None,
     write_disposition: Optional[str] = dlt.config.value,
     parallel: Optional[bool] = dlt.config.value,
     limit: Optional[int] = None,
@@ -113,7 +113,7 @@ def mongodb_collection(
     connection_url: str = dlt.secrets.value,
     database: Optional[str] = dlt.config.value,
     collection: str = dlt.config.value,
-    incremental: Optional[dlt.sources.incremental] = None,  # type: ignore[type-arg]
+    incremental: Optional[dlt.sources.incremental] = None,
     write_disposition: Optional[str] = dlt.config.value,
     parallel: Optional[bool] = False,
     limit: Optional[int] = None,

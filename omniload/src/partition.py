@@ -17,7 +17,7 @@ def apply_athena_hints(
         columns = resource.columns if resource.columns else {}
 
         partition_hint = (
-            columns.get(partition_column)  # type: ignore
+            columns.get(partition_column)  # ty: ignore[unresolved-attribute]
             or additional_hints.get(partition_column)
         )
 

@@ -163,7 +163,7 @@ class CollectionLoader:
             else:
                 try:
                     # ensure primary_key isn't excluded
-                    projection_dict.pop(self.incremental.primary_key)  # type: ignore
+                    projection_dict.pop(self.incremental.primary_key)  # ty: ignore[invalid-argument-type]
                 except KeyError:
                     pass  # primary_key was properly not included in exclusion projection
                 else:
@@ -872,7 +872,7 @@ def _raise_if_intersection(filter1: Dict[str, Any], filter2: Dict[str, Any]) -> 
 
 @configspec
 class MongoDbCollectionConfiguration(BaseConfiguration):
-    incremental: Optional[dlt.sources.incremental] = None  # type: ignore[type-arg]
+    incremental: Optional[dlt.sources.incremental] = None
 
 
 @configspec
@@ -880,7 +880,7 @@ class MongoDbCollectionResourceConfiguration(BaseConfiguration):
     connection_url: dlt.TSecretValue = dlt.secrets.value
     database: Optional[str] = dlt.config.value
     collection: str = dlt.config.value
-    incremental: Optional[dlt.sources.incremental] = None  # type: ignore[type-arg]
+    incremental: Optional[dlt.sources.incremental] = None
     write_disposition: Optional[str] = dlt.config.value
     parallel: Optional[bool] = False
     projection: Optional[Union[Mapping[str, Any], Iterable[str]]] = dlt.config.value

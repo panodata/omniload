@@ -43,7 +43,7 @@ def source(
         primary_key=primary_key,  # ty: ignore[invalid-argument-type]
     )
     def dataset(
-        incremental: Optional[dlt.sources.incremental] = incremental,  # type: ignore[type-arg]
+        incremental: Optional[dlt.sources.incremental] = incremental,
     ) -> Iterator[Dict[str, Any]]:
         """
         Yields records from a Socrata dataset.
@@ -70,11 +70,9 @@ def source(
                 else None
             )
             if getattr(incremental, "end_value", None) is not None:
-                ev = incremental.end_value  # type: ignore[attr-defined]
+                ev = incremental.end_value
                 fetch_kwargs["end_value"] = (
-                    ev.isoformat()  # type: ignore[union-attr]
-                    if hasattr(ev, "isoformat")
-                    else str(ev)
+                    ev.isoformat() if hasattr(ev, "isoformat") else str(ev)
                 )
 
         # Fetch and yield records

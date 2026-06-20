@@ -20,7 +20,7 @@ def couchbase_source(
     bucket: str = dlt.config.value,
     scope: Optional[str] = dlt.config.value,
     collection: Optional[str] = dlt.config.value,
-    incremental: Optional[dlt.sources.incremental] = None,  # type: ignore[type-arg]
+    incremental: Optional[dlt.sources.incremental] = None,
     write_disposition: Optional[str] = dlt.config.value,
     limit: Optional[int] = None,
 ) -> DltResource:
@@ -47,7 +47,7 @@ def couchbase_source(
 
     resource_name = f"{bucket}_{scope}_{collection}"
 
-    return dlt.resource(  # ty: ignore[no-matching-overload]
+    return dlt.resource(  # type: ignore
         fetch_documents,
         name=resource_name,
         primary_key="id",
