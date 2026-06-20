@@ -104,7 +104,7 @@ class GorgiasApi:
         """
         url = f"https://{self.domain}.gorgias.com/api/{resource}"
         rate = Rate(2, Duration.SECOND)
-        limiter = Limiter(rate, raise_when_fail=False)
+        limiter = Limiter(rate)
 
         start_date_obj = (
             ensure_pendulum_datetime_utc(start_date) if start_date else None
