@@ -10,7 +10,6 @@ venv
 .coverage
 .ruff_cache
 .pytest_cache
-.mypy_cache
 pipeline_data
 dist
 docs/.vitepress/dist

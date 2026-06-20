@@ -183,7 +183,6 @@ lint.exclude = [
   ".eggs",
   ".git",
   ".hg",
-  ".mypy_cache",
   ".nox",
   ".pants.d",
   ".ruff_cache",
@@ -224,90 +223,6 @@ master.jobs = 0
 master.max-attributes = 15
 master.max-branches = 15
 master.max-locals = 20
-
-[tool.mypy]
-exclude = [
-  ".venv",
-  "src/adjust/.*",
-  "src/airtable/.*",
-  "src/appsflyer/.*",
-  "src/asana_source/.*",
-  "src/chess/.*",
-  "src/clickhouse/.*",
-  "src/clickup/.*",
-  "src/dynamodb/.*",
-  "src/facebook_ads/.*",
-  "src/filesystem/.*",
-  "src/freshdesk/.*",
-  "src/github/.*",
-  "src/google_analytics/.*",
-  "src/google_sheets/.*",
-  "src/gorgias/.*",
-  "src/hubspot/.*",
-  "src/hubspot/.*",
-  "src/influxdb/.*",
-  "src/kafka/.*",
-  "src/klaviyo/.*",
-  "src/linear/.*",
-  "src/mongodb/.*",
-  "src/pipedrive/.*",
-  "src/revenuecat/.*",
-  "src/salesforce/.*",
-  "src/shopify/.*",
-  "src/slack/.*",
-  "src/sql_database/.*",
-  "src/stripe_analytics/.*",
-  "src/tiktok_ads/.*",
-  "src/wise/.*",
-  "src/zendesk/.*",
-  "src/zoom/.*"
-]
-namespace_packages = true
-explicit_package_bases = true
-check_untyped_defs = false
-
-[[tool.mypy.overrides]]
-module = [
-  "couchbase.*",
-  "google.*",
-  "googleapiclient.*",
-  "omniload.src.adjust.*",
-  "omniload.src.airtable.*",
-  "omniload.src.appsflyer",
-  "omniload.src.asana_source.*",
-  "omniload.src.chess.*",
-  "omniload.src.clickhouse.*",
-  "omniload.src.clickup.*",
-  "omniload.src.dynamodb.*",
-  "omniload.src.facebook_ads.*",
-  "omniload.src.filesystem.*",
-  "omniload.src.freshdesk",
-  "omniload.src.github.*",
-  "omniload.src.google_analytics.*",
-  "omniload.src.google_sheets.*",
-  "omniload.src.gorgias.*",
-  "omniload.src.hubspot.*",
-  "omniload.src.influxdb",
-  "omniload.src.klaviyo.*",
-  "omniload.src.linear.*",
-  "omniload.src.mongodb.*",
-  "omniload.src.pipedrive.*",
-  "omniload.src.revenuecat",
-  "omniload.src.salesforce",
-  "omniload.src.shopify.*",
-  "omniload.src.slack.*",
-  "omniload.src.sql_database.*",
-  "omniload.src.stripe_analytics.*",
-  "omniload.src.tiktok_ads.*",
-  "omniload.src.wise",
-  "omniload.src.zendesk.*",
-  "omniload.src.zoom.*",
-  "proto.*",
-  "smartsheet.*",
-  "testcontainers.*",
-]
-follow_untyped_imports = "true"
-follow_imports = "skip"
 
 [tool.pytest]
 ini_options.minversion = "2.0"
