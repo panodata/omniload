@@ -23,7 +23,8 @@ from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import TAnyDateTime, TDataItem
 from dlt.sources import DltResource
 
-from ..errors import MissingValueError
+from omniload.src.errors import MissingValueError
+
 from .helpers import ShopifyApi, ShopifyGraphQLApi, TOrderStatus
 from .settings import (
     DEFAULT_API_VERSION,

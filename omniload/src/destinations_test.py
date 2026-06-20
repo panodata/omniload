@@ -1,6 +1,7 @@
 import json
 import os
 import unittest
+from abc import abstractmethod
 from typing import Any, Type
 from unittest.mock import patch
 
@@ -64,9 +65,17 @@ class BigQueryDestinationTest(unittest.TestCase):
         self.assertEqual(result, {"dataset_name": "dataset", "table_name": "sometable"})
 
 
-class GenericSqlDestinationFixture(unittest.TestCase):
+class GenericSqlDestinationFixture:
     destination: DestinationProtocol
     expected_class: Type[Destination[Any, JobClientBase]]
+
+    @abstractmethod
+    def assertEqual(self, first, second, msg=None):
+        pass
+
+    @abstractmethod
+    def assertTrue(self, expr, msg=None):
+        pass
 
     def test_credentials_are_passed_correctly(self):
         uri = "some-uri"
@@ -87,12 +96,12 @@ class GenericSqlDestinationFixture(unittest.TestCase):
         self.assertEqual(result, {"dataset_name": "dataset", "table_name": "sometable"})
 
 
-class PostgresDestinationTest(GenericSqlDestinationFixture, unittest.TestCase):
+class PostgresDestinationTest(unittest.TestCase, GenericSqlDestinationFixture):
     destination = PostgresDestination()
     expected_class = dlt.destinations.postgres
 
 
-class SnowflakeDestinationTest(GenericSqlDestinationFixture, unittest.TestCase):
+class SnowflakeDestinationTest(unittest.TestCase, GenericSqlDestinationFixture):
     destination = SnowflakeDestination()
     expected_class = dlt.destinations.snowflake
 

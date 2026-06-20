@@ -6,7 +6,8 @@ from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 from pendulum import Date
 
-from ..errors import MissingValueError
+from omniload.src.errors import MissingValueError
+
 from .helpers import (
     BASE_URL,
     LEVEL_ID_FIELDS,

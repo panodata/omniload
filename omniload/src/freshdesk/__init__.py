@@ -22,7 +22,8 @@ import pendulum
 from dlt.common.time import ensure_pendulum_datetime
 from dlt.sources import DltResource
 
-from ..errors import MissingValueError
+from omniload.src.errors import MissingValueError
+
 from .freshdesk_client import FreshdeskClient
 from .settings import DEFAULT_ENDPOINTS
 
