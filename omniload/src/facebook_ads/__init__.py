@@ -18,7 +18,7 @@ from typing import Iterator, Sequence, cast
 
 import dlt
 from dlt.common import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
 from facebook_business.adobjects.ad import Ad
@@ -73,8 +73,10 @@ def _create_facebook_insights_resource(
     def facebook_insights(
         date_start: dlt.sources.incremental[pendulum.Date] = dlt.sources.incremental(
             "date_start",
-            initial_value=ensure_pendulum_datetime(start_date).start_of("day").date(),
-            end_value=ensure_pendulum_datetime(end_date).end_of("day").date()
+            initial_value=ensure_pendulum_datetime_utc(start_date)
+            .start_of("day")
+            .date(),
+            end_value=ensure_pendulum_datetime_utc(end_date).end_of("day").date()
             if end_date
             else None,
             range_end="closed",
@@ -83,7 +85,7 @@ def _create_facebook_insights_resource(
     ) -> Iterator[TDataItems]:
         if date_start.last_value is None:
             raise MissingValueError("date_start.last_value", "Facebook Ads")
-        current_start_date = ensure_pendulum_datetime(date_start.last_value).date()
+        current_start_date = ensure_pendulum_datetime_utc(date_start.last_value).date()
         if date_start.end_value:
             end_date_val = pendulum.instance(date_start.end_value)
             current_end_date = (

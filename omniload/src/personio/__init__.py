@@ -18,7 +18,7 @@ from typing import Iterable, Optional
 
 import dlt
 from dlt.common import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TAnyDateTime, TDataItem
 from dlt.sources import DltResource
 
@@ -77,7 +77,7 @@ def personio_source(
                     name = label.lower()
 
                 if value["type"] == "date" and value["value"]:
-                    output[name] = ensure_pendulum_datetime(value["value"])
+                    output[name] = ensure_pendulum_datetime_utc(value["value"])
                 else:
                     output[name] = value["value"]
             return output
@@ -143,8 +143,8 @@ def personio_source(
 
         def convert_item(item: TDataItem) -> TDataItem:
             output = item.get("attributes", {})
-            output["created_at"] = ensure_pendulum_datetime(output["created_at"])
-            output["updated_at"] = ensure_pendulum_datetime(output["updated_at"])
+            output["created_at"] = ensure_pendulum_datetime_utc(output["created_at"])
+            output["updated_at"] = ensure_pendulum_datetime_utc(output["updated_at"])
             return output
 
         pages = client.get_pages(
@@ -188,8 +188,8 @@ def personio_source(
 
         params = {
             "limit": items_per_page,
-            "start_date": ensure_pendulum_datetime(start_date).to_date_string(),
-            "end_date": ensure_pendulum_datetime(end_date).to_date_string(),
+            "start_date": ensure_pendulum_datetime_utc(start_date).to_date_string(),
+            "end_date": ensure_pendulum_datetime_utc(end_date).to_date_string(),
             "updated_from": updated_iso,
             "includePending": True,
         }
@@ -201,8 +201,8 @@ def personio_source(
         def convert_item(item: TDataItem) -> TDataItem:
             """Converts an attendance item."""
             output = dict(id=item["id"], **item.get("attributes"))
-            output["date"] = ensure_pendulum_datetime(output["date"]).date()
-            output["updated_at"] = ensure_pendulum_datetime(output["updated_at"])
+            output["date"] = ensure_pendulum_datetime_utc(output["date"]).date()
+            output["updated_at"] = ensure_pendulum_datetime_utc(output["updated_at"])
             return output
 
         for page in pages:
@@ -222,8 +222,8 @@ def personio_source(
         def convert_item(item: TDataItem) -> TDataItem:
             """Converts an attendance item."""
             output = dict(id=item["id"], **item.get("attributes"))
-            output["created_at"] = ensure_pendulum_datetime(output["created_at"])
-            output["updated_at"] = ensure_pendulum_datetime(output["updated_at"])
+            output["created_at"] = ensure_pendulum_datetime_utc(output["created_at"])
+            output["updated_at"] = ensure_pendulum_datetime_utc(output["updated_at"])
             return output
 
         for page in pages:
@@ -314,7 +314,7 @@ def personio_source(
             for value in attributes:
                 name = value["attribute_id"]
                 if value["data_type"] == "date" and value["value"]:
-                    output[name] = ensure_pendulum_datetime(value["value"])
+                    output[name] = ensure_pendulum_datetime_utc(value["value"])
                 else:
                     output[name] = value["value"]
             return output

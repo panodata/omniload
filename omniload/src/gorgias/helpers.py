@@ -4,7 +4,7 @@ import time
 from typing import Any, Iterable, Optional, Tuple
 
 from dlt.common.pendulum import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import Dict, TDataItems
 from dlt.sources.helpers import requests
 from pyrate_limiter import Duration, Limiter, Rate
@@ -24,7 +24,7 @@ def get_max_datetime_from_datetime_fields(
     max_field_value = None
     for field in item:
         if field.endswith("_datetime") and item[field] is not None:
-            dt = ensure_pendulum_datetime(item[field])
+            dt = ensure_pendulum_datetime_utc(item[field])
             use_max = False
             if max_field_value is None:
                 use_max = True
@@ -40,7 +40,7 @@ def get_max_datetime_from_datetime_fields(
 def convert_datetime_fields(item: Dict[str, Any]) -> Dict[str, Any]:
     for field in item:
         if field.endswith("_datetime") and item[field] is not None:
-            item[field] = ensure_pendulum_datetime(item[field])
+            item[field] = ensure_pendulum_datetime_utc(item[field])
 
     if "updated_datetime" not in item:
         _, max_datetime = get_max_datetime_from_datetime_fields(item)
@@ -56,7 +56,8 @@ def find_latest_timestamp_from_page(
     for item in items:
         _, max_field_value = get_max_datetime_from_datetime_fields(item)
         if not latest_time or (
-            max_field_value and ensure_pendulum_datetime(max_field_value) > latest_time
+            max_field_value
+            and ensure_pendulum_datetime_utc(max_field_value) > latest_time
         ):
             latest_time = max_field_value
 
@@ -105,7 +106,9 @@ class GorgiasApi:
         rate = Rate(2, Duration.SECOND)
         limiter = Limiter(rate, raise_when_fail=False)
 
-        start_date_obj = ensure_pendulum_datetime(start_date) if start_date else None
+        start_date_obj = (
+            ensure_pendulum_datetime_utc(start_date) if start_date else None
+        )
 
         if not params:
             params = {}
@@ -153,7 +156,7 @@ class GorgiasApi:
                 max_datetime = find_latest_timestamp_from_page(json["data"])
                 if max_datetime is None:
                     raise MissingValueError("max_datetime", "Gorgias")
-                if start_date_obj > ensure_pendulum_datetime(max_datetime):
+                if start_date_obj > ensure_pendulum_datetime_utc(max_datetime):
                     break
 
     def __filter_items_in_range(
@@ -162,8 +165,10 @@ class GorgiasApi:
         start_date: Optional[str],
         end_date: Optional[pendulum.DateTime],
     ) -> list[Dict[str, Any]]:
-        start_date_obj = ensure_pendulum_datetime(start_date) if start_date else None
-        end_date_obj = ensure_pendulum_datetime(end_date) if end_date else None
+        start_date_obj = (
+            ensure_pendulum_datetime_utc(start_date) if start_date else None
+        )
+        end_date_obj = ensure_pendulum_datetime_utc(end_date) if end_date else None
 
         filtered = []
         for item in items:

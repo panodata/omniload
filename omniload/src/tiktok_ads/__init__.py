@@ -2,7 +2,7 @@ from typing import Iterable, cast
 
 import dlt
 import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TDataItem, TTableHintTemplate
 from dlt.sources import DltResource
 
@@ -129,12 +129,12 @@ def tiktok_source(
             and datetime.last_value is not None
             and datetime.end_value is not None
         ):
-            start_date_tz_adjusted = ensure_pendulum_datetime(
+            start_date_tz_adjusted = ensure_pendulum_datetime_utc(
                 datetime.last_value
             ).in_tz(timezone)
-            end_date_tz_adjusted = ensure_pendulum_datetime(datetime.end_value).in_tz(
-                timezone
-            )
+            end_date_tz_adjusted = ensure_pendulum_datetime_utc(
+                datetime.end_value
+            ).in_tz(timezone)
 
         list_of_interval = find_intervals(
             current_date=start_date_tz_adjusted,

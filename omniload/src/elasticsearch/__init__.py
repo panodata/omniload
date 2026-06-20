@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 import dlt
 import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from pendulum import parse
 
 from elasticsearch import Elasticsearch
@@ -76,5 +76,5 @@ def convert_elasticsearch_objs(value: Any) -> Any:
                 parsed_date,
                 (pendulum.DateTime, pendulum.Date, datetime, date, str, float, int),
             ):
-                return ensure_pendulum_datetime(parsed_date)
+                return ensure_pendulum_datetime_utc(parsed_date)
     return value

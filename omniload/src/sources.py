@@ -23,7 +23,7 @@ from urllib.parse import ParseResult, parse_qs, urlencode, urlparse
 import dlt
 import fsspec
 import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.extract import Incremental
 from dlt.extract.exceptions import ResourcesNotFoundError
 from dlt.sources import incremental as dlt_incremental
@@ -646,7 +646,7 @@ class MongoDbSource:
         # Convert string dates to datetime objects if needed
         if interval_start is not None:
             if isinstance(interval_start, str):
-                pendulum_dt = ensure_pendulum_datetime(interval_start)
+                pendulum_dt = ensure_pendulum_datetime_utc(interval_start)
                 interval_start = (
                     pendulum_dt.to_datetime_string()
                     if hasattr(pendulum_dt, "to_datetime_string")
@@ -657,7 +657,7 @@ class MongoDbSource:
 
         if interval_end is not None:
             if isinstance(interval_end, str):
-                pendulum_dt = ensure_pendulum_datetime(interval_end)
+                pendulum_dt = ensure_pendulum_datetime_utc(interval_end)
                 interval_end = (
                     pendulum_dt.to_datetime_string()
                     if hasattr(pendulum_dt, "to_datetime_string")
@@ -1076,7 +1076,7 @@ class StripeAnalyticsSource:
 
             def nullable_date(date_str: Optional[str]):
                 if date_str:
-                    return ensure_pendulum_datetime(date_str)
+                    return ensure_pendulum_datetime_utc(date_str)
                 return None
 
             endpoint = ENDPOINTS[endpoint]
@@ -1540,13 +1540,13 @@ class MixpanelSource:
 
         start_date = kwargs.get("interval_start")
         if start_date:
-            start_date = ensure_pendulum_datetime(start_date).in_timezone("UTC")
+            start_date = ensure_pendulum_datetime_utc(start_date).in_timezone("UTC")
         else:
             start_date = pendulum.datetime(2020, 1, 1).in_timezone("UTC")
 
         end_date = kwargs.get("interval_end")
         if end_date:
-            end_date = ensure_pendulum_datetime(end_date).in_timezone("UTC")
+            end_date = ensure_pendulum_datetime_utc(end_date).in_timezone("UTC")
         else:
             end_date = pendulum.now().in_timezone("UTC")
 
@@ -1662,14 +1662,14 @@ class AdjustSource:
         )
         if kwargs.get("interval_start"):
             start_date = (
-                ensure_pendulum_datetime(str(kwargs.get("interval_start")))
+                ensure_pendulum_datetime_utc(str(kwargs.get("interval_start")))
                 .replace(hour=0, minute=0, second=0, microsecond=0)
                 .subtract(days=lookback_days)
             )
 
         end_date = pendulum.now()
         if kwargs.get("interval_end"):
-            end_date = ensure_pendulum_datetime(str(kwargs.get("interval_end")))
+            end_date = ensure_pendulum_datetime_utc(str(kwargs.get("interval_end")))
 
         from omniload.src.adjust import REQUIRED_CUSTOM_DIMENSIONS, adjust_source
         from omniload.src.adjust.adjust_helpers import parse_filters
@@ -1964,15 +1964,15 @@ class TikTokSource:
         advertiser_ids = advertiser_ids[0].replace(" ", "").split(",")
 
         start_date = pendulum.now().subtract(days=30).in_tz(timezone)
-        end_date = ensure_pendulum_datetime(pendulum.now()).in_tz(timezone)
+        end_date = ensure_pendulum_datetime_utc(pendulum.now()).in_tz(timezone)
 
         interval_start = kwargs.get("interval_start")
         if interval_start is not None:
-            start_date = ensure_pendulum_datetime(interval_start).in_tz(timezone)
+            start_date = ensure_pendulum_datetime_utc(interval_start).in_tz(timezone)
 
         interval_end = kwargs.get("interval_end")
         if interval_end is not None:
-            end_date = ensure_pendulum_datetime(interval_end).in_tz(timezone)
+            end_date = ensure_pendulum_datetime_utc(interval_end).in_tz(timezone)
 
         page_size = min(1000, kwargs.get("page_size", 1000))
 
@@ -2760,11 +2760,13 @@ class LinkedInAdsSource:
         interval_start = kwargs.get("interval_start")
         interval_end = kwargs.get("interval_end")
         start_datetime = (
-            ensure_pendulum_datetime(interval_start)
+            ensure_pendulum_datetime_utc(interval_start)
             if interval_start
             else pendulum.datetime(2018, 1, 1)
         )
-        end_datetime = ensure_pendulum_datetime(interval_end) if interval_end else None
+        end_datetime = (
+            ensure_pendulum_datetime_utc(interval_end) if interval_end else None
+        )
 
         if table.startswith("custom:"):
             account_ids = source_fields.get("account_ids")
@@ -2885,12 +2887,14 @@ class RedditAdsSource:
             interval_start = kwargs.get("interval_start")
             interval_end = kwargs.get("interval_end")
             start_date = (
-                ensure_pendulum_datetime(interval_start).date()
+                ensure_pendulum_datetime_utc(interval_start).date()
                 if interval_start
                 else pendulum.date(2020, 1, 1)
             )
             end_date = (
-                ensure_pendulum_datetime(interval_end).date() if interval_end else None
+                ensure_pendulum_datetime_utc(interval_end).date()
+                if interval_end
+                else None
             )
 
             from omniload.src.reddit_ads import reddit_ads_analytics_source
@@ -2938,12 +2942,12 @@ class ClickupSource:
         interval_start = kwargs.get("interval_start")
         interval_end = kwargs.get("interval_end")
         start_date = (
-            ensure_pendulum_datetime(interval_start).in_timezone("UTC")
+            ensure_pendulum_datetime_utc(interval_start).in_timezone("UTC")
             if interval_start
             else pendulum.datetime(2020, 1, 1, tz="UTC")
         )
         end_date = (
-            ensure_pendulum_datetime(interval_end).in_timezone("UTC")
+            ensure_pendulum_datetime_utc(interval_end).in_timezone("UTC")
             if interval_end
             else None
         )
@@ -3250,7 +3254,7 @@ class KinesisSource:
         start_date = kwargs.get("interval_start")
         if start_date is not None:
             # the resource will read all messages after this timestamp.
-            start_date = ensure_pendulum_datetime(start_date)
+            start_date = ensure_pendulum_datetime_utc(start_date)
 
         from dlt.common.configuration.specs import AwsCredentials
 
@@ -3289,7 +3293,7 @@ class PipedriveSource:
         start_dt: pendulum.DateTime
         start_date = kwargs.get("interval_start")
         if start_date is not None:
-            start_dt = ensure_pendulum_datetime(start_date)
+            start_dt = ensure_pendulum_datetime_utc(start_date)
         else:
             start_dt = cast(pendulum.DateTime, pendulum.parse("2000-01-01"))
 
@@ -3334,12 +3338,12 @@ class FrankfurterSource:
         validate_currency(base_currency)
 
         if kwargs.get("interval_start"):
-            start_date = ensure_pendulum_datetime(str(kwargs.get("interval_start")))
+            start_date = ensure_pendulum_datetime_utc(str(kwargs.get("interval_start")))
         else:
             start_date = pendulum.yesterday()
 
         if kwargs.get("interval_end"):
-            end_date = ensure_pendulum_datetime(str(kwargs.get("interval_end")))
+            end_date = ensure_pendulum_datetime_utc(str(kwargs.get("interval_end")))
         else:
             end_date = None
 
@@ -3385,13 +3389,13 @@ class FreshdeskSource:
 
         start_date = kwargs.get("interval_start")
         if start_date is not None:
-            start_date = ensure_pendulum_datetime(start_date).in_tz("UTC")
+            start_date = ensure_pendulum_datetime_utc(start_date).in_tz("UTC")
         else:
-            start_date = ensure_pendulum_datetime("2022-01-01T00:00:00Z")
+            start_date = ensure_pendulum_datetime_utc("2022-01-01T00:00:00Z")
 
         end_date = kwargs.get("interval_end")
         if end_date is not None:
-            end_date = ensure_pendulum_datetime(end_date).in_tz("UTC")
+            end_date = ensure_pendulum_datetime_utc(end_date).in_tz("UTC")
         else:
             end_date = None
 
@@ -3447,14 +3451,18 @@ class TrustpilotSource:
 
         start_date = kwargs.get("interval_start")
         if start_date is None:
-            start_date = ensure_pendulum_datetime("2000-01-01").in_tz("UTC").isoformat()
+            start_date = (
+                ensure_pendulum_datetime_utc("2000-01-01").in_tz("UTC").isoformat()
+            )
         else:
-            start_date = ensure_pendulum_datetime(start_date).in_tz("UTC").isoformat()
+            start_date = (
+                ensure_pendulum_datetime_utc(start_date).in_tz("UTC").isoformat()
+            )
 
         end_date = kwargs.get("interval_end")
 
         if end_date is not None:
-            end_date = ensure_pendulum_datetime(end_date).in_tz("UTC").isoformat()
+            end_date = ensure_pendulum_datetime_utc(end_date).in_tz("UTC").isoformat()
 
         if table not in ["reviews"]:
             raise UnsupportedResourceError(table, "Trustpilot")
@@ -3500,13 +3508,13 @@ class PhantombusterSource:
 
         start_date = kwargs.get("interval_start")
         if start_date is None:
-            start_date = ensure_pendulum_datetime("2018-01-01").in_tz("UTC")
+            start_date = ensure_pendulum_datetime_utc("2018-01-01").in_tz("UTC")
         else:
-            start_date = ensure_pendulum_datetime(start_date).in_tz("UTC")
+            start_date = ensure_pendulum_datetime_utc(start_date).in_tz("UTC")
 
         end_date = kwargs.get("interval_end")
         if end_date is not None:
-            end_date = ensure_pendulum_datetime(end_date).in_tz("UTC")
+            end_date = ensure_pendulum_datetime_utc(end_date).in_tz("UTC")
 
         from omniload.src.phantombuster import phantombuster_source
 
@@ -3654,12 +3662,12 @@ class SolidgateSource:
         if start_date is None:
             start_date = pendulum.yesterday().in_tz("UTC")
         else:
-            start_date = ensure_pendulum_datetime(start_date).in_tz("UTC")
+            start_date = ensure_pendulum_datetime_utc(start_date).in_tz("UTC")
 
         end_date = kwargs.get("interval_end")
 
         if end_date is not None:
-            end_date = ensure_pendulum_datetime(end_date).in_tz("UTC")
+            end_date = ensure_pendulum_datetime_utc(end_date).in_tz("UTC")
 
         from omniload.src.solidgate import solidgate_source
 
@@ -3777,14 +3785,14 @@ class QuickBooksSource:
 
         start_date = kwargs.get("interval_start")
         if start_date is None:
-            start_date = ensure_pendulum_datetime("2025-01-01").in_tz("UTC")
+            start_date = ensure_pendulum_datetime_utc("2025-01-01").in_tz("UTC")
         else:
-            start_date = ensure_pendulum_datetime(start_date).in_tz("UTC")
+            start_date = ensure_pendulum_datetime_utc(start_date).in_tz("UTC")
 
         end_date = kwargs.get("interval_end")
 
         if end_date is not None:
-            end_date = ensure_pendulum_datetime(end_date).in_tz("UTC")
+            end_date = ensure_pendulum_datetime_utc(end_date).in_tz("UTC")
 
         return quickbooks_source(
             company_id=company_id[0],
@@ -3858,13 +3866,13 @@ class PinterestSource:
 
         start_date = kwargs.get("interval_start")
         if start_date is not None:
-            start_date = ensure_pendulum_datetime(start_date)
+            start_date = ensure_pendulum_datetime_utc(start_date)
         else:
             start_date = pendulum.datetime(2020, 1, 1).in_tz("UTC")
 
         end_date = kwargs.get("interval_end")
         if end_date is not None:
-            end_date = end_date = ensure_pendulum_datetime(end_date).in_tz("UTC")
+            end_date = end_date = ensure_pendulum_datetime_utc(end_date).in_tz("UTC")
 
         from omniload.src.pinterest import pinterest_source
 
@@ -3915,11 +3923,11 @@ class FluxxSource:
         # Parse date parameters
         start_date = kwargs.get("interval_start")
         if start_date:
-            start_date = ensure_pendulum_datetime(start_date)
+            start_date = ensure_pendulum_datetime_utc(start_date)
 
         end_date = kwargs.get("interval_end")
         if end_date:
-            end_date = ensure_pendulum_datetime(end_date)
+            end_date = ensure_pendulum_datetime_utc(end_date)
 
         # Import Fluxx source
         from omniload.src.fluxx import fluxx_source
@@ -3995,13 +4003,13 @@ class LinearSource:
 
         start_date = kwargs.get("interval_start")
         if start_date is not None:
-            start_date = ensure_pendulum_datetime(start_date)
+            start_date = ensure_pendulum_datetime_utc(start_date)
         else:
             start_date = pendulum.datetime(2020, 1, 1).in_tz("UTC")
 
         end_date = kwargs.get("interval_end")
         if end_date is not None:
-            end_date = end_date = ensure_pendulum_datetime(end_date).in_tz("UTC")
+            end_date = end_date = ensure_pendulum_datetime_utc(end_date).in_tz("UTC")
 
         from omniload.src.linear import linear_source
 
@@ -4046,13 +4054,13 @@ class RevenueCatSource:
 
         start_date = kwargs.get("interval_start")
         if start_date is not None:
-            start_date = ensure_pendulum_datetime(start_date)
+            start_date = ensure_pendulum_datetime_utc(start_date)
         else:
             start_date = pendulum.datetime(2020, 1, 1).in_tz("UTC")
 
         end_date = kwargs.get("interval_end")
         if end_date is not None:
-            end_date = ensure_pendulum_datetime(end_date).in_tz("UTC")
+            end_date = ensure_pendulum_datetime_utc(end_date).in_tz("UTC")
 
         from omniload.src.revenuecat import revenuecat_source
 
@@ -4086,13 +4094,13 @@ class ZoomSource:
 
         start_date = kwargs.get("interval_start")
         if start_date is not None:
-            start_date = ensure_pendulum_datetime(start_date)
+            start_date = ensure_pendulum_datetime_utc(start_date)
         else:
             start_date = pendulum.datetime(2020, 1, 26).in_tz("UTC")
 
         end_date = kwargs.get("interval_end")
         if end_date is not None:
-            end_date = end_date = ensure_pendulum_datetime(end_date).in_tz("UTC")
+            end_date = end_date = ensure_pendulum_datetime_utc(end_date).in_tz("UTC")
 
         from omniload.src.zoom import zoom_source
 
@@ -4146,13 +4154,13 @@ class InfluxDBSource:
 
         start_date = kwargs.get("interval_start")
         if start_date is not None:
-            start_date = ensure_pendulum_datetime(start_date)
+            start_date = ensure_pendulum_datetime_utc(start_date)
         else:
             start_date = pendulum.datetime(2024, 1, 1).in_tz("UTC")
 
         end_date = kwargs.get("interval_end")
         if end_date is not None:
-            end_date = ensure_pendulum_datetime(end_date)
+            end_date = ensure_pendulum_datetime_utc(end_date)
 
         from omniload.src.influxdb import influxdb_source
 
@@ -4187,13 +4195,13 @@ class WiseSource:
 
         start_date = kwargs.get("interval_start")
         if start_date:
-            start_date = ensure_pendulum_datetime(start_date).in_timezone("UTC")
+            start_date = ensure_pendulum_datetime_utc(start_date).in_timezone("UTC")
         else:
             start_date = pendulum.datetime(2020, 1, 1).in_timezone("UTC")
 
         end_date = kwargs.get("interval_end")
         if end_date:
-            end_date = ensure_pendulum_datetime(end_date).in_timezone("UTC")
+            end_date = ensure_pendulum_datetime_utc(end_date).in_timezone("UTC")
         else:
             end_date = None
 
@@ -4255,14 +4263,14 @@ class AnthropicSource:
         # Get start and end dates from kwargs
         start_date = kwargs.get("interval_start")
         if start_date:
-            start_date = ensure_pendulum_datetime(start_date)
+            start_date = ensure_pendulum_datetime_utc(start_date)
         else:
             # Default to 2023-01-01
             start_date = pendulum.datetime(2023, 1, 1)
 
         end_date = kwargs.get("interval_end")
         if end_date:
-            end_date = ensure_pendulum_datetime(end_date)
+            end_date = ensure_pendulum_datetime_utc(end_date)
         else:
             end_date = None
 
@@ -4357,13 +4365,13 @@ class IntercomSource:
         # Get date parameters
         start_date = kwargs.get("interval_start")
         if start_date:
-            start_date = ensure_pendulum_datetime(start_date)
+            start_date = ensure_pendulum_datetime_utc(start_date)
         else:
             start_date = pendulum.datetime(2020, 1, 1)
 
         end_date = kwargs.get("interval_end")
         if end_date:
-            end_date = ensure_pendulum_datetime(end_date)
+            end_date = ensure_pendulum_datetime_utc(end_date)
 
         # Import and initialize the source
         from omniload.src.intercom import (
@@ -5042,13 +5050,13 @@ class HostawaySource:
 
         start_date = kwargs.get("interval_start")
         if start_date:
-            start_date = ensure_pendulum_datetime(start_date).in_timezone("UTC")
+            start_date = ensure_pendulum_datetime_utc(start_date).in_timezone("UTC")
         else:
             start_date = pendulum.datetime(1970, 1, 1).in_timezone("UTC")
 
         end_date = kwargs.get("interval_end")
         if end_date:
-            end_date = ensure_pendulum_datetime(end_date).in_timezone("UTC")
+            end_date = ensure_pendulum_datetime_utc(end_date).in_timezone("UTC")
 
         from omniload.src.hostaway import hostaway_source
 
@@ -5306,13 +5314,13 @@ class IndeedSource:
 
         start_date = kwargs.get("interval_start")
         if start_date is not None:
-            start_date = ensure_pendulum_datetime(start_date)
+            start_date = ensure_pendulum_datetime_utc(start_date)
         else:
             start_date = pendulum.now("UTC").subtract(days=365)
 
         end_date = kwargs.get("interval_end")
         if end_date is not None:
-            end_date = ensure_pendulum_datetime(end_date).in_tz("UTC")
+            end_date = ensure_pendulum_datetime_utc(end_date).in_tz("UTC")
 
         from omniload.src.indeed import indeed_source
 

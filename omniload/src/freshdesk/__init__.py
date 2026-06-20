@@ -19,7 +19,7 @@ from typing import Any, Dict, Generator, Iterable, List, Optional
 
 import dlt
 import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.sources import DltResource
 
 from omniload.src.errors import MissingValueError
@@ -77,12 +77,12 @@ def freshdesk_source(
             raise MissingValueError("updated_at", "Freshdesk")
 
         if updated_at.last_value is not None:
-            start_date = ensure_pendulum_datetime(updated_at.last_value)
+            start_date = ensure_pendulum_datetime_utc(updated_at.last_value)
         else:
             start_date = pendulum.now(tz="UTC")
 
         if updated_at.end_value is not None:
-            end_date = ensure_pendulum_datetime(updated_at.end_value)
+            end_date = ensure_pendulum_datetime_utc(updated_at.end_value)
         else:
             end_date = pendulum.now(tz="UTC")
 
