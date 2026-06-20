@@ -4,7 +4,7 @@ from typing import Iterable, Iterator, List, Optional
 
 import dlt
 import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 from intuitlib.client import AuthClient
@@ -77,7 +77,7 @@ def quickbooks_source(
         start_pos = 1
 
         end_dt = updated_at.end_value or pendulum.now(tz="UTC")
-        start_dt = ensure_pendulum_datetime(str(updated_at.last_value)).in_tz("UTC")
+        start_dt = ensure_pendulum_datetime_utc(str(updated_at.last_value)).in_tz("UTC")
 
         start_str = start_dt.isoformat()
         end_str = end_dt.isoformat()
@@ -97,7 +97,7 @@ def quickbooks_source(
 
             for item in items:
                 if item.get("MetaData") and item["MetaData"].get("LastUpdatedTime"):
-                    item["lastupdatedtime"] = ensure_pendulum_datetime(
+                    item["lastupdatedtime"] = ensure_pendulum_datetime_utc(
                         item["MetaData"]["LastUpdatedTime"]
                     )
                     item["id"] = item["Id"]

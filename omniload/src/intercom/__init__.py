@@ -8,7 +8,7 @@ including contacts, companies, conversations, tickets, and more.
 from typing import Optional, Sequence
 
 import dlt
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TAnyDateTime
 from dlt.sources import DltResource, DltSource
 
@@ -68,15 +68,15 @@ def intercom_source(
     api_client = IntercomAPIClient(credentials)
 
     # Convert dates to pendulum and then to unix timestamps for Intercom API
-    start_date_obj = ensure_pendulum_datetime(start_date) if start_date else None
-    end_date_obj = ensure_pendulum_datetime(end_date) if end_date else None
+    start_date_obj = ensure_pendulum_datetime_utc(start_date) if start_date else None
+    end_date_obj = ensure_pendulum_datetime_utc(end_date) if end_date else None
 
     # Convert to unix timestamps for API compatibility
     # Use default start date if none provided
     if not start_date_obj:
         from .settings import DEFAULT_START_DATE
 
-        start_date_obj = ensure_pendulum_datetime(DEFAULT_START_DATE)
+        start_date_obj = ensure_pendulum_datetime_utc(DEFAULT_START_DATE)
 
     start_timestamp = convert_datetime_to_timestamp(start_date_obj)
     end_timestamp = (

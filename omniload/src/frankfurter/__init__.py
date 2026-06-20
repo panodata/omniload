@@ -2,7 +2,7 @@ from typing import Any, Iterator, Optional
 
 import dlt
 from dlt.common.pendulum import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TAnyDateTime
 
 from omniload.src.errors import MissingValueError
@@ -119,11 +119,11 @@ def frankfurter_source(
             end_date = pendulum.now()
 
         # Ensure start_date.last_value is a pendulum.DateTime object
-        start_date_obj = ensure_pendulum_datetime(start_date)
+        start_date_obj = ensure_pendulum_datetime_utc(start_date)
         start_date_str = start_date_obj.format("YYYY-MM-DD")
 
         # Ensure end_date is a pendulum.DateTime object
-        end_date_obj = ensure_pendulum_datetime(end_date)
+        end_date_obj = ensure_pendulum_datetime_utc(end_date)
         end_date_str = end_date_obj.format("YYYY-MM-DD")
 
         # Compose the URL

@@ -3,7 +3,7 @@
 from typing import Iterable, Optional
 
 import dlt
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TAnyDateTime, TDataItem
 from dlt.sources import DltResource
 
@@ -19,8 +19,8 @@ def primer_source(
 ) -> Iterable[DltResource]:
     client = PrimerApi(api_key, api_version)
 
-    start_date_obj = ensure_pendulum_datetime(start_date) if start_date else None
-    end_date_obj = ensure_pendulum_datetime(end_date) if end_date else None
+    start_date_obj = ensure_pendulum_datetime_utc(start_date) if start_date else None
+    end_date_obj = ensure_pendulum_datetime_utc(end_date) if end_date else None
 
     @dlt.resource(selected=False)
     def payment_ids() -> Iterable[TDataItem]:

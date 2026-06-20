@@ -157,16 +157,16 @@ def snapchat_ads_source(
         # Build query parameters for API-side filtering
         params = {}
         if start_date:
-            from dlt.common.time import ensure_pendulum_datetime
+            from dlt.common.time import ensure_pendulum_datetime_utc
 
-            params["start_time"] = ensure_pendulum_datetime(start_date).format(
+            params["start_time"] = ensure_pendulum_datetime_utc(start_date).format(
                 "YYYY-MM-DDTHH:mm:ss"
             )
 
         if end_date:
-            from dlt.common.time import ensure_pendulum_datetime
+            from dlt.common.time import ensure_pendulum_datetime_utc
 
-            params["end_time"] = ensure_pendulum_datetime(end_date).format(
+            params["end_time"] = ensure_pendulum_datetime_utc(end_date).format(
                 "YYYY-MM-DDTHH:mm:ss"
             )
 
@@ -332,13 +332,13 @@ def snapchat_ads_source(
 
         # Add date range for DAY/HOUR granularity
         if granularity in ["DAY", "HOUR"] and (start_date or end_date):
-            from dlt.common.time import ensure_pendulum_datetime
+            from dlt.common.time import ensure_pendulum_datetime_utc
 
             if start_date:
-                start_dt = ensure_pendulum_datetime(start_date)
+                start_dt = ensure_pendulum_datetime_utc(start_date)
                 params["start_time"] = start_dt.format("YYYY-MM-DDTHH:mm:ss.000")
             if end_date:
-                end_dt = ensure_pendulum_datetime(end_date)
+                end_dt = ensure_pendulum_datetime_utc(end_date)
                 # For both HOUR and DAY granularity, use ceiling to round up to next hour if needed
                 if end_dt != end_dt.start_of("hour"):
                     end_dt = end_dt.add(hours=1).start_of("hour")

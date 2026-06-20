@@ -19,7 +19,7 @@ from typing import Any, Dict, Iterable, Optional  # noqa: F401
 import dlt
 from dlt.common import jsonpath as jp  # noqa: F401
 from dlt.common import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TAnyDateTime, TDataItem
 from dlt.sources import DltResource
 
@@ -74,9 +74,9 @@ def shopify_source(
     # build client
     client = ShopifyApi(shop_url, private_app_password, api_version)
 
-    start_date_obj = ensure_pendulum_datetime(start_date)
-    end_date_obj = ensure_pendulum_datetime(end_date) if end_date else None
-    created_at_min_obj = ensure_pendulum_datetime(created_at_min)
+    start_date_obj = ensure_pendulum_datetime_utc(start_date)
+    end_date_obj = ensure_pendulum_datetime_utc(end_date) if end_date else None
+    created_at_min_obj = ensure_pendulum_datetime_utc(created_at_min)
 
     # define resources
     @dlt.resource(

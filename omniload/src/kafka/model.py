@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple, Union
 
 import attrs
 import toolz
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.utils import digest128
 
 
@@ -116,7 +116,7 @@ class KafkaEvent:
             "offset": self.offset,
             "ts": {
                 "type": self.ts[0],
-                "value": ensure_pendulum_datetime(self.ts[1] / 1e3),
+                "value": ensure_pendulum_datetime_utc(self.ts[1] / 1e3),
             },
             "data": self.value,
         }

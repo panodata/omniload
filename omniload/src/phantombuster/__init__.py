@@ -3,7 +3,7 @@ from typing import Iterable, Optional
 import dlt
 import pendulum
 import requests
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TAnyDateTime, TDataItem
 from dlt.sources import DltResource
 from dlt.sources.helpers.requests import Client
@@ -61,7 +61,7 @@ def phantombuster_source(
         if dateTime.last_value is None:
             raise MissingValueError("start_dt", "Phantombuster")
 
-        start_dt = ensure_pendulum_datetime(dateTime.last_value)
+        start_dt = ensure_pendulum_datetime_utc(dateTime.last_value)
 
         if start_dt is None:
             raise MissingValueError("start_dt", "Phantombuster")

@@ -27,7 +27,7 @@ from typing import Any, Dict, Iterator, List, Optional, Union  # noqa: F401
 
 import dlt
 from dlt.common import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.sources import DltResource, TDataItems
 
 from .helpers import group_deal_flows
@@ -79,7 +79,7 @@ def pipedrive_source(
     yield create_state(pipedrive_api_key) | parsed_mapping
 
     # parse timestamp and build kwargs
-    since_timestamp = ensure_pendulum_datetime(since_timestamp).strftime(
+    since_timestamp = ensure_pendulum_datetime_utc(since_timestamp).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
     resource_kwargs: Any = (

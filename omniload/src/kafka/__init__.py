@@ -25,7 +25,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Union
 import dlt
 from confluent_kafka import Consumer, Message
 from dlt.common import logger
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TAnyDateTime, TDataItem
 
 from .helpers import (
@@ -92,7 +92,7 @@ def kafka_consumer(
         )
 
     if start_from is not None:
-        start_from = ensure_pendulum_datetime(start_from)
+        start_from = ensure_pendulum_datetime_utc(start_from)
 
     tracker = OffsetTracker(consumer, topics, dlt.current.resource_state(), start_from)
 

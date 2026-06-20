@@ -5,7 +5,7 @@ from typing import Iterable, Optional
 
 import dlt
 import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.sources import DltResource
 
 from ..errors import MissingValueError
@@ -58,15 +58,17 @@ def clickup_source(
             pendulum.DateTime
         ] = dlt.sources.incremental(
             "date_updated",
-            initial_value=ensure_pendulum_datetime(start_date).in_timezone("UTC"),
+            initial_value=ensure_pendulum_datetime_utc(start_date).in_timezone("UTC"),
             range_end="closed",
             range_start="closed",
         ),
     ) -> Iterable[dict]:
         if date_updated.last_value:
-            start = ensure_pendulum_datetime(date_updated.last_value).in_timezone("UTC")
+            start = ensure_pendulum_datetime_utc(date_updated.last_value).in_timezone(
+                "UTC"
+            )
         else:
-            start = ensure_pendulum_datetime(start_date).in_timezone("UTC")
+            start = ensure_pendulum_datetime_utc(start_date).in_timezone("UTC")
 
         if date_updated.end_value is None:
             end = pendulum.now("UTC")
@@ -77,7 +79,7 @@ def clickup_source(
             for task in client.paginated(
                 f"/list/{list_obj['id']}/task", "tasks", {"page_size": 100}
             ):
-                task_dt = ensure_pendulum_datetime(int(task["date_updated"]) / 1000)
+                task_dt = ensure_pendulum_datetime_utc(int(task["date_updated"]) / 1000)
                 if task_dt >= start and task_dt <= end:
                     task["date_updated"] = task_dt
                     yield task

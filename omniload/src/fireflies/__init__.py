@@ -2,7 +2,7 @@ from typing import Iterable, List, Optional
 
 import dlt
 import pendulum
-from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 
@@ -19,9 +19,9 @@ def fireflies_source(
     fireflies_api = FirefliesAPI(api_key=api_key)
 
     start_datetime = (
-        ensure_pendulum_datetime(start_datetime) if start_datetime else None
+        ensure_pendulum_datetime_utc(start_datetime) if start_datetime else None
     )
-    end_datetime = ensure_pendulum_datetime(end_datetime) if end_datetime else None
+    end_datetime = ensure_pendulum_datetime_utc(end_datetime) if end_datetime else None
 
     # Select fetch method based on granularity
     def get_analytics_fetcher():
