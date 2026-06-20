@@ -136,7 +136,7 @@ optional-dependencies.develop = [
   "pyproject-fmt<3",
   "pytest-repeat<1",
   "ruff<0.16",
-  "ty==0.0.46",
+  "ty==0.0.51",
   "validate-pyproject<1",
 ]
 optional-dependencies.full = [ "omniload[ibm-db,odbc,oracle]" ]
