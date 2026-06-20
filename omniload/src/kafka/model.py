@@ -1,7 +1,8 @@
+import warnings
 from typing import List, Optional, Tuple, Union
 
 import attrs
-import toolz  # type: ignore[import-untyped]
+import toolz
 from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.utils import digest128
 
@@ -130,9 +131,11 @@ class KafkaEvent:
         # default to not cause any breaking changes.
 
         if options.format == "standard_v1":
-            UserWarning(
+            warnings.warn(
                 "Future versions of omniload will use the `standard_v2` output format. "
-                "To retain compatibility, make sure to start using `format=standard_v1` early."
+                "To retain compatibility, make sure to start using `format=standard_v1` early.",
+                UserWarning,
+                stacklevel=2,
             )
             return {
                 "_kafka": standard_payload,
@@ -159,7 +162,7 @@ class KafkaEvent:
             if options.select:
                 # TODO: Instead of a simple dictionary getter, `jsonpointer` or `jqlang`
                 #       can provide easy access to deeper levels of nested data structures.
-                key = options.select.replace("value", "data")
+                key = "data" if options.select == "value" else options.select
                 return standard_payload.get(key)
             return standard_payload
 
