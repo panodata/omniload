@@ -1,35 +1,27 @@
 import os
-import tempfile
 from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import patch
 
 import pytest
+import sqlalchemy
 
-from .main_test import DESTINATIONS, SOURCES
-
-
-def pytest_configure(config):
-    if is_master(config):
-        config.shared_directory = tempfile.mkdtemp()
+from omniload.src.destinations import ClickhouseDestination
+from tests.database.container import DESTINATIONS, SOURCES
 
 
-def pytest_configure_node(node):
-    """xdist hook"""
-    node.workerinput["shared_directory"] = node.config.shared_directory
+def pytest_sessionstart(session):
+    start_containers(session.config)
 
 
-@pytest.fixture(scope="session")
-def shared_directory(request):
-    if is_master(request.config):
-        return request.config.shared_directory
-    else:
-        return request.config.workerinput["shared_directory"]
+def pytest_sessionfinish(session, exitstatus):
+    stop_containers(session.config)
 
 
-def is_master(config):
-    """True if the code running the given pytest.config object is running in a xdist master
-    node or not running xdist at all.
-    """
-    return not hasattr(config, "workerinput")
+@pytest.fixture(scope="session", autouse=True)
+def manage_containers(request, shared_directory):
+    unique_containers = set(SOURCES.values()) | set(DESTINATIONS.values())
+    for container in unique_containers:
+        container.container_lock_dir = shared_directory  # ty: ignore[invalid-assignment]
 
 
 def start_containers(config):
@@ -77,9 +69,22 @@ def stop_containers(config):
         container.stop_fully()
 
 
-def pytest_sessionstart(session):
-    start_containers(session.config)
+@pytest.fixture(scope="session", autouse=True)
+def autocreate_db_for_clickhouse():
+    """
+    patches ClickhouseDestination to autocreate dest tables if they don't exist
+    """
+    dlt_dest = ClickhouseDestination().dlt_dest
 
+    def patched_dlt_dest(uri, **kwargs):
+        db, _ = kwargs["dest_table"].split(".")
+        dest_engine = sqlalchemy.create_engine(uri)
+        dest_conn = dest_engine.connect()
+        dest_conn.exec_driver_sql(f"CREATE DATABASE IF NOT EXISTS {db}")
+        return dlt_dest(uri, **kwargs)
 
-def pytest_sessionfinish(session, exitstatus):
-    stop_containers(session.config)
+    patcher = patch("omniload.src.factory.ClickhouseDestination.dlt_dest")
+    mock = patcher.start()
+    mock.side_effect = patched_dlt_dest
+    yield
+    patcher.stop()
