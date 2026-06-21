@@ -1,5 +1,4 @@
 import os
-import shutil
 
 import duckdb
 import pytest
@@ -9,7 +8,7 @@ from omniload.src.snapchat_ads.helpers import (
     parse_timeseries_stats,
     parse_total_stats,
 )
-from tests.util import get_abs_path, invoke_ingest_command
+from tests.util import invoke_ingest_command
 
 
 @pytest.mark.skipif(
@@ -23,7 +22,7 @@ from tests.util import get_abs_path, invoke_ingest_command
     ),
     reason="Snapchat credentials not set in environment",
 )
-def test_snapchat_ads_merge_strategy():
+def test_snapchat_ads_merge_strategy(tmp_path):
     """Test that Snapchat Ads merge strategy correctly appends data with different breakdowns.
 
     This test verifies:
@@ -31,10 +30,6 @@ def test_snapchat_ads_merge_strategy():
     2. Second ingest with ad breakdown - ad_id should be populated
     3. Both sets of records should exist in the table (append, not replace)
     """
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
 
     # Get Snapchat credentials from environment
     refresh_token = os.getenv("SNAPCHAT_REFRESH_TOKEN")
@@ -51,10 +46,10 @@ def test_snapchat_ads_merge_strategy():
     )
 
     # Create DuckDB database
-    db_path = get_abs_path("../test_snapchat_merge.duckdb")
+    db_path = tmp_path / "test_snapchat_merge.duckdb"
     dest_uri = f"duckdb:///{db_path}"
 
-    try:
+    if True:
         # First ingest: campaigns_stats without breakdown
         # Expected: adsquad_id and ad_id should be NULL
         result1 = invoke_ingest_command(
@@ -192,15 +187,6 @@ def test_snapchat_ads_merge_strategy():
             f"   - Second ingest appended {non_null_ad_ids} records with ad breakdown"
         )
         print(f"   - Total: {total_records} records in table")
-
-    finally:
-        # Clean up
-        if os.path.exists(db_path):
-            os.remove(db_path)
-        try:
-            shutil.rmtree(get_abs_path("../pipeline_data"))
-        except Exception:
-            pass
 
 
 class TestParseStatsTable:

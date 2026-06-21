@@ -1,10 +1,9 @@
-import shutil
 from datetime import datetime, timezone
 
 import pytest
 import sqlalchemy
 
-from tests.util import get_abs_path, get_random_string, invoke_ingest_command
+from tests.util import get_random_string, invoke_ingest_command
 from tests.warehouse.container import DESTINATIONS, mysqlDocker
 
 
@@ -17,10 +16,6 @@ def test_mysql_zero_dates(source, dest):
     dest_uri = dest.start()
 
     schema_rand_prefix = f"testschema_mysql_zero_dates_{get_random_string(5)}"
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
 
     source_engine = sqlalchemy.create_engine(source_uri)
     with source_engine.begin() as conn:
@@ -61,10 +56,10 @@ def test_mysql_zero_dates(source, dest):
     assert result.exit_code == 0
 
     dest_engine = sqlalchemy.create_engine(dest_uri)
-    dest_conn = dest_engine.connect()
-    res = dest_conn.exec_driver_sql(
-        f"select * from {schema_rand_prefix}.output"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        res = dest_conn.exec_driver_sql(
+            f"select * from {schema_rand_prefix}.output"
+        ).fetchall()
     dest_engine.dispose()
 
     # assert there are no new rows, since DBs like DuckDB accept NULL and dlt adds a separate string column for the value `0000-00-00 00:00:00`

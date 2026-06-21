@@ -364,72 +364,74 @@ def test_mongodb_source(dest):
             "raw.test_collection",
         )
 
-        with sqlalchemy.create_engine(dest_uri).connect() as conn:
+        engine = sqlalchemy.create_engine(dest_uri)
+        with engine.connect() as conn:
             res = conn.exec_driver_sql(
                 "select id, name, nested_parent__key1, nested_parent__key2, nested_parent__key3, key4, value from raw.test_collection"
             ).fetchall()
+        engine.dispose()
 
-            assert len(res) == 5
+        assert len(res) == 5
 
-            # convert string to json if needed. this is a particular case for Clickhouse which does not have json types by default.
-            res = [
-                (
-                    row[0],
-                    row[1],
-                    row[2],
-                    json.loads(row[3]) if isinstance(row[3], str) else row[3],
-                    json.loads(row[4]) if isinstance(row[4], str) else row[4],
-                    json.loads(row[5]) if isinstance(row[5], str) else row[5],
-                    row[6],
-                )
-                for row in res
-            ]
+        # convert string to json if needed. this is a particular case for Clickhouse which does not have json types by default.
+        res = [
+            (
+                row[0],
+                row[1],
+                row[2],
+                json.loads(row[3]) if isinstance(row[3], str) else row[3],
+                json.loads(row[4]) if isinstance(row[4], str) else row[4],
+                json.loads(row[5]) if isinstance(row[5], str) else row[5],
+                row[6],
+            )
+            for row in res
+        ]
 
-            assert res[0] == (
-                1,
-                "Document 1",
-                "value1",
-                {"nested1": "value1"},
-                [{"nested3": "value1"}],
-                ["value1", "value2", "value3"],
-                100,
-            )
-            assert res[1] == (
-                2,
-                "Document 2",
-                "value2",
-                {"nested1": "value2"},
-                [{"nested3": "value2"}],
-                ["value1", "value2", "value3"],
-                200,
-            )
-            assert res[2] == (
-                3,
-                "Document 3",
-                "value3",
-                {"nested1": "value3"},
-                [{"nested3": "value3"}],
-                ["value1", "value2", "value3"],
-                300,
-            )
-            assert res[3] == (
-                4,
-                "Document 4",
-                "value4",
-                {"nested1": "value4"},
-                [{"nested3": "value4"}],
-                ["value1", "value2", "value3"],
-                400,
-            )
-            assert res[4] == (
-                5,
-                "Document 5",
-                "value5",
-                {"nested1": "value5"},
-                [{"nested3": "value5"}],
-                ["value1", "value2", "value3"],
-                500,
-            )
+        assert res[0] == (
+            1,
+            "Document 1",
+            "value1",
+            {"nested1": "value1"},
+            [{"nested3": "value1"}],
+            ["value1", "value2", "value3"],
+            100,
+        )
+        assert res[1] == (
+            2,
+            "Document 2",
+            "value2",
+            {"nested1": "value2"},
+            [{"nested3": "value2"}],
+            ["value1", "value2", "value3"],
+            200,
+        )
+        assert res[2] == (
+            3,
+            "Document 3",
+            "value3",
+            {"nested1": "value3"},
+            [{"nested3": "value3"}],
+            ["value1", "value2", "value3"],
+            300,
+        )
+        assert res[3] == (
+            4,
+            "Document 4",
+            "value4",
+            {"nested1": "value4"},
+            [{"nested3": "value4"}],
+            ["value1", "value2", "value3"],
+            400,
+        )
+        assert res[4] == (
+            5,
+            "Document 5",
+            "value5",
+            {"nested1": "value5"},
+            [{"nested3": "value5"}],
+            ["value1", "value2", "value3"],
+            500,
+        )
     finally:
         dest.stop()
         mongo.stop()
@@ -499,16 +501,18 @@ def mongodb_custom_query_test_cases():
 
             assert result.exit_code == 0
 
-            with sqlalchemy.create_engine(dest_uri).connect() as conn:
+            engine = sqlalchemy.create_engine(dest_uri)
+            with engine.connect() as conn:
                 res = conn.exec_driver_sql(
                     f"select event_id, event_type, user_id, value from {schema_rand_prefix}.events_success order by event_id"
                 ).fetchall()
+            engine.dispose()
 
-                assert len(res) == 4  # Only successful events
-                assert res[0] == (1, "login", "user1", 100)
-                assert res[1] == (2, "purchase", "user1", 250)
-                assert res[2] == (3, "login", "user2", 150)
-                assert res[3] == (5, "logout", "user1", 50)
+            assert len(res) == 4  # Only successful events
+            assert res[0] == (1, "login", "user1", 100)
+            assert res[1] == (2, "purchase", "user1", 250)
+            assert res[2] == (3, "login", "user2", 150)
+            assert res[3] == (5, "logout", "user1", 50)
 
         finally:
             mongo.stop()
@@ -576,22 +580,24 @@ def mongodb_custom_query_test_cases():
 
             assert result.exit_code == 0
 
-            with sqlalchemy.create_engine(dest_uri).connect() as conn:
+            engine = sqlalchemy.create_engine(dest_uri)
+            with engine.connect() as conn:
                 res = conn.exec_driver_sql(
                     f"select _id, total_value, event_count from {schema_rand_prefix}.user_stats order by _id"
                 ).fetchall()
+            engine.dispose()
 
-                assert len(res) == 2
-                assert res[0] == (
-                    "user1",
-                    400,
-                    3,
-                )  # user1: 100 + 250 + 50 = 400, 3 events
-                assert res[1] == (
-                    "user2",
-                    150,
-                    1,
-                )  # user2: only 150 from login, 1 event
+            assert len(res) == 2
+            assert res[0] == (
+                "user1",
+                400,
+                3,
+            )  # user1: 100 + 250 + 50 = 400, 3 events
+            assert res[1] == (
+                "user2",
+                150,
+                1,
+            )  # user2: only 150 from login, 1 event
 
         finally:
             mongo.stop()
@@ -666,15 +672,17 @@ def mongodb_custom_query_test_cases():
 
             assert result.exit_code == 0
 
-            with sqlalchemy.create_engine(dest_uri).connect() as conn:
+            engine = sqlalchemy.create_engine(dest_uri)
+            with engine.connect() as conn:
                 res = conn.exec_driver_sql(
                     f"select event_id, event_type, user_id, value from {schema_rand_prefix}.events_incremental order by event_id"
                 ).fetchall()
+            engine.dispose()
 
-                # Should only get events from 2024-01-01 (events 1 and 2)
-                assert len(res) == 2
-                assert res[0] == (1, "login", "user1", 100)
-                assert res[1] == (2, "purchase", "user1", 250)
+            # Should only get events from 2024-01-01 (events 1 and 2)
+            assert len(res) == 2
+            assert res[0] == (1, "login", "user1", 100)
+            assert res[1] == (2, "purchase", "user1", 250)
 
         finally:
             mongo.stop()
@@ -763,16 +771,18 @@ def mongodb_custom_query_test_cases():
 
             assert result.exit_code == 0
 
-            with sqlalchemy.create_engine(dest_uri).connect() as conn:
+            engine = sqlalchemy.create_engine(dest_uri)
+            with engine.connect() as conn:
                 res = conn.exec_driver_sql(
                     f"select event_id, event_type, user_id, value from {schema_rand_prefix}.events_multi order by event_id"
                 ).fetchall()
+            engine.dispose()
 
-                # Should have events from both days (events 1, 2, and 3)
-                assert len(res) == 3
-                assert res[0] == (1, "login", "user1", 100)
-                assert res[1] == (2, "purchase", "user1", 250)
-                assert res[2] == (3, "login", "user2", 150)
+            # Should have events from both days (events 1, 2, and 3)
+            assert len(res) == 3
+            assert res[0] == (1, "login", "user1", 100)
+            assert res[1] == (2, "purchase", "user1", 250)
+            assert res[2] == (3, "login", "user2", 150)
 
         finally:
             mongo.stop()

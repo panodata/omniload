@@ -31,38 +31,41 @@ def appsflyer_test_cases():
         )
         assert result.exit_code == 0
 
-        with sqlalchemy.create_engine(dest_uri).connect() as conn:
+        engine = sqlalchemy.create_engine(dest_uri)
+        with engine.connect() as conn:
             res = conn.exec_driver_sql(
                 f"select * from {schema_rand_prefix}.creatives"
             ).fetchall()
-            assert len(res) > 0
-            columns = [
-                col[0]
-                for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
-                    f"select * from {schema_rand_prefix}.creatives limit 0"
-                ).cursor.description
-            ]
-            expected_columns = [
-                "_dlt_load_id",
-                "_dlt_id",
-                "campaign",
-                "geo",
-                "app_id",
-                "install_time",
-                "adset_id",
-                "adset",
-                "ad_id",
-                "impressions",
-                "clicks",
-                "installs",
-                "cost",
-                "revenue",
-                "average_ecpi",
-                "loyal_users",
-                "uninstalls",
-                "roi",
-            ]
-            assert sorted(columns) == sorted(expected_columns)
+        engine.dispose()
+
+        assert len(res) > 0
+        columns = [
+            col[0]
+            for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
+                f"select * from {schema_rand_prefix}.creatives limit 0"
+            ).cursor.description
+        ]
+        expected_columns = [
+            "_dlt_load_id",
+            "_dlt_id",
+            "campaign",
+            "geo",
+            "app_id",
+            "install_time",
+            "adset_id",
+            "adset",
+            "ad_id",
+            "impressions",
+            "clicks",
+            "installs",
+            "cost",
+            "revenue",
+            "average_ecpi",
+            "loyal_users",
+            "uninstalls",
+            "roi",
+        ]
+        assert sorted(columns) == sorted(expected_columns)
 
     def campaigns(dest_uri: str):
         schema_rand_prefix = f"testschema_appsflyer_{get_random_string(5)}"
@@ -77,46 +80,49 @@ def appsflyer_test_cases():
         )
         assert result.exit_code == 0
 
-        with sqlalchemy.create_engine(dest_uri).connect() as conn:
+        engine = sqlalchemy.create_engine(dest_uri)
+        with engine.connect() as conn:
             res = conn.exec_driver_sql(
                 f"select * from {schema_rand_prefix}.campaigns"
             ).fetchall()
-            assert len(res) > 0
-            columns = [
-                col[0]
-                for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
-                    f"select * from {schema_rand_prefix}.campaigns limit 0"
-                ).cursor.description
-            ]
-            expected_columns = [
-                "_dlt_load_id",
-                "_dlt_id",
-                "campaign",
-                "geo",
-                "app_id",
-                "install_time",
-                "impressions",
-                "clicks",
-                "installs",
-                "cost",
-                "revenue",
-                "average_ecpi",
-                "loyal_users",
-                "uninstalls",
-                "roi",
-                "cohort_day_14_revenue_per_user",
-                "cohort_day_14_total_revenue_per_user",
-                "cohort_day_1_revenue_per_user",
-                "cohort_day_1_total_revenue_per_user",
-                "cohort_day_21_revenue_per_user",
-                "cohort_day_21_total_revenue_per_user",
-                "cohort_day_3_revenue_per_user",
-                "cohort_day_3_total_revenue_per_user",
-                "cohort_day_7_revenue_per_user",
-                "cohort_day_7_total_revenue_per_user",
-                "retention_day_7",
-            ]
-            assert sorted(columns) == sorted(expected_columns)
+        engine.dispose()
+
+        assert len(res) > 0
+        columns = [
+            col[0]
+            for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
+                f"select * from {schema_rand_prefix}.campaigns limit 0"
+            ).cursor.description
+        ]
+        expected_columns = [
+            "_dlt_load_id",
+            "_dlt_id",
+            "campaign",
+            "geo",
+            "app_id",
+            "install_time",
+            "impressions",
+            "clicks",
+            "installs",
+            "cost",
+            "revenue",
+            "average_ecpi",
+            "loyal_users",
+            "uninstalls",
+            "roi",
+            "cohort_day_14_revenue_per_user",
+            "cohort_day_14_total_revenue_per_user",
+            "cohort_day_1_revenue_per_user",
+            "cohort_day_1_total_revenue_per_user",
+            "cohort_day_21_revenue_per_user",
+            "cohort_day_21_total_revenue_per_user",
+            "cohort_day_3_revenue_per_user",
+            "cohort_day_3_total_revenue_per_user",
+            "cohort_day_7_revenue_per_user",
+            "cohort_day_7_total_revenue_per_user",
+            "retention_day_7",
+        ]
+        assert sorted(columns) == sorted(expected_columns)
 
     def custom(dest_uri: str):
         schema_rand_prefix = f"testschema_appsflyer_{get_random_string(5)}"
@@ -131,33 +137,36 @@ def appsflyer_test_cases():
         )
         assert result.exit_code == 0
 
-        with sqlalchemy.create_engine(dest_uri).connect() as conn:
+        engine = sqlalchemy.create_engine(dest_uri)
+        with engine.connect() as conn:
             res = conn.exec_driver_sql(
                 f"select * from {schema_rand_prefix}.custom"
             ).fetchall()
-            assert len(res) > 0
-            columns = [
-                col[0]
-                for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
-                    f"select * from {schema_rand_prefix}.custom limit 0"
-                ).cursor.description
-            ]
-            expected_columns = [
-                "_dlt_load_id",
-                "_dlt_id",
-                "campaign",
-                "geo",
-                "app_id",
-                "install_time",
-                "impressions",
-                "clicks",
-                "installs",
-                "cost",
-                "revenue",
-                "average_ecpi",
-                "loyal_users",
-            ]
-            assert sorted(columns) == sorted(expected_columns)
+        engine.dispose()
+
+        assert len(res) > 0
+        columns = [
+            col[0]
+            for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
+                f"select * from {schema_rand_prefix}.custom limit 0"
+            ).cursor.description
+        ]
+        expected_columns = [
+            "_dlt_load_id",
+            "_dlt_id",
+            "campaign",
+            "geo",
+            "app_id",
+            "install_time",
+            "impressions",
+            "clicks",
+            "installs",
+            "cost",
+            "revenue",
+            "average_ecpi",
+            "loyal_users",
+        ]
+        assert sorted(columns) == sorted(expected_columns)
 
     return [campaigns, creatives, custom]
 

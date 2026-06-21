@@ -178,7 +178,6 @@ def test_arrow_mmap_to_db_delete_insert(dest):
         ).fetchall()
         assert compare_dates(res[0][0], "2024-11-05")
         assert res[0][1] == row_count
-
     dest_engine.dispose()
 
     # run again, it should be deleted and reloaded

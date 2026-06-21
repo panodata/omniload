@@ -79,8 +79,9 @@ def autocreate_db_for_clickhouse():
     def patched_dlt_dest(uri, **kwargs):
         db, _ = kwargs["dest_table"].split(".")
         dest_engine = sqlalchemy.create_engine(uri)
-        dest_conn = dest_engine.connect()
-        dest_conn.exec_driver_sql(f"CREATE DATABASE IF NOT EXISTS {db}")
+        with dest_engine.connect() as dest_conn:
+            dest_conn.exec_driver_sql(f"CREATE DATABASE IF NOT EXISTS {db}")
+        dest_engine.dispose()
         return dlt_dest(uri, **kwargs)
 
     patcher = patch("omniload.src.factory.ClickhouseDestination.dlt_dest")

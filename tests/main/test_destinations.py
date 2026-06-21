@@ -20,12 +20,12 @@ from omniload.src.destinations import (
     SnowflakeDestination,
 )
 from omniload.src.factory import DestinationProtocol
-from tests.util import get_testdata_path
+from tests.util import get_etc_path
 
 
 class BigQueryDestinationTest(unittest.TestCase):
     destination = BigQueryDestination()
-    abs_path_to_credentials = str(get_testdata_path() / "fakebqcredentials.json")
+    abs_path_to_credentials = str(get_etc_path() / "fakebqcredentials.json")
     actual_credentials: dict = {}
 
     def setUp(self):

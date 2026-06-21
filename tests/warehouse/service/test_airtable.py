@@ -28,10 +28,13 @@ def airtable_test_cases():
 
         assert result.exit_code == 0
 
-        with sqlalchemy.create_engine(dest_uri).connect() as conn:
+        engine = sqlalchemy.create_engine(dest_uri)
+        with engine.connect() as conn:
             res = conn.exec_driver_sql(f"select count(*) from {dest_table}").fetchall()
-            assert len(res) > 0
-            assert res[0][0] > 0
+        engine.dispose()
+
+        assert len(res) > 0
+        assert res[0][0] > 0
 
     return [table_with_base_id]
 

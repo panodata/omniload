@@ -178,6 +178,12 @@ def pp(x):
 
 
 def get_testdata_path() -> Path:
-    """Path to the test data directory."""
+    """Path to the omniload/testdata directory."""
     with importlib.resources.path("omniload", "testdata") as path:
+        return path
+
+
+def get_etc_path() -> Path:
+    """Path to the tests/etc directory."""
+    with importlib.resources.path("tests", "etc") as path:
         return path

@@ -1,7 +1,5 @@
 import base64
 import os
-import shutil
-import tempfile
 import time
 import urllib.request
 from typing import Tuple, Union
@@ -11,7 +9,7 @@ import pytest
 from elasticsearch import Elasticsearch
 from testcontainers.core.container import DockerContainer
 
-from tests.util import get_abs_path, invoke_ingest_command
+from tests.util import invoke_ingest_command
 
 
 @pytest.fixture(scope="function")
@@ -127,12 +125,8 @@ def elasticsearch_container_with_auth():
 @pytest.mark.skip(
     reason="Covered by test_csv_to_elasticsearch_with_auth and test_elasticsearch_replace_strategy"
 )
-def test_csv_to_elasticsearch(elasticsearch_container):
+def test_csv_to_elasticsearch(elasticsearch_container, tmp_path):
     """Test loading CSV data into Elasticsearch."""
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
 
     # Create a temporary CSV file
     csv_content = """id,name,age,city
@@ -140,11 +134,11 @@ def test_csv_to_elasticsearch(elasticsearch_container):
 2,Bob,25,San Francisco
 3,Charlie,35,Boston
 """
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-        f.write(csv_content)
-        csv_path = f.name
+    tmp_file = tmp_path / "tmp.csv"
+    tmp_file.write_text(csv_content)
+    if True:
+        csv_path = tmp_file.name
 
-    try:
         # Get Elasticsearch connection details
         es_url = elasticsearch_container.get_url()
         parsed = urlparse(es_url)
@@ -183,22 +177,10 @@ def test_csv_to_elasticsearch(elasticsearch_container):
         names = sorted([doc["_source"]["name"] for doc in docs])
         assert names == ["Alice", "Bob", "Charlie"]
 
-    finally:
-        # Clean up
-        os.remove(csv_path)
-        try:
-            shutil.rmtree(get_abs_path("../pipeline_data"))
-        except Exception:
-            pass
-
 
 @pytest.mark.skip(reason="Elasticsearch container networking unreliable in CI")
-def test_csv_to_elasticsearch_with_auth(elasticsearch_container_with_auth):
+def test_csv_to_elasticsearch_with_auth(elasticsearch_container_with_auth, tmp_path):
     """Test loading CSV data into Elasticsearch with authentication."""
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
 
     # Create a temporary CSV file
     csv_content = """id,name,department
@@ -206,11 +188,11 @@ def test_csv_to_elasticsearch_with_auth(elasticsearch_container_with_auth):
 2,Bob,Sales
 3,Charlie,Marketing
 """
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-        f.write(csv_content)
-        csv_path = f.name
+    tmp_file = tmp_path / "tmp.csv"
+    tmp_file.write_text(csv_content)
+    if True:
+        csv_path = tmp_file.name
 
-    try:
         # Get Elasticsearch connection details
         es_url = elasticsearch_container_with_auth.get_url()
         parsed = urlparse(es_url)
@@ -249,22 +231,10 @@ def test_csv_to_elasticsearch_with_auth(elasticsearch_container_with_auth):
         departments = sorted([doc["_source"]["department"] for doc in docs])
         assert departments == ["Engineering", "Marketing", "Sales"]
 
-    finally:
-        # Clean up
-        os.remove(csv_path)
-        try:
-            shutil.rmtree(get_abs_path("../pipeline_data"))
-        except Exception:
-            pass
-
 
 @pytest.mark.skip(reason="Elasticsearch container networking unreliable in CI")
-def test_elasticsearch_replace_strategy(elasticsearch_container):
+def test_elasticsearch_replace_strategy(elasticsearch_container, tmp_path):
     """Test that replace strategy deletes existing data and replaces it."""
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
 
     # Get Elasticsearch connection
     es_url = elasticsearch_container.get_url()
@@ -286,11 +256,11 @@ def test_elasticsearch_replace_strategy(elasticsearch_container):
 NewData1,200
 NewData2,300
 """
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-        f.write(csv_content)
-        csv_path = f.name
-
+    tmp_file = tmp_path / "tmp.csv"
+    tmp_file.write_text(csv_content)
     try:
+        csv_path = tmp_file.name
+
         # Load new data with replace strategy
         parsed = urlparse(es_url)
         netloc = parsed.netloc
@@ -322,14 +292,9 @@ NewData2,300
         assert "OldData" not in names
 
     finally:
-        os.remove(csv_path)
         try:
             if es_client.indices.exists(index=index_name):
                 es_client.indices.delete(index=index_name)
-        except Exception:
-            pass
-        try:
-            shutil.rmtree(get_abs_path("../pipeline_data"))
         except Exception:
             pass
 
@@ -342,12 +307,8 @@ NewData2,300
     not os.getenv("ELASTICSEARCH_CLOUD_URL"),
     reason="ELASTICSEARCH_CLOUD_URL not set in environment",
 )
-def test_csv_to_elasticsearch_cloud():
+def test_csv_to_elasticsearch_cloud(tmp_path):
     """Test loading CSV data into Elasticsearch Cloud."""
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
 
     # Get Elasticsearch Cloud URL from environment
     es_cloud_url = os.getenv("ELASTICSEARCH_CLOUD_URL")
@@ -360,11 +321,11 @@ def test_csv_to_elasticsearch_cloud():
 2,Bob,Sales,75000
 3,Charlie,Marketing,80000
 """
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-        f.write(csv_content)
-        csv_path = f.name
-
+    tmp_file = tmp_path / "tmp.csv"
+    tmp_file.write_text(csv_content)
     try:
+        csv_path = tmp_file.name
+
         # Invoke ingest command with Elasticsearch Cloud
         result = invoke_ingest_command(
             f"csv://{csv_path}",
@@ -411,8 +372,6 @@ def test_csv_to_elasticsearch_cloud():
         assert names == ["Alice", "Bob", "Charlie"]
 
     finally:
-        # Clean up
-        os.remove(csv_path)
         try:
             # Clean up the test index from cloud
             parsed = urlparse(es_cloud_url.replace("elasticsearch://", "https://"))
@@ -430,9 +389,5 @@ def test_csv_to_elasticsearch_cloud():
             es_client = Elasticsearch([es_url], basic_auth=credentials)
             if es_client.indices.exists(index="OMNILOAD_test_cloud_index"):
                 es_client.indices.delete(index="OMNILOAD_test_cloud_index")
-        except Exception:
-            pass
-        try:
-            shutil.rmtree(get_abs_path("../pipeline_data"))
         except Exception:
             pass

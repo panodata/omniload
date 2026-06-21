@@ -150,20 +150,20 @@ def test_db_to_db_exclude_columns(source, dest):
     assert result.exit_code == 0
 
     dest_engine = sqlalchemy.create_engine(dest_uri)
-    dest_conn = dest_engine.connect()
-    res = dest_conn.exec_driver_sql(
-        f"select id, val, updated_at from {schema_rand_prefix}.output"
-    ).fetchall()
+    with dest_engine.begin() as dest_conn:
+        res = dest_conn.exec_driver_sql(
+            f"select id, val, updated_at from {schema_rand_prefix}.output"
+        ).fetchall()
 
-    assert len(res) == 2
-    assert res[0] == (1, "val1", as_datetime("2022-01-01"))
-    assert res[1] == (2, "val2", as_datetime("2022-02-01"))
+        assert len(res) == 2
+        assert res[0] == (1, "val1", as_datetime("2022-01-01"))
+        assert res[1] == (2, "val2", as_datetime("2022-02-01"))
 
-    # Verify excluded columns don't exist in destination schema
-    columns = dest_conn.exec_driver_sql(
-        f"SELECT column_name FROM information_schema.columns WHERE table_schema = '{schema_rand_prefix}' AND table_name = 'output'"
-    ).fetchall()
-    assert columns == [("id",), ("val",), ("updated_at",)]
+        # Verify excluded columns don't exist in destination schema
+        columns = dest_conn.exec_driver_sql(
+            f"SELECT column_name FROM information_schema.columns WHERE table_schema = '{schema_rand_prefix}' AND table_name = 'output'"
+        ).fetchall()
+        assert columns == [("id",), ("val",), ("updated_at",)]
 
     # Clean up
     dest_engine.dispose()
@@ -212,10 +212,10 @@ def test_sql_limit():
     assert result.exit_code == 0
 
     dest_engine = sqlalchemy.create_engine(dest_uri, poolclass=NullPool)
-    dest_conn = dest_engine.connect()
-    res = dest_conn.exec_driver_sql(
-        f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        res = dest_conn.exec_driver_sql(
+            f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
+        ).fetchall()
 
     assert res == [
         (1, "val1", as_datetime("2024-01-01")),
@@ -283,10 +283,10 @@ def test_date_coercion_issue():
     assert result.exit_code == 0
 
     dest_engine = sqlalchemy.create_engine(dest_uri, poolclass=NullPool)
-    dest_conn = dest_engine.connect()
-    res = dest_conn.exec_driver_sql(
-        f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        res = dest_conn.exec_driver_sql(
+            f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
+        ).fetchall()
 
     assert res == [
         (1, "val1", as_datetime("2024-01-01")),

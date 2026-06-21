@@ -104,7 +104,6 @@ def frankfurter_test_cases() -> Iterable[Callable]:
         assert result.exit_code == 0, f"Ingestion failed: {result.output}"
 
         dest_engine = sqlalchemy.create_engine(dest_uri)
-
         query = f"SELECT rate FROM {dest_table} WHERE currency_code = 'GBP'"
         with dest_engine.connect() as conn:
             rows = conn.exec_driver_sql(query).fetchall()

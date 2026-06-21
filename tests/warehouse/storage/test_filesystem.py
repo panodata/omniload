@@ -85,9 +85,9 @@ def fs_test_cases(
         engine = sqlalchemy.create_engine(dest_uri)
         with engine.connect() as conn:
             rows = conn.exec_driver_sql(f"select count(*) from {dest_table}").fetchall()
-            assert len(rows) == 1
-            assert rows[0] == (n,)
         engine.dispose()
+        assert len(rows) == 1
+        assert rows[0] == (n,)
 
     def test_empty_source_uri(dest_uri):
         """

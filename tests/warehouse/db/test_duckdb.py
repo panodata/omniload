@@ -1,22 +1,17 @@
 import csv
 import os
-import shutil
 import tempfile
 
 import duckdb
 import sqlalchemy
 from sqlalchemy.pool import NullPool
 
-from tests.util import get_abs_path, get_random_string, invoke_ingest_command
+from tests.util import get_random_string, invoke_ingest_command
 from tests.warehouse.container import EphemeralDuckDb
 from tests.warehouse.db.util import assert_output_equals_to_csv
 
 
 def test_create_replace_csv_to_duckdb(testdata_path):
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
 
     abs_db_path = testdata_path / "test_create_replace_csv.db"
     rel_db_path_to_command = "omniload/testdata/test_create_replace_csv.db"
@@ -59,15 +54,9 @@ def test_create_replace_csv_to_duckdb(testdata_path):
 
 
 def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
 
-    dbname = f"test_merge_with_primary_key_csv{get_random_string(5)}.db"
-    abs_db_path = tmp_path / dbname
-    rel_db_path_to_command = f"omniload/testdata/{dbname}"
-    uri = f"duckdb:///{rel_db_path_to_command}"
+    abs_db_path = tmp_path / "test_merge_with_primary_key_csv.db"
+    uri = f"duckdb:///{abs_db_path}"
 
     # DuckDB is sensitive about multiple connections to the same database file.
     # Connection Error: Can't open a connection to same database file with a
@@ -143,24 +132,12 @@ def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):
 
     # there should be a new run with the rest, 2 rows updated + 1 new row
     assert count_by_run_id[1][1] == 3
-    ##############################
-
-    try:
-        os.remove(abs_db_path)
-    except Exception:
-        pass
 
 
-def test_delete_insert_without_primary_key_csv_to_duckdb(testdata_path):
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
+def test_delete_insert_without_primary_key_csv_to_duckdb(testdata_path, tmp_path):
 
-    dbname = f"test_merge_with_primary_key_csv{get_random_string(5)}.db"
-    abs_db_path = (testdata_path / dbname).absolute()
-    rel_db_path_to_command = f"omniload/testdata/{dbname}"
-    uri = f"duckdb:///{rel_db_path_to_command}"
+    abs_db_path = tmp_path / "test_delete_insert_without_primary_key_csv.db"
+    uri = f"duckdb:///{abs_db_path}"
 
     conn = duckdb.connect(abs_db_path)
 
@@ -233,14 +210,6 @@ def test_delete_insert_without_primary_key_csv_to_duckdb(testdata_path):
 
     # there should be a new run with the rest, 3 rows updated + 1 new row
     assert count_by_run_id[1][1] == 4
-    ##############################
-
-    # Clean up
-    conn.close()
-    try:
-        os.remove(abs_db_path)
-    except Exception:
-        pass
 
 
 def test_duckdb_masking_basic():
@@ -279,6 +248,7 @@ def test_duckdb_masking_basic():
                 (3, 'Bob Johnson', 'bob.j@company.org', '555-555-1234', '456-78-9012', 45000, '2024-03-10')
             """
         )
+    source_engine.dispose()
 
     # Run ingestion with masking
     result = invoke_ingest_command(
@@ -293,10 +263,11 @@ def test_duckdb_masking_basic():
 
     # Verify masked data
     dest_engine = sqlalchemy.create_engine(dest_uri, poolclass=NullPool)
-    dest_conn = dest_engine.connect()
-    res = dest_conn.exec_driver_sql(
-        f"SELECT id, name, email, phone, ssn, salary FROM {schema_rand_prefix}.masked_customers ORDER BY id"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        res = dest_conn.exec_driver_sql(
+            f"SELECT id, name, email, phone, ssn, salary FROM {schema_rand_prefix}.masked_customers ORDER BY id"
+        ).fetchall()
+    dest_engine.dispose()
 
     # Check that data was masked correctly
     assert len(res) == 3
@@ -361,6 +332,7 @@ def test_duckdb_masking_consistency():
                 (2, 'user2', 'user2@example.com')
             """
         )
+    source_engine.dispose()
 
     # Run first ingestion with masking
     result1 = invoke_ingest_command(
@@ -384,16 +356,18 @@ def test_duckdb_masking_consistency():
 
     # Get results from both destinations
     dest_engine1 = sqlalchemy.create_engine(dest_uri1, poolclass=NullPool)
-    with dest_engine1.begin() as conn:
+    with dest_engine1.connect() as conn:
         res1 = conn.exec_driver_sql(
             f"SELECT id, username, email FROM {schema_rand_prefix}.masked_users ORDER BY id"
         ).fetchall()
+    dest_engine1.dispose()
 
     dest_engine2 = sqlalchemy.create_engine(dest_uri2, poolclass=NullPool)
-    with dest_engine2.begin() as conn:
+    with dest_engine2.connect() as conn:
         res2 = conn.exec_driver_sql(
             f"SELECT id, username, email FROM {schema_rand_prefix}.masked_users ORDER BY id"
         ).fetchall()
+    dest_engine2.dispose()
 
     # Check that hashes are consistent between runs
     assert res1 == res2
@@ -442,6 +416,7 @@ def test_duckdb_masking_format_preserving():
                 (2, 'bob@company.org', '555-987-6543', '5500-0000-0000-0004', '987-65-4321', 'Bob Smith')
             """
         )
+    source_engine.dispose()
 
     # Run ingestion with format-preserving masks
     result = invoke_ingest_command(
@@ -462,10 +437,11 @@ def test_duckdb_masking_format_preserving():
 
     # Verify masked data
     dest_engine = sqlalchemy.create_engine(dest_uri, poolclass=NullPool)
-    dest_conn = dest_engine.connect()
-    res = dest_conn.exec_driver_sql(
-        f"SELECT id, email, phone, credit_card, ssn, name FROM {schema_rand_prefix}.masked_contacts ORDER BY id"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        res = dest_conn.exec_driver_sql(
+            f"SELECT id, email, phone, credit_card, ssn, name FROM {schema_rand_prefix}.masked_contacts ORDER BY id"
+        ).fetchall()
+    dest_engine.dispose()
 
     # Check format-preserving masks
     assert len(res) == 2
@@ -529,6 +505,7 @@ def test_duckdb_masking_numeric_and_date():
                 (3, 5432.10, 28, 234, 'Transaction notes 3')
             """
         )
+    source_engine.dispose()
 
     # Run ingestion with numeric masks
     result = invoke_ingest_command(
@@ -543,10 +520,11 @@ def test_duckdb_masking_numeric_and_date():
 
     # Verify masked data
     dest_engine = sqlalchemy.create_engine(dest_uri, poolclass=NullPool)
-    dest_conn = dest_engine.connect()
-    res = dest_conn.exec_driver_sql(
-        f"SELECT id, amount, age, score, notes FROM {schema_rand_prefix}.masked_transactions ORDER BY id"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        res = dest_conn.exec_driver_sql(
+            f"SELECT id, amount, age, score, notes FROM {schema_rand_prefix}.masked_transactions ORDER BY id"
+        ).fetchall()
+    dest_engine.dispose()
 
     # Check numeric masks
     assert len(res) == 3

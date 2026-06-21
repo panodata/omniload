@@ -1,4 +1,3 @@
-import shutil
 import traceback
 
 import sqlalchemy
@@ -6,7 +5,6 @@ from sqlalchemy.pool import NullPool
 
 from tests.util import (
     as_datetime,
-    get_abs_path,
     get_random_string,
     invoke_ingest_command,
 )
@@ -14,10 +12,6 @@ from tests.util import (
 
 def db_to_db_create_replace(source_connection_url: str, dest_connection_url: str):
     schema_rand_prefix = f"testschema_create_replace_{get_random_string(5)}"
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
 
     source_engine = sqlalchemy.create_engine(source_connection_url)
     with source_engine.begin() as conn:
@@ -48,10 +42,10 @@ def db_to_db_create_replace(source_connection_url: str, dest_connection_url: str
     assert result.exit_code == 0
 
     dest_engine = sqlalchemy.create_engine(dest_connection_url)
-    dest_conn = dest_engine.connect()
-    res = dest_conn.exec_driver_sql(
-        f"select id, val, updated_at from {schema_rand_prefix}.output"
-    ).fetchall()
+    with dest_engine.connect() as dest_conn:
+        res = dest_conn.exec_driver_sql(
+            f"select id, val, updated_at from {schema_rand_prefix}.output"
+        ).fetchall()
     dest_engine.dispose()
 
     assert len(res) == 2
@@ -61,10 +55,6 @@ def db_to_db_create_replace(source_connection_url: str, dest_connection_url: str
 
 def db_to_db_append(source_connection_url: str, dest_connection_url: str):
     schema_rand_prefix = f"testschema_append_{get_random_string(5)}"
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
 
     source_engine = sqlalchemy.create_engine(source_connection_url)
     dest_engine = sqlalchemy.create_engine(dest_connection_url)
@@ -124,10 +114,6 @@ def db_to_db_merge_with_primary_key(
     source_connection_url: str, dest_connection_url: str
 ):
     schema_rand_prefix = f"testschema_merge_{get_random_string(5)}"
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
 
     source_engine = sqlalchemy.create_engine(source_connection_url)
     with source_engine.begin() as conn:
@@ -323,10 +309,6 @@ def db_to_db_delete_insert_without_primary_key(
     source_connection_url: str, dest_connection_url: str
 ):
     schema_rand_prefix = f"testschema_delete_insert_{get_random_string(5)}"
-    try:
-        shutil.rmtree(get_abs_path("../pipeline_data"))
-    except Exception:
-        pass
 
     source_engine = sqlalchemy.create_engine(source_connection_url)
     with source_engine.begin() as source_conn:
@@ -642,9 +624,8 @@ def get_query_result(uri: str, query: str):
 def custom_query_tests():
     def replace(source_connection_url, dest_connection_url):
         schema = f"testschema_cr_cust_{get_random_string(5)}"
-        with sqlalchemy.create_engine(
-            source_connection_url, poolclass=NullPool
-        ).begin() as conn:
+        engine = sqlalchemy.create_engine(source_connection_url, poolclass=NullPool)
+        with engine.begin() as conn:
             conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema}")
             conn.exec_driver_sql(f"CREATE SCHEMA {schema}")
             conn.exec_driver_sql(
@@ -667,6 +648,7 @@ def custom_query_tests():
                 f"select count(*) from {schema}.order_items"
             ).fetchall()
             assert res[0][0] == 4
+        engine.dispose()
 
         if dest_connection_url.startswith("clickhouse"):
             get_query_result(
@@ -714,6 +696,7 @@ def custom_query_tests():
             conn.exec_driver_sql(
                 f"INSERT INTO {schema}.order_items (id, order_id, subname) VALUES (1, 1, 'Item 1 for First Order'), (2, 1, 'Item 2 for First Order'), (3, 2, 'Item 1 for Second Order'), (4, 3, 'Item 1 for Third Order')"
             )
+        source_engine.dispose()
 
         if dest_connection_url.startswith("clickhouse"):
             get_query_result(
@@ -790,6 +773,7 @@ def custom_query_tests():
             conn.exec_driver_sql(
                 f"UPDATE {schema}.orders SET updated_at = '2024-01-02' WHERE id = 2"
             )
+        source_engine.dispose()
 
         # Run again - should see updated data with new load_id
         run()

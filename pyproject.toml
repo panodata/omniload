@@ -250,7 +250,7 @@ ini_options.log_cli_level = "DEBUG"
 # addopts = "-vvv -p no:warnings -rP"
 
 [tool.coverage]
-run.omit = [ "*_test.py" ]
+run.omit = [ "tests/**" ]
 
 [tool.poe]
 tasks.check = [
@@ -283,7 +283,7 @@ tasks.lint = [
   { cmd = "ruff format --check" },
   { cmd = "ruff check" },
   { cmd = "validate-pyproject pyproject.toml" },
-  { cmd = "ty check omniload tests" },
+  { cmd = "ty check" },
 ]
 tasks.release = [
   { cmd = "python -m build" },

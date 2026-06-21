@@ -302,10 +302,10 @@ def appstore_test_cases() -> Iterable[Callable]:
         assert result.exit_code == 0
 
         dest_engine = sqlalchemy.create_engine(dest_uri)
-        dest_conn = dest_engine.connect()
-        count = dest_conn.exec_driver_sql(
-            f"select count(*) from {dest_table}"
-        ).scalar_one()
+        with dest_engine.connect() as dest_conn:
+            count = dest_conn.exec_driver_sql(
+                f"select count(*) from {dest_table}"
+            ).scalar_one()
         dest_engine.dispose()
         assert count == 3
 
@@ -436,7 +436,7 @@ def appstore_test_cases() -> Iterable[Callable]:
         assert result.exit_code == 0
 
         dest_engine = sqlalchemy.create_engine(dest_uri)
-        with dest_engine.connect() as dest_conn:
+        with dest_engine.begin() as dest_conn:
             count = dest_conn.exec_driver_sql(
                 f"select count(*) from {dest_table}"
             ).scalar_one()
