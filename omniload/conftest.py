@@ -41,14 +41,26 @@ def start_containers(config):
         container.container_lock_dir = config.shared_directory  # ty: ignore[invalid-assignment]
 
     with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(container.start_fully) for container in unique_containers
+        ]
+
+    # ThreadPoolExecutor.__exit__ has joined every start_fully() call by now. Surface
+    # the first startup failure with its real traceback, instead of letting it be
+    # swallowed and resurface as a misleading "Failed to start container after bunch
+    # of attempts" timeout in every test that depends on the container.
+    for future in futures:
+        if future.exception() is None:
+            continue
+        # pytest skips pytest_sessionfinish (so stop_containers never runs) when
+        # pytest_sessionstart raises, and Ryuk is disabled in the default test run.
+        # Stop any containers that did come up so they don't leak, then re-raise.
         for container in unique_containers:
-            executor.submit(container.start_fully)
-        # futures = [
-        #     executor.submit(container.start_fully) for container in unique_containers
-        # ]
-        # # Wait for all futures to complete
-        # for future in futures:
-        #     future.result()
+            try:
+                container.stop_fully()
+            except Exception:
+                pass
+        future.result()  # re-raises the captured exception with its traceback
 
 
 def stop_containers(config):
