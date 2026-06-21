@@ -1,5 +1,5 @@
+import importlib.resources
 import json
-import os
 import unittest
 from abc import abstractmethod
 from typing import Any, Type
@@ -25,9 +25,8 @@ from omniload.src.factory import DestinationProtocol
 
 class BigQueryDestinationTest(unittest.TestCase):
     destination = BigQueryDestination()
-    abs_path_to_credentials = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "./testdata/fakebqcredentials.json")
-    )
+    with importlib.resources.path("omniload.src", "testdata") as testdata_path:
+        abs_path_to_credentials = str(testdata_path / "fakebqcredentials.json")
     actual_credentials: dict = {}
 
     def setUp(self):
