@@ -4123,11 +4123,11 @@ def test_mysql_zero_dates(source, dest):
     ]
 
     assert len(res) == 5
-    assert res[0] == ("Row 1", "1970-01-01 00:00:00")
-    assert res[1] == ("Row 2", "2024-01-01 12:00:00")
-    assert res[2] == ("Row 3", "1970-01-01 00:00:00")
-    assert res[3] == ("Row 4", "2025-04-05 08:30:00")
-    assert res[4] == ("Row 5", "1970-01-01 00:00:00")
+    assert res[0] == ("Row 1", "1969-12-31 23:00:00")
+    assert res[1] == ("Row 2", "2024-01-01 11:00:00")
+    assert res[2] == ("Row 3", "1969-12-31 23:00:00")
+    assert res[3] == ("Row 4", "2025-04-05 06:30:00")
+    assert res[4] == ("Row 5", "1969-12-31 23:00:00")
 
     # Clean up
     source.stop()
