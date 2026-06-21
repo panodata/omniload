@@ -1,13 +1,14 @@
 import os
+import shutil
 import sys
+import tempfile
 import time
+from pathlib import Path
 
 from testcontainers.clickhouse import ClickHouseContainer
 from testcontainers.core.container import DockerContainer
 from testcontainers.mysql import MySqlContainer
 from testcontainers.postgres import PostgresContainer
-
-from tests.util import get_abs_path, get_random_string
 
 
 class DockerImage:
@@ -72,8 +73,11 @@ class ClickhouseDockerImage(DockerImage):
 
 
 class EphemeralDuckDb:
+    def __init__(self):
+        self.tmpdir = Path(tempfile.mkdtemp())
+
     def start(self) -> str:
-        abs_path = get_abs_path(f"./testdata/duckdb_{get_random_string(5)}.db")
+        abs_path = self.tmpdir / "duckdb.db"
         return f"duckdb:///{abs_path}"
 
     def start_fully(self) -> str:  # type: ignore
@@ -83,14 +87,7 @@ class EphemeralDuckDb:
         pass
 
     def stop_fully(self):
-        # Get all duckdb_*.db files in the testdata directory and delete them
-        testdata_dir = get_abs_path("./testdata/")
-        for file in os.listdir(testdata_dir):
-            if file.startswith("duckdb_") and file.endswith(".db"):
-                try:
-                    os.remove(os.path.join(testdata_dir, file))
-                except Exception:
-                    pass
+        shutil.rmtree(self.tmpdir)
 
 
 class CouchbaseContainer(DockerContainer):

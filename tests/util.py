@@ -1,3 +1,4 @@
+import importlib.resources
 import os
 import random
 import string
@@ -5,6 +6,8 @@ import subprocess
 import sys
 import traceback
 from datetime import date, datetime, timezone
+from pathlib import Path
+from typing import Union
 
 import pytest
 from typer.testing import CliRunner
@@ -37,7 +40,7 @@ def has_exception(exception, exc_type):
     return False
 
 
-def get_abs_path(relative_path):
+def get_abs_path(relative_path: Union[str, Path]) -> str:
     return os.path.abspath(os.path.join(os.path.dirname(__file__), relative_path))
 
 
@@ -172,3 +175,9 @@ def invoke_ingest_command(
 
 def pp(x):
     print(x, file=sys.stderr)
+
+
+def get_testdata_path() -> Path:
+    """Path to the test data directory."""
+    with importlib.resources.path("omniload", "testdata") as path:
+        return path

@@ -1,7 +1,10 @@
 import logging
 import tempfile
+from pathlib import Path
 
 import pytest
+
+from tests.util import get_testdata_path
 
 logging.getLogger("testcontainers.core.waiting_utils").setLevel(logging.WARNING)
 logging.getLogger("testcontainers.core.container").setLevel(logging.WARNING)
@@ -30,3 +33,9 @@ def is_master(config):
     node or not running xdist at all.
     """
     return not hasattr(config, "workerinput")
+
+
+@pytest.fixture(scope="session")
+def testdata_path() -> Path:
+    """Path to the test data directory, as pytest fixture."""
+    return get_testdata_path()

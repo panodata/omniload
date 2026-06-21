@@ -5,7 +5,7 @@ import json
 from typing import Callable, Iterable
 from unittest.mock import patch
 
-import pyarrow as pa
+import pyarrow.csv
 import pytest
 import sqlalchemy
 from dlt.common.storages.fsspec_filesystem import glob_files
@@ -52,7 +52,7 @@ def fs_test_cases(
 
     # For Parquet tests
     with test_fs.open("/data.parquet", "wb") as f:
-        table = pa.csv.read_csv(io.BytesIO(testdata.encode()))
+        table = pyarrow.csv.read_csv(io.BytesIO(testdata.encode()))
         pya_parquet.write_table(table, f)
     with io.BytesIO() as buf:
         pya_parquet.write_table(table, buf)

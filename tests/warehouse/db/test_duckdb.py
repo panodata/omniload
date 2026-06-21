@@ -9,15 +9,16 @@ from sqlalchemy.pool import NullPool
 
 from tests.util import get_abs_path, get_random_string, invoke_ingest_command
 from tests.warehouse.container import EphemeralDuckDb
+from tests.warehouse.db.util import assert_output_equals_to_csv
 
 
-def test_create_replace_csv_to_duckdb():
+def test_create_replace_csv_to_duckdb(testdata_path):
     try:
         shutil.rmtree(get_abs_path("../pipeline_data"))
     except Exception:
         pass
 
-    abs_db_path = get_abs_path("./testdata/test_create_replace_csv.db")
+    abs_db_path = testdata_path / "test_create_replace_csv.db"
     rel_db_path_to_command = "omniload/testdata/test_create_replace_csv.db"
     rel_source_path_to_command = "omniload/testdata/create_replace.csv"
 
@@ -38,7 +39,7 @@ def test_create_replace_csv_to_duckdb():
 
     # read CSV file
     actual_rows = []
-    with open(get_abs_path("./testdata/create_replace.csv"), "r") as f:
+    with open(testdata_path / "create_replace.csv", "r") as f:
         reader = csv.reader(f, delimiter=",", quotechar='"')
         next(reader, None)
         for row in reader:
@@ -57,14 +58,14 @@ def test_create_replace_csv_to_duckdb():
         pass
 
 
-def test_merge_with_primary_key_csv_to_duckdb():
+def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):
     try:
         shutil.rmtree(get_abs_path("../pipeline_data"))
     except Exception:
         pass
 
     dbname = f"test_merge_with_primary_key_csv{get_random_string(5)}.db"
-    abs_db_path = get_abs_path(f"./testdata/{dbname}")
+    abs_db_path = tmp_path / dbname
     rel_db_path_to_command = f"omniload/testdata/{dbname}"
     uri = f"duckdb:///{rel_db_path_to_command}"
 
@@ -95,21 +96,8 @@ def test_merge_with_primary_key_csv_to_duckdb():
         conn.close()
         return results
 
-    def assert_output_equals_to_csv(path: str):
-        res = get_output_rows()
-        actual_rows = []
-        with open(get_abs_path(path), "r") as f:
-            reader = csv.reader(f, delimiter=",", quotechar='"')
-            next(reader, None)
-            for row in reader:
-                actual_rows.append(row)
-
-        assert len(res) == len(actual_rows)
-        for i, row in enumerate(actual_rows):
-            assert res[i] == tuple(row)
-
     run("csv://omniload/testdata/merge_part1.csv")
-    assert_output_equals_to_csv("./testdata/merge_part1.csv")
+    assert_output_equals_to_csv(get_output_rows(), testdata_path / "merge_part1.csv")
 
     conn = duckdb.connect(abs_db_path)
     first_run_id = conn.sql(
@@ -120,7 +108,7 @@ def test_merge_with_primary_key_csv_to_duckdb():
     ##############################
     # we'll run again, we don't expect any changes since the data hasn't changed
     run("csv://omniload/testdata/merge_part1.csv")
-    assert_output_equals_to_csv("./testdata/merge_part1.csv")
+    assert_output_equals_to_csv(get_output_rows(), testdata_path / "merge_part1.csv")
 
     # we also ensure that the other rows were not touched
     conn = duckdb.connect(abs_db_path)
@@ -137,7 +125,7 @@ def test_merge_with_primary_key_csv_to_duckdb():
     # now we'll run the same ingestion but with a different file this time
 
     run("csv://omniload/testdata/merge_part2.csv")
-    assert_output_equals_to_csv("./testdata/merge_expected.csv")
+    assert_output_equals_to_csv(get_output_rows(), testdata_path / "merge_expected.csv")
 
     # let's check the runs
     conn = duckdb.connect(abs_db_path)
@@ -163,14 +151,14 @@ def test_merge_with_primary_key_csv_to_duckdb():
         pass
 
 
-def test_delete_insert_without_primary_key_csv_to_duckdb():
+def test_delete_insert_without_primary_key_csv_to_duckdb(testdata_path):
     try:
         shutil.rmtree(get_abs_path("../pipeline_data"))
     except Exception:
         pass
 
     dbname = f"test_merge_with_primary_key_csv{get_random_string(5)}.db"
-    abs_db_path = get_abs_path(f"./testdata/{dbname}")
+    abs_db_path = (testdata_path / dbname).absolute()
     rel_db_path_to_command = f"omniload/testdata/{dbname}"
     uri = f"duckdb:///{rel_db_path_to_command}"
 
@@ -194,21 +182,10 @@ def test_delete_insert_without_primary_key_csv_to_duckdb():
             "select symbol, date, is_enabled, name from testschema.output order by symbol asc"
         ).fetchall()
 
-    def assert_output_equals_to_csv(path: str):
-        res = get_output_rows()
-        actual_rows = []
-        with open(get_abs_path(path), "r") as f:
-            reader = csv.reader(f, delimiter=",", quotechar='"')
-            next(reader, None)
-            for row in reader:
-                actual_rows.append(row)
-
-        assert len(res) == len(actual_rows)
-        for i, row in enumerate(actual_rows):
-            assert res[i] == tuple(row)
-
     run("csv://omniload/testdata/delete_insert_part1.csv")
-    assert_output_equals_to_csv("./testdata/delete_insert_part1.csv")
+    assert_output_equals_to_csv(
+        get_output_rows(), testdata_path / "delete_insert_part1.csv"
+    )
 
     first_run_id = conn.sql(
         "select _dlt_load_id from testschema.output limit 1"
@@ -219,7 +196,9 @@ def test_delete_insert_without_primary_key_csv_to_duckdb():
     # this is due to the fact that the old data won't be touched, but the ones with the
     # latest value will be rewritten
     run("csv://omniload/testdata/delete_insert_part1.csv")
-    assert_output_equals_to_csv("./testdata/delete_insert_part1.csv")
+    assert_output_equals_to_csv(
+        get_output_rows(), testdata_path / "delete_insert_part1.csv"
+    )
 
     # we also ensure that the other rows were not touched
     count_by_run_id = conn.sql(
@@ -236,7 +215,9 @@ def test_delete_insert_without_primary_key_csv_to_duckdb():
     # now we'll run the same ingestion but with a different file this time
 
     run("csv://omniload/testdata/delete_insert_part2.csv")
-    assert_output_equals_to_csv("./testdata/delete_insert_expected.csv")
+    assert_output_equals_to_csv(
+        get_output_rows(), testdata_path / "delete_insert_expected.csv"
+    )
 
     # let's check the runs
     count_by_run_id = conn.sql(
