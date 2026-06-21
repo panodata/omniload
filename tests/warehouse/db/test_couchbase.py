@@ -6,8 +6,10 @@ import pytest
 import sqlalchemy
 
 from omniload.src.couchbase_source.helpers import fetch_documents
+from tests.container.couchbase import CouchbaseContainer
+from tests.settings import COUCHBASE_IMAGE
 from tests.util import invoke_ingest_command
-from tests.warehouse.container import COUCHBASE_IMAGE, DESTINATIONS, CouchbaseContainer
+from tests.warehouse.container import DESTINATIONS
 
 
 @pytest.fixture(scope="session")

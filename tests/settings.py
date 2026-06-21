@@ -1,0 +1,8 @@
+CLICKHOUSE_IMAGE = "docker.io/clickhouse/clickhouse-server:26.5"
+COUCHBASE_IMAGE = "docker.io/couchbase:7.6.9"
+FLOCI_IMAGE = "docker.io/floci/floci:1.5.25"
+KAFKA_IMAGE = "docker.io/confluentinc/cp-kafka:7.6.0"
+MONGODB_IMAGE = "docker.io/mongo:8.3"
+MYSQL_IMAGE = "docker.io/mariadb:12"
+MSSQL_IMAGE = "mcr.microsoft.com/mssql/server:2025-CU6-ubuntu-24.04"
+POSTGRESQL_IMAGE = "docker.io/postgres:18-alpine"

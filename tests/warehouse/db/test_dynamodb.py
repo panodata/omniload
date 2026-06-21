@@ -7,6 +7,7 @@ import pendulum
 import pytest
 
 from tests.container.floci import FlociContainer
+from tests.settings import FLOCI_IMAGE
 from tests.util import get_random_string, invoke_ingest_command
 from tests.warehouse.container import DESTINATIONS
 from tests.warehouse.operations import get_query_result
@@ -19,9 +20,20 @@ class DynamoDBTestConfig:
     data: List[Dict]
 
 
+data_items = [
+    {"id": {"S": "1"}, "updated_at": {"S": "2024-01-01T00:00:00"}},
+    {"id": {"S": "2"}, "updated_at": {"S": "2024-02-01T00:00:00"}},
+    {"id": {"S": "3"}, "updated_at": {"S": "2024-03-01T00:00:00"}},
+]
+
+
 @pytest.fixture(scope="session")
-def dynamodb():
-    db_name = f"dynamodb_test_{get_random_string(5)}"
+def db_name() -> str:
+    return f"dynamodb_test_{get_random_string(5)}"
+
+
+def load_test_data(client, db_name):
+
     table_cfg = {
         "TableName": db_name,
         "KeySchema": [
@@ -39,17 +51,26 @@ def dynamodb():
         },
     }
 
-    items = [
-        {"id": {"S": "1"}, "updated_at": {"S": "2024-01-01T00:00:00"}},
-        {"id": {"S": "2"}, "updated_at": {"S": "2024-02-01T00:00:00"}},
-        {"id": {"S": "3"}, "updated_at": {"S": "2024-03-01T00:00:00"}},
-    ]
+    client.create_table(**table_cfg)
+    for item in data_items:
+        client.put_item(TableName=db_name, Item=item)
 
-    def load_test_data(ls):
-        client = ls.get_client("dynamodb")
-        client.create_table(**table_cfg)
-        for item in items:
-            client.put_item(TableName=db_name, Item=item)
+
+@pytest.fixture(scope="session")
+def floci(db_name):
+    """
+    Provide a Couchbase service container for the whole test session.
+    """
+    container = FlociContainer(image=FLOCI_IMAGE)
+    container.start()
+    client = container.get_client("dynamodb")  # ty: ignore[invalid-argument-type, missing-argument]
+    load_test_data(client, db_name)
+    yield container
+    container.stop()
+
+
+@pytest.fixture(scope="session")
+def dynamodb(floci, db_name):
 
     def items_to_list(items):
         """converts dynamodb item list to list of dics"""
@@ -61,10 +82,6 @@ def dynamodb():
             result.append(entry)
         return result
 
-    floci = FlociContainer(image="docker.io/floci/floci:1.5.25")
-    floci.start()
-    load_test_data(floci)
-
     dynamodb_url = urlparse(floci.get_url())
     src_uri = (
         f"dynamodb://{dynamodb_url.netloc}?"
@@ -75,10 +92,8 @@ def dynamodb():
     yield DynamoDBTestConfig(
         db_name,
         src_uri,
-        items_to_list(items),
+        items_to_list(data_items),
     )
-
-    floci.stop()
 
 
 def dynamodb_tests() -> Iterable[Callable]:

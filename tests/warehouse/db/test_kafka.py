@@ -7,6 +7,7 @@ from confluent_kafka import KafkaError, KafkaException, Producer
 from confluent_kafka.admin import AdminClient
 from testcontainers.kafka import KafkaContainer
 
+from tests.settings import KAFKA_IMAGE
 from tests.util import invoke_ingest_command
 from tests.warehouse.container import DESTINATIONS
 
@@ -16,7 +17,7 @@ def kafka_service():
     """
     Provide a Kafka service container for the whole test session.
     """
-    container = KafkaContainer("confluentinc/cp-kafka:7.6.0")
+    container = KafkaContainer(KAFKA_IMAGE).with_kraft()
     container.start()
     yield container
     container.stop()

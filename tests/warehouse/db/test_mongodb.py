@@ -9,8 +9,9 @@ import sqlalchemy
 from pyarrow import ipc
 from testcontainers.mongodb import MongoDbContainer
 
+from tests.settings import MONGODB_IMAGE
 from tests.util import get_random_string, invoke_ingest_command
-from tests.warehouse.container import DESTINATIONS, MONGODB_IMAGE
+from tests.warehouse.container import DESTINATIONS
 
 
 def mongodb_test_cases():
@@ -273,7 +274,7 @@ def mongodb_test_cases():
 
 
 @pytest.fixture(scope="session")
-def mongodb_server():
+def mongodb():
     container = MongoDbContainer(MONGODB_IMAGE)
     container.start()
     yield container
@@ -281,8 +282,8 @@ def mongodb_server():
 
 
 @pytest.mark.parametrize("testcase", mongodb_test_cases())
-def test_mongodb_dest(testcase, mongodb_server):
-    testcase(mongodb_server)
+def test_mongodb_dest(testcase, mongodb):
+    testcase(mongodb)
 
 
 @pytest.mark.parametrize(
