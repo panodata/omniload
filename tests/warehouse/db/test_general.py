@@ -5,8 +5,9 @@ import pytest
 import sqlalchemy
 from sqlalchemy.pool import NullPool
 
-from tests.database.container import DESTINATIONS, SOURCES, EphemeralDuckDb
-from tests.database.operations import (
+from tests.util import as_datetime, get_random_string, invoke_ingest_command
+from tests.warehouse.container import DESTINATIONS, SOURCES, EphemeralDuckDb
+from tests.warehouse.operations import (
     custom_query_tests,
     db_to_db_append,
     db_to_db_create_replace,
@@ -14,7 +15,6 @@ from tests.database.operations import (
     db_to_db_delete_insert_without_primary_key,
     db_to_db_merge_with_primary_key,
 )
-from tests.util import as_datetime, get_random_string, invoke_ingest_command
 
 
 @pytest.mark.parametrize(

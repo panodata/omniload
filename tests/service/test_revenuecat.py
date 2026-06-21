@@ -1,93 +1,160 @@
-import os
-import traceback
+"""
+Unit tests for RevenueCat helper functions.
+"""
+
+import asyncio
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-import sqlalchemy
 
-from tests.database.container import DESTINATIONS
-from tests.util import get_random_string, invoke_ingest_command
-
-
-def revenuecat_test_cases():
-    # All RevenueCat source tables
-    tables = ["projects", "customers", "products", "entitlements", "offerings"]
-
-    def create_table_test(table_name):
-        def table_test(dest_uri: str):
-            revenuecat_api_key = os.environ.get("OMNILOAD_TEST_REVENUECAT_API_KEY", "")
-            revenuecat_project_id = os.environ.get(
-                "OMNILOAD_TEST_REVENUECAT_PROJECT_ID", ""
-            )
-
-            if not revenuecat_api_key:
-                pytest.skip(
-                    "OMNILOAD_TEST_REVENUECAT_API_KEY environment variable is not set"
-                )
-
-            # Projects table doesn't need project_id, others do
-            if table_name != "projects" and not revenuecat_project_id:
-                pytest.skip(
-                    "OMNILOAD_TEST_REVENUECAT_PROJECT_ID environment variable is not set"
-                )
-
-            # Build source URI
-            if table_name == "projects":
-                source_uri = f"revenuecat://?api_key={revenuecat_api_key}"
-            else:
-                source_uri = f"revenuecat://?api_key={revenuecat_api_key}&project_id={revenuecat_project_id}"
-
-            source_table = table_name
-            schema_rand_prefix = f"testschema_revenuecat_{get_random_string(5)}"
-            dest_table = f"{schema_rand_prefix}.{table_name}_{get_random_string(5)}"
-
-            # Limit customers table to 100 records for faster testing
-            yield_limit = 100 if table_name == "customers" else None
-
-            result = invoke_ingest_command(
-                source_uri,
-                source_table,
-                dest_uri,
-                dest_table,
-                yield_limit=yield_limit,
-                print_output=True,
-            )
-
-            if result.exit_code != 0:
-                # Some RevenueCat resources might not be accessible based on API key permissions
-                print(
-                    f"RevenueCat {table_name} test failed (likely permissions/access issue)"
-                )
-                traceback.print_exception(*result.exc_info)
-
-            assert result.exit_code == 0
-
-            with sqlalchemy.create_engine(dest_uri).connect() as conn:
-                res = conn.exec_driver_sql(
-                    f"select count(*) from {dest_table}"
-                ).fetchall()
-                assert len(res) > 0
-                count = res[0][0]
-                print(f"RevenueCat {table_name} count: {count}")
-
-                # Special validation for projects table - should have at least one project
-                if table_name == "projects":
-                    assert count > 0, "RevenueCat should have at least one project"
-
-        # Set function name for pytest identification
-        table_test.__name__ = f"{table_name}_table"
-        return table_test
-
-    return [create_table_test(table) for table in tables]
-
-
-@pytest.mark.skipif(
-    not os.environ.get("OMNILOAD_TEST_REVENUECAT_API_KEY"),
-    reason="OMNILOAD_TEST_REVENUECAT_API_KEY environment variable is not set",
+from omniload.src.revenuecat.helpers import (
+    _make_request,
+    _make_request_async,
+    _paginate,
+    _paginate_async,
+    convert_timestamps_to_iso,
 )
-@pytest.mark.parametrize("testcase", revenuecat_test_cases())
-@pytest.mark.parametrize(
-    "dest", list(DESTINATIONS.values()), ids=list(DESTINATIONS.keys())
-)
-def test_revenuecat_source(testcase, dest):
-    testcase(dest.start())
-    dest.stop()
+
+
+class TestConvertTimestampsToIso:
+    """Tests for convert_timestamps_to_iso function."""
+
+    def test_convert_single_timestamp_field(self):
+        """Test converting a single timestamp field from milliseconds to ISO format."""
+        # January 1, 2024 00:00:00 UTC in milliseconds
+        timestamp_ms = 1704067200000
+        record = {"created_at": timestamp_ms, "name": "test_record"}
+        timestamp_fields = ["created_at"]
+
+        result = convert_timestamps_to_iso(record, timestamp_fields)
+
+        assert result["created_at"] == "2024-01-01T00:00:00Z"
+        assert result["name"] == "test_record"
+
+    def test_convert_multiple_timestamp_fields(self):
+        """Test converting multiple timestamp fields."""
+        timestamp_ms_1 = 1704067200000  # January 1, 2024 00:00:00 UTC
+        timestamp_ms_2 = 1704153600000  # January 2, 2024 00:00:00 UTC
+
+        record = {
+            "created_at": timestamp_ms_1,
+            "updated_at": timestamp_ms_2,
+            "name": "test_record",
+        }
+        timestamp_fields = ["created_at", "updated_at"]
+
+        result = convert_timestamps_to_iso(record, timestamp_fields)
+
+        assert result["created_at"] == "2024-01-01T00:00:00Z"
+        assert result["updated_at"] == "2024-01-02T00:00:00Z"
+        assert result["name"] == "test_record"
+
+
+class TestMakeRequest:
+    """Tests for _make_request function."""
+
+    @patch("requests.get")
+    def test_successful_request(self, mock_get):
+        """Test successful API request."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"data": "test"}
+        mock_get.return_value = mock_response
+
+        result = _make_request("test_api_key", "/test", {"param": "value"})
+
+        assert result == {"data": "test"}
+        mock_get.assert_called_once()
+
+    @patch("requests.get")
+    def test_rate_limit_retry(self, mock_get):
+        """Test rate limit handling with retry."""
+        # First call returns 429, second call succeeds
+        mock_response_429 = Mock()
+        mock_response_429.status_code = 429
+        mock_response_429.headers = {"Retry-After": "1"}
+
+        mock_response_200 = Mock()
+        mock_response_200.status_code = 200
+        mock_response_200.json.return_value = {"data": "success"}
+
+        mock_get.side_effect = [mock_response_429, mock_response_200]
+
+        with patch("time.sleep") as mock_sleep:
+            result = _make_request("test_api_key", "/test", max_retries=1)
+
+        assert result == {"data": "success"}
+        mock_sleep.assert_called_once_with(1)
+
+
+class TestPaginate:
+    """Tests for _paginate function."""
+
+    @patch("omniload.src.revenuecat.helpers._make_request")
+    def test_single_page_pagination(self, mock_make_request):
+        """Test pagination with single page."""
+        mock_make_request.return_value = {"items": [{"id": 1}, {"id": 2}]}
+
+        results = list(_paginate("test_api_key", "/test"))
+
+        assert len(results) == 1  # One page
+        assert results[0] == [{"id": 1}, {"id": 2}]  # Page contains two items
+        mock_make_request.assert_called_once()
+
+    @patch("omniload.src.revenuecat.helpers._make_request")
+    def test_multi_page_pagination(self, mock_make_request):
+        """Test pagination with multiple pages."""
+        # First page with next_page URL
+        mock_make_request.side_effect = [
+            {
+                "items": [{"id": 1}],
+                "next_page": "https://api.example.com/test?starting_after=1&limit=1000",
+            },
+            {"items": [{"id": 2}]},
+        ]
+
+        results = list(_paginate("test_api_key", "/test"))
+
+        assert len(results) == 2  # Two pages
+        assert results[0] == [{"id": 1}]  # First page contains one item
+        assert results[1] == [{"id": 2}]  # Second page contains one item
+        assert mock_make_request.call_count == 2
+
+
+class TestAsyncFunctions:
+    """Tests for async helper functions."""
+
+    @pytest.mark.asyncio
+    async def test_async_function_signature(self):
+        """Test that async functions exist and have correct signatures."""
+        # Test that functions are callable and async
+        assert asyncio.iscoroutinefunction(_make_request_async)
+        assert asyncio.iscoroutinefunction(_paginate_async)
+
+    @pytest.mark.asyncio
+    async def test_async_sleep_patch(self):
+        """Test async sleep can be patched (integration test)."""
+        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+            await asyncio.sleep(0.1)
+            mock_sleep.assert_called_once_with(0.1)
+
+
+class TestPaginateAsync:
+    """Tests for _paginate_async function."""
+
+    @pytest.mark.asyncio
+    async def test_async_single_page(self):
+        """Test async pagination with single page."""
+        mock_session = AsyncMock()
+
+        with patch(
+            "omniload.src.revenuecat.helpers._make_request_async"
+        ) as mock_make_request:
+            mock_make_request.return_value = {"items": [{"id": 1}, {"id": 2}]}
+
+            results = await _paginate_async(mock_session, "test_key", "/test")
+
+        assert len(results) == 2
+        assert results[0] == {"id": 1}
+        assert results[1] == {"id": 2}
+        mock_make_request.assert_called_once()

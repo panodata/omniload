@@ -7,8 +7,8 @@ import duckdb
 import sqlalchemy
 from sqlalchemy.pool import NullPool
 
-from tests.database.container import EphemeralDuckDb
 from tests.util import get_abs_path, get_random_string, invoke_ingest_command
+from tests.warehouse.container import EphemeralDuckDb
 
 
 def test_create_replace_csv_to_duckdb():

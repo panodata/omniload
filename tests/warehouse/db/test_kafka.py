@@ -7,8 +7,8 @@ from confluent_kafka import KafkaError, KafkaException, Producer
 from confluent_kafka.admin import AdminClient
 from testcontainers.kafka import KafkaContainer
 
-from tests.database.container import DESTINATIONS
 from tests.util import invoke_ingest_command
+from tests.warehouse.container import DESTINATIONS
 
 
 @pytest.fixture(scope="session")

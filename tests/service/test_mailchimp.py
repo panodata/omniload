@@ -5,7 +5,7 @@ Unit tests for Mailchimp helper functions.
 import unittest
 from unittest.mock import Mock
 
-from .helpers import (
+from omniload.src.mailchimp.helpers import (
     create_merge_resource,
     create_nested_resource,
     create_replace_resource,

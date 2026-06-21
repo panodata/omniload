@@ -1,7 +1,7 @@
 import pendulum
 
-from tiktok_ads import find_intervals
-from tiktok_ads.tiktok_helpers import flat_structure
+from omniload.src.tiktok_ads import find_intervals
+from omniload.src.tiktok_ads.tiktok_helpers import flat_structure
 
 
 def test_flat_structure():

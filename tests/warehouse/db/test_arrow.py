@@ -9,13 +9,13 @@ import pytest
 import sqlalchemy
 from pyarrow import ipc as ipc
 
-from tests.database.container import DESTINATIONS
 from tests.util import (
     as_datetime,
     as_datetime2,
     get_random_string,
     invoke_ingest_command,
 )
+from tests.warehouse.container import DESTINATIONS
 
 
 @pytest.mark.parametrize(

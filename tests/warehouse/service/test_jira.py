@@ -4,8 +4,8 @@ import traceback
 import pytest
 import sqlalchemy
 
-from tests.database.container import DESTINATIONS
 from tests.util import get_random_string, invoke_ingest_command
+from tests.warehouse.container import DESTINATIONS
 
 
 def jira_test_cases():

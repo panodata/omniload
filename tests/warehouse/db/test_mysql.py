@@ -4,8 +4,8 @@ from datetime import datetime, timezone
 import pytest
 import sqlalchemy
 
-from tests.database.container import DESTINATIONS, mysqlDocker
 from tests.util import get_abs_path, get_random_string, invoke_ingest_command
+from tests.warehouse.container import DESTINATIONS, mysqlDocker
 
 
 @pytest.mark.parametrize("source", [mysqlDocker], ids=["mysql8"])

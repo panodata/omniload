@@ -2,8 +2,8 @@ import pytest
 import sqlalchemy
 from sqlalchemy.pool import NullPool
 
-from tests.database.container import DESTINATIONS
 from tests.util import invoke_ingest_command
+from tests.warehouse.container import DESTINATIONS
 
 
 @pytest.mark.skip("Currently inactive")

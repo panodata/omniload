@@ -7,9 +7,9 @@ import pendulum
 import pytest
 
 from tests.container.floci import FlociContainer
-from tests.database.container import DESTINATIONS
-from tests.database.operations import get_query_result
 from tests.util import get_random_string, invoke_ingest_command
+from tests.warehouse.container import DESTINATIONS
+from tests.warehouse.operations import get_query_result
 
 
 @dataclass

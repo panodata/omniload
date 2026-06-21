@@ -13,8 +13,8 @@ from fsspec.implementations.memory import MemoryFileSystem
 from pyarrow import parquet as pya_parquet
 
 from omniload.src.errors import InvalidBlobTableError
-from tests.database.container import DESTINATIONS
 from tests.util import get_random_string, has_exception, invoke_ingest_command
+from tests.warehouse.container import DESTINATIONS
 
 
 def fs_test_cases(

@@ -5,7 +5,7 @@ Unit tests for Intercom helper functions and API client.
 import unittest
 from unittest.mock import Mock, patch
 
-from .helpers import (
+from omniload.src.intercom.helpers import (
     IntercomAPIClient,
     IntercomCredentialsAccessToken,
     IntercomCredentialsOAuth,
@@ -15,7 +15,7 @@ from .helpers import (
     transform_contact,
     transform_conversation,
 )
-from .settings import API_VERSION, REGIONAL_ENDPOINTS
+from omniload.src.intercom.settings import API_VERSION, REGIONAL_ENDPOINTS
 
 
 class TestIntercomCredentials(unittest.TestCase):

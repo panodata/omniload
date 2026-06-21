@@ -283,7 +283,7 @@ tasks.lint = [
   { cmd = "ruff format --check" },
   { cmd = "ruff check" },
   { cmd = "validate-pyproject pyproject.toml" },
-  { cmd = "ty check omniload" },
+  { cmd = "ty check omniload tests" },
 ]
 tasks.release = [
   { cmd = "python -m build" },

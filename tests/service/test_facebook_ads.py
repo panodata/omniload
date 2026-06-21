@@ -16,7 +16,7 @@
 
 import pytest
 
-from .helpers import parse_insights_table_to_source_kwargs
+from omniload.src.facebook_ads.helpers import parse_insights_table_to_source_kwargs
 
 
 class TestParseInsightsTableToSourceKwargs:
