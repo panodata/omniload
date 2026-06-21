@@ -157,6 +157,7 @@ optional-dependencies.release = [
   "twine<7",
 ]
 optional-dependencies.test = [
+  "boto3<2",
   "pendulum[test]>=3,<4",
   "pytest<10",
   "pytest-asyncio<2",

@@ -40,9 +40,7 @@ from fsspec.implementations.memory import MemoryFileSystem
 from sqlalchemy.pool import NullPool
 from testcontainers.clickhouse import ClickHouseContainer
 from testcontainers.core.container import DockerContainer
-from testcontainers.core.waiting_utils import wait_for_logs
 from testcontainers.kafka import KafkaContainer
-from testcontainers.localstack import LocalStackContainer
 from testcontainers.mongodb import MongoDbContainer
 from testcontainers.mysql import MySqlContainer
 from testcontainers.postgres import PostgresContainer
@@ -77,6 +75,7 @@ from omniload.src.errors import (
     MissingValueError,
     UnsupportedResourceError,
 )
+from omniload.util_test import FlociContainer
 
 logging.getLogger("testcontainers.core.waiting_utils").setLevel(logging.WARNING)
 logging.getLogger("testcontainers.core.container").setLevel(logging.WARNING)
@@ -2704,19 +2703,16 @@ def dynamodb():
             result.append(entry)
         return result
 
-    local_stack = LocalStackContainer(
-        image="localstack/localstack:4.0.3"
-    ).with_services("dynamodb")
-    local_stack.start()
-    wait_for_logs(local_stack, "Ready.")
-    load_test_data(local_stack)
+    floci = FlociContainer(image="docker.io/floci/floci:1.5.25")
+    floci.start()
+    load_test_data(floci)
 
-    dynamodb_url = urlparse(local_stack.get_url())
+    dynamodb_url = urlparse(floci.get_url())
     src_uri = (
         f"dynamodb://{dynamodb_url.netloc}?"
-        + f"region={local_stack.env['AWS_DEFAULT_REGION']}&"
-        + f"access_key_id={local_stack.env['AWS_ACCESS_KEY_ID']}&"
-        + f"secret_access_key={local_stack.env['AWS_SECRET_ACCESS_KEY']}"
+        + f"region={floci.env['AWS_DEFAULT_REGION']}&"
+        + f"access_key_id={floci.env['AWS_ACCESS_KEY_ID']}&"
+        + f"secret_access_key={floci.env['AWS_SECRET_ACCESS_KEY']}"
     )
     yield DynamoDBTestConfig(
         db_name,
@@ -2724,7 +2720,7 @@ def dynamodb():
         items_to_list(items),
     )
 
-    local_stack.stop()
+    floci.stop()
 
 
 def dynamodb_tests() -> Iterable[Callable]:
