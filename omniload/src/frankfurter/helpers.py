@@ -19,7 +19,7 @@ def get_path_with_retry(path: str) -> StrAny:
 def validate_dates(start_date: datetime, end_date: datetime | None) -> None:
     current_date = pendulum.now()
 
-    # Check if start_date is in the futurep
+    # Check if start_date is in the future
     if start_date > current_date:
         raise ValueError("Interval-start cannot be in the future.")
 

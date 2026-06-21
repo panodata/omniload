@@ -1,6 +1,6 @@
 from typing import Iterable, Optional
 
-from ..http_client import create_client
+from omniload.src.http_client import create_client
 
 
 class ClickupClient:
