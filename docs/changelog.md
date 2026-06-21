@@ -2,7 +2,7 @@
 
 ## in progress
 
-- Dependencies: Updated to dlt v1.27
+- Dependencies: Updated to dlt v1.28
 
 ## 2026/06/21 v0.2.0
 
