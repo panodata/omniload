@@ -23,25 +23,38 @@ omniload provides the same efficient incremental data loading modes
 inherited by dlt: `append`, `merge`, and `delete+insert`.
 
 ## Install
-We recommend using [uv] to install or run `omniload`.
+
+### Container
+
+For running `omniload` in a container environment, use the provided OCI
+images.
 
 ```shell
-pip install uv
+docker run --rm ghcr.io/panodata/omniload:latest version
+```
+
+### Package
+
+For running or installing the `omniload` Python package,
+we are recommending to use [uv]. [^1][^2]
+```shell
 uvx omniload
 ```
 
-Alternatively, if you'd like to install it globally:
+Alternatively, if you like to install it account-wide on your system:
 ```shell
-uv pip install --system omniload
+uv tool install omniload
 ```
 
-While installation with vanilla `pip` is possible, it's an order of magnitude slower.
+[^1]: You can install `uv` using `pip install uv`, or another method that matches your operating system.
+[^2]: While installing `omniload` with vanilla `pip` is possible, it is an order of magnitude slower.
 
 ## Synopsis
 
-The next command instructs omniload to read the table `public.some_data` from
-your PostgreSQL instance, and to write the data to your BigQuery warehouse
-under the schema `omniload` and table `some_data`.
+### CLI
+
+Instruct omniload to read from the PostgreSQL table `public.some_data`,
+and write to the BigQuery warehouse table `omniload.some_data`.
 
 ```shell
 omniload ingest \
@@ -51,9 +64,9 @@ omniload ingest \
     --dest-table 'omniload.some_data'
 ```
 
-## Python API
+### Python API
 
-The `ingest` command is a thin wrapper over `run_ingest`, so you can run the same
+Using `omniload.run_ingest`, you can run the same
 ingestion from your own application. The keyword arguments map one-to-one to the
 CLI options, and it returns the dlt `LoadInfo` for the run (or `None` for a dry run).
 
