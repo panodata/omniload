@@ -60,6 +60,7 @@ commands/*
 :glob:
 getting-started/core-concepts
 getting-started/quickstart
+getting-started/python-api
 getting-started/incremental-loading
 getting-started/data-masking
 supported-sources/index

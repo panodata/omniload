@@ -9,7 +9,7 @@ outline: deep
 omniload is a polyglot data loader framework based on dlt.
 It allows you to load data from any source into any destination,
 either using a concise CLI from your shell,
-or the Python API from your own applications.
+or the {ref}`Python API <python-api>` from your own applications.
 
 (installation)=
 

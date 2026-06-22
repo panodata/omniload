@@ -51,6 +51,27 @@ omniload ingest \
     --dest-table 'omniload.some_data'
 ```
 
+## Python API
+
+The `ingest` command is a thin wrapper over `run_ingest`, so you can run the same
+ingestion from your own application. The keyword arguments map one-to-one to the
+CLI options, and it returns the dlt `LoadInfo` for the run (or `None` for a dry run).
+
+```python
+from omniload import run_ingest
+
+info = run_ingest(
+    source_uri="sqlite:///./source.db",
+    dest_uri="duckdb:///./warehouse.duckdb",
+    source_table="main.some_table",
+    dest_table="public.some_table",
+)
+print(info)
+```
+
+See the [Python API documentation] for dry runs, error handling, and passing
+enum options as strings.
+
 ## Handbook
 
 Please visit the [quickstart documentation], or inspect the
@@ -87,6 +108,7 @@ the way down. Kudos.
 
 [dlt]: https://github.com/dlt-hub/dlt
 [quickstart documentation]: https://omniload.readthedocs.io/getting-started/quickstart.html
+[Python API documentation]: https://omniload.readthedocs.io/getting-started/python-api.html
 [ingestr]: https://bruin-data.github.io/ingestr/
 [Issues]: https://github.com/panodata/omniload/issues
 [LICENSE]: https://github.com/panodata/omniload/blob/main/LICENSE

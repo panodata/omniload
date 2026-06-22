@@ -1,10 +1,20 @@
 import warnings
 from datetime import datetime
-from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import typer
 from typing_extensions import Annotated
+
+from omniload.api import (
+    IncrementalStrategy,
+    LoaderFileFormat,
+    Progress,
+    SchemaNaming,
+    SqlBackend,
+    SqlReflectionLevel,
+    run_ingest,
+)
+from omniload.src.errors import IngestJobError, ValidationError
 
 try:
     from duckdb_engine import DuckDBEngineWarning
@@ -29,59 +39,6 @@ DATE_FORMATS = [
     "%Y-%m-%dT%H:%M:%S.%f",
     "%Y-%m-%dT%H:%M:%S.%f%z",
 ]
-
-# https://dlthub.com/docs/dlt-ecosystem/file-formats/parquet#supported-destinations
-PARQUET_SUPPORTED_DESTINATIONS = [
-    "athenabigquery",
-    "duckdb",
-    "snowflake",
-    "databricks",
-    "synapse",
-    "s3",
-]
-
-# these sources would return a JSON for sure, which means they cannot be used with Parquet loader for BigQuery
-JSON_RETURNING_SOURCES = ["notion"]
-
-
-class IncrementalStrategy(str, Enum):
-    create_replace = "replace"
-    append = "append"
-    delete_insert = "delete+insert"
-    merge = "merge"
-    scd2 = "scd2"
-    none = "none"
-
-
-class LoaderFileFormat(str, Enum):
-    jsonl = "jsonl"
-    parquet = "parquet"
-    insert_values = "insert_values"
-    csv = "csv"
-
-
-class SqlBackend(str, Enum):
-    default = "default"
-    sqlalchemy = "sqlalchemy"
-    pyarrow = "pyarrow"
-    connectorx = "connectorx"
-
-
-class Progress(str, Enum):
-    interactive = "interactive"
-    log = "log"
-    spinner = "spinner"
-
-
-class SchemaNaming(str, Enum):
-    default = "default"
-    direct = "direct"
-
-
-class SqlReflectionLevel(str, Enum):
-    minimal = "minimal"
-    full = "full"
-    full_with_precision = "full_with_precision"
 
 
 @app.command()
@@ -166,7 +123,7 @@ def ingest(
         ),
     ] = None,
     dry_run: Annotated[
-        Optional[bool],
+        bool,
         typer.Option(
             help="Display data transfer plan but don't invoke it",
             envvar=["DRY_RUN", "OMNILOAD_DRY_RUN"],
@@ -201,14 +158,14 @@ def ingest(
         ),
     ] = None,
     page_size: Annotated[
-        Optional[int],
+        int,
         typer.Option(
             help="The page size to be used when fetching data from SQL sources",
             envvar=["PAGE_SIZE", "OMNILOAD_PAGE_SIZE"],
         ),
     ] = 50000,
     loader_file_size: Annotated[
-        Optional[int],
+        int,
         typer.Option(
             help="The file size to be used by the loader to split the data into multiple files. This can be set independent of the page size, since page size is used for fetching the data from the sources whereas this is used for the processing/loading part.",
             envvar=["LOADER_FILE_SIZE", "OMNILOAD_LOADER_FILE_SIZE"],
@@ -229,7 +186,7 @@ def ingest(
         ),
     ] = None,
     extract_parallelism: Annotated[
-        Optional[int],
+        int,
         typer.Option(
             help="The number of parallel jobs to run for extracting data from the source, only applicable for certain sources",
             envvar=["EXTRACT_PARALLELISM", "OMNILOAD_EXTRACT_PARALLELISM"],
@@ -285,435 +242,42 @@ def ingest(
         ),
     ] = [],
 ):
-    import hashlib
-    import tempfile
-    import time
-    from datetime import datetime
-
-    import dlt
-    import humanize
-    import typer
-    from dlt.common.pipeline import LoadInfo
-    from dlt.common.runtime.collector import Collector, LogCollector, TqdmCollector
-    from dlt.common.schema.typing import TColumnSchema
-    from dlt.pipeline.exceptions import PipelineStepFailed
-
-    import omniload.src.partition as partition
-    import omniload.src.resource as resource
-    from omniload.src.collector.spinner import SpinnerCollector
-    from omniload.src.destinations import AthenaDestination, ClickhouseDestination
-    from omniload.src.factory import SourceDestinationFactory
-    from omniload.src.filters import (
-        cast_set_to_list,
-        cast_spanner_types,
-        create_masking_filter,
-        handle_mysql_empty_dates,
-    )
-    from omniload.src.sources import MongoDbSource
-
-    def report_errors(run_info: LoadInfo):
-        for load_package in run_info.load_packages:
-            failed_jobs = load_package.jobs["failed_jobs"]
-            if len(failed_jobs) == 0:
-                continue
-
-            print()
-            print("[bold red]Failed jobs:[/bold red]")
-            print()
-            for job in failed_jobs:
-                print(f"[bold red]  {job.job_file_info.job_id()}[/bold red]")
-                print(f"    [bold yellow]Error:[/bold yellow] {job.failed_message}")
-
-            raise typer.Exit(1)
-
-    def validate_source_dest_tables(
-        source_table: str, dest_table: str
-    ) -> tuple[str, str]:
-        if not dest_table:
-            if len(source_table.split(".")) != 2:
-                print(
-                    "[red]Table name must be in the format schema.table for source table when dest-table is not given.[/red]"
-                )
-                raise typer.Abort()
-
-            print()
-            print(
-                "[yellow]Destination table is not given, defaulting to the source table.[/yellow]"
-            )
-            dest_table = source_table
-        return (source_table, dest_table)
-
-    def validate_loader_file_format(
-        dlt_dest, loader_file_format: Optional[LoaderFileFormat]
-    ):
-        if (
-            loader_file_format
-            and loader_file_format.value
-            not in dlt_dest.capabilities().supported_loader_file_formats
-        ):
-            print(
-                f"[red]Loader file format {loader_file_format.value} is not supported by the destination, available formats: {dlt_dest.capabilities().supported_loader_file_formats}.[/red]"
-            )
-            raise typer.Abort()
-
-    def parse_columns(columns: list[str]) -> dict:
-        from typing import cast, get_args
-
-        from dlt.common.data_types import TDataType
-
-        possible_types = get_args(TDataType)
-        custom_types = ("bigdecimal",)
-
-        types: dict[str, TDataType | str] = {}
-        for column in columns:
-            for candidate in column.split(","):
-                column_name, column_type = candidate.split(":")
-                if (
-                    column_type not in possible_types
-                    and column_type not in custom_types
-                ):
-                    print(
-                        f"[red]Column type '{column_type}' is not supported, supported types: {possible_types + custom_types}.[/red]"
-                    )
-                    raise typer.Abort()
-                types[column_name] = (
-                    cast(TDataType, column_type)
-                    if column_type in possible_types
-                    else column_type
-                )
-        return types
-
-    clean_sql_exclude_columns = []
-    if sql_exclude_columns:
-        for col in sql_exclude_columns:
-            for possible_col in col.split(","):
-                clean_sql_exclude_columns.append(possible_col.strip())
-        sql_exclude_columns = clean_sql_exclude_columns
-
-    dlt.config["data_writer.buffer_max_items"] = page_size
-    dlt.config["data_writer.file_max_items"] = loader_file_size
-    dlt.config["extract.workers"] = extract_parallelism
-    dlt.config["extract.max_parallel_items"] = extract_parallelism
-    dlt.config["load.raise_on_max_retries"] = 15
-    if schema_naming != SchemaNaming.default:
-        dlt.config["schema.naming"] = schema_naming.value
-
     try:
-        (source_table, dest_table) = validate_source_dest_tables(
-            source_table, dest_table
-        )
-
-        factory = SourceDestinationFactory(source_uri, dest_uri)
-
-        source = factory.get_source()
-        destination = factory.get_destination()
-
-        column_hints: dict[str, TColumnSchema] = {}
-        original_incremental_strategy = incremental_strategy
-
-        column_types = parse_columns(columns) if columns else None
-        if column_types:
-            for column_name, column_type in column_types.items():
-                if column_type == "bigdecimal":
-                    column_hints[column_name] = {
-                        "data_type": "decimal",
-                        "precision": 76,
-                        "scale": 38,
-                    }
-                else:
-                    column_hints[column_name] = {"data_type": column_type}
-
-        merge_key = None
-        if incremental_strategy == IncrementalStrategy.delete_insert:
-            merge_key = incremental_key
-            incremental_strategy = IncrementalStrategy.merge
-            if incremental_key:
-                if incremental_key not in column_hints:
-                    column_hints[incremental_key] = {}
-
-                column_hints[incremental_key]["merge_key"] = True
-
-        m = hashlib.sha256()
-        m.update(dest_table.encode("utf-8"))
-
-        progressInstance: Collector = TqdmCollector()
-        if progress == Progress.log:
-            progressInstance = LogCollector()
-        elif progress == Progress.spinner:
-            progressInstance = SpinnerCollector()
-
-        is_pipelines_dir_temp = False
-        if pipelines_dir is None:
-            pipelines_dir = tempfile.mkdtemp()
-            is_pipelines_dir_temp = True
-
-        dlt_dest = destination.dlt_dest(
-            uri=dest_uri, dest_table=dest_table, staging_bucket=staging_bucket
-        )
-        validate_loader_file_format(dlt_dest, loader_file_format)
-
-        if partition_by:
-            if partition_by not in column_hints:
-                column_hints[partition_by] = {}
-
-            column_hints[partition_by]["partition"] = True
-
-        if cluster_by:
-            if cluster_by not in column_hints:
-                column_hints[cluster_by] = {}
-
-            column_hints[cluster_by]["cluster"] = True
-
-        if primary_key:
-            for key in primary_key:
-                if key not in column_hints:
-                    column_hints[key] = {}
-
-                column_hints[key]["primary_key"] = True
-
-        pipeline = dlt.pipeline(
-            pipeline_name=m.hexdigest(),
-            destination=dlt_dest,
-            progress=progressInstance,
-            pipelines_dir=pipelines_dir,
-            refresh="drop_resources" if full_refresh else None,  # ty: ignore[invalid-argument-type]
-        )
-
-        if source.handles_incrementality():
-            incremental_strategy = IncrementalStrategy.none
-            incremental_key = None
-
-        incremental_strategy_text = (
-            incremental_strategy.value
-            if incremental_strategy.value != IncrementalStrategy.none
-            else "Platform-specific"
-        )
-
-        source_table_print = source_table.split(":")[0]
-
-        print()
-        print("[bold green]Initiated the pipeline with the following:[/bold green]")
-        print(
-            f"[bold yellow]  Source:[/bold yellow] {factory.source_scheme} / {source_table_print}"
-        )
-        print(
-            f"[bold yellow]  Destination:[/bold yellow] {factory.destination_scheme} / {dest_table}"
-        )
-        print(
-            f"[bold yellow]  Incremental Strategy:[/bold yellow] {incremental_strategy_text}"
-        )
-        print(
-            f"[bold yellow]  Incremental Key:[/bold yellow] {incremental_key if incremental_key else 'None'}"
-        )
-        print(
-            f"[bold yellow]  Primary Key:[/bold yellow] {primary_key if primary_key else 'None'}"
-        )
-        print(f"[bold yellow]  Pipeline ID:[/bold yellow] {m.hexdigest()}")
-        print()
-
-        if dry_run:
-            typer.echo("Skipping data transfer, because `--dry-run` was selected.")
-            raise typer.Exit(0)
-
-        print()
-        print("[bold green]Starting the ingestion...[/bold green]")
-
-        if factory.source_scheme == "sqlite":
-            source_table = "main." + source_table.split(".")[-1]
-
-        if (
-            incremental_key
-            and incremental_key in column_hints
-            and "data_type" in column_hints[incremental_key]
-            and column_hints[incremental_key]["data_type"] == "date"
-        ):
-            # By default, omniload treats the start and end dates as datetime objects. While this worked fine for many cases, if the
-            # incremental field is a date, the start and end dates cannot be compared to the incremental field, and the ingestion would fail.
-            # In order to eliminate this, we have introduced a new option to omniload, --columns, which allows the user to specify the column types for the destination table.
-            # This way, omniload will know the data type of the incremental field, and will be able to convert the start and end dates to the correct data type before running the ingestion.
-            if interval_start:
-                interval_start = interval_start.date()  # ty: ignore[invalid-assignment]
-            if interval_end:
-                interval_end = interval_end.date()  # ty: ignore[invalid-assignment]
-
-        if factory.source_scheme.startswith("spanner"):
-            # we tend to use the 'pyarrow' backend in general, however, it has issues with JSON objects, so we override it to 'sqlalchemy' for Spanner.
-            if sql_backend.value == SqlBackend.default:
-                sql_backend = SqlBackend.sqlalchemy
-
-        # this allows us to identify the cases where the user does not have a preference, so that for some sources we can override it.
-        if sql_backend == SqlBackend.default:
-            sql_backend = SqlBackend.pyarrow
-
-        dlt_source = source.dlt_source(
-            uri=source_uri,
-            table=source_table,
+        run_ingest(
+            source_uri=source_uri,
+            dest_uri=dest_uri,
+            source_table=source_table,
+            dest_table=dest_table,
             incremental_key=incremental_key,
-            merge_key=merge_key,
+            incremental_strategy=incremental_strategy,
             interval_start=interval_start,
             interval_end=interval_end,
-            sql_backend=sql_backend.value,
+            primary_key=primary_key,
+            partition_by=partition_by,
+            cluster_by=cluster_by,
+            dry_run=dry_run,
+            full_refresh=full_refresh,
+            progress=progress,
+            sql_backend=sql_backend,
+            loader_file_format=loader_file_format,
             page_size=page_size,
-            sql_reflection_level=sql_reflection_level.value,
+            loader_file_size=loader_file_size,
+            schema_naming=schema_naming,
+            pipelines_dir=pipelines_dir,
+            extract_parallelism=extract_parallelism,
+            sql_reflection_level=sql_reflection_level,
             sql_limit=sql_limit,
             sql_exclude_columns=sql_exclude_columns,
-            extract_parallelism=extract_parallelism,
-            column_types=column_types,
+            columns=columns,
+            yield_limit=yield_limit,
+            staging_bucket=staging_bucket,
+            mask=mask,
         )
-
-        resource.for_each(dlt_source, lambda x: x.add_map(cast_set_to_list))
-        if factory.source_scheme.startswith("mysql"):
-            resource.for_each(dlt_source, lambda x: x.add_map(handle_mysql_empty_dates))
-
-        if factory.source_scheme.startswith("spanner"):
-            resource.for_each(dlt_source, lambda x: x.add_map(cast_spanner_types))
-
-        if factory.source_scheme.startswith(
-            "mmap"
-        ) and factory.destination_scheme.startswith("clickhouse"):
-            # https://github.com/dlt-hub/dlt/issues/2248
-            # TODO(turtledev): only apply for write dispositions that actually cause an exception.
-            # TODO(turtledev): make batch size configurable
-            import omniload.src.arrow as arrow
-
-            resource.for_each(dlt_source, lambda x: x.add_map(arrow.as_list))
-
-        if mask:
-            masking_filter = create_masking_filter(mask)
-            resource.for_each(dlt_source, lambda x: x.add_map(masking_filter))
-
-        if yield_limit:
-            resource.for_each(dlt_source, lambda x: x.add_limit(yield_limit))
-
-        if isinstance(source, MongoDbSource):
-            from omniload.src.resource import TypeHintMap
-
-            resource.for_each(
-                dlt_source, lambda x: x.add_map(TypeHintMap().type_hint_map)
-            )
-
-        def col_h(x):
-            if column_hints:
-                x.apply_hints(columns=column_hints)
-
-        resource.for_each(dlt_source, col_h)
-
-        if isinstance(destination, AthenaDestination) and partition_by:
-            partition.apply_athena_hints(dlt_source, partition_by, column_hints)
-
-        if isinstance(destination, ClickhouseDestination):
-            from dlt.destinations.adapters import clickhouse_adapter
-
-            settings = ClickhouseDestination.engine_settings(dest_uri)
-            engine_type = ClickhouseDestination.engine_type(dest_uri)
-
-            def apply_clickhouse_adapter(x):
-                kwargs: Dict[str, Any] = {"settings": settings}
-                if engine_type:
-                    kwargs["table_engine_type"] = engine_type
-                clickhouse_adapter(x, **kwargs)
-
-            resource.for_each(
-                dlt_source,
-                apply_clickhouse_adapter,
-            )
-
-        if original_incremental_strategy == IncrementalStrategy.delete_insert:
-
-            def set_primary_key(x):
-                x.incremental.primary_key = ()
-
-            resource.for_each(dlt_source, set_primary_key)
-
-        if (
-            factory.destination_scheme in PARQUET_SUPPORTED_DESTINATIONS
-            and loader_file_format is None
-        ):
-            loader_file_format = LoaderFileFormat.parquet
-
-            # if the source is a JSON returning source, we cannot use Parquet loader for BigQuery
-            if (
-                factory.destination_scheme == "bigquery"
-                and factory.source_scheme in JSON_RETURNING_SOURCES
-            ):
-                loader_file_format = None
-
-        write_disposition = None
-        if incremental_strategy != IncrementalStrategy.none:
-            write_disposition = incremental_strategy.value
-
-        if factory.source_scheme == "influxdb":
-            if primary_key:
-                write_disposition = "merge"
-
-        start_time = datetime.now()
-
-        def run_pipeline():
-            return pipeline.run(
-                dlt_source,
-                **destination.dlt_run_params(
-                    uri=dest_uri,
-                    table=dest_table,
-                    staging_bucket=staging_bucket,
-                ),
-                write_disposition=write_disposition,
-                primary_key=(
-                    primary_key if primary_key and len(primary_key) > 0 else None
-                ),
-                loader_file_format=(
-                    loader_file_format.value if loader_file_format is not None else None
-                ),
-            )
-
-        # Databricks concurrency error patterns that are safe to retry
-        DATABRICKS_RETRYABLE_ERRORS = [
-            "SCHEMA_ALREADY_EXISTS",
-            "DELTA_METADATA_CHANGED",
-            "MetadataChangedException",
-        ]
-
-        def is_databricks_retryable_error(exception: Exception) -> bool:
-            if factory.destination_scheme != "databricks":
-                return False
-            error_str = str(exception)
-            return any(pattern in error_str for pattern in DATABRICKS_RETRYABLE_ERRORS)
-
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                run_info: LoadInfo = run_pipeline()
-                break
-            except PipelineStepFailed as e:
-                if is_databricks_retryable_error(e) and attempt < max_retries - 1:
-                    delay = (attempt + 1) * 2  # 2s, 4s backoff
-                    print(
-                        f"[yellow]Databricks concurrency error, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...[/yellow]"
-                    )
-                    time.sleep(delay)
-                    continue
-                raise
-
-        report_errors(run_info)
-
-        destination.post_load()
-
-        end_time = datetime.now()
-        elapsedHuman = ""
-        elapsed = end_time - start_time
-        elapsedHuman = f"in {humanize.precisedelta(elapsed)}"
-
-        if is_pipelines_dir_temp:
-            import shutil
-
-            shutil.rmtree(pipelines_dir)
-
-        print(
-            f"[bold green]Successfully finished loading data from '{factory.source_scheme}' to '{factory.destination_scheme}' {elapsedHuman} [/bold green]"
-        )
-        print()
-
-    except Exception:
-        raise
+    except ValidationError as e:
+        print(f"[red]{e}[/red]")
+        raise typer.Abort()
+    except IngestJobError:
+        raise typer.Exit(1)
 
 
 @app.command()
