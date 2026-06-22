@@ -7,44 +7,56 @@ from confluent_kafka import KafkaError, KafkaException, Producer
 from confluent_kafka.admin import AdminClient
 from testcontainers.kafka import KafkaContainer
 
-from tests.settings import KAFKA_IMAGE
-from tests.util import invoke_ingest_command
-from tests.warehouse.container import DESTINATIONS
+from tests.container.model import DockerService
+from tests.util import get_random_string, invoke_ingest_command
+from tests.warehouse.manager import KAFKA_IMAGE
+from tests.warehouse.settings import DESTINATIONS
 
 
 @pytest.fixture(scope="session")
-def kafka_service():
+def kafka_service(request, shared_directory) -> DockerService:
     """
     Provide a Kafka service container for the whole test session.
+    Returns the `host:port` address of the Kafka container.
     """
-    container = KafkaContainer(KAFKA_IMAGE).with_kraft()
-    container.start()
-    yield container
-    container.stop()
+    return DockerService(
+        id="kafka",
+        container=KafkaContainer(KAFKA_IMAGE).with_kraft(),
+        lock_dir=shared_directory,
+        shutdown=True,
+    ).start_background()
 
 
 @pytest.fixture(scope="function")
-def kafka(kafka_service):
+def kafka(kafka_service, topic_schema) -> str:
     """
     Provide a Kafka service container using a clean canvas.
+    Returns the `host:port` address of the Kafka container.
     Before invoking the test case, delete all relevant topics completely.
     """
-    admin = AdminClient({"bootstrap.servers": kafka_service.get_bootstrap_server()})
-    futures = admin.delete_topics(["test_topic"])
-    for topic, fut in futures.items():
+    kafka_address = kafka_service.start()
+    admin = AdminClient({"bootstrap.servers": kafka_address})
+    futures = admin.delete_topics([topic_schema])
+    for topic_schema, fut in futures.items():
         try:
             fut.result(10)
         except KafkaException as exc:
-            # Topic may not exist yet on first test run.
+            # Topic may not exist.
             if exc.args[0].code() != KafkaError.UNKNOWN_TOPIC_OR_PART:
                 raise
-    return kafka_service
+    return kafka_address
+
+
+@pytest.fixture(scope="function")
+def topic_schema(kafka_service) -> str:
+    """Provide random unique identifier for Kafka topics and RDBMS schemas."""
+    return "test_" + get_random_string(5)
 
 
 @pytest.mark.parametrize(
     "dest", list(DESTINATIONS.values()), ids=list(DESTINATIONS.keys())
 )
-def test_kafka_to_db_incremental(kafka, dest):
+def test_kafka_to_db_incremental(kafka, dest, topic_schema):
     """
     Validate standard Kafka event decoding, focusing on both metadata and data payload.
     """

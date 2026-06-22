@@ -6,7 +6,7 @@ import pytest
 import sqlalchemy
 
 from omniload.src.destinations import ClickhouseDestination
-from tests.warehouse.container import DESTINATIONS, SOURCES
+from tests.warehouse.settings import DESTINATIONS, SOURCES
 
 
 def pytest_sessionstart(session):

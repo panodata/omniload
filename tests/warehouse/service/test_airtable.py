@@ -5,7 +5,7 @@ import pytest
 import sqlalchemy
 
 from tests.util import get_random_string, invoke_ingest_command
-from tests.warehouse.container import DESTINATIONS
+from tests.warehouse.settings import DESTINATIONS
 
 
 def airtable_test_cases():

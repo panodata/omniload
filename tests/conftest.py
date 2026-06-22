@@ -6,11 +6,11 @@ import pytest
 
 from tests.util import get_testdata_path
 
-logging.getLogger("testcontainers.core.waiting_utils").setLevel(logging.WARNING)
-logging.getLogger("testcontainers.core.container").setLevel(logging.WARNING)
-
 
 def pytest_configure(config):
+    logging.getLogger("urllib3.connectionpool").setLevel(logging.INFO)
+    logging.getLogger("testcontainers.core.waiting_utils").setLevel(logging.WARNING)
+    logging.getLogger("testcontainers.core.container").setLevel(logging.WARNING)
     if is_master(config):
         config.shared_directory = tempfile.mkdtemp()
 
@@ -22,6 +22,11 @@ def pytest_configure_node(node):
 
 @pytest.fixture(scope="session")
 def shared_directory(request):
+    """
+    Returns a unique and temporary directory which can be shared by
+    master or worker nodes in xdist runs.
+    https://hackebrot.github.io/pytest-tricks/shared_directory_xdist/
+    """
     if is_master(request.config):
         return request.config.shared_directory
     else:

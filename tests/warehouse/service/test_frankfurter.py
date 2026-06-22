@@ -6,7 +6,7 @@ import sqlalchemy
 
 from omniload.src.errors import UnsupportedResourceError
 from tests.util import get_random_string, has_exception, invoke_ingest_command
-from tests.warehouse.container import DESTINATIONS
+from tests.warehouse.settings import DESTINATIONS
 
 
 def frankfurter_test_cases() -> Iterable[Callable]:

@@ -10,7 +10,7 @@ from omniload.src.appsflyer.client import (
     standardize_keys,
 )
 from tests.util import get_random_string, invoke_ingest_command
-from tests.warehouse.container import DESTINATIONS
+from tests.warehouse.settings import DESTINATIONS
 
 
 def appsflyer_test_cases():

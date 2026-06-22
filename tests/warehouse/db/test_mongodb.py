@@ -9,9 +9,9 @@ import sqlalchemy
 from pyarrow import ipc
 from testcontainers.mongodb import MongoDbContainer
 
-from tests.settings import MONGODB_IMAGE
 from tests.util import get_random_string, invoke_ingest_command
-from tests.warehouse.container import DESTINATIONS
+from tests.warehouse.manager import MONGODB_IMAGE
+from tests.warehouse.settings import DESTINATIONS
 
 
 def mongodb_test_cases():

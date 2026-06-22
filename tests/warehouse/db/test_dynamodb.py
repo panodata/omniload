@@ -6,11 +6,11 @@ from urllib.parse import urlparse
 import pendulum
 import pytest
 
-from tests.container.floci import FlociContainer
-from tests.settings import FLOCI_IMAGE
+from tests.container.impl.floci import FlociContainer
 from tests.util import get_random_string, invoke_ingest_command
-from tests.warehouse.container import DESTINATIONS
+from tests.warehouse.manager import FLOCI_IMAGE
 from tests.warehouse.operations import get_query_result
+from tests.warehouse.settings import DESTINATIONS
 
 
 @dataclass

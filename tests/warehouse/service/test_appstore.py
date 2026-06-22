@@ -28,7 +28,7 @@ from omniload.src.appstore.models import (
     ReportSegmentAttributes,
 )
 from tests.util import get_random_string, has_exception, invoke_ingest_command
-from tests.warehouse.container import DESTINATIONS
+from tests.warehouse.settings import DESTINATIONS
 
 
 def appstore_test_cases() -> Iterable[Callable]:

@@ -4,10 +4,11 @@ import pytest
 import sqlalchemy
 
 from tests.util import get_random_string, invoke_ingest_command
-from tests.warehouse.container import DESTINATIONS, mysqlDocker
+from tests.warehouse.manager import registry
+from tests.warehouse.settings import DESTINATIONS
 
 
-@pytest.mark.parametrize("source", [mysqlDocker], ids=["mysql8"])
+@pytest.mark.parametrize("source", [registry.mysql], ids=["mysql8"])
 @pytest.mark.parametrize(
     "dest", list(DESTINATIONS.values()), ids=list(DESTINATIONS.keys())
 )

@@ -6,8 +6,8 @@ import duckdb
 import sqlalchemy
 from sqlalchemy.pool import NullPool
 
+from tests.container.impl.duckdb import EphemeralDuckDb
 from tests.util import get_random_string, invoke_ingest_command
-from tests.warehouse.container import EphemeralDuckDb
 from tests.warehouse.db.util import assert_output_equals_to_csv
 
 

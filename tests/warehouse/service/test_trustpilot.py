@@ -4,7 +4,7 @@ import pytest
 import sqlalchemy
 
 from tests.util import invoke_ingest_command
-from tests.warehouse.container import DESTINATIONS
+from tests.warehouse.settings import DESTINATIONS
 
 
 def trustpilot_test_case(dest_uri):

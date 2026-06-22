@@ -23,7 +23,7 @@ def as_datetime2(date_str: str) -> datetime:
     return datetime.strptime(date_str, "%Y-%m-%d")
 
 
-def get_random_string(length):
+def get_random_string(length) -> str:
     letters = string.ascii_lowercase
     result_str = "".join(random.choice(letters) for i in range(length))
     return result_str
