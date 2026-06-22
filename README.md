@@ -12,13 +12,15 @@
 
 ## About
 
-omniload is a polyglot data loader framework based on dlt.
-It allows you to load data from any source into any destination,
-either using a concise CLI from your shell,
-or the Python API from your own applications.
+omniload is a polyglot data loader framework based on [dlt], the
+open-source Python library for building data pipelines. dlt does the
+heavy lifting (schema inference, normalization, and incremental load
+state); omniload wraps it behind a single CLI and a URI scheme, so you
+can copy data between any source and any destination without writing
+pipeline code, either from your shell or the Python API.
 
 omniload provides the same efficient incremental data loading modes
-inherited by [dlt]: `append`, `merge`, and `delete+insert`.
+inherited by dlt: `append`, `merge`, and `delete+insert`.
 
 ## Install
 We recommend using [uv] to install or run `omniload`.
