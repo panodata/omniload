@@ -28,8 +28,9 @@ data_items = [
 
 
 @pytest.fixture(scope="session")
-def db_name() -> str:
-    return f"dynamodb_test_{get_random_string(5)}"
+def db_schema() -> str:
+    """Provide random unique identifier for DynamoDB databases and RDBMS schemas."""
+    return f"test_dynamodb_{get_random_string(5)}"
 
 
 def load_test_data(client, db_name):
@@ -57,23 +58,23 @@ def load_test_data(client, db_name):
 
 
 @pytest.fixture(scope="session")
-def floci(db_name):
+def floci(db_schema):
     """
     Provide a Couchbase service container for the whole test session.
     """
     container = FlociContainer(image=FLOCI_IMAGE)
     container.start()
     client = container.get_client("dynamodb")  # ty: ignore[invalid-argument-type, missing-argument]
-    load_test_data(client, db_name)
+    load_test_data(client, db_schema)
     yield container
     container.stop()
 
 
 @pytest.fixture(scope="session")
-def dynamodb(floci, db_name):
+def dynamodb(floci, db_schema):
 
     def items_to_list(items):
-        """converts dynamodb item list to list of dics"""
+        """converts dynamodb item list to list of dicts"""
         result = []
         for i in items:
             entry = {}
@@ -90,7 +91,7 @@ def dynamodb(floci, db_name):
         + f"secret_access_key={floci.env['AWS_SECRET_ACCESS_KEY']}"
     )
     yield DynamoDBTestConfig(
-        db_name,
+        db_schema,
         src_uri,
         items_to_list(data_items),
     )
@@ -102,8 +103,8 @@ def dynamodb_tests() -> Iterable[Callable]:
             traceback.print_exception(*result.exc_info)
             raise AssertionError(result.exception)
 
-    def smoke_test(dest_uri, dynamodb):
-        dest_table = f"public.dynamodb_{get_random_string(5)}"
+    def smoke_test(dest_uri, dynamodb, schema: str):
+        dest_table = f"{schema}.dynamodb_{get_random_string(5)}"
 
         result = invoke_ingest_command(
             dynamodb.uri, dynamodb.db_name, dest_uri, dest_table, "append", "updated_at"
@@ -118,8 +119,8 @@ def dynamodb_tests() -> Iterable[Callable]:
             assert result[i][0] == dynamodb.data[i]["id"]
             assert result[i][1] == pendulum.parse(dynamodb.data[i]["updated_at"])
 
-    def append_test(dest_uri, dynamodb):
-        dest_table = f"public.dynamodb_{get_random_string(5)}"
+    def append_test(dest_uri, dynamodb, schema: str):
+        dest_table = f"{schema}.dynamodb_{get_random_string(5)}"
 
         # we run it twice to assert that the data in destination doesn't change
         for i in range(2):
@@ -142,8 +143,8 @@ def dynamodb_tests() -> Iterable[Callable]:
                 assert result[i][1] == pendulum.parse(dynamodb.data[i]["updated_at"])
 
     def incremental_test_factory(strategy):
-        def incremental_test(dest_uri, dynamodb):
-            dest_table = f"public.dynamodb_{get_random_string(5)}"
+        def incremental_test(dest_uri, dynamodb, schema: str):
+            dest_table = f"{schema}.dynamodb_{get_random_string(5)}"
 
             result = invoke_ingest_command(
                 dynamodb.uri,
@@ -214,6 +215,6 @@ def dynamodb_tests() -> Iterable[Callable]:
     "dest", list(DESTINATIONS.values()), ids=list(DESTINATIONS.keys())
 )
 @pytest.mark.parametrize("testcase", dynamodb_tests())
-def test_dynamodb(dest, dynamodb, testcase):
-    testcase(dest.start(), dynamodb)
+def test_dynamodb(dest, dynamodb, testcase, db_schema):
+    testcase(dest.start(), dynamodb, schema=db_schema)
     dest.stop()

@@ -1,12 +1,18 @@
+import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from unittest.mock import patch
 
+import docker
+import docker.errors
 import pytest
 import sqlalchemy
 
 from omniload.src.destinations import ClickhouseDestination
 from tests.warehouse.settings import DESTINATIONS, SOURCES
+
+logger = logging.getLogger(__name__)
 
 
 def pytest_sessionstart(session):
@@ -15,22 +21,25 @@ def pytest_sessionstart(session):
 
 def pytest_sessionfinish(session, exitstatus):
     stop_containers(session.config)
+    stop_containers_more(session.config)
 
 
 @pytest.fixture(scope="session", autouse=True)
 def manage_containers(request, shared_directory):
     unique_containers = set(SOURCES.values()) | set(DESTINATIONS.values())
     for container in unique_containers:
-        container.container_lock_dir = shared_directory  # ty: ignore[invalid-assignment]
+        container.lock_dir = shared_directory  # ty: ignore[invalid-assignment, unresolved-attribute, unused-ignore-comment]
 
 
 def start_containers(config):
-    if hasattr(config, "workerinput"):
+    if is_worker(config):
         return
 
     unique_containers = set(SOURCES.values()) | set(DESTINATIONS.values())
+    unique_containers = [x for x in unique_containers if x is not None]
+
     for container in unique_containers:
-        container.container_lock_dir = config.shared_directory  # ty: ignore[invalid-assignment]
+        container.lock_dir = config.shared_directory  # ty: ignore[invalid-assignment, unresolved-attribute, unused-ignore-comment]
 
     with ThreadPoolExecutor() as executor:
         futures = [
@@ -56,7 +65,7 @@ def start_containers(config):
 
 
 def stop_containers(config):
-    if hasattr(config, "workerinput"):
+    if is_worker(config):
         return
 
     should_manage_containers = os.environ.get("PYTEST_XDIST_WORKER", "gw0") == "gw0"
@@ -64,9 +73,41 @@ def stop_containers(config):
         return
 
     unique_containers = set(SOURCES.values()) | set(DESTINATIONS.values())
+    unique_containers = [x for x in unique_containers if x is not None]
 
     for container in unique_containers:
         container.stop_fully()
+
+
+def stop_containers_more(config):
+    """
+    More containers clean-up.
+
+    On the controller, at the end of the session, also stop all other
+    containers not tracked by `SOURCES` or `DESTINATIONS`.
+    """
+    if is_worker(config):
+        return
+    shared_directory = config.shared_directory
+    shutdown_files = Path(shared_directory).glob("*.shutdown")
+    docker_client = docker.DockerClient.from_env()
+    for shutdown_file in shutdown_files:
+        container_id = shutdown_file.stem
+        try:
+            container = docker_client.containers.get(container_id)
+        except docker.errors.NotFound:
+            continue
+        # container.stop()
+        # container.stop(timeout=5)
+        container.remove(force=True)
+    docker_client.close()
+
+
+def is_worker(config):
+    """True if the code running the given pytest.config object is running in a xdist master
+    node or not running xdist at all.
+    """
+    return hasattr(config, "workerinput")
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -14,6 +14,22 @@ from tests.warehouse.manager import MONGODB_IMAGE
 from tests.warehouse.settings import DESTINATIONS
 
 
+@pytest.fixture(scope="session")
+def mongodb_session():
+    container = MongoDbContainer(MONGODB_IMAGE)
+    container.start()
+    yield container
+    container.stop()
+
+
+@pytest.fixture(scope="function")
+def mongodb_function():
+    container = MongoDbContainer(MONGODB_IMAGE)
+    container.start()
+    yield container
+    container.stop()
+
+
 def mongodb_test_cases():
     def smoke_test(mongo):
         collection = f"smoke_test_{get_random_string(5)}"
@@ -273,26 +289,17 @@ def mongodb_test_cases():
     ]
 
 
-@pytest.fixture(scope="session")
-def mongodb():
-    container = MongoDbContainer(MONGODB_IMAGE)
-    container.start()
-    yield container
-    container.stop()
-
-
 @pytest.mark.parametrize("testcase", mongodb_test_cases())
-def test_mongodb_dest(testcase, mongodb):
-    testcase(mongodb)
+def test_mongodb_dest(testcase, mongodb_session):
+    testcase(mongodb_session)
 
 
 @pytest.mark.parametrize(
     "dest", list(DESTINATIONS.values()), ids=list(DESTINATIONS.keys())
 )
-def test_mongodb_source(dest):
-    mongo = MongoDbContainer("mongo:7.0.7")
-    mongo.start()
+def test_mongodb_source(mongodb_function, dest):
 
+    mongo = mongodb_function
     db = mongo.get_connection_client()
     test_collection = db.test_db.test_collection
     test_collection.insert_many(
@@ -435,16 +442,13 @@ def test_mongodb_source(dest):
         )
     finally:
         dest.stop()
-        mongo.stop()
 
 
 def mongodb_custom_query_test_cases():
-    def simple_filtering_query(dest_uri: str):
+    def simple_filtering_query(mongo, dest_uri: str):
         """Test simple aggregation query with filtering"""
-        mongo = MongoDbContainer("mongo:7.0.7")
-        mongo.start()
 
-        try:
+        if True:
             db = mongo.get_connection_client()
             test_collection = db.test_db.events
 
@@ -515,15 +519,10 @@ def mongodb_custom_query_test_cases():
             assert res[2] == (3, "login", "user2", 150)
             assert res[3] == (5, "logout", "user1", 50)
 
-        finally:
-            mongo.stop()
-
-    def aggregation_with_grouping(dest_uri: str):
+    def aggregation_with_grouping(mongo, dest_uri: str):
         """Test aggregation query with grouping operations"""
-        mongo = MongoDbContainer("mongo:7.0.7")
-        mongo.start()
 
-        try:
+        if True:
             db = mongo.get_connection_client()
             test_collection = db.test_db.events
 
@@ -600,15 +599,10 @@ def mongodb_custom_query_test_cases():
                 1,
             )  # user2: only 150 from login, 1 event
 
-        finally:
-            mongo.stop()
-
-    def incremental_with_interval_placeholders(dest_uri: str):
+    def incremental_with_interval_placeholders(mongo, dest_uri: str):
         """Test incremental load with interval placeholders"""
-        mongo = MongoDbContainer("mongo:7.0.7")
-        mongo.start()
 
-        try:
+        if True:
             db = mongo.get_connection_client()
             test_collection = db.test_db.events
 
@@ -685,15 +679,10 @@ def mongodb_custom_query_test_cases():
             assert res[0] == (1, "login", "user1", 100)
             assert res[1] == (2, "purchase", "user1", 250)
 
-        finally:
-            mongo.stop()
-
-    def incremental_multiple_days(dest_uri: str):
+    def incremental_multiple_days(mongo, dest_uri: str):
         """Test incremental load across multiple days"""
-        mongo = MongoDbContainer("mongo:7.0.7")
-        mongo.start()
 
-        try:
+        if True:
             db = mongo.get_connection_client()
             test_collection = db.test_db.events
 
@@ -785,9 +774,6 @@ def mongodb_custom_query_test_cases():
             assert res[1] == (2, "purchase", "user1", 250)
             assert res[2] == (3, "login", "user2", 150)
 
-        finally:
-            mongo.stop()
-
     return [
         simple_filtering_query,
         aggregation_with_grouping,
@@ -800,7 +786,7 @@ def mongodb_custom_query_test_cases():
 @pytest.mark.parametrize(
     "dest", list(DESTINATIONS.values()), ids=list(DESTINATIONS.keys())
 )
-def test_mongodb_custom_query(testcase, dest):
+def test_mongodb_custom_query(testcase, mongodb_function, dest):
     """Test MongoDB custom aggregation queries"""
-    testcase(dest.start())
+    testcase(mongodb_function, dest.start())
     dest.stop()

@@ -8,17 +8,6 @@ import sqlalchemy
 from omniload.src.couchbase_source.helpers import fetch_documents
 from tests.container.impl.couchbase import CouchbaseContainer
 from tests.util import invoke_ingest_command
-
-
-@pytest.fixture(scope="session")
-def couchbase():
-    """
-    Provide a Couchbase service container for the whole test session.
-    """
-    container = CouchbaseContainer(COUCHBASE_IMAGE)
-    container.start()
-    yield container
-    container.stop()
 from tests.warehouse.manager import COUCHBASE_IMAGE
 from tests.warehouse.settings import DESTINATIONS
 
@@ -26,13 +15,16 @@ from tests.warehouse.settings import DESTINATIONS
 @pytest.mark.parametrize(
     "dest", list(DESTINATIONS.values()), ids=list(DESTINATIONS.keys())
 )
-def test_couchbase_source_local(couchbase, dest):
+def test_couchbase_source_local(dest):
     """
     Test Couchbase source with local containerized Couchbase instance.
 
     NOTE: This test requires local Couchbase Server to be stopped first,
     as it uses 1:1 port mapping (8091, 11210, etc.) to avoid SDK connection issues.
     """
+
+    couchbase = CouchbaseContainer(COUCHBASE_IMAGE)
+    couchbase.start()
 
     # Insert test documents
     test_documents = [
@@ -127,6 +119,7 @@ def test_couchbase_source_local(couchbase, dest):
         ], f"Expected nested values, got {nested_values}"
     finally:
         dest.stop()
+        couchbase.stop()
 
 
 @pytest.mark.skipif(

@@ -1,47 +1,32 @@
 from testcontainers.clickhouse import ClickHouseContainer
-from testcontainers.kafka import KafkaContainer
 from testcontainers.mongodb import MongoDbContainer
 from testcontainers.mysql import MySqlContainer
 from testcontainers.postgres import PostgresContainer
 
 from tests.container.impl.clickhouse import ClickhouseService
-from tests.container.impl.couchbase import CouchbaseContainer
 from tests.container.impl.duckdb import EphemeralDuckDb
-from tests.container.impl.floci import FlociContainer
 from tests.container.impl.mssql import get_mssql_service
-from tests.container.model import (
-    DockerService,
-    ServiceRegistry,
-)
-from tests.container.settings import (
-    CLICKHOUSE_IMAGE,
-    COUCHBASE_IMAGE,
-    FLOCI_IMAGE,
-    KAFKA_IMAGE,
-    MONGODB_IMAGE,
-    MYSQL_IMAGE,
-    POSTGRESQL_IMAGE,
-)
+from tests.container.model import DockerService
+from tests.warehouse.model import ServiceRegistry
 
-# TODO: MongoDB, Couchbase, Kafka, Floci
+CLICKHOUSE_IMAGE = "docker.io/clickhouse/clickhouse-server:26.5"
+COUCHBASE_IMAGE = "docker.io/couchbase:7.6.9"
+FLOCI_IMAGE = "docker.io/floci/floci:1.5.25"
+KAFKA_IMAGE = "docker.io/confluentinc/cp-kafka:7.6.0"
+MONGODB_IMAGE = "docker.io/mongo:8.3"
+MYSQL_IMAGE = "docker.io/mariadb:12"
+MSSQL_IMAGE = "mcr.microsoft.com/mssql/server:2025-CU6-ubuntu-24.04"
+POSTGRESQL_IMAGE = "docker.io/postgres:18-alpine"
+
 registry = ServiceRegistry(
-    clickhouse=ClickhouseService(
-        "clickhouse", ClickHouseContainer(CLICKHOUSE_IMAGE)
-    ),
-    couchbase=DockerService(
-        "couchbase", CouchbaseContainer(COUCHBASE_IMAGE)
-    ),
+    clickhouse=ClickhouseService("clickhouse", ClickHouseContainer(CLICKHOUSE_IMAGE)),
     duckdb_source=EphemeralDuckDb(),
     duckdb_destination=EphemeralDuckDb(),
-    floci=DockerService("floci", FlociContainer(FLOCI_IMAGE)),
-    kafka=None,
     mongodb=DockerService("mongodb", MongoDbContainer(MONGODB_IMAGE)),
-    mssql=get_mssql_service(),
+    mssql=get_mssql_service(MSSQL_IMAGE),
     mysql=DockerService(
         "mysql",
-        MySqlContainer(
-            image=MYSQL_IMAGE, dialect="pymysql", username="root"
-        ),
+        MySqlContainer(image=MYSQL_IMAGE, dialect="pymysql", username="root"),
     ),
     postgresql=DockerService(
         "postgres", PostgresContainer(POSTGRESQL_IMAGE, driver=None)
