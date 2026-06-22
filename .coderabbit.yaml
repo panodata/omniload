@@ -7,10 +7,11 @@ reviews:
   poem: false
   review_status: false
   auto_review:
-    enabled: true
-    drafts: false
-    base_branches:
-      - main
+    # Disabled to conserve CodeRabbit's limited OSS review cycles; matches the
+    # panodata org-wide setting. Trigger reviews on demand with `@coderabbitai
+    # review` or the "Please review now!" checkbox.
+    enabled: false
+    drafts: true
   path_filters:
     - "!**/*.lock"
     - "!docs/_build/**"
