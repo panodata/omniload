@@ -505,9 +505,7 @@ class DockerImage:
             return res
 
     def start_fully(self) -> str:
-        self.container = self.container_creator()
-        if self.container is None:
-            raise ValueError("Container is not initialized.")
+        self.container = self._start_container()
 
         conn_url = self.container.get_connection_url() + self.connection_suffix
 
@@ -515,6 +513,72 @@ class DockerImage:
             f.write(conn_url)
 
         return conn_url
+
+    def _start_container(self, attempts: int = 3):
+        """Build and start the container, retrying a fresh one on transient boot
+        failures. Heavy images (SQL Server especially) intermittently exit between
+        `docker create` and the readiness probe; because conftest boots every
+        container up front, one such death would otherwise abort the whole test
+        session. On every failed attempt we dump the dead container's own logs
+        (the docker-API error alone never says *why* it exited) and stop it
+        before retrying.
+        """
+        last_exc: Exception | None = None
+        for attempt in range(1, attempts + 1):
+            container = self.container_creator()
+            if container is None:
+                raise ValueError("Container is not initialized.")
+            try:
+                return container.start()
+            except Exception as exc:
+                last_exc = exc
+                self._report_failed_start(container, attempt, attempts, exc)
+                self._safe_stop(container)
+                if attempt < attempts:
+                    time.sleep(2 * attempt)
+        assert last_exc is not None  # loop ran at least once
+        raise last_exc
+
+    def _report_failed_start(
+        self, container, attempt: int, attempts: int, exc: Exception
+    ) -> None:
+        print(
+            f"[testcontainers] {self.id!r} failed to start "
+            f"(attempt {attempt}/{attempts}): {exc!r}",
+            file=sys.stderr,
+        )
+        try:
+            logs = container.get_logs()
+        except Exception as log_exc:
+            print(
+                f"[testcontainers] {self.id!r} get_logs() unavailable: {log_exc!r}",
+                file=sys.stderr,
+            )
+            return
+        for stream_name, stream in zip(("stdout", "stderr"), logs):
+            if not stream:
+                continue
+            text = (
+                stream.decode("utf-8", "replace")
+                if isinstance(stream, bytes)
+                else str(stream)
+            )
+            print(
+                f"[testcontainers] {self.id!r} container {stream_name}:\n{text}",
+                file=sys.stderr,
+            )
+
+    def _safe_stop(self, container) -> None:
+        try:
+            container.stop()
+        except Exception as exc:
+            # Best-effort cleanup: log why the dead container wouldn't stop, but
+            # don't let it mask the original startup failure being re-raised.
+            print(
+                f"[testcontainers] {self.id!r} failed to stop dead container "
+                f"during retry cleanup: {exc!r}",
+                file=sys.stderr,
+            )
 
     def stop(self):
         pass
@@ -526,9 +590,7 @@ class DockerImage:
 
 class ClickhouseDockerImage(DockerImage):
     def start_fully(self) -> str:
-        self.container = self.container_creator()
-        if self.container is None:
-            raise ValueError("Container is not initialized.")
+        self.container = self._start_container()
 
         port = self.container.get_exposed_port(8123)
         conn_url = (
@@ -542,6 +604,73 @@ class ClickhouseDockerImage(DockerImage):
             f.write(conn_url)
 
         return conn_url
+
+
+class _FlakyFakeContainer:
+    """Stand-in for a testcontainers container whose first ``fail_times`` starts
+    raise, used to exercise DockerImage._start_container without Docker."""
+
+    def __init__(
+        self, fail_times: int, logs=(b"server exited code 1", b""), error="boom"
+    ):
+        self.fail_times = fail_times
+        self.logs = logs
+        self.error = error
+        self.start_calls = 0
+        self.stopped = False
+
+    def start(self):
+        self.start_calls += 1
+        if self.start_calls <= self.fail_times:
+            raise RuntimeError(self.error)
+        return self
+
+    def get_logs(self):
+        return self.logs
+
+    def stop(self):
+        self.stopped = True
+
+
+def test_start_container_retries_then_succeeds(monkeypatch):
+    monkeypatch.setattr(time, "sleep", lambda *_: None)
+    created = []
+
+    def creator():
+        # A fresh container per attempt: the first two die on start, the third boots.
+        c = _FlakyFakeContainer(fail_times=1 if len(created) < 2 else 0)
+        created.append(c)
+        return c
+
+    image = DockerImage("fake", creator)
+    result = image._start_container(attempts=3)
+
+    # Fresh container per attempt; the two dead ones get stopped, the live one stays.
+    assert len(created) == 3
+    assert result is created[-1]
+    assert [c.stopped for c in created] == [True, True, False]
+
+
+def test_start_container_exhausts_attempts_and_dumps_logs(monkeypatch, capsys):
+    monkeypatch.setattr(time, "sleep", lambda *_: None)
+    created = []
+
+    def creator():
+        # Distinct error per attempt so the assertion below proves the LAST
+        # exception is re-raised, not the first.
+        c = _FlakyFakeContainer(fail_times=99, error=f"boom {len(created) + 1}")
+        created.append(c)
+        return c
+
+    image = DockerImage("fake", creator)
+    with pytest.raises(RuntimeError, match="boom 3"):
+        image._start_container(attempts=3)
+
+    assert len(created) == 3
+    assert all(c.stopped for c in created)
+    err = capsys.readouterr().err
+    assert "server exited code 1" in err  # the dead container's own reason, surfaced
+    assert "attempt 3/3" in err
 
 
 class EphemeralDuckDb:
@@ -768,16 +897,14 @@ MONGODB_IMAGE = "docker.io/mongo:8.3"
 COUCHBASE_IMAGE = "docker.io/couchbase:7.6.9"
 
 pgDocker = DockerImage(
-    "postgres", lambda: PostgresContainer(POSTGRESQL_IMAGE, driver=None).start()
+    "postgres", lambda: PostgresContainer(POSTGRESQL_IMAGE, driver=None)
 )
 clickHouseDocker = ClickhouseDockerImage(
-    "clickhouse", lambda: ClickHouseContainer(CLICKHOUSE_IMAGE).start()
+    "clickhouse", lambda: ClickHouseContainer(CLICKHOUSE_IMAGE)
 )
 mysqlDocker = DockerImage(
     "mysql",
-    lambda: MySqlContainer(
-        image=MYSQL_IMAGE, dialect="pymysql", username="root"
-    ).start(),
+    lambda: MySqlContainer(image=MYSQL_IMAGE, dialect="pymysql", username="root"),
 )
 
 
@@ -809,7 +936,7 @@ if sys.platform == "linux":
         {
             "sqlserver": DockerImage(
                 "sqlserver",
-                lambda: SqlServerContainer(MSSQL_IMAGE, dialect="mssql").start(),
+                lambda: SqlServerContainer(MSSQL_IMAGE, dialect="mssql"),
                 "?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=Yes",
             )
         }
