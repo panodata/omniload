@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+
+reviews:
+  profile: chill
+  high_level_summary: true
+  poem: false
+  review_status: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+  path_filters:
+    - "!**/*.lock"
+    - "!docs/_build/**"
+  path_instructions:
+    - path: "omniload/**/*.py"
+      instructions: >-
+        Keep heavy/optional imports lazy (inside the function that needs them) so
+        the CLI stays fast; this is a deliberate pattern, not an oversight. Line
+        length is intentionally unbounded (ruff E501 is disabled). Type checking
+        is `ty` (Astral), not mypy.
+    - path: "omniload/**/*_test.py"
+      instructions: >-
+        Tests are co-located as `*_test.py` next to the code they cover. Prefer
+        flagging missing edge-case coverage over style nits.
+  tools:
+    ruff:
+      enabled: true
+
+chat:
+  auto_reply: true
