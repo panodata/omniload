@@ -2,6 +2,6 @@ omniload/src/telemetry/event.py:generic-api-key:17
 omniload/src/testdata/fakebqcredentials.json:private-key:5
 docs/supported-sources/shopify.md:generic-api-key:26
 docs/supported-sources/smartsheets.md:generic-api-key:38
-tests/service/test_google_analytics.py:generic-api-key:45
-tests/service/test_google_analytics.py:generic-api-key:51
-tests/service/test_google_analytics.py:generic-api-key:58
+tests/saas/test_google_analytics.py:generic-api-key:45
+tests/saas/test_google_analytics.py:generic-api-key:51
+tests/saas/test_google_analytics.py:generic-api-key:58
