@@ -65,8 +65,8 @@ class DockerService(AbstractService):
         while self.lock_dir is None or not self._conn_url_file.exists():
             time.sleep(0.5)
             attempts += 1
-            if attempts > 40:
-                raise Exception("Failed to start container after bunch of attempts")
+            if attempts > 80:
+                raise RuntimeError(f"Failed to start container: {self.id}")
         return self._conn_url_file.read_text()
 
     def stop(self):
