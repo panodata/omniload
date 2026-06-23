@@ -196,15 +196,14 @@ def test_exclude_metrics_for_date_range():
     to_date = "2024-01-11"
     now = "2024-01-12"
 
-    pendulum.travel_to(cast(pendulum.DateTime, pendulum.parse(now)))
-
-    excluded_metrics = exclude_metrics_for_date_range(metrics, from_date, to_date)
-    assert excluded_metrics == [
-        "cohort_day_1_revenue_per_user",
-        "cohort_day_1_total_revenue_per_user",
-        "cohort_day_3_revenue_per_user",
-        "cohort_day_3_total_revenue_per_user",
-    ]
+    with pendulum.travel_to(cast(pendulum.DateTime, pendulum.parse(now))):  # ty: ignore[invalid-context-manager]
+        excluded_metrics = exclude_metrics_for_date_range(metrics, from_date, to_date)
+        assert excluded_metrics == [
+            "cohort_day_1_revenue_per_user",
+            "cohort_day_1_total_revenue_per_user",
+            "cohort_day_3_revenue_per_user",
+            "cohort_day_3_total_revenue_per_user",
+        ]
 
 
 def test_standardize_keys():
