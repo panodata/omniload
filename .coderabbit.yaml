@@ -22,10 +22,11 @@ reviews:
         the CLI stays fast; this is a deliberate pattern, not an oversight. Line
         length is intentionally unbounded (ruff E501 is disabled). Type checking
         is `ty` (Astral), not mypy.
-    - path: "omniload/**/*_test.py"
+    - path: "tests/**/test_*.py"
       instructions: >-
-        Tests are co-located as `*_test.py` next to the code they cover. Prefer
-        flagging missing edge-case coverage over style nits.
+        Tests live in a dedicated `tests/` tree (`tests/main/` for core/unit,
+        `tests/saas/` for SaaS integration), named `test_*.py`. Prefer flagging
+        missing edge-case coverage over style nits.
   tools:
     ruff:
       enabled: true
