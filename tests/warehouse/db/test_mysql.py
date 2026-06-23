@@ -59,7 +59,7 @@ def test_mysql_zero_dates(source, dest):
     dest_engine = sqlalchemy.create_engine(dest_uri)
     with dest_engine.connect() as dest_conn:
         res = dest_conn.exec_driver_sql(
-            f"select * from {schema_rand_prefix}.output"
+            f"select * from {schema_rand_prefix}.output order by name"
         ).fetchall()
     dest_engine.dispose()
 

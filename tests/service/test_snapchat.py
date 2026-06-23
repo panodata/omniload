@@ -54,7 +54,7 @@ def test_snapchat_ads_merge_strategy(tmp_path):
         # Expected: adsquad_id and ad_id should be NULL
         result1 = invoke_ingest_command(
             source_uri,
-            "campaigns_stats:HOUR,impressions,spend",
+            "campaigns_stats:HOUR:impressions,spend",
             dest_uri,
             "snapchat_ads.campaigns_stats",
             interval_start="2025-11-19",
@@ -113,7 +113,7 @@ def test_snapchat_ads_merge_strategy(tmp_path):
         # Expected: ad_id should be populated, data should be appended
         result2 = invoke_ingest_command(
             source_uri,
-            "campaigns_stats:ad,HOUR,impressions,spend",
+            "campaigns_stats:ad,HOUR:impressions,spend",
             dest_uri,
             "snapchat_ads.campaigns_stats",
             interval_start="2025-11-19",

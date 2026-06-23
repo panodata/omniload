@@ -32,19 +32,19 @@ def appsflyer_test_cases():
         assert result.exit_code == 0
 
         engine = sqlalchemy.create_engine(dest_uri)
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             res = conn.exec_driver_sql(
                 f"select * from {schema_rand_prefix}.creatives"
             ).fetchall()
+            columns = [
+                col[0]
+                for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
+                    f"select * from {schema_rand_prefix}.creatives limit 0"
+                ).cursor.description
+            ]
         engine.dispose()
 
         assert len(res) > 0
-        columns = [
-            col[0]
-            for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
-                f"select * from {schema_rand_prefix}.creatives limit 0"
-            ).cursor.description
-        ]
         expected_columns = [
             "_dlt_load_id",
             "_dlt_id",
@@ -81,19 +81,19 @@ def appsflyer_test_cases():
         assert result.exit_code == 0
 
         engine = sqlalchemy.create_engine(dest_uri)
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             res = conn.exec_driver_sql(
                 f"select * from {schema_rand_prefix}.campaigns"
             ).fetchall()
+            columns = [
+                col[0]
+                for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
+                    f"select * from {schema_rand_prefix}.campaigns limit 0"
+                ).cursor.description
+            ]
         engine.dispose()
 
         assert len(res) > 0
-        columns = [
-            col[0]
-            for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
-                f"select * from {schema_rand_prefix}.campaigns limit 0"
-            ).cursor.description
-        ]
         expected_columns = [
             "_dlt_load_id",
             "_dlt_id",
@@ -142,15 +142,15 @@ def appsflyer_test_cases():
             res = conn.exec_driver_sql(
                 f"select * from {schema_rand_prefix}.custom"
             ).fetchall()
+            columns = [
+                col[0]
+                for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
+                    f"select * from {schema_rand_prefix}.custom limit 0"
+                ).cursor.description
+            ]
         engine.dispose()
 
         assert len(res) > 0
-        columns = [
-            col[0]
-            for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
-                f"select * from {schema_rand_prefix}.custom limit 0"
-            ).cursor.description
-        ]
         expected_columns = [
             "_dlt_load_id",
             "_dlt_id",

@@ -71,12 +71,9 @@ def freshdesk_source(
         to ensure incremental loading.
         """
 
-        nonlocal start_date
-
+        effective_start_date = start_date
         if updated_at is not None and updated_at.last_value is not None:
-            start_date = ensure_pendulum_datetime_utc(updated_at.last_value)
-        else:
-            start_date = start_date
+            effective_start_date = ensure_pendulum_datetime_utc(updated_at.last_value)
 
         if updated_at is not None and updated_at.end_value is not None:
             end_date = ensure_pendulum_datetime_utc(updated_at.end_value)
@@ -87,7 +84,7 @@ def freshdesk_source(
         yield from freshdesk.paginated_response(
             endpoint=endpoint,
             per_page=per_page,
-            start_date=start_date,
+            start_date=effective_start_date,
             end_date=end_date,
             query=query,
         )

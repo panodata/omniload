@@ -162,7 +162,9 @@ def test_db_to_db_exclude_columns(source, dest):
 
         # Verify excluded columns don't exist in destination schema
         columns = dest_conn.exec_driver_sql(
-            f"SELECT column_name FROM information_schema.columns WHERE table_schema = '{schema_rand_prefix}' AND table_name = 'output'"
+            f"SELECT column_name FROM information_schema.columns "
+            f"WHERE table_schema = '{schema_rand_prefix}' AND table_name = 'output' "
+            f"ORDER BY ordinal_position"
         ).fetchall()
         assert columns == [("id",), ("val",), ("updated_at",)]
 

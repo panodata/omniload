@@ -375,7 +375,7 @@ def test_mongodb_source(mongodb_function, dest):
         engine = sqlalchemy.create_engine(dest_uri)
         with engine.connect() as conn:
             res = conn.exec_driver_sql(
-                "select id, name, nested_parent__key1, nested_parent__key2, nested_parent__key3, key4, value from raw.test_collection"
+                "select id, name, nested_parent__key1, nested_parent__key2, nested_parent__key3, key4, value from raw.test_collection order by id"
             ).fetchall()
         engine.dispose()
 

@@ -30,6 +30,8 @@ def test_stripe_source_full_refresh(stripe_table):
     # Create test database
     dbname = f"test_stripe_{stripe_table}{get_random_string(5)}.db"
     abs_db_path = get_abs_path(f"./testdata/{dbname}")
+
+    # omniload provides its test data via `omniload` root folder.
     rel_db_path_to_command = f"omniload/testdata/{dbname}"
     uri = f"duckdb:///{rel_db_path_to_command}"
 
@@ -69,6 +71,8 @@ def test_stripe_source_incremental(stripe_table):
     # Create test database
     dbname = f"test_stripe_{stripe_table}{get_random_string(5)}.db"
     abs_db_path = get_abs_path(f"./testdata/{dbname}")
+
+    # omniload provides its test data via `omniload` root folder.
     rel_db_path_to_command = f"omniload/testdata/{dbname}"
     uri = f"duckdb:///{rel_db_path_to_command}"
 

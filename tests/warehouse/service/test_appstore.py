@@ -388,14 +388,13 @@ def appstore_test_cases() -> Iterable[Callable]:
             )
         )
 
+        schema_rand_prefix = f"testschema_appstore_{get_random_string(5)}"
+        dest_table = f"{schema_rand_prefix}.app_downloads_{get_random_string(5)}"
+
         with patch("omniload.src.appstore.client.AppStoreConnectClient") as mock_client:
             mock_client.return_value = client
             with patch("requests.get") as mock_get:
                 mock_get.return_value = create_mock_response(app_download_testdata)
-                schema_rand_prefix = f"testschema_appstore_{get_random_string(5)}"
-                dest_table = (
-                    f"{schema_rand_prefix}.app_downloads_{get_random_string(5)}"
-                )
                 result = invoke_ingest_command(
                     f"appstore://?key_id=123&issuer_id=123&key_base64={api_key}&app_id=123",
                     "app-downloads-detailed",
@@ -422,10 +421,6 @@ def appstore_test_cases() -> Iterable[Callable]:
                     create_mock_response(app_download_testdata),
                     create_mock_response(app_download_testdata_extended),
                 ]
-                schema_rand_prefix = f"testschema_appstore_{get_random_string(5)}"
-                dest_table = (
-                    f"{schema_rand_prefix}.app_downloads_{get_random_string(5)}"
-                )
                 result = invoke_ingest_command(
                     f"appstore://?key_id=123&issuer_id=123&key_base64={api_key}&app_id=123",
                     "app-downloads-detailed",

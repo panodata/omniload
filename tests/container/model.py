@@ -77,10 +77,13 @@ class DockerService(AbstractService):
         self._signal_starting()
         if self.container is None:
             raise RuntimeError("Container is not initialized")
-        self.container.start()
-        conn_url = self.get_connection_url()
-        self.write_conn_url(conn_url)
-        self._signal_started()
+        try:
+            self.container.start()
+            conn_url = self.get_connection_url()
+            self.write_conn_url(conn_url)
+            self._signal_started()
+        finally:
+            self._signal_not_started()
 
     def stop_fully(self):
         if self.container is not None:
@@ -114,9 +117,11 @@ class DockerService(AbstractService):
         self._starter_file.touch()
 
     def _signal_started(self):
-        self._starter_file.unlink(missing_ok=True)
         if self.register_for_shutdown:
             self.add_shutdown_signal()
+
+    def _signal_not_started(self):
+        self._starter_file.unlink(missing_ok=True)
 
     def _is_starting(self):
         return self._starter_file.exists()

@@ -124,7 +124,7 @@ def invoke_ingest_command(
 
     if sql_limit:
         args.append("--sql-limit")
-        args.append(sql_limit)
+        args.append(str(sql_limit))
 
     if yield_limit:
         args.append("--yield-limit")
