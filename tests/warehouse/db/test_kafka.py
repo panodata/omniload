@@ -21,7 +21,7 @@ def kafka_service(request, shared_directory) -> DockerService:
     """
     return DockerService(
         id="kafka",
-        container=KafkaContainer(KAFKA_IMAGE).with_kraft(),
+        container=KafkaContainer(KAFKA_IMAGE),
         lock_dir=shared_directory,
         shutdown=True,
     ).start_background()
