@@ -3,7 +3,8 @@ from datetime import datetime
 import pytest
 import sqlalchemy
 
-from tests.util import get_random_string, invoke_ingest_command
+from tests.util import invoke_ingest_command
+from tests.util.common import get_random_string
 from tests.warehouse.manager import registry
 from tests.warehouse.settings import DESTINATIONS
 

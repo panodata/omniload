@@ -20,7 +20,7 @@ from omniload.src.destinations import (
     SnowflakeDestination,
 )
 from omniload.src.factory import DestinationProtocol
-from tests.util import get_etc_path
+from tests.util.common import get_etc_path
 
 
 class BigQueryDestinationTest(unittest.TestCase):

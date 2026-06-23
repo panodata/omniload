@@ -2,7 +2,7 @@ from typing import cast
 
 from testcontainers.core.generic import DbContainer
 
-from tests.container.model import DockerService
+from tests.util.container.model import DockerService
 
 
 class ClickhouseService(DockerService):

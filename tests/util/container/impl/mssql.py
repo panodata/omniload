@@ -1,7 +1,7 @@
 import sys
 from typing import Optional
 
-from tests.container.model import DockerService
+from tests.util.container.model import DockerService
 
 
 def get_mssql_service(image: str) -> Optional[DockerService]:

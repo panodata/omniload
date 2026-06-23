@@ -9,7 +9,8 @@ from omniload.src.appsflyer.client import (
     exclude_metrics_for_date_range,
     standardize_keys,
 )
-from tests.util import get_random_string, invoke_ingest_command
+from tests.util import invoke_ingest_command
+from tests.util.common import get_random_string
 from tests.warehouse.settings import DESTINATIONS
 
 

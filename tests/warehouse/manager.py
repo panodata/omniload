@@ -3,10 +3,10 @@ from testcontainers.mongodb import MongoDbContainer
 from testcontainers.mysql import MySqlContainer
 from testcontainers.postgres import PostgresContainer
 
-from tests.container.impl.clickhouse import ClickhouseService
-from tests.container.impl.duckdb import EphemeralDuckDb
-from tests.container.impl.mssql import get_mssql_service
-from tests.container.model import DockerService
+from tests.util.container.impl.clickhouse import ClickhouseService
+from tests.util.container.impl.duckdb import EphemeralDuckDb
+from tests.util.container.impl.mssql import get_mssql_service
+from tests.util.container.model import DockerService
 from tests.warehouse.model import ServiceRegistry
 
 CLICKHOUSE_IMAGE = "docker.io/clickhouse/clickhouse-server:26.5"

@@ -3,7 +3,8 @@ from typing import Callable, Iterable
 import pytest
 
 from omniload.src.errors import MissingValueError, UnsupportedResourceError
-from tests.util import has_exception, invoke_ingest_command
+from tests.util import invoke_ingest_command
+from tests.util.common import has_exception
 
 
 def applovin_test_cases() -> Iterable[Callable]:

@@ -5,7 +5,8 @@ import duckdb
 import pytest
 
 from omniload.src.stripe_analytics import generate_date_ranges
-from tests.util import get_abs_path, get_random_string, invoke_ingest_command
+from tests.util import invoke_ingest_command
+from tests.util.common import get_abs_path, get_random_string
 
 
 @pytest.mark.parametrize(

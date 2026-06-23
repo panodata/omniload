@@ -10,11 +10,9 @@ import sqlalchemy
 from pyarrow import ipc as ipc
 
 from tests.util import (
-    as_datetime,
-    as_datetime2,
-    get_random_string,
     invoke_ingest_command,
 )
+from tests.util.common import as_datetime, as_datetime2, get_random_string
 from tests.warehouse.settings import DESTINATIONS
 
 

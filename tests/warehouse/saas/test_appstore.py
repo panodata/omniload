@@ -27,7 +27,8 @@ from omniload.src.appstore.models import (
     ReportSegment,
     ReportSegmentAttributes,
 )
-from tests.util import get_random_string, has_exception, invoke_ingest_command
+from tests.util import invoke_ingest_command
+from tests.util.common import get_random_string, has_exception
 from tests.warehouse.settings import DESTINATIONS
 
 

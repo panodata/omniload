@@ -7,8 +7,9 @@ from confluent_kafka import KafkaError, KafkaException, Producer
 from confluent_kafka.admin import AdminClient
 from testcontainers.kafka import KafkaContainer
 
-from tests.container.model import DockerService
-from tests.util import get_random_string, invoke_ingest_command
+from tests.util import invoke_ingest_command
+from tests.util.common import get_random_string
+from tests.util.container.model import DockerService
 from tests.warehouse.manager import KAFKA_IMAGE
 from tests.warehouse.settings import DESTINATIONS
 

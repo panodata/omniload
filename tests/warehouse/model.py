@@ -1,7 +1,7 @@
 import dataclasses
 from typing import Optional
 
-from tests.container.model import AbstractService
+from tests.util.container.model import AbstractService
 
 
 @dataclasses.dataclass

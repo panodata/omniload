@@ -2,7 +2,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from tests.container.model import AbstractService
+from tests.util.container.model import AbstractService
 
 
 class EphemeralDuckDb(AbstractService):

@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from tests.container.model import DockerService
+from tests.util.container.model import DockerService
 
 
 class FlakyFakeContainer:

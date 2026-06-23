@@ -4,10 +4,9 @@ import sqlalchemy
 from sqlalchemy.pool import NullPool
 
 from tests.util import (
-    as_datetime,
-    get_random_string,
     invoke_ingest_command,
 )
+from tests.util.common import as_datetime, get_random_string
 
 
 def db_to_db_create_replace(source_connection_url: str, dest_connection_url: str):

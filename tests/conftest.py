@@ -11,7 +11,7 @@ import pytest
 import sqlalchemy
 
 from omniload.src.destinations import ClickhouseDestination
-from tests.util import get_testdata_path
+from tests.util.common import get_testdata_path
 from tests.warehouse.settings import DESTINATIONS, SOURCES
 
 logger = logging.getLogger(__name__)

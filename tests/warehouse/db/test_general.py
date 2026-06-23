@@ -5,8 +5,9 @@ import pytest
 import sqlalchemy
 from sqlalchemy.pool import NullPool
 
-from tests.container.impl.duckdb import EphemeralDuckDb
-from tests.util import as_datetime, get_random_string, invoke_ingest_command
+from tests.util import invoke_ingest_command
+from tests.util.common import as_datetime, get_random_string
+from tests.util.container.impl.duckdb import EphemeralDuckDb
 from tests.warehouse.operations import (
     custom_query_tests,
     db_to_db_append,

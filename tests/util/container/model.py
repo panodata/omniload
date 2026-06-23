@@ -10,7 +10,7 @@ from testcontainers.core.container import DockerContainer
 from testcontainers.core.generic import DbContainer
 from testcontainers.kafka import KafkaContainer
 
-from tests.container.impl.couchbase import CouchbaseContainer
+from tests.util.container.impl.couchbase import CouchbaseContainer
 
 
 class AbstractService(metaclass=ABCMeta):
