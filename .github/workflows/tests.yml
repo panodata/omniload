@@ -65,6 +65,13 @@ jobs:
         run: |
           uv pip install --editable='.[full,develop,test]'
 
+      - name: Set timezone
+        uses: szenius/set-timezone@v2.0
+        with:
+          timezoneLinux: "Europe/Berlin"
+          timezoneMacos: "Europe/Berlin"
+          timezoneWindows: "European Standard Time"
+
       - name: Run linters and software tests
         run: poe check
 
