@@ -1,7 +1,7 @@
 import time
 from abc import ABCMeta, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from threading import Thread
 from typing import Optional
 
 from testcontainers.core.container import DockerContainer
@@ -87,7 +87,9 @@ class DockerService(AbstractService):
             self.container.stop()
 
     def start_background(self):
-        Thread(target=self.start_fully, daemon=True).start()
+        executor = ThreadPoolExecutor(max_workers=1)
+        executor.submit(self.start_fully)
+        executor.shutdown(wait=False, cancel_futures=False)
         return self
 
     def get_connection_url(self):
