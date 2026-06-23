@@ -1,4 +1,3 @@
-import sys
 from typing import Callable, Iterable
 
 import pendulum
@@ -8,9 +7,6 @@ import sqlalchemy
 from omniload.src.errors import UnsupportedResourceError
 from tests.util import get_random_string, has_exception, invoke_ingest_command
 from tests.warehouse.settings import DESTINATIONS
-
-if sys.version_info < (3, 11):
-    pytest.skip("Skipping tests for Python <= 3.10", allow_module_level=True)
 
 
 def frankfurter_test_cases() -> Iterable[Callable]:
