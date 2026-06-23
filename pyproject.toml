@@ -242,7 +242,9 @@ ini_options.addopts = """
   --cov --cov-report=term-missing --cov-report=xml
   --numprocesses auto
   """
-ini_options.markers = []
+ini_options.markers = [
+  "integration: requires Docker/testcontainers or external credentials",
+]
 ini_options.xfail_strict = true
 ini_options.log_format = "%(asctime)-15s [%(name)-36s] %(levelname)-8s: %(message)s"
 ini_options.log_level = "DEBUG"
@@ -290,6 +292,8 @@ tasks.release = [
   { cmd = "twine upload --verbose --skip-existing dist/*" },
 ]
 tasks.test = { cmd = "pytest", env = { TESTCONTAINERS_RYUK_DISABLED = "true" } }
+# Docker-free unit lane: skip everything marked `integration` (Docker/credentials).
+tasks.test-fast = { cmd = "pytest -m 'not integration'", env = { TESTCONTAINERS_RYUK_DISABLED = "true" } }
 # Run a docker container to build and run omniload.
 tasks.docker-shell = { cmd = "docker run -v $(PWD):/root/code -w /root/code -it --rm --entrypoint /bin/bash python:3.11" }
 

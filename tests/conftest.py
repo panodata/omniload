@@ -39,6 +39,35 @@ def pytest_sessionfinish(session, exitstatus):
     stop_containers_more(session.config)
 
 
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(config, items):
+    """Auto-mark the Docker/credential-backed warehouse subtree as `integration`.
+
+    Path-based so it is independent of import mode, and `tryfirst` so the marker
+    is present before pytest's own `-m` deselection runs.
+    """
+    for item in items:
+        if "warehouse" in item.path.parts:
+            item.add_marker(pytest.mark.integration)
+
+
+def _docker_available():
+    try:
+        docker.from_env().ping()
+        return True
+    except Exception:
+        return False
+
+
+def _integration_deselected(config):
+    # `-m "not integration"` -> don't bother booting the DB matrix.
+    return "not integration" in (config.option.markexpr or "")
+
+
+def _skip_containers(config):
+    return _integration_deselected(config) or not _docker_available()
+
+
 @pytest.fixture(scope="session")
 def shared_directory(request):
     """
@@ -73,6 +102,8 @@ def manage_containers(request, shared_directory):
 
 
 def start_containers(config):
+    if _skip_containers(config):
+        return
     if is_worker(config):
         return
 
@@ -108,6 +139,8 @@ def start_containers(config):
 
 
 def stop_containers(config):
+    if _skip_containers(config):
+        return
     if is_worker(config):
         return
 
@@ -132,6 +165,8 @@ def stop_containers_more(config):
     On the controller, at the end of the session, also stop all other
     containers not tracked by `SOURCES` or `DESTINATIONS`.
     """
+    if _skip_containers(config):
+        return
     if is_worker(config):
         return
     shared_directory = config.shared_directory
