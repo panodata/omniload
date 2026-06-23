@@ -63,16 +63,24 @@ class CouchbaseContainer(DockerContainer):
 
         raise Exception(f"Couchbase did not become ready after {max_attempts} attempts")
 
+    def _exec_checked(self, command: str, step: str) -> None:
+        result = self.exec(command)
+        exit_code = getattr(result, "exit_code", 1)
+        output = getattr(result, "output", b"")
+        if exit_code != 0:
+            raise RuntimeError(f"{step} failed (exit {exit_code}): {output!r}")
+
     def _initialize_cluster(self):
         """Initialize Couchbase cluster using couchbase-cli."""
         # Use couchbase-cli inside the container for proper setup
-        self.exec(
+        self._exec_checked(
             f"couchbase-cli cluster-init -c 127.0.0.1 "
             f"--cluster-username {self.username} "
             f"--cluster-password {self.password} "
             f"--services data,index,query "
             f"--cluster-ramsize 256 "
-            f"--cluster-index-ramsize 256"
+            f"--cluster-index-ramsize 256",
+            "cluster init",
         )
 
         # Wait for cluster to be initialized
@@ -104,14 +112,15 @@ class CouchbaseContainer(DockerContainer):
 
     def _create_bucket(self):
         """Create a test bucket using couchbase-cli."""
-        self.exec(
+        self._exec_checked(
             f"couchbase-cli bucket-create -c 127.0.0.1 "
             f"-u {self.username} -p {self.password} "
             f"--bucket {self.bucket_name} "
             f"--bucket-type couchbase "
             f"--bucket-ramsize 100 "
             f"--storage-backend couchstore "  # Use couchstore for community edition
-            f"--bucket-replica 0"  # No replicas for single node
+            f"--bucket-replica 0",  # No replicas for single node
+            "bucket create",
         )
 
         # Wait for bucket to be ready and healthy
@@ -152,15 +161,16 @@ class CouchbaseContainer(DockerContainer):
         # Use cbq command-line tool to create the primary index
         # Note: We ignore errors if the index already exists
         query = f"CREATE PRIMARY INDEX ON `{self.bucket_name}`.`{self.scope_name}`.`{self.collection_name}`"
-        try:
-            self.exec(
-                f"cbq -u {self.username} -p {self.password} -engine=http://127.0.0.1:8091/ "
-                f'-script="{query}"'
+        result = self.exec(
+            f"cbq -u {self.username} -p {self.password} -engine=http://127.0.0.1:8091/ "
+            f'-script="{query}"'
+        )
+        output = str(getattr(result, "output", b"")).lower()
+        if getattr(result, "exit_code", 1) != 0 and "already exists" not in output:
+            raise RuntimeError(
+                f"primary index creation failed: {getattr(result, 'output', b'')!r}"
             )
-            time.sleep(2)
-        except Exception:
-            # Index may already exist, ignore error
-            pass
+        time.sleep(2)
 
     def get_connection_string(self) -> str:
         """Get Couchbase connection string."""

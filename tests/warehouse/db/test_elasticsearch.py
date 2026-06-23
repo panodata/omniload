@@ -191,7 +191,7 @@ def test_csv_to_elasticsearch_with_auth(elasticsearch_container_with_auth, tmp_p
     tmp_file = tmp_path / "tmp.csv"
     tmp_file.write_text(csv_content)
     if True:
-        csv_path = tmp_file.name
+        csv_path = str(tmp_file)
 
         # Get Elasticsearch connection details
         es_url = elasticsearch_container_with_auth.get_url()

@@ -12,27 +12,24 @@ from tests.util.container.impl.duckdb import EphemeralDuckDb
 from tests.warehouse.db.util import assert_output_equals_to_csv
 
 
-def test_create_replace_csv_to_duckdb(testdata_path):
+def test_create_replace_csv_to_duckdb(testdata_path, tmp_path):
 
-    abs_db_path = testdata_path / "test_create_replace_csv.db"
-    rel_db_path_to_command = "omniload/testdata/test_create_replace_csv.db"
-    rel_source_path_to_command = "omniload/testdata/create_replace.csv"
-
-    conn = duckdb.connect(abs_db_path)
+    abs_db_path = tmp_path / "test_create_replace_csv.db"
 
     result = invoke_ingest_command(
-        f"csv://{rel_source_path_to_command}",
+        "csv://omniload/testdata/create_replace.csv",
         "testschema.input",
-        f"duckdb:///{rel_db_path_to_command}",
+        f"duckdb:///{abs_db_path}",
         "testschema.output",
     )
-
     assert result.exit_code == 0
 
+    conn = duckdb.connect(abs_db_path)
     res = conn.sql(
         "select symbol, date, is_enabled, name from testschema.output "
         "order by symbol, date, name"
     ).fetchall()
+    conn.close()
 
     # read CSV file
     actual_rows = []
@@ -46,13 +43,6 @@ def test_create_replace_csv_to_duckdb(testdata_path):
     assert len(res) == len(actual_rows)
     for i, row in enumerate(actual_rows):
         assert res[i] == tuple(row)
-
-    # Clean up
-    conn.close()
-    try:
-        os.remove(abs_db_path)
-    except Exception:
-        pass
 
 
 def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):

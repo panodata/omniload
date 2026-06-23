@@ -4,7 +4,6 @@ import duckdb
 import pytest
 
 from tests.util import invoke_ingest_command
-from tests.util.common import get_abs_path, get_random_string
 
 
 @pytest.mark.parametrize(
@@ -36,15 +35,13 @@ from tests.util.common import get_abs_path, get_random_string
         "tasks",
     ],
 )
-def test_hostaway_source_full_refresh(hostaway_table):
+def test_hostaway_source_full_refresh(hostaway_table, tmp_path):
     api_key = os.environ.get("OMNILOAD_TEST_HOSTAWAY_API_KEY")
     if not api_key:
         pytest.skip("OMNILOAD_TEST_HOSTAWAY_API_KEY not set")
 
-    dbname = f"test_hostaway_{hostaway_table}_{get_random_string(5)}.db"
-    abs_db_path = get_abs_path(f"./testdata/{dbname}")
-    rel_db_path_to_command = f"omniload/testdata/{dbname}"
-    uri = f"duckdb:///{rel_db_path_to_command}"
+    abs_db_path = tmp_path / f"test_hostaway_{hostaway_table}.db"
+    uri = f"duckdb:///{abs_db_path}"
 
     result = invoke_ingest_command(
         f"hostaway://?api_key={api_key}",
@@ -60,9 +57,5 @@ def test_hostaway_source_full_refresh(hostaway_table):
     conn = duckdb.connect(abs_db_path)
     result = conn.sql(f"select count(*) from raw.{hostaway_table}").fetchone()
     assert result is not None, "Database result is empty"
-
+    assert result[0] > 0, f"No rows ingested for table {hostaway_table}"
     conn.close()
-    try:
-        os.remove(abs_db_path)
-    except Exception:
-        pass

@@ -174,6 +174,11 @@ def test_snapchat_ads_merge_strategy(tmp_path):
             if col in all_column_names:
                 select_cols.append(col)
 
+        assert select_cols, (
+            "Expected at least one PK-like column in snapchat_ads.campaigns_stats, "
+            f"found columns: {all_column_names}"
+        )
+
         result = conn.execute(
             f"SELECT {', '.join(select_cols)} FROM snapchat_ads.campaigns_stats LIMIT 5"
         ).fetchall()

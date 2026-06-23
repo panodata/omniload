@@ -1,5 +1,7 @@
 import os
 import traceback
+from datetime import date
+from urllib.parse import quote_plus
 
 import pytest
 import sqlalchemy
@@ -34,9 +36,7 @@ def jira_test_cases():
 
             # Extract domain from base_url (remove https:// if present)
             domain = jira_base_url.replace("https://", "").replace("http://", "")
-            source_uri = (
-                f"jira://{domain}?email={jira_email}&api_token={jira_api_token}"
-            )
+            source_uri = f"jira://{domain}?email={quote_plus(jira_email)}&api_token={quote_plus(jira_api_token)}"
             source_table = table_name
             schema_rand_prefix = f"testschema_jira_{get_random_string(5)}"
             dest_table = f"{schema_rand_prefix}.{table_name}_{get_random_string(5)}"
@@ -47,7 +47,7 @@ def jira_test_cases():
                 dest_uri,
                 dest_table,
                 interval_start="2020-01-01",
-                interval_end="2025-12-31",
+                interval_end=date.today().isoformat(),
                 print_output=True,
             )
 

@@ -6,7 +6,6 @@ import pytest
 
 from omniload.src.stripe_analytics import generate_date_ranges
 from tests.util import invoke_ingest_command
-from tests.util.common import get_abs_path, get_random_string
 
 
 @pytest.mark.parametrize(
@@ -22,19 +21,17 @@ from tests.util.common import get_abs_path, get_random_string
         "balancetransaction",
     ],
 )
-def test_stripe_source_full_refresh(stripe_table):
+def test_stripe_source_full_refresh(stripe_table, tmp_path):
     # Get Stripe token from environment
     stripe_token = os.environ.get("OMNILOAD_TEST_STRIPE_TOKEN")
     if not stripe_token:
         pytest.skip("OMNILOAD_TEST_STRIPE_TOKEN not set")
 
     # Create test database
-    dbname = f"test_stripe_{stripe_table}{get_random_string(5)}.db"
-    abs_db_path = get_abs_path(f"./testdata/{dbname}")
+    abs_db_path = tmp_path / f"test_stripe_{stripe_table}.db"
 
     # omniload provides its test data via `omniload` root folder.
-    rel_db_path_to_command = f"omniload/testdata/{dbname}"
-    uri = f"duckdb:///{rel_db_path_to_command}"
+    uri = f"duckdb:///{abs_db_path}"
 
     # Run ingest command
     result = invoke_ingest_command(
@@ -49,33 +46,25 @@ def test_stripe_source_full_refresh(stripe_table):
     # Verify data was loaded
     conn = duckdb.connect(abs_db_path)
     res = conn.sql(f"select count(*) from raw.{stripe_table}s").fetchone()
+    conn.close()
     assert res, "Database result is empty"
     assert res[0] > 0, f"No {stripe_table} records found"
-
-    # Clean up
-    conn.close()
-    try:
-        os.remove(abs_db_path)
-    except Exception:
-        pass
 
 
 @pytest.mark.parametrize(
     "stripe_table", ["event", "invoice", "charge", "balancetransaction"]
 )
-def test_stripe_source_incremental(stripe_table):
+def test_stripe_source_incremental(stripe_table, tmp_path):
     # Get Stripe token from environment
     stripe_token = os.environ.get("OMNILOAD_TEST_STRIPE_TOKEN")
     if not stripe_token:
         pytest.skip("OMNILOAD_TEST_STRIPE_TOKEN not set")
 
     # Create test database
-    dbname = f"test_stripe_{stripe_table}{get_random_string(5)}.db"
-    abs_db_path = get_abs_path(f"./testdata/{dbname}")
+    abs_db_path = tmp_path / f"test_stripe_{stripe_table}.db"
 
     # omniload provides its test data via `omniload` root folder.
-    rel_db_path_to_command = f"omniload/testdata/{dbname}"
-    uri = f"duckdb:///{rel_db_path_to_command}"
+    uri = f"duckdb:///{abs_db_path}"
     interval_end = datetime.now(timezone.utc).date()
     interval_start = interval_end - timedelta(days=30)
 
@@ -94,18 +83,12 @@ def test_stripe_source_incremental(stripe_table):
     # Verify data was loaded
     conn = duckdb.connect(abs_db_path)
     res = conn.sql(f"select count(*) from raw.{stripe_table}s").fetchone()
+    conn.close()
     assert res, "Database result is empty"
     if res[0] == 0:
         pytest.skip(
             f"No {stripe_table} rows for {interval_start.isoformat()}..{interval_end.isoformat()}"
         )
-
-    # Clean up
-    conn.close()
-    try:
-        os.remove(abs_db_path)
-    except Exception:
-        pass
 
 
 class TestGenerateDateRanges:

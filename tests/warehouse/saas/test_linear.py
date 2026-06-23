@@ -1,5 +1,7 @@
 import os
 import traceback
+from datetime import date
+from urllib.parse import quote_plus
 
 import pytest
 import sqlalchemy
@@ -40,7 +42,7 @@ def linear_test_cases():
                     "OMNILOAD_TEST_LINEAR_API_KEY environment variable is not set"
                 )
 
-            source_uri = f"linear://?api_key={linear_api_key}"
+            source_uri = f"linear://?api_key={quote_plus(linear_api_key)}"
             source_table = table_name
             schema_rand_prefix = f"testschema_linear_{get_random_string(5)}"
             dest_table = f"{schema_rand_prefix}.{table_name}_{get_random_string(5)}"
@@ -51,7 +53,7 @@ def linear_test_cases():
                 dest_uri,
                 dest_table,
                 interval_start="2020-01-01",
-                interval_end="2025-12-31",
+                interval_end=date.today().isoformat(),
                 print_output=True,
             )
 

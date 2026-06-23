@@ -4,7 +4,6 @@ import duckdb
 import pytest
 
 from tests.util import invoke_ingest_command
-from tests.util.common import get_abs_path, get_random_string
 
 
 @pytest.mark.parametrize(
@@ -19,15 +18,13 @@ from tests.util.common import get_abs_path, get_random_string
         "lead_forms",
     ],
 )
-def test_linkedin_ads_source_full_refresh(linkedin_ads_table):
+def test_linkedin_ads_source_full_refresh(linkedin_ads_table, tmp_path):
     api_key = os.environ.get("OMNILOAD_TEST_LINKEDIN_ADS_ACCESS_TOKEN")
     if not api_key:
         pytest.skip("OMNILOAD_TEST_LINKEDIN_ADS_ACCESS_TOKEN not set")
 
-    dbname = f"test_linkedin_{linkedin_ads_table}_{get_random_string(5)}.db"
-    abs_db_path = get_abs_path(f"./testdata/{dbname}")
-    rel_db_path_to_command = f"omniload/testdata/{dbname}"
-    uri = f"duckdb:///{rel_db_path_to_command}"
+    abs_db_path = tmp_path / f"test_linkedin_{linkedin_ads_table}"
+    uri = f"duckdb:///{abs_db_path}"
 
     result = invoke_ingest_command(
         f"linkedinads://?access_token={api_key}",
@@ -42,9 +39,4 @@ def test_linkedin_ads_source_full_refresh(linkedin_ads_table):
     result = conn.sql(f"select count(*) from raw.{linkedin_ads_table}").fetchone()
     assert result is not None, "Database result is empty"
     assert result[0] > 0, f"No records found in table raw.{linkedin_ads_table}"
-
     conn.close()
-    try:
-        os.remove(abs_db_path)
-    except Exception:
-        pass
