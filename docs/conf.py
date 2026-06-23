@@ -97,6 +97,7 @@ linkcheck_ignore = [
     r"https://support.appsflyer.com/",
     r"https://help.docebo.com/",
     r"https://www.reddit.com/",
+    r"https://www.linkedin.com/developers.*",
 ]
 linkcheck_anchors_ignore_for_url = [
     r"https://developers.zoom.us/",
