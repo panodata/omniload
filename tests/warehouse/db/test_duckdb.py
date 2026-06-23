@@ -29,7 +29,8 @@ def test_create_replace_csv_to_duckdb(testdata_path):
     assert result.exit_code == 0
 
     res = conn.sql(
-        "select symbol, date, is_enabled, name from testschema.output"
+        "select symbol, date, is_enabled, name from testschema.output "
+        "order by symbol, date, name"
     ).fetchall()
 
     # read CSV file

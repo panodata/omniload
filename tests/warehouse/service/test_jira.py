@@ -59,22 +59,24 @@ def jira_test_cases():
 
             assert result.exit_code == 0
 
-            with sqlalchemy.create_engine(dest_uri).connect() as conn:
+            engine = sqlalchemy.create_engine(dest_uri)
+            with engine.connect() as conn:
                 res = conn.exec_driver_sql(
                     f"select count(*) from {dest_table}"
                 ).fetchall()
-                assert len(res) >= 0  # Just verify the table exists and query works
-                count = res[0][0]
-                print(f"Jira {table_name} count: {count}")
+            assert len(res) > 0, "No results"  # Verify the query returned a result
+            count = res[0][0]
+            print(f"Jira {table_name} count: {count}")
 
-                # Special validation for certain tables that should always have data
-                if table_name == "projects":
-                    assert count > 0, "Jira should have at least one project"
-                elif table_name == "issue_types":
-                    assert count > 0, "Jira should have at least one issue type"
-                elif table_name == "statuses":
-                    assert count > 0, "Jira should have at least one status"
-                # project_versions and project_components can be empty, so no assertion for them
+            # Special validation for certain tables that should always have data
+            if table_name == "projects":
+                assert count > 0, "Jira should have at least one project"
+            elif table_name == "issue_types":
+                assert count > 0, "Jira should have at least one issue type"
+            elif table_name == "statuses":
+                assert count > 0, "Jira should have at least one status"
+            # project_versions and project_components can be empty, so no assertion for them
+            engine.dispose()
 
         # Set function name for pytest identification
         table_test.__name__ = f"{table_name}_table"

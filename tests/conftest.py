@@ -101,7 +101,9 @@ def start_containers(config):
             try:
                 container.stop_fully()
             except Exception:
-                pass
+                logger.exception(
+                    f"Failed to stop container: {getattr(container, 'id')}"
+                )
         future.result()  # re-raises the captured exception with its traceback
 
 
@@ -117,7 +119,10 @@ def stop_containers(config):
     unique_containers = [x for x in unique_containers if x is not None]
 
     for container in unique_containers:
-        container.stop_fully()
+        try:
+            container.stop_fully()
+        except Exception:
+            logger.exception(f"Failed to stop container: {getattr(container, 'id')}")
 
 
 def stop_containers_more(config):

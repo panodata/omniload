@@ -27,4 +27,4 @@ def test_github_to_database(dest):
     with dest_engine.connect() as dest_conn:
         res = dest_conn.exec_driver_sql(f"select count(*) from {dest_table}").fetchall()
     dest_engine.dispose()
-    assert len(res) > 0
+    assert res[0][0] > 0, "No rows ingested into destination table"

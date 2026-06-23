@@ -183,15 +183,18 @@ class CouchbaseContainer(DockerContainer):
         # Connect using SDK (from test machine to container)
         auth = PasswordAuthenticator(self.username, self.password)
         cluster = Cluster(self.get_connection_string(), ClusterOptions(auth))
-        cluster.wait_until_ready(timedelta(seconds=30))
+        try:
+            cluster.wait_until_ready(timedelta(seconds=30))
 
-        # Get bucket and collection
-        bucket = cluster.bucket(self.bucket_name)
-        collection = bucket.scope(self.scope_name).collection(self.collection_name)
+            # Get bucket and collection
+            bucket = cluster.bucket(self.bucket_name)
+            collection = bucket.scope(self.scope_name).collection(self.collection_name)
 
-        # Insert documents
-        for doc in documents:
-            doc_id = str(doc.get("id", doc.get("_id", f"doc_{hash(str(doc))}")))
-            collection.upsert(doc_id, doc)
+            # Insert documents
+            for doc in documents:
+                doc_id = str(doc.get("id", doc.get("_id", f"doc_{hash(str(doc))}")))
+                collection.upsert(doc_id, doc)
 
-        time.sleep(2)
+            time.sleep(2)
+        finally:
+            cluster.close()

@@ -108,7 +108,7 @@ def frankfurter_source(
         if date_time is not None and date_time.last_value is not None:
             effective_start_date = date_time.last_value
 
-        if date_time.end_value is not None:
+        if date_time is not None and date_time.end_value is not None:
             end_date = date_time.end_value
         else:
             end_date = pendulum.now()

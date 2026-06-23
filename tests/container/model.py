@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 from abc import ABCMeta, abstractmethod
@@ -76,9 +77,8 @@ class DockerService(AbstractService):
     def start_fully(self):
         if self.container is not None:
             return
-        if self._is_starting():
+        if not self._try_signal_starting():
             return
-        self._signal_starting()
         try:
             self.container = self._start_container()
             conn_url = self.get_connection_url()
@@ -181,8 +181,13 @@ class DockerService(AbstractService):
         self._shutdown_file.touch()
         return self
 
-    def _signal_starting(self):
-        self._starter_file.touch()
+    def _try_signal_starting(self):
+        try:
+            fd = os.open(self._starter_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.close(fd)
+            return True
+        except FileExistsError:
+            return False
 
     def _signal_started(self):
         if self.register_for_shutdown:

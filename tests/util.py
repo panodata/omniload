@@ -64,6 +64,7 @@ def invoke_ingest_command(
     mask=None,
     print_output=True,
     run_in_subprocess=False,
+    subprocess_timeout=120,
 ):
     args = [
         "ingest",
@@ -153,7 +154,13 @@ def invoke_ingest_command(
     cmd = [sys.executable, "-m", "omniload.main"] + args
     env = os.environ.copy()
 
-    process = subprocess.run(cmd, text=True, capture_output=True, env=env)
+    process = subprocess.run(
+        cmd,
+        text=True,
+        capture_output=True,
+        env=env,
+        timeout=subprocess_timeout,
+    )
 
     # Create a result object similar to what CliRunner returns
     class Result:

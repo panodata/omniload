@@ -40,6 +40,7 @@ def test_linkedin_ads_source_full_refresh(linkedin_ads_table):
     conn = duckdb.connect(abs_db_path)
     result = conn.sql(f"select count(*) from raw.{linkedin_ads_table}").fetchone()
     assert result is not None, "Database result is empty"
+    assert result[0] > 0, f"No records found in table raw.{linkedin_ads_table}"
 
     conn.close()
     try:

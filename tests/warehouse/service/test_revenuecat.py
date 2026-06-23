@@ -61,17 +61,19 @@ def revenuecat_test_cases():
 
             assert result.exit_code == 0
 
-            with sqlalchemy.create_engine(dest_uri).connect() as conn:
+            engine = sqlalchemy.create_engine(dest_uri)
+            with engine.connect() as conn:
                 res = conn.exec_driver_sql(
                     f"select count(*) from {dest_table}"
                 ).fetchall()
-                assert len(res) > 0
-                count = res[0][0]
-                print(f"RevenueCat {table_name} count: {count}")
+            assert len(res) > 0, "No results"
+            count = res[0][0]
+            print(f"RevenueCat {table_name} count: {count}")
 
-                # Special validation for projects table - should have at least one project
-                if table_name == "projects":
-                    assert count > 0, "RevenueCat should have at least one project"
+            # Special validation for projects table - should have at least one project
+            if table_name == "projects":
+                assert count > 0, "RevenueCat should have at least one project"
+            engine.dispose()
 
         # Set function name for pytest identification
         table_test.__name__ = f"{table_name}_table"

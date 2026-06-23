@@ -44,7 +44,7 @@ def db_to_db_create_replace(source_connection_url: str, dest_connection_url: str
     dest_engine = sqlalchemy.create_engine(dest_connection_url)
     with dest_engine.connect() as dest_conn:
         res = dest_conn.exec_driver_sql(
-            f"select id, val, updated_at from {schema_rand_prefix}.output"
+            f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
         ).fetchall()
     dest_engine.dispose()
 

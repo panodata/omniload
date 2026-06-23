@@ -63,17 +63,19 @@ def linear_test_cases():
 
             assert result.exit_code == 0
 
-            with sqlalchemy.create_engine(dest_uri).connect() as conn:
+            engine = sqlalchemy.create_engine(dest_uri)
+            with engine.connect() as conn:
                 res = conn.exec_driver_sql(
                     f"select count(*) from {dest_table}"
                 ).fetchall()
-                assert len(res) > 0
-                count = res[0][0]
-                print(f"Linear {table_name} count: {count}")
+            assert len(res) > 0, "No results"
+            count = res[0][0]
+            print(f"Linear {table_name} count: {count}")
 
-                # Special validation for users table - should have at least one user
-                if table_name == "users":
-                    assert count > 0, "Linear should have at least one user"
+            # Special validation for users table - should have at least one user
+            if table_name == "users":
+                assert count > 0, "Linear should have at least one user"
+            engine.dispose()
 
         # Set function name for pytest identification
         table_test.__name__ = f"{table_name}_table"

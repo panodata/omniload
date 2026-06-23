@@ -137,7 +137,7 @@ def test_csv_to_elasticsearch(elasticsearch_container, tmp_path):
     tmp_file = tmp_path / "tmp.csv"
     tmp_file.write_text(csv_content)
     if True:
-        csv_path = tmp_file.name
+        csv_path = str(tmp_file)
 
         # Get Elasticsearch connection details
         es_url = elasticsearch_container.get_url()
