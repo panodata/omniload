@@ -1,3 +1,4 @@
+# TODO: Refactor to `model.py`.
 from dataclasses import dataclass
 
 

@@ -1,0 +1,236 @@
+import json
+from concurrent.futures import ThreadPoolExecutor
+
+import pytest
+import sqlalchemy
+from confluent_kafka import KafkaError, KafkaException, Producer
+from confluent_kafka.admin import AdminClient
+from testcontainers.kafka import KafkaContainer
+
+from tests.util import invoke_ingest_command
+from tests.util.common import get_random_string
+from tests.util.container.model import DockerService
+from tests.warehouse.manager import KAFKA_IMAGE
+from tests.warehouse.settings import DESTINATIONS
+
+
+@pytest.fixture(scope="session")
+def kafka_service(request, shared_directory) -> DockerService:
+    """
+    Provide a Kafka service container for the whole test session.
+    Returns the `host:port` address of the Kafka container.
+    """
+    return DockerService(
+        id="kafka",
+        container_creator=lambda: KafkaContainer(KAFKA_IMAGE),
+        lock_dir=shared_directory,
+        shutdown=True,
+    ).start_background()
+
+
+@pytest.fixture(scope="function")
+def kafka(kafka_service, topic_schema) -> str:
+    """
+    Provide a Kafka service container using a clean canvas.
+    Returns the `host:port` address of the Kafka container.
+    Before invoking the test case, delete all relevant topics completely.
+    """
+    kafka_address = kafka_service.start()
+    admin = AdminClient({"bootstrap.servers": kafka_address})
+    futures = admin.delete_topics([topic_schema])
+    for topic_schema, fut in futures.items():
+        try:
+            fut.result(10)
+        except KafkaException as exc:
+            # Topic may not exist.
+            if exc.args[0].code() != KafkaError.UNKNOWN_TOPIC_OR_PART:
+                raise
+    return kafka_address
+
+
+@pytest.fixture(scope="function")
+def topic_schema(kafka_service) -> str:
+    """Provide random unique identifier for Kafka topics and RDBMS schemas."""
+    return "test_" + get_random_string(5)
+
+
+@pytest.mark.parametrize(
+    "dest", list(DESTINATIONS.values()), ids=list(DESTINATIONS.keys())
+)
+def test_kafka_to_db_incremental(kafka, dest, topic_schema):
+    """
+    Validate standard Kafka event decoding, focusing on both metadata and data payload.
+    """
+    with ThreadPoolExecutor() as executor:
+        dest_future = executor.submit(dest.start)
+        dest_uri = dest_future.result()
+
+    # Create Kafka producer
+    producer = Producer({"bootstrap.servers": kafka})
+
+    # Create topic and send messages
+    messages = ["message1", "message2", "message3"]
+
+    for message in messages:
+        producer.produce(topic_schema, message.encode("utf-8"))
+    producer.flush()
+
+    def run():
+        res = invoke_ingest_command(
+            f"kafka://?bootstrap_servers={kafka}&group_id=test_group",
+            topic_schema,
+            dest_uri,
+            f"{topic_schema}.output",
+        )
+        assert res.exit_code == 0
+
+    def get_output_table():
+        dest_engine = sqlalchemy.create_engine(dest_uri)
+        with dest_engine.connect() as conn:
+            res = conn.exec_driver_sql(
+                f"select _kafka__data from {topic_schema}.output order by _kafka_msg_id asc"
+            ).fetchall()
+        dest_engine.dispose()
+        return res
+
+    run()
+
+    res = get_output_table()
+    assert len(res) == 3
+    assert res[0] == ("message1",)
+    assert res[1] == ("message2",)
+    assert res[2] == ("message3",)
+
+    # run again, nothing should be inserted into the output table
+    run()
+
+    res = get_output_table()
+    assert len(res) == 3
+    assert res[0] == ("message1",)
+    assert res[1] == ("message2",)
+    assert res[2] == ("message3",)
+
+    # add a new message
+    producer.produce(topic_schema, "message4".encode("utf-8"))
+    producer.flush()
+
+    # run again, the new message should be inserted into the output table
+    run()
+    res = get_output_table()
+    assert len(res) == 4
+    assert res[0] == ("message1",)
+    assert res[1] == ("message2",)
+    assert res[2] == ("message3",)
+    assert res[3] == ("message4",)
+
+
+@pytest.mark.parametrize(
+    "dest", list(DESTINATIONS.values()), ids=list(DESTINATIONS.keys())
+)
+def test_kafka_to_db_decode_json(kafka, dest, topic_schema):
+    """
+    Validate slightly more advanced Kafka event decoding, focusing on the payload value this time.
+
+    This exercise uses the `value_type=json` and `select=value` URL parameters.
+    """
+    with ThreadPoolExecutor() as executor:
+        dest_future = executor.submit(dest.start)
+        dest_uri = dest_future.result()
+
+    # Create Kafka producer
+    producer = Producer({"bootstrap.servers": kafka})
+
+    # Create topic and send messages
+    messages = [
+        {"id": 1, "temperature": 42.42, "humidity": 82},
+        {"id": 2, "temperature": 451.00, "humidity": 15},
+    ]
+
+    for message in messages:
+        producer.produce(topic_schema, json.dumps(message))
+    producer.flush()
+
+    def run():
+        res = invoke_ingest_command(
+            f"kafka://?bootstrap_servers={kafka}&group_id=test_group&value_type=json&select=value",
+            topic_schema,
+            dest_uri,
+            f"{topic_schema}.output",
+        )
+        assert res.exit_code == 0
+
+    def get_output_table():
+        dest_engine = sqlalchemy.create_engine(dest_uri)
+        with dest_engine.connect() as conn:
+            res = (
+                conn.exec_driver_sql(  # ty: ignore[no-matching-overload, unused-ignore-comment, unused-ignore-comment]
+                    f"SELECT id, temperature, humidity FROM {topic_schema}.output WHERE temperature >= 38.00 ORDER BY id ASC"
+                )
+                .mappings()
+                .fetchall()
+            )
+        dest_engine.dispose()
+        return res
+
+    run()
+
+    res = get_output_table()
+    assert len(res) == 2
+    assert res[0] == messages[0]
+    assert res[1] == messages[1]
+
+
+@pytest.mark.parametrize(
+    "dest", list(DESTINATIONS.values()), ids=list(DESTINATIONS.keys())
+)
+def test_kafka_to_db_include_metadata(kafka, dest, topic_schema):
+    """
+    Validate slightly more advanced Kafka event decoding, focusing on metadata this time.
+
+    This exercise uses the `include=` URL parameter.
+    """
+    with ThreadPoolExecutor() as executor:
+        dest_future = executor.submit(dest.start)
+        dest_uri = dest_future.result()
+
+    # Create Kafka producer
+    producer = Producer({"bootstrap.servers": kafka})
+
+    # Create topic and send messages
+    messages = [
+        {"id": 1, "temperature": 42.42, "humidity": 82},
+        {"id": 2, "temperature": 451.00, "humidity": 15},
+    ]
+
+    for message in messages:
+        producer.produce(topic=topic_schema, value=json.dumps(message), key="test")
+    producer.flush()
+
+    def run():
+        res = invoke_ingest_command(
+            f"kafka://?bootstrap_servers={kafka}&group_id=test_group&include=partition,topic,key,offset,ts",
+            topic_schema,
+            dest_uri,
+            f"{topic_schema}.output",
+        )
+        assert res.exit_code == 0
+
+    def get_output_table():
+        dest_engine = sqlalchemy.create_engine(dest_uri)
+        with dest_engine.connect() as conn:
+            res = (
+                conn.exec_driver_sql(
+                    f'SELECT "partition", "topic", "key", "offset" FROM {topic_schema}.output ORDER BY "partition" ASC, "offset" ASC'
+                )
+                .mappings()
+                .fetchall()
+            )
+        dest_engine.dispose()
+        return res
+
+    run()
+
+    res = get_output_table()
+    assert len(res) == 2
+    assert res[0] == {"partition": 0, "topic": topic_schema, "key": "test", "offset": 0}
+    assert res[1] == {"partition": 0, "topic": topic_schema, "key": "test", "offset": 1}

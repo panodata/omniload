@@ -5,7 +5,6 @@ from dlt.common.pendulum import pendulum
 from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TAnyDateTime
 
-from omniload.src.errors import MissingValueError
 from omniload.src.frankfurter.helpers import get_path_with_retry
 
 
@@ -105,21 +104,17 @@ def frankfurter_source(
         If both start_date and end_date are provided, fetches data for each day in the range.
         """
 
-        if date_time is None:
-            raise MissingValueError("date_time", "Frankfurter")
+        effective_start_date = start_date
+        if date_time is not None and date_time.last_value is not None:
+            effective_start_date = date_time.last_value
 
-        if date_time.last_value is not None:
-            start_date = date_time.last_value
-        else:
-            start_date = pendulum.now()
-
-        if date_time.end_value is not None:
+        if date_time is not None and date_time.end_value is not None:
             end_date = date_time.end_value
         else:
             end_date = pendulum.now()
 
         # Ensure start_date.last_value is a pendulum.DateTime object
-        start_date_obj = ensure_pendulum_datetime_utc(start_date)
+        start_date_obj = ensure_pendulum_datetime_utc(effective_start_date)
         start_date_str = start_date_obj.format("YYYY-MM-DD")
 
         # Ensure end_date is a pendulum.DateTime object

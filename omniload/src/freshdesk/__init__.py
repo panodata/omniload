@@ -22,8 +22,6 @@ import pendulum
 from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.sources import DltResource
 
-from omniload.src.errors import MissingValueError
-
 from .freshdesk_client import FreshdeskClient
 from .settings import DEFAULT_ENDPOINTS
 
@@ -73,15 +71,11 @@ def freshdesk_source(
         to ensure incremental loading.
         """
 
-        if updated_at is None:
-            raise MissingValueError("updated_at", "Freshdesk")
+        effective_start_date = start_date
+        if updated_at is not None and updated_at.last_value is not None:
+            effective_start_date = ensure_pendulum_datetime_utc(updated_at.last_value)
 
-        if updated_at.last_value is not None:
-            start_date = ensure_pendulum_datetime_utc(updated_at.last_value)
-        else:
-            start_date = pendulum.now(tz="UTC")
-
-        if updated_at.end_value is not None:
+        if updated_at is not None and updated_at.end_value is not None:
             end_date = ensure_pendulum_datetime_utc(updated_at.end_value)
         else:
             end_date = pendulum.now(tz="UTC")
@@ -90,7 +84,7 @@ def freshdesk_source(
         yield from freshdesk.paginated_response(
             endpoint=endpoint,
             per_page=per_page,
-            start_date=start_date,
+            start_date=effective_start_date,
             end_date=end_date,
             query=query,
         )
