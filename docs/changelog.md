@@ -5,6 +5,7 @@
 - Maintenance: Refactored module namespace. If you are using omniload
   as a library, this introduces many breaking changes. However, the new
   layout is much more ergonomic.
+- Core: Added lazy-loading adapter module registry, to speed up startup times.
 
 ## 2026/06/24 v0.3.0
 

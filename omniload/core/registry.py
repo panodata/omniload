@@ -1,100 +1,4 @@
-from typing import Dict, Type
-
-from omniload.core.model import DestinationProtocol, SourceProtocol
-from omniload.source.adjust.api import AdjustSource
-from omniload.source.airtable.api import AirtableSource
-from omniload.source.allium.api import AlliumSource
-from omniload.source.anthropic.api import AnthropicSource
-from omniload.source.applovin.api import AppLovinSource
-from omniload.source.applovin_max.api import ApplovinMaxSource
-from omniload.source.appsflyer.api import AppsflyerSource
-from omniload.source.appstore.api import AppleAppStoreSource
-from omniload.source.arrow.api import ArrowMemoryMappedSource
-from omniload.source.asana.api import AsanaSource
-from omniload.source.attio.api import AttioSource
-from omniload.source.blobstorage.api import GCSSource, S3Source
-from omniload.source.bruin.api import BruinSource
-from omniload.source.chess.api import ChessSource
-from omniload.source.clickup.api import ClickupSource
-from omniload.source.couchbase.api import CouchbaseSource
-from omniload.source.csv.api import LocalCsvSource
-from omniload.source.cursor.api import CursorSource
-from omniload.source.customer_io.api import CustomerIoSource
-from omniload.source.docebo.api import DoceboSource
-from omniload.source.dune.api import DuneSource
-from omniload.source.dynamodb.api import DynamoDBSource
-from omniload.source.elasticsearch.api import ElasticsearchSource
-from omniload.source.facebook_ads.api import FacebookAdsSource
-from omniload.source.fireflies.api import FirefliesSource
-from omniload.source.fluxx.api import FluxxSource
-from omniload.source.frankfurter.api import FrankfurterSource
-from omniload.source.freshdesk.api import FreshdeskSource
-from omniload.source.fundraiseup.api import FundraiseupSource
-from omniload.source.github.api import GitHubSource
-from omniload.source.google_ads.api import GoogleAdsSource
-from omniload.source.google_analytics.api import GoogleAnalyticsSource
-from omniload.source.google_sheets.api import GoogleSheetsSource
-from omniload.source.gorgias.api import GorgiasSource
-from omniload.source.hostaway.api import HostawaySource
-from omniload.source.http.api import HttpSource
-from omniload.source.hubspot.api import HubspotSource
-from omniload.source.indeed.api import IndeedSource
-from omniload.source.influxdb.api import InfluxDBSource
-from omniload.source.intercom.api import IntercomSource
-from omniload.source.isoc_pulse.api import IsocPulseSource
-from omniload.source.jira.api import JiraSource
-from omniload.source.kafka.api import KafkaSource
-from omniload.source.kinesis.api import KinesisSource
-from omniload.source.klaviyo.api import KlaviyoSource
-from omniload.source.linear.api import LinearSource
-from omniload.source.linkedin_ads.api import LinkedInAdsSource
-from omniload.source.mailchimp.api import MailchimpSource
-from omniload.source.mixpanel.api import MixpanelSource
-from omniload.source.monday.api import MondaySource
-from omniload.source.mongodb.api import MongoDbSource
-from omniload.source.notion.api import NotionSource
-from omniload.source.personio.api import PersonioSource
-from omniload.source.phantombuster.api import PhantombusterSource
-from omniload.source.pinterest.api import PinterestSource
-from omniload.source.pipedrive.api import PipedriveSource
-from omniload.source.plusvibeai.api import PlusVibeAISource
-from omniload.source.primer.api import PrimerSource
-from omniload.source.quickbooks.api import QuickBooksSource
-from omniload.source.reddit_ads.api import RedditAdsSource
-from omniload.source.revenuecat.api import RevenueCatSource
-from omniload.source.salesforce.api import SalesforceSource
-from omniload.source.sftp.api import SFTPSource
-from omniload.source.shopify.api import ShopifySource
-from omniload.source.slack.api import SlackSource
-from omniload.source.smartsheets.api import SmartsheetSource
-from omniload.source.snapchat_ads.api import SnapchatAdsSource
-from omniload.source.socrata.api import SocrataSource
-from omniload.source.solidgate.api import SolidgateSource
-from omniload.source.stripe.api import StripeAnalyticsSource
-from omniload.source.tiktok_ads.api import TikTokSource
-from omniload.source.trustpilot.api import TrustpilotSource
-from omniload.source.wise.api import WiseSource
-from omniload.source.zendesk.api import ZendeskSource
-from omniload.source.zoom.api import ZoomSource
-from omniload.target.athena import AthenaDestination
-from omniload.target.bigquery import BigQueryDestination
-from omniload.target.blobstorage import GCSDestination, S3Destination
-from omniload.target.clickhouse import ClickhouseDestination
-from omniload.target.cratedb import CrateDBDestination
-from omniload.target.csv import CsvDestination
-from omniload.target.databricks import DatabricksDestination
-from omniload.target.duckdb import DuckDBDestination
-from omniload.target.elasticsearch.api import ElasticsearchDestination
-from omniload.target.mongodb import MongoDBDestination
-from omniload.target.motherduck import MotherduckDestination
-from omniload.target.mssql import MsSQLDestination
-from omniload.target.mysql import MySqlDestination
-from omniload.target.postgresql import PostgresDestination
-from omniload.target.redshift import RedshiftDestination
-from omniload.target.snowflake import SnowflakeDestination
-from omniload.target.sqlite import SqliteDestination
-from omniload.target.synapse import SynapseDestination
-from omniload.target.trino import TrinoDestination
+from omniload.core.model import LazyRegistry
 
 SQL_SOURCE_SCHEMES = [
     "bigquery",
@@ -126,114 +30,118 @@ SQL_SOURCE_SCHEMES = [
     "trino",
 ]
 
+sources: LazyRegistry = LazyRegistry(
+    {
+        "adjust": "omniload.source.adjust.api:AdjustSource",
+        "airtable": "omniload.source.airtable.api:AirtableSource",
+        "allium": "omniload.source.allium.api:AlliumSource",
+        "anthropic": "omniload.source.anthropic.api:AnthropicSource",
+        "applovin": "omniload.source.applovin.api:AppLovinSource",
+        "applovinmax": "omniload.source.applovin_max.api:ApplovinMaxSource",
+        "appsflyer": "omniload.source.appsflyer.api:AppsflyerSource",
+        "appstore": "omniload.source.appstore.api:AppleAppStoreSource",
+        "asana": "omniload.source.asana.api:AsanaSource",
+        "attio": "omniload.source.attio.api:AttioSource",
+        "bruin": "omniload.source.bruin.api:BruinSource",
+        "chess": "omniload.source.chess.api:ChessSource",
+        "clickup": "omniload.source.clickup.api:ClickupSource",
+        "couchbase": "omniload.source.couchbase.api:CouchbaseSource",
+        "csv": "omniload.source.csv.api:LocalCsvSource",
+        "cursor": "omniload.source.cursor.api:CursorSource",
+        "customerio": "omniload.source.customer_io.api:CustomerIoSource",
+        "docebo": "omniload.source.docebo.api:DoceboSource",
+        "dune": "omniload.source.dune.api:DuneSource",
+        "dynamodb": "omniload.source.dynamodb.api:DynamoDBSource",
+        "elasticsearch": "omniload.source.elasticsearch.api:ElasticsearchSource",
+        "facebookads": "omniload.source.facebook_ads.api:FacebookAdsSource",
+        "fireflies": "omniload.source.fireflies.api:FirefliesSource",
+        "fluxx": "omniload.source.fluxx.api:FluxxSource",
+        "frankfurter": "omniload.source.frankfurter.api:FrankfurterSource",
+        "freshdesk": "omniload.source.freshdesk.api:FreshdeskSource",
+        "fundraiseup": "omniload.source.fundraiseup.api:FundraiseupSource",
+        "github": "omniload.source.github.api:GitHubSource",
+        "googleads": "omniload.source.google_ads.api:GoogleAdsSource",
+        "googleanalytics": "omniload.source.google_analytics.api:GoogleAnalyticsSource",
+        "gorgias": "omniload.source.gorgias.api:GorgiasSource",
+        "gs": "omniload.source.blobstorage.api:GCSSource",
+        "gsheets": "omniload.source.google_sheets.api:GoogleSheetsSource",
+        "hostaway": "omniload.source.hostaway.api:HostawaySource",
+        "http": "omniload.source.http.api:HttpSource",
+        "https": "omniload.source.http.api:HttpSource",
+        "hubspot": "omniload.source.hubspot.api:HubspotSource",
+        "indeed": "omniload.source.indeed.api:IndeedSource",
+        "influxdb": "omniload.source.influxdb.api:InfluxDBSource",
+        "intercom": "omniload.source.intercom.api:IntercomSource",
+        "isoc-pulse": "omniload.source.isoc_pulse.api:IsocPulseSource",
+        "jira": "omniload.source.jira.api:JiraSource",
+        "kafka": "omniload.source.kafka.api:KafkaSource",
+        "kinesis": "omniload.source.kinesis.api:KinesisSource",
+        "klaviyo": "omniload.source.klaviyo.api:KlaviyoSource",
+        "linear": "omniload.source.linear.api:LinearSource",
+        "linkedinads": "omniload.source.linkedin_ads.api:LinkedInAdsSource",
+        "mailchimp": "omniload.source.mailchimp.api:MailchimpSource",
+        "mixpanel": "omniload.source.mixpanel.api:MixpanelSource",
+        "mmap": "omniload.source.arrow.api:ArrowMemoryMappedSource",
+        "monday": "omniload.source.monday.api:MondaySource",
+        "mongodb": "omniload.source.mongodb.api:MongoDbSource",
+        "mongodb+srv": "omniload.source.mongodb.api:MongoDbSource",
+        "notion": "omniload.source.notion.api:NotionSource",
+        "personio": "omniload.source.personio.api:PersonioSource",
+        "phantombuster": "omniload.source.phantombuster.api:PhantombusterSource",
+        "pinterest": "omniload.source.pinterest.api:PinterestSource",
+        "pipedrive": "omniload.source.pipedrive.api:PipedriveSource",
+        "plusvibeai": "omniload.source.plusvibeai.api:PlusVibeAISource",
+        "primer": "omniload.source.primer.api:PrimerSource",
+        "quickbooks": "omniload.source.quickbooks.api:QuickBooksSource",
+        "redditads": "omniload.source.reddit_ads.api:RedditAdsSource",
+        "revenuecat": "omniload.source.revenuecat.api:RevenueCatSource",
+        "s3": "omniload.source.blobstorage.api:S3Source",
+        "salesforce": "omniload.source.salesforce.api:SalesforceSource",
+        "sftp": "omniload.source.sftp.api:SFTPSource",
+        "shopify": "omniload.source.shopify.api:ShopifySource",
+        "slack": "omniload.source.slack.api:SlackSource",
+        "smartsheet": "omniload.source.smartsheets.api:SmartsheetSource",
+        "snapchatads": "omniload.source.snapchat_ads.api:SnapchatAdsSource",
+        "socrata": "omniload.source.socrata.api:SocrataSource",
+        "solidgate": "omniload.source.solidgate.api:SolidgateSource",
+        "stripe": "omniload.source.stripe.api:StripeAnalyticsSource",
+        "tiktok": "omniload.source.tiktok_ads.api:TikTokSource",
+        "trustpilot": "omniload.source.trustpilot.api:TrustpilotSource",
+        "wise": "omniload.source.wise.api:WiseSource",
+        "zendesk": "omniload.source.zendesk.api:ZendeskSource",
+        "zoom": "omniload.source.zoom.api:ZoomSource",
+    }
+)
 
-sources: Dict[str, Type[SourceProtocol]] = {
-    "allium": AlliumSource,
-    "anthropic": AnthropicSource,
-    "bruin": BruinSource,
-    "csv": LocalCsvSource,
-    "couchbase": CouchbaseSource,
-    "cursor": CursorSource,
-    "docebo": DoceboSource,
-    "dune": DuneSource,
-    "http": HttpSource,
-    "https": HttpSource,
-    "mongodb": MongoDbSource,
-    "mongodb+srv": MongoDbSource,
-    "notion": NotionSource,
-    "gsheets": GoogleSheetsSource,
-    "shopify": ShopifySource,
-    "gorgias": GorgiasSource,
-    "github": GitHubSource,
-    "chess": ChessSource,
-    "stripe": StripeAnalyticsSource,
-    "facebookads": FacebookAdsSource,
-    "fluxx": FluxxSource,
-    "slack": SlackSource,
-    "hostaway": HostawaySource,
-    "hubspot": HubspotSource,
-    "indeed": IndeedSource,
-    "intercom": IntercomSource,
-    "jira": JiraSource,
-    "airtable": AirtableSource,
-    "klaviyo": KlaviyoSource,
-    "mixpanel": MixpanelSource,
-    "appsflyer": AppsflyerSource,
-    "kafka": KafkaSource,
-    "adjust": AdjustSource,
-    "zendesk": ZendeskSource,
-    "mmap": ArrowMemoryMappedSource,
-    "s3": S3Source,
-    "dynamodb": DynamoDBSource,
-    "asana": AsanaSource,
-    "tiktok": TikTokSource,
-    "googleanalytics": GoogleAnalyticsSource,
-    "googleads": GoogleAdsSource,
-    "appstore": AppleAppStoreSource,
-    "gs": GCSSource,
-    "linkedinads": LinkedInAdsSource,
-    "linear": LinearSource,
-    "applovin": AppLovinSource,
-    "applovinmax": ApplovinMaxSource,
-    "salesforce": SalesforceSource,
-    "personio": PersonioSource,
-    "kinesis": KinesisSource,
-    "pipedrive": PipedriveSource,
-    "frankfurter": FrankfurterSource,
-    "freshdesk": FreshdeskSource,
-    "fundraiseup": FundraiseupSource,
-    "trustpilot": TrustpilotSource,
-    "phantombuster": PhantombusterSource,
-    "elasticsearch": ElasticsearchSource,
-    "attio": AttioSource,
-    "solidgate": SolidgateSource,
-    "quickbooks": QuickBooksSource,
-    "isoc-pulse": IsocPulseSource,
-    "smartsheet": SmartsheetSource,
-    "sftp": SFTPSource,
-    "pinterest": PinterestSource,
-    "redditads": RedditAdsSource,
-    "revenuecat": RevenueCatSource,
-    "socrata": SocrataSource,
-    "snapchatads": SnapchatAdsSource,
-    "zoom": ZoomSource,
-    "clickup": ClickupSource,
-    "influxdb": InfluxDBSource,
-    "wise": WiseSource,
-    "plusvibeai": PlusVibeAISource,
-    "monday": MondaySource,
-    "mailchimp": MailchimpSource,
-    "primer": PrimerSource,
-    "fireflies": FirefliesSource,
-    "customerio": CustomerIoSource,
-}
-destinations: Dict[str, Type[DestinationProtocol]] = {
-    "bigquery": BigQueryDestination,
-    "cratedb": CrateDBDestination,
-    "databricks": DatabricksDestination,
-    "duckdb": DuckDBDestination,
-    "motherduck": MotherduckDestination,
-    "md": MotherduckDestination,
-    "mssql": MsSQLDestination,
-    "postgres": PostgresDestination,
-    "postgresql": PostgresDestination,
-    "postgresql+psycopg2": PostgresDestination,
-    "redshift": RedshiftDestination,
-    "redshift+psycopg2": RedshiftDestination,
-    "redshift+redshift_connector": RedshiftDestination,
-    "snowflake": SnowflakeDestination,
-    "synapse": SynapseDestination,
-    "csv": CsvDestination,
-    "athena": AthenaDestination,
-    "clickhouse+native": ClickhouseDestination,
-    "clickhouse": ClickhouseDestination,
-    "elasticsearch": ElasticsearchDestination,
-    "mongodb": MongoDBDestination,
-    "mongodb+srv": MongoDBDestination,
-    "s3": S3Destination,
-    "gs": GCSDestination,
-    "sqlite": SqliteDestination,
-    "mysql": MySqlDestination,
-    "mysql+pymysql": MySqlDestination,
-    "trino": TrinoDestination,
-}
+destinations: LazyRegistry = LazyRegistry(
+    {
+        "athena": "omniload.target.athena:AthenaDestination",
+        "bigquery": "omniload.target.bigquery:BigQueryDestination",
+        "clickhouse": "omniload.target.clickhouse:ClickhouseDestination",
+        "clickhouse+native": "omniload.target.clickhouse:ClickhouseDestination",
+        "cratedb": "omniload.target.cratedb:CrateDBDestination",
+        "csv": "omniload.target.csv:CsvDestination",
+        "databricks": "omniload.target.databricks:DatabricksDestination",
+        "duckdb": "omniload.target.duckdb:DuckDBDestination",
+        "elasticsearch": "omniload.target.elasticsearch.api:ElasticsearchDestination",
+        "gs": "omniload.target.blobstorage:GCSDestination",
+        "md": "omniload.target.motherduck:MotherduckDestination",
+        "mongodb": "omniload.target.mongodb:MongoDBDestination",
+        "mongodb+srv": "omniload.target.mongodb:MongoDBDestination",
+        "motherduck": "omniload.target.motherduck:MotherduckDestination",
+        "mssql": "omniload.target.mssql:MsSQLDestination",
+        "mysql": "omniload.target.mysql:MySqlDestination",
+        "mysql+pymysql": "omniload.target.mysql:MySqlDestination",
+        "postgres": "omniload.target.postgresql:PostgresDestination",
+        "postgresql": "omniload.target.postgresql:PostgresDestination",
+        "postgresql+psycopg2": "omniload.target.postgresql:PostgresDestination",
+        "redshift": "omniload.target.redshift:RedshiftDestination",
+        "redshift+psycopg2": "omniload.target.redshift:RedshiftDestination",
+        "redshift+redshift_connector": "omniload.target.redshift:RedshiftDestination",
+        "s3": "omniload.target.blobstorage:S3Destination",
+        "snowflake": "omniload.target.snowflake:SnowflakeDestination",
+        "sqlite": "omniload.target.sqlite:SqliteDestination",
+        "synapse": "omniload.target.synapse:SynapseDestination",
+        "trino": "omniload.target.trino:TrinoDestination",
+    }
+)

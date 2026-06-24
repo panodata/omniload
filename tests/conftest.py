@@ -208,7 +208,7 @@ def autocreate_db_for_clickhouse():
         dest_engine.dispose()
         return dlt_dest(uri, **kwargs)
 
-    patcher = patch("omniload.core.registry.ClickhouseDestination.dlt_dest")
+    patcher = patch("omniload.target.clickhouse.ClickhouseDestination.dlt_dest")
     mock = patcher.start()
     mock.side_effect = patched_dlt_dest
     yield
