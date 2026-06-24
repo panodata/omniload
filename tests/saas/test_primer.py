@@ -2,7 +2,7 @@ import unittest
 
 from dlt.common.pendulum import pendulum
 
-from omniload.src.primer.helpers import build_date_params
+from omniload.source.primer.helpers import build_date_params
 
 
 class TestBuildDateParams(unittest.TestCase):

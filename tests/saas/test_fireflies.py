@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from omniload.src.fireflies.helpers import (
+from omniload.source.fireflies.helpers import (
     FirefliesAPI,
     apply_item_errors,
     check_graphql_errors,
@@ -189,7 +189,7 @@ class TestFetchAnalyticsChunking:
 
 
 class TestFetchAnalyticsChunkResponse:
-    @patch("omniload.src.fireflies.helpers.create_client")
+    @patch("omniload.source.fireflies.helpers.create_client")
     def test_adds_start_end_time_to_result(self, mock_create_client):
         """Should add start_time and end_time to analytics result."""
         mock_client = MagicMock()
@@ -213,7 +213,7 @@ class TestFetchAnalyticsChunkResponse:
         assert result[0][0]["start_time"] == "2024-01-01"
         assert result[0][0]["end_time"] == "2024-01-31"
 
-    @patch("omniload.src.fireflies.helpers.create_client")
+    @patch("omniload.source.fireflies.helpers.create_client")
     def test_yields_nothing_when_no_analytics(self, mock_create_client):
         """Should yield nothing when analytics is empty."""
         mock_client = MagicMock()

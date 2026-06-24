@@ -111,7 +111,10 @@ def fs_test_cases(
         """
         with (
             patch(target_fs),
-            patch("omniload.src.filesystem.glob_files", wraps=glob_files_override),
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
         ):
             schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
             dest_table = f"{schema_rand_prefix}.fs_{get_random_string(5)}"
@@ -146,7 +149,10 @@ def fs_test_cases(
         """
         with (
             patch(target_fs) as target_fs_mock,
-            patch("omniload.src.filesystem.glob_files", wraps=glob_files_override),
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
         ):
             target_fs_mock.return_value = test_fs
             schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
@@ -164,7 +170,10 @@ def fs_test_cases(
         """When the source URI is a gzipped CSV file, the data should be ingested."""
         with (
             patch(target_fs) as target_fs_mock,
-            patch("omniload.src.filesystem.glob_files", wraps=glob_files_override),
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
         ):
             target_fs_mock.return_value = test_fs
             schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
@@ -184,7 +193,10 @@ def fs_test_cases(
         """
         with (
             patch(target_fs) as target_fs_mock,
-            patch("omniload.src.filesystem.glob_files", wraps=glob_files_override),
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
         ):
             target_fs_mock.return_value = test_fs
             schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
@@ -202,7 +214,10 @@ def fs_test_cases(
         """When the source URI is a gzipped Parquet file, the data should be ingested."""
         with (
             patch(target_fs) as target_fs_mock,
-            patch("omniload.src.filesystem.glob_files", wraps=glob_files_override),
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
         ):
             target_fs_mock.return_value = test_fs
             schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
@@ -222,7 +237,10 @@ def fs_test_cases(
         """
         with (
             patch(target_fs) as target_fs_mock,
-            patch("omniload.src.filesystem.glob_files", wraps=glob_files_override),
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
         ):
             target_fs_mock.return_value = test_fs
             schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
@@ -240,7 +258,10 @@ def fs_test_cases(
         """When the source URI is a gzipped JSONL file, the data should be ingested."""
         with (
             patch(target_fs) as target_fs_mock,
-            patch("omniload.src.filesystem.glob_files", wraps=glob_files_override),
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
         ):
             target_fs_mock.return_value = test_fs
             schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
@@ -260,7 +281,10 @@ def fs_test_cases(
         """
         with (
             patch(target_fs) as target_fs_mock,
-            patch("omniload.src.filesystem.glob_files", wraps=glob_files_override),
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
         ):
             target_fs_mock.return_value = test_fs
             schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
@@ -281,7 +305,10 @@ def fs_test_cases(
         """
         with (
             patch(target_fs) as target_fs_mock,
-            patch("omniload.src.filesystem.glob_files", wraps=glob_files_override),
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
         ):
             target_fs_mock.return_value = test_fs
             schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
@@ -303,7 +330,10 @@ def fs_test_cases(
 
         with (
             patch(target_fs) as target_fs_mock,
-            patch("omniload.src.filesystem.glob_files", wraps=glob_files_override),
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
         ):
             target_fs_mock.return_value = test_fs
             schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"

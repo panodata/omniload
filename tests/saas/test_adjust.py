@@ -1,4 +1,4 @@
-from omniload.src.adjust.adjust_helpers import parse_filters
+from omniload.source.adjust.helpers import parse_filters
 
 
 def test_parse_filters():

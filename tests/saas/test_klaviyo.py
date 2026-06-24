@@ -1,6 +1,6 @@
 import pendulum
 
-from omniload.src.klaviyo.helpers import split_date_range
+from omniload.source.klaviyo.helpers import split_date_range
 
 
 def test_split_date_range():

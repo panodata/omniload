@@ -16,9 +16,9 @@ class TestFundraiseupClient:
         mock_create_client.return_value = mock_client
 
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         client = FundraiseupClient(api_key="test_key_123")
 
@@ -49,9 +49,9 @@ class TestFundraiseupClient:
 
         # Create client and get data
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         client = FundraiseupClient(api_key="test_api_key")
         batches = list(client.get_paginated_data("test_endpoint"))
@@ -92,9 +92,9 @@ class TestFundraiseupClient:
 
         # Create client and get data
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         client = FundraiseupClient(api_key="test_api_key")
         batches = list(client.get_paginated_data("test_endpoint"))
@@ -131,9 +131,9 @@ class TestFundraiseupClient:
 
         # Create client and get data
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         client = FundraiseupClient(api_key="test_api_key")
         batches = list(client.get_paginated_data("test_endpoint"))
@@ -178,9 +178,9 @@ class TestFundraiseupClient:
 
         # Create client and get data with custom page size
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         client = FundraiseupClient(api_key="test_api_key")
         batches = list(client.get_paginated_data("test_endpoint", page_size=50))
@@ -215,9 +215,9 @@ class TestFundraiseupClient:
 
         # Create client and get data with additional params
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         client = FundraiseupClient(api_key="test_api_key")
         params = {"status": "active", "type": "donation"}
@@ -248,9 +248,9 @@ class TestFundraiseupClient:
 
         # Create client and get data
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         client = FundraiseupClient(api_key="test_api_key")
         batches = list(client.get_paginated_data("test_endpoint"))
@@ -273,9 +273,9 @@ class TestFundraiseupClient:
 
         # Create client and get data
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         client = FundraiseupClient(api_key="test_api_key")
         batches = list(client.get_paginated_data("test_endpoint"))
@@ -296,9 +296,9 @@ class TestFundraiseupClient:
 
         # Create client - should raise the exception
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         client = FundraiseupClient(api_key="test_api_key")
         with pytest.raises(Exception, match="API Error"):
@@ -330,9 +330,9 @@ class TestFundraiseupClient:
 
         # Create client and get data
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         client = FundraiseupClient(api_key="test_api_key")
         batches = list(client.get_paginated_data("test_endpoint"))
@@ -352,9 +352,9 @@ class TestFundraiseupClient:
         mock_create_client.return_value = mock_client
 
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         endpoints = [
             "donations",
@@ -417,9 +417,9 @@ class TestFundraiseupClient:
 
         # Create client and get data
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         client = FundraiseupClient(api_key="test_api_key")
         batches = list(client.get_paginated_data("test_endpoint"))
@@ -450,9 +450,9 @@ class TestFundraiseupClient:
 
         # Create client and get data
         # Clear module cache to ensure clean import with mocks
-        if "omniload.src.fundraiseup.client" in sys.modules:
-            del sys.modules["omniload.src.fundraiseup.client"]
-        from omniload.src.fundraiseup.client import FundraiseupClient
+        if "omniload.source.fundraiseup.client" in sys.modules:
+            del sys.modules["omniload.source.fundraiseup.client"]
+        from omniload.source.fundraiseup.client import FundraiseupClient
 
         client = FundraiseupClient(api_key="test_api_key")
         batches = list(client.get_paginated_data("test_endpoint"))

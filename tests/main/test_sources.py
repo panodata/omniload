@@ -7,13 +7,16 @@ import pendulum
 import pytest
 from dlt.sources.credentials import ConnectionStringCredentials
 
-import omniload.src.adjust
-from omniload.src.sources import AdjustSource, FluxxSource, MongoDbSource, SqlSource
+import omniload.source.adjust.adapter
+from omniload.core.router import SqlSourceRouter
+from omniload.source.adjust.api import AdjustSource
+from omniload.source.fluxx.api import FluxxSource
+from omniload.source.mongodb.api import MongoDbSource
 
 
 class SqlSourceTest(unittest.TestCase):
     def test_sql_source_requires_two_fields_in_table(self):
-        source = SqlSource()
+        source = SqlSourceRouter()
         with pytest.raises(ValueError):
             uri = "bigquery://my-project"
             source.dlt_source(uri, "onetable")
@@ -39,7 +42,7 @@ class SqlSourceTest(unittest.TestCase):
             self.assertIsNone(incremental)
             return dlt.resource()
 
-        source = SqlSource(table_builder=sql_table)
+        source = SqlSourceRouter(table_builder=sql_table)
         res = source.dlt_source(uri, table)
         self.assertIsNotNone(res)
 
@@ -66,7 +69,7 @@ class SqlSourceTest(unittest.TestCase):
             self.assertEqual(incremental.cursor_path, incremental_key)
             return dlt.resource()
 
-        source = SqlSource(table_builder=sql_table)
+        source = SqlSourceRouter(table_builder=sql_table)
         res = source.dlt_source(uri, table, incremental_key=incremental_key)
         self.assertIsNotNone(res)
 
@@ -94,7 +97,7 @@ class SqlSourceTest(unittest.TestCase):
             captured_uri = str(credentials.to_url())
             return dlt.resource()
 
-        source = SqlSource(table_builder=sql_table)
+        source = SqlSourceRouter(table_builder=sql_table)
         source.dlt_source(uri, table)
 
         # Verify OAuth function was called with correct args
@@ -130,7 +133,7 @@ class SqlSourceTest(unittest.TestCase):
             captured_uri = str(credentials.to_url())
             return dlt.resource()
 
-        source = SqlSource(table_builder=sql_table)
+        source = SqlSourceRouter(table_builder=sql_table)
         source.dlt_source(uri, table)
 
         # Verify the URI passes through unchanged (still has the original token)
@@ -233,7 +236,9 @@ class AdjustSourceTest(unittest.TestCase):
 
             return creatives
 
-        self.monkeypatch.setattr(omniload.src.adjust, "adjust_source", adjust)
+        self.monkeypatch.setattr(
+            omniload.source.adjust.adapter, "adjust_source", adjust
+        )
         source = AdjustSource()
         res = source.dlt_source(
             uri, table, interval_start="2024-11-05", interval_end="2024-11-12"
@@ -260,7 +265,9 @@ class AdjustSourceTest(unittest.TestCase):
 
             return custom
 
-        self.monkeypatch.setattr(omniload.src.adjust, "adjust_source", adjust)
+        self.monkeypatch.setattr(
+            omniload.source.adjust.adapter, "adjust_source", adjust
+        )
         source = AdjustSource()
         res = source.dlt_source(uri, table)
         self.assertIsNotNone(res)
@@ -292,7 +299,9 @@ class AdjustSourceTest(unittest.TestCase):
 
             return custom
 
-        self.monkeypatch.setattr(omniload.src.adjust, "adjust_source", adjust)
+        self.monkeypatch.setattr(
+            omniload.source.adjust.adapter, "adjust_source", adjust
+        )
         source = AdjustSource()
         res = source.dlt_source(uri, table)
         self.assertIsNotNone(res)

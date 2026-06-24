@@ -1,6 +1,6 @@
 from dlt.common.pendulum import pendulum
 
-from omniload.src.gorgias.helpers import (
+from omniload.source.gorgias.helpers import (
     convert_datetime_fields,
     find_latest_timestamp_from_page,
 )

@@ -21,7 +21,7 @@ from datetime import datetime
 
 from bson import json_util
 
-from omniload.src.mongodb.helpers import convert_mongo_shell_to_extended_json
+from omniload.source.mongodb.helpers import convert_mongo_shell_to_extended_json
 
 
 class TestMongoShellToExtendedJSON(unittest.TestCase):

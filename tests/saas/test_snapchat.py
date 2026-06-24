@@ -4,7 +4,7 @@ from datetime import date, timedelta
 import duckdb
 import pytest
 
-from omniload.src.snapchat_ads.helpers import (
+from omniload.source.snapchat_ads.helpers import (
     parse_stats_table,
     parse_timeseries_stats,
     parse_total_stats,

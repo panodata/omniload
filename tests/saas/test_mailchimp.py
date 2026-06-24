@@ -5,12 +5,12 @@ Unit tests for Mailchimp helper functions.
 import unittest
 from unittest.mock import Mock
 
-from omniload.src.mailchimp.helpers import (
+from omniload.source.mailchimp.adapter import (
     create_merge_resource,
     create_nested_resource,
     create_replace_resource,
-    fetch_paginated,
 )
+from omniload.source.mailchimp.helpers import fetch_paginated
 
 
 class TestFetchPaginated(unittest.TestCase):

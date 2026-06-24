@@ -1,7 +1,5 @@
 from typing import Optional, cast
 
-from dlt.common.destination import PreparedTableSchema
-
 from omniload.target.model import GenericSqlDestination
 
 
@@ -11,6 +9,7 @@ class TrinoTypeMapper:
     @staticmethod
     def create_type_mapper():
         """Create a custom type mapper for Trino."""
+        from dlt.common.destination import PreparedTableSchema
         from dlt.destinations.impl.sqlalchemy.type_mapper import SqlalchemyTypeMapper
         from sqlalchemy import BigInteger, Text
         from sqlalchemy.sql import sqltypes

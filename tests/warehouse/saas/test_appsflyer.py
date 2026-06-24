@@ -5,7 +5,7 @@ import pendulum
 import pytest
 import sqlalchemy
 
-from omniload.src.appsflyer.client import (
+from omniload.source.appsflyer.client import (
     exclude_metrics_for_date_range,
     standardize_keys,
 )

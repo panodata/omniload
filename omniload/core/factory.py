@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 from omniload.core.model import DestinationProtocol, SourceProtocol
 from omniload.core.registry import SQL_SOURCE_SCHEMES, destinations, sources
-from omniload.src.sources import SqlSource
+from omniload.core.router import SqlSourceRouter
 
 
 def parse_scheme_from_uri(uri: str) -> str:
@@ -33,7 +33,7 @@ class SourceDestinationFactory:
 
     def get_source(self) -> SourceProtocol:
         if self.source_scheme in SQL_SOURCE_SCHEMES:
-            return SqlSource()
+            return SqlSourceRouter()
         elif self.source_scheme in self.sources:
             return self.sources[self.source_scheme]()
         else:

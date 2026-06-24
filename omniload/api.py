@@ -154,7 +154,7 @@ def run_ingest(
         handle_mysql_empty_dates,
     )
     from omniload.core.factory import SourceDestinationFactory
-    from omniload.src.sources import MongoDbSource
+    from omniload.source.mongodb.api import MongoDbSource
     from omniload.target.athena import AthenaDestination
     from omniload.target.clickhouse import ClickhouseDestination
     from omniload.util.spinner import SpinnerCollector
@@ -429,7 +429,7 @@ def run_ingest(
         # https://github.com/dlt-hub/dlt/issues/2248
         # TODO(turtledev): only apply for write dispositions that actually cause an exception.
         # TODO(turtledev): make batch size configurable
-        import omniload.src.arrow as arrow
+        import omniload.source.arrow.adapter as arrow
 
         resource.for_each(dlt_source, lambda x: x.add_map(arrow.as_list))
 

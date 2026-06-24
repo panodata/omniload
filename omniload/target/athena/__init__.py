@@ -2,7 +2,6 @@ import os
 from urllib.parse import parse_qs, quote, urlparse
 
 import dlt
-from dlt.common.configuration.specs import AwsCredentials
 
 
 class AthenaDestination:
@@ -64,6 +63,8 @@ class AthenaDestination:
             )
         if session_token:
             os.environ["DESTINATION__CREDENTIALS__AWS_SESSION_TOKEN"] = session_token
+
+        from dlt.common.configuration.specs import AwsCredentials
 
         return dlt.destinations.athena(
             query_result_bucket=query_result_path,

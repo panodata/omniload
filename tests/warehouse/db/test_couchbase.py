@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 import sqlalchemy
 
-from omniload.src.couchbase_source.helpers import fetch_documents
+from omniload.source.couchbase.adapter import fetch_documents
 from tests.util import invoke_ingest_command
 from tests.util.container.impl.couchbase import CouchbaseContainer
 from tests.warehouse.manager import COUCHBASE_IMAGE

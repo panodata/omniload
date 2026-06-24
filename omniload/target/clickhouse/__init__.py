@@ -1,7 +1,6 @@
 from urllib.parse import parse_qs, urlparse
 
 import dlt
-from dlt.destinations.impl.clickhouse.configuration import ClickHouseCredentials
 
 
 class ClickhouseDestination:
@@ -52,6 +51,8 @@ class ClickhouseDestination:
             raise ValueError(
                 "Invalid value for secure. Set to `1` for a secure HTTPS connection or `0` for a non-secure HTTP connection."
             )
+
+        from dlt.destinations.impl.clickhouse.configuration import ClickHouseCredentials
 
         credentials = ClickHouseCredentials(
             {

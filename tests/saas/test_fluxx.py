@@ -2,15 +2,15 @@
 Pytest tests for fluxx/helpers.py functions.
 
 Run tests with:
-    pytest omniload/src/fluxx/helpers_test.py -v
+    pytest tests/saas/test_fluxx.py
 
 Or run specific tests:
-    pytest omniload/src/fluxx/helpers_test.py::test_connection_ids_single_number_to_array -v
+    pytest tests/saas/test_fluxx.py::test_connection_ids_single_number_to_array
 """
 
 import pytest
 
-from omniload.src.fluxx.helpers import _get_base_url, normalize_fluxx_item
+from omniload.source.fluxx.helpers import _get_base_url, normalize_fluxx_item
 
 
 @pytest.fixture

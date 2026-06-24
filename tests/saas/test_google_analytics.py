@@ -15,7 +15,7 @@
 import pytest
 from google.analytics.data_v1beta.types import MinuteRange
 
-from omniload.src.google_analytics.helpers import (
+from omniload.source.google_analytics.helpers import (
     convert_minutes_ranges_to_minute_range_objects,
     parse_google_analytics_uri,
 )

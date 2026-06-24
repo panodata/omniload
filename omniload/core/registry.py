@@ -1,84 +1,81 @@
 from typing import Dict, Type
 
 from omniload.core.model import DestinationProtocol, SourceProtocol
-from omniload.src.sources import (
-    AdjustSource,
-    AirtableSource,
-    AlliumSource,
-    AnthropicSource,
-    AppleAppStoreSource,
-    ApplovinMaxSource,
-    AppLovinSource,
-    AppsflyerSource,
-    ArrowMemoryMappedSource,
-    AsanaSource,
-    AttioSource,
-    BruinSource,
-    ChessSource,
-    ClickupSource,
-    CouchbaseSource,
-    CursorSource,
-    CustomerIoSource,
-    DoceboSource,
-    DuneSource,
-    DynamoDBSource,
-    ElasticsearchSource,
-    FacebookAdsSource,
-    FirefliesSource,
-    FluxxSource,
-    FrankfurterSource,
-    FreshdeskSource,
-    FundraiseupSource,
-    GCSSource,
-    GitHubSource,
-    GoogleAdsSource,
-    GoogleAnalyticsSource,
-    GoogleSheetsSource,
-    GorgiasSource,
-    HostawaySource,
-    HttpSource,
-    HubspotSource,
-    IndeedSource,
-    InfluxDBSource,
-    IntercomSource,
-    IsocPulseSource,
-    JiraSource,
-    KafkaSource,
-    KinesisSource,
-    KlaviyoSource,
-    LinearSource,
-    LinkedInAdsSource,
-    LocalCsvSource,
-    MailchimpSource,
-    MixpanelSource,
-    MondaySource,
-    MongoDbSource,
-    NotionSource,
-    PersonioSource,
-    PhantombusterSource,
-    PinterestSource,
-    PipedriveSource,
-    PlusVibeAISource,
-    PrimerSource,
-    QuickBooksSource,
-    RedditAdsSource,
-    RevenueCatSource,
-    S3Source,
-    SalesforceSource,
-    SFTPSource,
-    ShopifySource,
-    SlackSource,
-    SmartsheetSource,
-    SnapchatAdsSource,
-    SocrataSource,
-    SolidgateSource,
-    StripeAnalyticsSource,
-    TikTokSource,
-    TrustpilotSource,
-    WiseSource,
-    ZendeskSource,
-    ZoomSource,
-)
+from omniload.source.adjust.api import AdjustSource
+from omniload.source.airtable.api import AirtableSource
+from omniload.source.allium.api import AlliumSource
+from omniload.source.anthropic.api import AnthropicSource
+from omniload.source.applovin.api import AppLovinSource
+from omniload.source.applovin_max.api import ApplovinMaxSource
+from omniload.source.appsflyer.api import AppsflyerSource
+from omniload.source.appstore.api import AppleAppStoreSource
+from omniload.source.arrow.api import ArrowMemoryMappedSource
+from omniload.source.asana.api import AsanaSource
+from omniload.source.attio.api import AttioSource
+from omniload.source.blobstorage.api import GCSSource, S3Source
+from omniload.source.bruin.api import BruinSource
+from omniload.source.chess.api import ChessSource
+from omniload.source.clickup.api import ClickupSource
+from omniload.source.couchbase.api import CouchbaseSource
+from omniload.source.csv.api import LocalCsvSource
+from omniload.source.cursor.api import CursorSource
+from omniload.source.customer_io.api import CustomerIoSource
+from omniload.source.docebo.api import DoceboSource
+from omniload.source.dune.api import DuneSource
+from omniload.source.dynamodb.api import DynamoDBSource
+from omniload.source.elasticsearch.api import ElasticsearchSource
+from omniload.source.facebook_ads.api import FacebookAdsSource
+from omniload.source.fireflies.api import FirefliesSource
+from omniload.source.fluxx.api import FluxxSource
+from omniload.source.frankfurter.api import FrankfurterSource
+from omniload.source.freshdesk.api import FreshdeskSource
+from omniload.source.fundraiseup.api import FundraiseupSource
+from omniload.source.github.api import GitHubSource
+from omniload.source.google_ads.api import GoogleAdsSource
+from omniload.source.google_analytics.api import GoogleAnalyticsSource
+from omniload.source.google_sheets.api import GoogleSheetsSource
+from omniload.source.gorgias.api import GorgiasSource
+from omniload.source.hostaway.api import HostawaySource
+from omniload.source.http.api import HttpSource
+from omniload.source.hubspot.api import HubspotSource
+from omniload.source.indeed.api import IndeedSource
+from omniload.source.influxdb.api import InfluxDBSource
+from omniload.source.intercom.api import IntercomSource
+from omniload.source.isoc_pulse.api import IsocPulseSource
+from omniload.source.jira.api import JiraSource
+from omniload.source.kafka.api import KafkaSource
+from omniload.source.kinesis.api import KinesisSource
+from omniload.source.klaviyo.api import KlaviyoSource
+from omniload.source.linear.api import LinearSource
+from omniload.source.linkedin_ads.api import LinkedInAdsSource
+from omniload.source.mailchimp.api import MailchimpSource
+from omniload.source.mixpanel.api import MixpanelSource
+from omniload.source.monday.api import MondaySource
+from omniload.source.mongodb.api import MongoDbSource
+from omniload.source.notion.api import NotionSource
+from omniload.source.personio.api import PersonioSource
+from omniload.source.phantombuster.api import PhantombusterSource
+from omniload.source.pinterest.api import PinterestSource
+from omniload.source.pipedrive.api import PipedriveSource
+from omniload.source.plusvibeai.api import PlusVibeAISource
+from omniload.source.primer.api import PrimerSource
+from omniload.source.quickbooks.api import QuickBooksSource
+from omniload.source.reddit_ads.api import RedditAdsSource
+from omniload.source.revenuecat.api import RevenueCatSource
+from omniload.source.salesforce.api import SalesforceSource
+from omniload.source.sftp.api import SFTPSource
+from omniload.source.shopify.api import ShopifySource
+from omniload.source.slack.api import SlackSource
+from omniload.source.smartsheets.api import SmartsheetSource
+from omniload.source.snapchat_ads.api import SnapchatAdsSource
+from omniload.source.socrata.api import SocrataSource
+from omniload.source.solidgate.api import SolidgateSource
+from omniload.source.stripe.api import StripeAnalyticsSource
+from omniload.source.tiktok_ads.api import TikTokSource
+from omniload.source.trustpilot.api import TrustpilotSource
+from omniload.source.wise.api import WiseSource
+from omniload.source.zendesk.api import ZendeskSource
+from omniload.source.zoom.api import ZoomSource
 from omniload.target.athena import AthenaDestination
 from omniload.target.bigquery import BigQueryDestination
 from omniload.target.blobstorage import GCSDestination, S3Destination
@@ -87,7 +84,7 @@ from omniload.target.cratedb import CrateDBDestination
 from omniload.target.csv import CsvDestination
 from omniload.target.databricks import DatabricksDestination
 from omniload.target.duckdb import DuckDBDestination
-from omniload.target.elasticsearch import ElasticsearchDestination
+from omniload.target.elasticsearch.api import ElasticsearchDestination
 from omniload.target.mongodb import MongoDBDestination
 from omniload.target.motherduck import MotherduckDestination
 from omniload.target.mssql import MsSQLDestination

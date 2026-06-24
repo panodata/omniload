@@ -46,7 +46,7 @@ custom:<dimensions>:<metrics>
 
 ```sh
 omniload ingest \
-    --source-uri "googleanalytics://?credentials_path="omniload/src/g_analytics.json&property_id=id123" \
+    --source-uri "googleanalytics://?credentials_path=/path/to/service/account.json&property_id=id123" \
     --source-table "custom:date:activeUsers" \
     --dest-uri "duckdb:///analytics.duckdb" \
     --dest-table "dest.custom"
@@ -79,7 +79,7 @@ If no minute_ranges are specified, the system defaults to retrieving data from t
 
 ```sh
 omniload ingest \
-    --source-uri "googleanalytics://?credentials_path="omniload/src/g_analytics.json&property_id=id123" \
+    --source-uri "googleanalytics://?credentials_path=/path/to/service/account.json&property_id=id123" \
     --source-table "realtime:streamId:activeUsers:0-4,10-29" \
     --dest-uri "duckdb:///analytics.duckdb" \
     --dest-table "dest.realtime"

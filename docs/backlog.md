@@ -4,6 +4,8 @@
 
 ## Iteration +2
 
+- Add Helm chart, and Improve Cloud deployment docs & resources
+  https://images.minimus.io/
 - Refurbish `example-uris` subcommand
 
 ## Iteration +3

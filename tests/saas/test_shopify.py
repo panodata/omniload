@@ -14,7 +14,7 @@
 
 import pytest
 
-from omniload.src.shopify.helpers import remove_nodes_key
+from omniload.source.shopify.helpers import remove_nodes_key
 
 
 @pytest.mark.parametrize(

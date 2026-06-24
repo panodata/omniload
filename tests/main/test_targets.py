@@ -166,7 +166,7 @@ class DatabricksDestinationTest(unittest.TestCase):
             self.destination.dlt_run_params(uri, "mytable")
         self.assertIn("schema", str(exc_info.value).lower())
 
-    @patch("omniload.util.auth.get_databricks_oauth_token")
+    @patch("omniload.target.databricks.get_databricks_oauth_token")
     def test_oauth_m2m_credentials(self, mock_get_token):
         """Test that client_id and client_secret trigger OAuth M2M flow"""
         mock_get_token.return_value = "mocked_access_token"

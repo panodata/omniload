@@ -14,7 +14,7 @@
 
 import unittest
 
-from omniload.src.google_ads import Report, extract_fields
+from omniload.source.google_ads.adapter import Report, extract_fields
 
 FIELD_PATHS = [
     "customer.id",

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from omniload.src.docebo.helpers import normalize_date_field, normalize_docebo_dates
+from omniload.source.docebo.adapter import normalize_date_field, normalize_docebo_dates
 
 
 class TestNormalizeDateField:

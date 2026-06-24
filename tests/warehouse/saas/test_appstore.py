@@ -8,13 +8,13 @@ import pytest
 import requests
 import sqlalchemy
 
-from omniload.src.appstore import (
-    AnalyticsReportInstancesResponse,
+from omniload.source.appstore.errors import (
     NoOngoingReportRequestsFoundError,
     NoReportsFoundError,
     NoSuchReportError,
 )
-from omniload.src.appstore.models import (
+from omniload.source.appstore.models import (
+    AnalyticsReportInstancesResponse,
     AnalyticsReportRequestsResponse,
     AnalyticsReportResponse,
     AnalyticsReportSegmentsResponse,
@@ -112,7 +112,9 @@ def appstore_test_cases() -> Iterable[Callable]:
             )
         )
 
-        with patch("omniload.src.appstore.client.AppStoreConnectClient") as mock_client:
+        with patch(
+            "omniload.source.appstore.client.AppStoreConnectClient"
+        ) as mock_client:
             mock_client.return_value = client
             schema_rand_prefix = f"testschema_appstore_{get_random_string(5)}"
             dest_table = f"{schema_rand_prefix}.app_downloads_{get_random_string(5)}"
@@ -155,7 +157,9 @@ def appstore_test_cases() -> Iterable[Callable]:
                 None,
             )
         )
-        with patch("omniload.src.appstore.client.AppStoreConnectClient") as mock_client:
+        with patch(
+            "omniload.source.appstore.client.AppStoreConnectClient"
+        ) as mock_client:
             mock_client.return_value = client
             schema_rand_prefix = f"testschema_appstore_{get_random_string(5)}"
             dest_table = f"{schema_rand_prefix}.app_downloads_{get_random_string(5)}"
@@ -198,7 +202,9 @@ def appstore_test_cases() -> Iterable[Callable]:
             )
         )
 
-        with patch("omniload.src.appstore.client.AppStoreConnectClient") as mock_client:
+        with patch(
+            "omniload.source.appstore.client.AppStoreConnectClient"
+        ) as mock_client:
             mock_client.return_value = client
             schema_rand_prefix = f"testschema_appstore_{get_random_string(5)}"
             dest_table = f"{schema_rand_prefix}.app_downloads_{get_random_string(5)}"
@@ -283,7 +289,9 @@ def appstore_test_cases() -> Iterable[Callable]:
             )
         )
 
-        with patch("omniload.src.appstore.client.AppStoreConnectClient") as mock_client:
+        with patch(
+            "omniload.source.appstore.client.AppStoreConnectClient"
+        ) as mock_client:
             mock_client.return_value = client
             with patch("requests.get") as mock_get:
                 mock_get.return_value = create_mock_response(app_download_testdata)
@@ -392,7 +400,9 @@ def appstore_test_cases() -> Iterable[Callable]:
         schema_rand_prefix = f"testschema_appstore_{get_random_string(5)}"
         dest_table = f"{schema_rand_prefix}.app_downloads_{get_random_string(5)}"
 
-        with patch("omniload.src.appstore.client.AppStoreConnectClient") as mock_client:
+        with patch(
+            "omniload.source.appstore.client.AppStoreConnectClient"
+        ) as mock_client:
             mock_client.return_value = client
             with patch("requests.get") as mock_get:
                 mock_get.return_value = create_mock_response(app_download_testdata)
@@ -415,7 +425,9 @@ def appstore_test_cases() -> Iterable[Callable]:
         assert count == 3
 
         # now run the pipeline again without an end date
-        with patch("omniload.src.appstore.client.AppStoreConnectClient") as mock_client:
+        with patch(
+            "omniload.source.appstore.client.AppStoreConnectClient"
+        ) as mock_client:
             mock_client.return_value = client
             with patch("requests.get") as mock_get:
                 mock_get.side_effect = [

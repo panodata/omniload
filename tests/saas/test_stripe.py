@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 import duckdb
 import pytest
 
-from omniload.src.stripe_analytics import generate_date_ranges
+from omniload.source.stripe.helpers import generate_date_ranges
 from tests.util import invoke_ingest_command
 
 

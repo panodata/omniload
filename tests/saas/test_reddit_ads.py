@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from omniload.src.reddit_ads.helpers import (
+from omniload.source.reddit_ads.helpers import (
     convert_microcurrency,
     handle_rate_limit,
     parse_custom_table,
@@ -130,7 +130,7 @@ def test_parse_custom_table_preserves_breakdown_order():
 def test_handle_rate_limit_sleeps_when_remaining_low(monkeypatch):
     sleep_calls = []
     monkeypatch.setattr(
-        "omniload.src.reddit_ads.helpers.time.sleep", lambda s: sleep_calls.append(s)
+        "omniload.source.reddit_ads.helpers.time.sleep", lambda s: sleep_calls.append(s)
     )
 
     response = MagicMock()
@@ -144,7 +144,7 @@ def test_handle_rate_limit_sleeps_when_remaining_low(monkeypatch):
 def test_handle_rate_limit_no_sleep_when_remaining_high(monkeypatch):
     sleep_calls = []
     monkeypatch.setattr(
-        "omniload.src.reddit_ads.helpers.time.sleep", lambda s: sleep_calls.append(s)
+        "omniload.source.reddit_ads.helpers.time.sleep", lambda s: sleep_calls.append(s)
     )
 
     response = MagicMock()
@@ -157,7 +157,7 @@ def test_handle_rate_limit_no_sleep_when_remaining_high(monkeypatch):
 def test_handle_rate_limit_no_headers(monkeypatch):
     sleep_calls = []
     monkeypatch.setattr(
-        "omniload.src.reddit_ads.helpers.time.sleep", lambda s: sleep_calls.append(s)
+        "omniload.source.reddit_ads.helpers.time.sleep", lambda s: sleep_calls.append(s)
     )
 
     response = MagicMock()
@@ -170,7 +170,7 @@ def test_handle_rate_limit_no_headers(monkeypatch):
 def test_handle_rate_limit_zero_remaining(monkeypatch):
     sleep_calls = []
     monkeypatch.setattr(
-        "omniload.src.reddit_ads.helpers.time.sleep", lambda s: sleep_calls.append(s)
+        "omniload.source.reddit_ads.helpers.time.sleep", lambda s: sleep_calls.append(s)
     )
 
     response = MagicMock()

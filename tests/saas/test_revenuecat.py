@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from omniload.src.revenuecat.helpers import (
+from omniload.source.revenuecat.helpers import (
     _make_request,
     _make_request_async,
     _paginate,
@@ -90,7 +90,7 @@ class TestMakeRequest:
 class TestPaginate:
     """Tests for _paginate function."""
 
-    @patch("omniload.src.revenuecat.helpers._make_request")
+    @patch("omniload.source.revenuecat.helpers._make_request")
     def test_single_page_pagination(self, mock_make_request):
         """Test pagination with single page."""
         mock_make_request.return_value = {"items": [{"id": 1}, {"id": 2}]}
@@ -101,7 +101,7 @@ class TestPaginate:
         assert results[0] == [{"id": 1}, {"id": 2}]  # Page contains two items
         mock_make_request.assert_called_once()
 
-    @patch("omniload.src.revenuecat.helpers._make_request")
+    @patch("omniload.source.revenuecat.helpers._make_request")
     def test_multi_page_pagination(self, mock_make_request):
         """Test pagination with multiple pages."""
         # First page with next_page URL
@@ -148,7 +148,7 @@ class TestPaginateAsync:
         mock_session = AsyncMock()
 
         with patch(
-            "omniload.src.revenuecat.helpers._make_request_async"
+            "omniload.source.revenuecat.helpers._make_request_async"
         ) as mock_make_request:
             mock_make_request.return_value = {"items": [{"id": 1}, {"id": 2}]}
 

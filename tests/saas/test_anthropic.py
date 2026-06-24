@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from omniload.src.anthropic.helpers import (
+from omniload.source.anthropic.helpers import (
     fetch_api_keys,
     fetch_claude_code_usage,
     fetch_invites,
@@ -196,7 +196,7 @@ class TestAnthropicHelpers(unittest.TestCase):
             "claude-3-5-sonnet-20241022,claude-3-opus-20240229",
         )
 
-    @patch("omniload.src.anthropic.helpers.AnthropicClient.get")
+    @patch("omniload.source.anthropic.helpers.AnthropicClient.get")
     def test_fetch_claude_code_usage_success(self, mock_get):
         """Test successful API fetch."""
         mock_response = Mock()
@@ -244,7 +244,7 @@ class TestAnthropicHelpers(unittest.TestCase):
         self.assertEqual(params["starting_at"], "2025-09-01")
         self.assertEqual(params["ending_at"], "2025-09-01")
 
-    @patch("omniload.src.anthropic.helpers.AnthropicClient.get")
+    @patch("omniload.source.anthropic.helpers.AnthropicClient.get")
     def test_fetch_claude_code_usage_pagination(self, mock_get):
         """Test API pagination handling."""
         # First page response
@@ -314,7 +314,7 @@ class TestAnthropicHelpers(unittest.TestCase):
         # Verify both API calls
         self.assertEqual(mock_get.call_count, 2)
 
-    @patch("omniload.src.anthropic.helpers.AnthropicClient.get")
+    @patch("omniload.source.anthropic.helpers.AnthropicClient.get")
     def test_fetch_claude_code_usage_auth_error(self, mock_get):
         """Test handling of authentication error."""
         from requests.exceptions import HTTPError
@@ -330,7 +330,7 @@ class TestAnthropicHelpers(unittest.TestCase):
 
         self.assertIn("Invalid API key", str(context.exception))
 
-    @patch("omniload.src.anthropic.helpers.AnthropicClient.get")
+    @patch("omniload.source.anthropic.helpers.AnthropicClient.get")
     def test_fetch_claude_code_usage_no_data(self, mock_get):
         """Test handling when no data is available for a date."""
         from requests.exceptions import HTTPError
@@ -345,7 +345,7 @@ class TestAnthropicHelpers(unittest.TestCase):
 
         self.assertEqual(len(results), 0)
 
-    @patch("omniload.src.anthropic.helpers.AnthropicClient.get")
+    @patch("omniload.source.anthropic.helpers.AnthropicClient.get")
     def test_fetch_organization_info(self, mock_get):
         """Test fetching organization information."""
         mock_response = Mock()
@@ -366,7 +366,7 @@ class TestAnthropicHelpers(unittest.TestCase):
         self.assertEqual(result["name"], "Test Organization")
         mock_get.assert_called_once_with("organizations/me")
 
-    @patch("omniload.src.anthropic.helpers.AnthropicClient.get")
+    @patch("omniload.source.anthropic.helpers.AnthropicClient.get")
     def test_fetch_workspaces(self, mock_get):
         """Test fetching workspaces with pagination."""
         # First page
@@ -410,7 +410,7 @@ class TestAnthropicHelpers(unittest.TestCase):
         self.assertEqual(results[1]["id"], "ws-2")
         self.assertEqual(mock_get.call_count, 2)
 
-    @patch("omniload.src.anthropic.helpers.AnthropicClient.get")
+    @patch("omniload.source.anthropic.helpers.AnthropicClient.get")
     def test_fetch_api_keys(self, mock_get):
         """Test fetching API keys."""
         mock_response = Mock()
@@ -436,7 +436,7 @@ class TestAnthropicHelpers(unittest.TestCase):
         self.assertEqual(results[0]["id"], "key-1")
         self.assertEqual(results[0]["name"], "Production Key")
 
-    @patch("omniload.src.anthropic.helpers.AnthropicClient.get")
+    @patch("omniload.source.anthropic.helpers.AnthropicClient.get")
     def test_fetch_invites(self, mock_get):
         """Test fetching invites."""
         mock_response = Mock()
@@ -461,7 +461,7 @@ class TestAnthropicHelpers(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["email"], "user@example.com")
 
-    @patch("omniload.src.anthropic.helpers.AnthropicClient.get")
+    @patch("omniload.source.anthropic.helpers.AnthropicClient.get")
     def test_fetch_users(self, mock_get):
         """Test fetching users."""
         mock_response = Mock()
@@ -486,7 +486,7 @@ class TestAnthropicHelpers(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["email"], "admin@example.com")
 
-    @patch("omniload.src.anthropic.helpers.AnthropicClient.get")
+    @patch("omniload.source.anthropic.helpers.AnthropicClient.get")
     def test_fetch_workspace_members(self, mock_get):
         """Test fetching workspace members."""
         mock_response = Mock()

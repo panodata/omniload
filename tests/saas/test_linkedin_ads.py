@@ -1,13 +1,13 @@
 import pendulum
 
-from omniload.src.linkedin_ads.dimension_time_enum import (
-    Dimension,
-    TimeGranularity,
-)
-from omniload.src.linkedin_ads.helpers import (
+from omniload.source.linkedin_ads.helpers import (
     construct_url,
     find_intervals,
     flat_structure,
+)
+from omniload.source.linkedin_ads.model import (
+    Dimension,
+    TimeGranularity,
 )
 
 
