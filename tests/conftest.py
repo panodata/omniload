@@ -10,7 +10,7 @@ import docker.errors
 import pytest
 import sqlalchemy
 
-from omniload.src.destinations import ClickhouseDestination
+from omniload.target.clickhouse import ClickhouseDestination
 from tests.util.common import get_testdata_path
 from tests.warehouse.settings import DESTINATIONS, SOURCES
 

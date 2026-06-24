@@ -70,7 +70,7 @@ class SqlSourceTest(unittest.TestCase):
         res = source.dlt_source(uri, table, incremental_key=incremental_key)
         self.assertIsNotNone(res)
 
-    @patch("omniload.src.destinations.get_databricks_oauth_token")
+    @patch("omniload.util.auth.get_databricks_oauth_token")
     def test_databricks_oauth_m2m_credentials(self, mock_get_token):
         """Test that Databricks client_id and client_secret trigger OAuth M2M flow"""
         mock_get_token.return_value = "mocked_access_token"

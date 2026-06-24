@@ -106,7 +106,7 @@ class SqlSource:
             client_secret = query_params.get("client_secret", [None])[0]
 
             if client_id and client_secret:
-                from omniload.src.destinations import get_databricks_oauth_token
+                from omniload.util.auth import get_databricks_oauth_token
 
                 server_hostname = parsed_uri.hostname
                 if not server_hostname:
@@ -386,11 +386,9 @@ class SqlSource:
                 import pyodbc
                 from sqlalchemy import create_engine
 
-                from omniload.src.destinations import (
-                    MSSQL_COPT_SS_ACCESS_TOKEN,
-                    handle_datetimeoffset,
-                    serialize_azure_token,
-                )
+                from omniload.target.mssql import MSSQL_COPT_SS_ACCESS_TOKEN
+                from omniload.util.auth import serialize_azure_token
+                from omniload.util.time import handle_datetimeoffset
 
                 cfg = {
                     "DRIVER": params.get("driver", ["ODBC Driver 18 for SQL Server"])[

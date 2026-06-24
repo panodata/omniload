@@ -1,6 +1,6 @@
 import pytest
 
-from omniload.src.destinations import S3Destination
+from omniload.target.blobstorage import S3Destination
 
 
 def test_s3_destination():

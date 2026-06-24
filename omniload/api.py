@@ -154,8 +154,9 @@ def run_ingest(
         handle_mysql_empty_dates,
     )
     from omniload.core.factory import SourceDestinationFactory
-    from omniload.src.destinations import AthenaDestination, ClickhouseDestination
     from omniload.src.sources import MongoDbSource
+    from omniload.target.athena import AthenaDestination
+    from omniload.target.clickhouse import ClickhouseDestination
     from omniload.util.spinner import SpinnerCollector
 
     incremental_strategy = _coerce(incremental_strategy, IncrementalStrategy)

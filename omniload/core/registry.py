@@ -1,28 +1,6 @@
 from typing import Dict, Type
 
 from omniload.core.model import DestinationProtocol, SourceProtocol
-from omniload.src.destinations import (
-    AthenaDestination,
-    BigQueryDestination,
-    ClickhouseDestination,
-    CrateDBDestination,
-    CsvDestination,
-    DatabricksDestination,
-    DuckDBDestination,
-    ElasticsearchDestination,
-    GCSDestination,
-    MongoDBDestination,
-    MotherduckDestination,
-    MsSQLDestination,
-    MySqlDestination,
-    PostgresDestination,
-    RedshiftDestination,
-    S3Destination,
-    SnowflakeDestination,
-    SqliteDestination,
-    SynapseDestination,
-    TrinoDestination,
-)
 from omniload.src.sources import (
     AdjustSource,
     AirtableSource,
@@ -101,6 +79,25 @@ from omniload.src.sources import (
     ZendeskSource,
     ZoomSource,
 )
+from omniload.target.athena import AthenaDestination
+from omniload.target.bigquery import BigQueryDestination
+from omniload.target.blobstorage import GCSDestination, S3Destination
+from omniload.target.clickhouse import ClickhouseDestination
+from omniload.target.cratedb import CrateDBDestination
+from omniload.target.csv import CsvDestination
+from omniload.target.databricks import DatabricksDestination
+from omniload.target.duckdb import DuckDBDestination
+from omniload.target.elasticsearch import ElasticsearchDestination
+from omniload.target.mongodb import MongoDBDestination
+from omniload.target.motherduck import MotherduckDestination
+from omniload.target.mssql import MsSQLDestination
+from omniload.target.mysql import MySqlDestination
+from omniload.target.postgresql import PostgresDestination
+from omniload.target.redshift import RedshiftDestination
+from omniload.target.snowflake import SnowflakeDestination
+from omniload.target.sqlite import SqliteDestination
+from omniload.target.synapse import SynapseDestination
+from omniload.target.trino import TrinoDestination
 
 SQL_SOURCE_SCHEMES = [
     "bigquery",

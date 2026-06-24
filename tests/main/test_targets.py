@@ -10,16 +10,14 @@ from dlt.common.destination import Destination
 from dlt.common.destination.client import JobClientBase
 
 from omniload.core.model import DestinationProtocol
-from omniload.src.destinations import (
-    BigQueryDestination,
-    ClickhouseDestination,
-    DatabricksDestination,
-    DuckDBDestination,
-    MsSQLDestination,
-    PostgresDestination,
-    RedshiftDestination,
-    SnowflakeDestination,
-)
+from omniload.target.bigquery import BigQueryDestination
+from omniload.target.clickhouse import ClickhouseDestination
+from omniload.target.databricks import DatabricksDestination
+from omniload.target.duckdb import DuckDBDestination
+from omniload.target.mssql import MsSQLDestination
+from omniload.target.postgresql import PostgresDestination
+from omniload.target.redshift import RedshiftDestination
+from omniload.target.snowflake import SnowflakeDestination
 from tests.util.common import get_etc_path
 
 
@@ -168,7 +166,7 @@ class DatabricksDestinationTest(unittest.TestCase):
             self.destination.dlt_run_params(uri, "mytable")
         self.assertIn("schema", str(exc_info.value).lower())
 
-    @patch("omniload.src.destinations.get_databricks_oauth_token")
+    @patch("omniload.util.auth.get_databricks_oauth_token")
     def test_oauth_m2m_credentials(self, mock_get_token):
         """Test that client_id and client_secret trigger OAuth M2M flow"""
         mock_get_token.return_value = "mocked_access_token"
