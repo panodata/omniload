@@ -244,6 +244,7 @@ ini_options.addopts = """
   """
 ini_options.markers = [
   "integration: requires Docker/testcontainers or external credentials",
+  "odbc: requires an ODBC driver manager and pyodbc",
 ]
 ini_options.xfail_strict = true
 ini_options.log_format = "%(asctime)-15s [%(name)-36s] %(levelname)-8s: %(message)s"

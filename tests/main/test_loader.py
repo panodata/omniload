@@ -9,7 +9,7 @@ from typing import List
 import pyarrow.parquet
 import pytest
 
-from omniload.util.loader import load_dlt_file
+from omniload.util.loader import factory, load_dlt_file
 
 logger = logging.getLogger(__name__)
 
@@ -71,3 +71,10 @@ def test_loader(testfiles):
     for testfile in testfiles:
         data = [row for row in load_dlt_file(testfile)]
         assert data == TESTDATA
+
+
+def test_loader_accepts_windows_ascii_csv_filetype(testfiles):
+    with factory("ASCII text, with CRLF, CR line terminators", testfiles[1]) as reader:
+        data = [row for row in reader]
+
+    assert data == TESTDATA

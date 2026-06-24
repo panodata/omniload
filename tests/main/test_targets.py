@@ -112,6 +112,7 @@ class DuckDBDestinationTest(GenericSqlDestinationFixture, unittest.TestCase):
     expected_class = dlt.destinations.duckdb
 
 
+@pytest.mark.odbc
 class MsSQLDestinationTest(GenericSqlDestinationFixture, unittest.TestCase):
     destination = MsSQLDestination()
     expected_class = dlt.destinations.mssql

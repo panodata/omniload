@@ -18,40 +18,24 @@ concurrency:
 
 jobs:
 
-  tests:
+  integration:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - 'ubuntu-latest'
         python-version:
           - '3.10'
           - '3.14'
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
 
       - name: Acquire sources
         uses: actions/checkout@v7
 
       - name: Install Microsoft ODBC (Linux)
-        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo ACCEPT_EULA=Y apt-get install msodbcsql18 -y
-
-      - name: Install Microsoft ODBC (macOS)
-        if: matrix.os == 'macos-13'
-        run: |
-          brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
-          brew update
-          HOMEBREW_ACCEPT_EULA=Y brew install msodbcsql18
-
-      - name: Install Microsoft ODBC (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=2249006 -OutFile msodbcsql.msi
-          Start-Process -FilePath "msiexec.exe" -ArgumentList "/i msodbcsql.msi /qn /norestart IACCEPTMSODBCSQLLICENSETERMS=YES" -Wait
 
       - name: Install uv
         uses: astral-sh/setup-uv@v8.2.0
@@ -82,3 +66,43 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           fail_ci_if_error: true
+
+  unit:
+    needs: integration
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - 'macos-latest'
+          - 'windows-latest'
+        python-version:
+          - '3.10'
+          - '3.14'
+
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - name: Acquire sources
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          activate-environment: 'true'
+          cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install project
+        run: |
+          uv pip install --editable='.[develop,test]'
+
+      - name: Set timezone
+        uses: szenius/set-timezone@v2.0
+        with:
+          timezoneLinux: "Europe/Berlin"
+          timezoneMacos: "Europe/Berlin"
+          timezoneWindows: "European Standard Time"
+
+      - name: Run Docker-free unit tests
+        run: pytest -m "not integration" -k "not odbc" -p no:cacheprovider

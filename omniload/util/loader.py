@@ -35,7 +35,7 @@ def factory(filetype: str, filepath: str):
     # ???(turtledev): can dlt produce non-gizpped jsonl files?
     if filetype.startswith("gzip"):
         return jsonlfile(filepath)
-    elif filetype.startswith("CSV"):
+    elif filetype.startswith("CSV") or filetype.startswith("ASCII text"):
         return csvfile(filepath)
     elif filetype.startswith("Apache Parquet"):
         return parquetfile(filepath)
