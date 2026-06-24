@@ -12,7 +12,7 @@ from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 
 from .client import AppStoreConnectClientInterface
-from .errors import (
+from .exceptions import (
     NoOngoingReportRequestsFoundError,
     NoReportsFoundError,
     NoSuchReportError,

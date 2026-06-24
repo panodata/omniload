@@ -21,7 +21,7 @@ except PackageNotFoundError:  # pragma: no cover
     __version__ = "0.0.0-dev"
 
 # Turn off dlt's telemetry to tame three more requests per invocation.
-mock.patch("dlt.common.runtime.telemetry._TELEMETRY_STARTED", True)
+mock.patch("dlt.common.runtime.telemetry._TELEMETRY_STARTED", True).start()
 
 __all__ = [
     "IncrementalStrategy",

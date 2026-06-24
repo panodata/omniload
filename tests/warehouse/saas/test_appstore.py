@@ -8,7 +8,7 @@ import pytest
 import requests
 import sqlalchemy
 
-from omniload.source.appstore.errors import (
+from omniload.source.appstore.exceptions import (
     NoOngoingReportRequestsFoundError,
     NoReportsFoundError,
     NoSuchReportError,
