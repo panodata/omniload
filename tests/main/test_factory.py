@@ -1,4 +1,4 @@
-from omniload.src.factory import parse_scheme_from_uri
+from omniload.core.factory import parse_scheme_from_uri
 
 
 def test_scheme_is_parsed_from_uri_correctly():

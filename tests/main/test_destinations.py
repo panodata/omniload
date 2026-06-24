@@ -9,6 +9,7 @@ import pytest
 from dlt.common.destination import Destination
 from dlt.common.destination.client import JobClientBase
 
+from omniload.core.factory import DestinationProtocol
 from omniload.src.destinations import (
     BigQueryDestination,
     ClickhouseDestination,
@@ -19,7 +20,6 @@ from omniload.src.destinations import (
     RedshiftDestination,
     SnowflakeDestination,
 )
-from omniload.src.factory import DestinationProtocol
 from tests.util.common import get_etc_path
 
 

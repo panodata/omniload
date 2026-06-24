@@ -24,8 +24,8 @@ from dlt.destinations.impl.clickhouse.configuration import (
 
 from omniload.error import MissingValueError
 from omniload.src.elasticsearch.helpers import elasticsearch_insert
-from omniload.src.loader import load_dlt_file
 from omniload.src.mongodb import mongodb_insert
+from omniload.target.loader import load_dlt_file
 
 
 class GenericSqlDestination:

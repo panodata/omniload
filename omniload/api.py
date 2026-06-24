@@ -145,10 +145,10 @@ def run_ingest(
     from dlt.common.schema.typing import TColumnSchema
     from dlt.pipeline.exceptions import PipelineStepFailed
 
-    import omniload.src.resource as resource
+    import omniload.core.resource as resource
     import omniload.util.hint as partition
+    from omniload.core.factory import SourceDestinationFactory
     from omniload.src.destinations import AthenaDestination, ClickhouseDestination
-    from omniload.src.factory import SourceDestinationFactory
     from omniload.src.sources import MongoDbSource
     from omniload.util.filter import (
         cast_set_to_list,
@@ -440,7 +440,7 @@ def run_ingest(
         resource.for_each(dlt_source, lambda x: x.add_limit(yield_limit))
 
     if isinstance(source, MongoDbSource):
-        from omniload.src.resource import TypeHintMap
+        from omniload.core.resource import TypeHintMap
 
         resource.for_each(dlt_source, lambda x: x.add_map(TypeHintMap().type_hint_map))
 

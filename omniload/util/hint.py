@@ -3,7 +3,7 @@ from typing import Dict
 from dlt.common.schema.typing import TColumnSchema
 from dlt.sources import DltResource, DltSource
 
-import omniload.src.resource as resource
+import omniload.core.resource as resource
 
 
 def apply_athena_hints(
