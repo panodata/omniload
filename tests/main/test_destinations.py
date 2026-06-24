@@ -9,7 +9,7 @@ import pytest
 from dlt.common.destination import Destination
 from dlt.common.destination.client import JobClientBase
 
-from omniload.core.factory import DestinationProtocol
+from omniload.core.model import DestinationProtocol
 from omniload.src.destinations import (
     BigQueryDestination,
     ClickhouseDestination,
