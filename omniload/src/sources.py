@@ -268,13 +268,13 @@ class SqlSource:
         from sqlalchemy import Column
         from sqlalchemy import types as sa
 
+        from omniload.codec.filter import table_adapter_exclude_columns
         from omniload.src.sql_database.callbacks import (
             chained_query_adapter_callback,
             custom_query_variable_subsitution,
             limit_callback,
             type_adapter_callback,
         )
-        from omniload.util.filter import table_adapter_exclude_columns
 
         query_adapters = []
         if kwargs.get("sql_limit"):

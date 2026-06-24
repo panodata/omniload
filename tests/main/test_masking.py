@@ -3,7 +3,7 @@ import unittest
 from datetime import date, datetime
 from unittest.mock import patch
 
-from omniload.util.masking import MaskingEngine, create_masking_mapper
+from omniload.codec.masking import MaskingEngine, create_masking_mapper
 
 
 class TestMaskingEngine(unittest.TestCase):

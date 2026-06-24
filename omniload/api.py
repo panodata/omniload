@@ -146,16 +146,16 @@ def run_ingest(
     from dlt.pipeline.exceptions import PipelineStepFailed
 
     import omniload.core.resource as resource
-    import omniload.util.hint as partition
-    from omniload.core.factory import SourceDestinationFactory
-    from omniload.src.destinations import AthenaDestination, ClickhouseDestination
-    from omniload.src.sources import MongoDbSource
-    from omniload.util.filter import (
+    from omniload.codec import hint
+    from omniload.codec.filter import (
         cast_set_to_list,
         cast_spanner_types,
         create_masking_filter,
         handle_mysql_empty_dates,
     )
+    from omniload.core.factory import SourceDestinationFactory
+    from omniload.src.destinations import AthenaDestination, ClickhouseDestination
+    from omniload.src.sources import MongoDbSource
     from omniload.util.spinner import SpinnerCollector
 
     incremental_strategy = _coerce(incremental_strategy, IncrementalStrategy)
@@ -451,7 +451,7 @@ def run_ingest(
     resource.for_each(dlt_source, col_h)
 
     if isinstance(destination, AthenaDestination) and partition_by:
-        partition.apply_athena_hints(dlt_source, partition_by, column_hints)
+        hint.apply_athena_hints(dlt_source, partition_by, column_hints)
 
     if isinstance(destination, ClickhouseDestination):
         from dlt.destinations.adapters import clickhouse_adapter
