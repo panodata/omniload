@@ -22,7 +22,8 @@ import pendulum
 from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
 
-from ..errors import MissingValueError
+from omniload.error import MissingValueError
+
 from .helpers import get_reactions_data, get_rest_pages, get_stargazers
 
 

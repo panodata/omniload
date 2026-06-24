@@ -4,7 +4,7 @@ from typing import Any, Dict, Iterator, List, Optional
 import pendulum
 import requests
 
-from omniload.src.http_client import create_client as create_http_client
+from omniload.util.http import create_client as create_http_client
 
 GRAPHQL_API_BASE_URL = "https://api.fireflies.ai/graphql"
 

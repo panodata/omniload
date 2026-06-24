@@ -27,7 +27,8 @@ from typing import (
 import dlt
 from dlt.sources.helpers import requests
 
-from ...errors import MissingValueError
+from omniload.error import MissingValueError
+
 from ..typing import TDataPage
 from .custom_fields_munger import rename_fields
 

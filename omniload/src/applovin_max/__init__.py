@@ -9,7 +9,7 @@ from dlt.sources import DltResource
 from dlt.sources.helpers.requests import Client
 from pendulum.date import Date
 
-from omniload.src.errors import MissingValueError
+from omniload.error import MissingValueError
 
 
 @dlt.source(max_table_nesting=0)

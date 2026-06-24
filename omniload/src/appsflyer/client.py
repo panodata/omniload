@@ -4,7 +4,7 @@ import requests
 from dlt.sources.helpers.requests import Client
 from requests.exceptions import HTTPError
 
-from omniload.src.errors import MissingValueError
+from omniload.error import MissingValueError
 
 
 class AppsflyerClient:

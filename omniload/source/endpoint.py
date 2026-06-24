@@ -27,7 +27,7 @@ def parse_uri(uri: ParseResult, table: str) -> Tuple[BucketName, FileGlob]:
     - uri: "gs://bucket-name"
       table: "file-glob"
 
-    The first form is the prefered method. Other forms are supported but discouraged.
+    The first form is the preferred method. Other forms are supported but discouraged.
     """
 
     table = table.strip()

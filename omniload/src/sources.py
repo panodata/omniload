@@ -33,13 +33,18 @@ from dlt.sources.credentials import (
 )
 from dlt.sources.sql_database import BaseTableLoader
 
-from omniload.src import blob
-from omniload.src.errors import (
+from omniload.error import (
     InvalidBlobTableError,
     MissingValueError,
     UnsupportedResourceError,
 )
-from omniload.src.table_definition import TableDefinition, table_string_to_dataclass
+from omniload.source.endpoint import (
+    UnsupportedEndpointError,
+    determine_endpoint,
+    parse_endpoint,
+    parse_uri,
+)
+from omniload.source.model import TableDefinition, table_string_to_dataclass
 
 
 class SqlSource:
@@ -263,13 +268,13 @@ class SqlSource:
         from sqlalchemy import Column
         from sqlalchemy import types as sa
 
-        from omniload.src.filters import table_adapter_exclude_columns
         from omniload.src.sql_database.callbacks import (
             chained_query_adapter_callback,
             custom_query_variable_subsitution,
             limit_callback,
             type_adapter_callback,
         )
+        from omniload.util.filter import table_adapter_exclude_columns
 
         query_adapters = []
         if kwargs.get("sql_limit"):
@@ -1871,7 +1876,7 @@ class S3Source:
         if not secret_access_key:
             raise ValueError("secret_access_key is required to connect to S3")
 
-        bucket_name, path_to_file = blob.parse_uri(parsed_uri, table)
+        bucket_name, path_to_file = parse_uri(parsed_uri, table)
         if not bucket_name or not path_to_file:
             raise InvalidBlobTableError("S3")
 
@@ -1890,8 +1895,8 @@ class S3Source:
         fs = s3fs.S3FileSystem(**fs_kwargs)
 
         try:
-            endpoint: str = blob.determine_endpoint(table, path_to_file)
-        except blob.UnsupportedEndpointError:
+            endpoint: str = determine_endpoint(table, path_to_file)
+        except UnsupportedEndpointError:
             raise ValueError(
                 "S3 Source only supports specific formats files: csv, csv_headless, jsonl, parquet"
             )
@@ -2201,7 +2206,7 @@ class DynamoDBSource:
         incremental_key = kwargs.get("incremental_key")
 
         from omniload.src.dynamodb import dynamodb
-        from omniload.src.time import isotime
+        from omniload.util.time import isotime
 
         if incremental_key:
             incremental = dlt_incremental(
@@ -2519,7 +2524,7 @@ class GCSSource:
         parsed_uri = urlparse(uri)
         params = parse_qs(parsed_uri.query)
 
-        bucket_name, path_to_file = blob.parse_uri(parsed_uri, table)
+        bucket_name, path_to_file = parse_uri(parsed_uri, table)
         if not bucket_name or not path_to_file:
             raise InvalidBlobTableError("GCS")
 
@@ -2554,8 +2559,8 @@ class GCSSource:
         )
 
         try:
-            endpoint: str = blob.determine_endpoint(table, path_to_file)
-        except blob.UnsupportedEndpointError:
+            endpoint: str = determine_endpoint(table, path_to_file)
+        except UnsupportedEndpointError:
             raise ValueError(
                 "GCS Source only supports specific formats files: csv, csv_headless, jsonl, parquet"
             )
@@ -3721,8 +3726,8 @@ class SFTPSource:
             file_glob = f"/{table}"
 
         try:
-            endpoint = blob.parse_endpoint(table)
-        except blob.UnsupportedEndpointError:
+            endpoint = parse_endpoint(table)
+        except UnsupportedEndpointError:
             raise ValueError(
                 "SFTP Source only supports specific formats files: csv, jsonl, parquet"
             )

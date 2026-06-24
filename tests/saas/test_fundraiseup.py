@@ -9,7 +9,7 @@ import pytest
 class TestFundraiseupClient:
     """Test suite for FundraiseupClient."""
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_client_initialization(self, mock_create_client):
         """Test that client initializes with correct API key and base URL."""
         mock_client = Mock()
@@ -29,7 +29,7 @@ class TestFundraiseupClient:
             retry_status_codes=[429, 500, 502, 503, 504]
         )
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_get_paginated_data_single_page_list(self, mock_create_client):
         """Test pagination with a single page returning a list."""
         # Setup mock client
@@ -70,7 +70,7 @@ class TestFundraiseupClient:
             params={"limit": 100},
         )
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_get_paginated_data_single_page_object(self, mock_create_client):
         """Test pagination with a single page returning an object with data key."""
         # Setup mock client
@@ -105,7 +105,7 @@ class TestFundraiseupClient:
         assert batches[0][0]["id"] == "1"
         assert batches[0][1]["id"] == "2"
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_get_paginated_data_multiple_pages(self, mock_create_client):
         """Test pagination with multiple pages using cursor."""
         # Setup mock client
@@ -158,7 +158,7 @@ class TestFundraiseupClient:
         assert "starting_after" in calls[1].kwargs["params"]
         assert calls[1].kwargs["params"]["starting_after"] == "100"
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_get_paginated_data_custom_page_size(self, mock_create_client):
         """Test pagination with custom page size."""
         # Setup mock client
@@ -197,7 +197,7 @@ class TestFundraiseupClient:
             params={"limit": 50},
         )
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_get_paginated_data_with_additional_params(self, mock_create_client):
         """Test pagination with additional query parameters."""
         # Setup mock client
@@ -234,7 +234,7 @@ class TestFundraiseupClient:
             params={"limit": 100, "status": "active", "type": "donation"},
         )
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_get_paginated_data_empty_response(self, mock_create_client):
         """Test pagination with empty response."""
         # Setup mock client
@@ -259,7 +259,7 @@ class TestFundraiseupClient:
         assert len(batches) == 0
         mock_client.get.assert_called_once()
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_get_paginated_data_empty_data_key(self, mock_create_client):
         """Test pagination with empty data key in object response."""
         # Setup mock client
@@ -283,7 +283,7 @@ class TestFundraiseupClient:
         # Assertions
         assert len(batches) == 0
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_get_paginated_data_api_error(self, mock_create_client):
         """Test that API errors are properly raised."""
         # Setup mock client
@@ -304,7 +304,7 @@ class TestFundraiseupClient:
         with pytest.raises(Exception, match="API Error"):
             list(client.get_paginated_data("test_endpoint"))
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_get_paginated_data_less_than_page_size(self, mock_create_client):
         """Test that pagination stops when receiving less items than page size."""
         # Setup mock client
@@ -344,7 +344,7 @@ class TestFundraiseupClient:
         # Should only make 2 calls (not try for a third page)
         assert mock_client.get.call_count == 2
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_all_endpoints(self, mock_create_client):
         """Test that client works with all expected endpoints."""
         # Setup mock client
@@ -385,7 +385,7 @@ class TestFundraiseupClient:
                 params={"limit": 100},
             )
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_pagination_with_has_more_flag(self, mock_create_client):
         """Test pagination when API returns has_more flag in object response."""
         # Setup mock client
@@ -430,7 +430,7 @@ class TestFundraiseupClient:
         assert len(batches[1]) == 50
         assert mock_client.get.call_count == 2
 
-    @patch("omniload.src.http_client.create_client")
+    @patch("omniload.util.http.create_client")
     def test_pagination_stops_on_missing_id(self, mock_create_client):
         """Test that pagination stops when items don't have IDs."""
         # Setup mock client

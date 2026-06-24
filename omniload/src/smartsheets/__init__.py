@@ -6,7 +6,7 @@ from dlt.extract import DltResource
 from smartsheet.models.enums import ColumnType
 from smartsheet.models.sheet import Sheet
 
-from omniload.src.errors import ProcessingError
+from omniload.error import ProcessingError
 
 TYPE_MAPPING = {
     ColumnType.TEXT_NUMBER: "text",

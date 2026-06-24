@@ -7,7 +7,7 @@ from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 from dlt.sources.helpers import requests
 
-from omniload.src.errors import MissingValueError
+from omniload.error import MissingValueError
 
 
 @dlt.source(name="pinterest", max_table_nesting=0)

@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, Iterator, Optional, Union
 
 from dlt.common.typing import TDataItem, TDataItems, TSecretValue
 
-from omniload.src.http_client import create_client
+from omniload.util.http import create_client
 
 from .settings import (
     API_VERSION,

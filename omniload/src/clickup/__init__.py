@@ -8,7 +8,8 @@ import pendulum
 from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.sources import DltResource
 
-from ..errors import MissingValueError
+from omniload.error import MissingValueError
+
 from .helpers import ClickupClient
 
 

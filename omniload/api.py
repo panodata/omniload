@@ -16,7 +16,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from omniload.src.errors import IngestJobError, ValidationError
+from omniload.error import IngestJobError, ValidationError
 
 if TYPE_CHECKING:
     from dlt.common.pipeline import LoadInfo
@@ -145,18 +145,18 @@ def run_ingest(
     from dlt.common.schema.typing import TColumnSchema
     from dlt.pipeline.exceptions import PipelineStepFailed
 
-    import omniload.src.partition as partition
     import omniload.src.resource as resource
-    from omniload.src.collector.spinner import SpinnerCollector
+    import omniload.util.hint as partition
     from omniload.src.destinations import AthenaDestination, ClickhouseDestination
     from omniload.src.factory import SourceDestinationFactory
-    from omniload.src.filters import (
+    from omniload.src.sources import MongoDbSource
+    from omniload.util.filter import (
         cast_set_to_list,
         cast_spanner_types,
         create_masking_filter,
         handle_mysql_empty_dates,
     )
-    from omniload.src.sources import MongoDbSource
+    from omniload.util.spinner import SpinnerCollector
 
     incremental_strategy = _coerce(incremental_strategy, IncrementalStrategy)
     progress = _coerce(progress, Progress)

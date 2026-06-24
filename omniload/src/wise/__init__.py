@@ -5,7 +5,8 @@ import pendulum
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 
-from ..errors import MissingValueError
+from omniload.error import MissingValueError
+
 from .client import WiseClient
 
 

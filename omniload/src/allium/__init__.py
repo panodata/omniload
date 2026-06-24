@@ -9,7 +9,7 @@ from typing import Any, Iterator
 
 import dlt
 
-from omniload.src.http_client import create_client
+from omniload.util.http import create_client
 
 
 @dlt.source(max_table_nesting=0, name="allium_source")

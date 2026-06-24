@@ -2,7 +2,7 @@ from typing import Callable, Iterable
 
 import pytest
 
-from omniload.src.errors import MissingValueError, UnsupportedResourceError
+from omniload.error import MissingValueError, UnsupportedResourceError
 from tests.util import invoke_ingest_command
 from tests.util.common import has_exception
 

@@ -3,7 +3,7 @@
 from typing import Any, Dict, Iterator, Optional
 
 from omniload.src.docebo.helpers import normalize_docebo_dates
-from omniload.src.http_client import create_client
+from omniload.util.http import create_client
 
 
 class DoceboClient:

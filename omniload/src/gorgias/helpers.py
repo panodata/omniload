@@ -10,7 +10,7 @@ from dlt.sources.helpers import requests
 from pyrate_limiter import Duration, Limiter, Rate
 from requests.auth import HTTPBasicAuth
 
-from omniload.src.errors import MissingValueError
+from omniload.error import MissingValueError
 
 RETRY_COUNT = 10
 

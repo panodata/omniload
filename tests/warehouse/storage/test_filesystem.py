@@ -12,7 +12,7 @@ from dlt.common.storages.fsspec_filesystem import glob_files
 from fsspec.implementations.memory import MemoryFileSystem
 from pyarrow import parquet as pya_parquet
 
-from omniload.src.errors import InvalidBlobTableError
+from omniload.error import InvalidBlobTableError
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string, has_exception
 from tests.warehouse.settings import DESTINATIONS

@@ -7,7 +7,7 @@ from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 from pendulum import Date, DateTime
 
-from omniload.src.errors import MissingValueError
+from omniload.error import MissingValueError
 
 from .dimension_time_enum import Dimension, TimeGranularity
 from .helpers import LinkedInAdsAnalyticsAPI, LinkedInAdsAPI, find_intervals

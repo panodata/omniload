@@ -46,7 +46,8 @@ from dlt.common import pendulum
 from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
 
-from ..errors import MissingValueError
+from omniload.error import MissingValueError
+
 from .helpers import (
     _get_property_names,
     fetch_data,

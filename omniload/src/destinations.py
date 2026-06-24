@@ -22,8 +22,8 @@ from dlt.destinations.impl.clickhouse.configuration import (
     ClickHouseCredentials,
 )
 
+from omniload.error import MissingValueError
 from omniload.src.elasticsearch.helpers import elasticsearch_insert
-from omniload.src.errors import MissingValueError
 from omniload.src.loader import load_dlt_file
 from omniload.src.mongodb import mongodb_insert
 

@@ -1,6 +1,6 @@
 from typing import Any, Dict, Iterator, Optional
 
-from omniload.src.http_client import create_client
+from omniload.util.http import create_client
 
 from .settings import (
     ACCOUNT_QUERY,

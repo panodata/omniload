@@ -9,7 +9,6 @@ from typing import Any, Iterable, Iterator
 import dlt
 from dlt.sources import DltResource
 
-from omniload.src.http_client import create_client
 from omniload.src.mailchimp.helpers import (
     create_merge_resource,
     create_nested_resource,
@@ -20,6 +19,7 @@ from omniload.src.mailchimp.settings import (
     NESTED_ENDPOINTS,
     REPLACE_ENDPOINTS,
 )
+from omniload.util.http import create_client
 
 
 @dlt.source(max_table_nesting=0, name="mailchimp_source")

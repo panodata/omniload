@@ -14,7 +14,7 @@ from omniload.api import (
     SqlReflectionLevel,
     run_ingest,
 )
-from omniload.src.errors import IngestJobError, ValidationError
+from omniload.error import IngestJobError, ValidationError
 
 try:
     from duckdb_engine import DuckDBEngineWarning

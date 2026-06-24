@@ -2,6 +2,10 @@
 
 ## in progress
 
+- Maintenance: Refactored module namespace. If you are using omniload
+  as a library, this introduces many breaking changes. However, the new
+  layout is much more ergonomic.
+
 ## 2026/06/24 v0.3.0
 
 - Feature: Added embeddable `run_ingest()` Python API. Thanks, @hampsterx.

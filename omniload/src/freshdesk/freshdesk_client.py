@@ -22,7 +22,7 @@ import pendulum
 from dlt.common.typing import TDataItem
 from dlt.sources.helpers import requests
 
-from omniload.src.errors import HTTPError
+from omniload.error import HTTPError
 
 TICKETS_QUERY_MAX_PAGE = 10
 

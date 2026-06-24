@@ -9,8 +9,8 @@ from typing import Optional
 
 import pendulum
 
-from omniload.src.errors import MissingValueError
-from omniload.src.http_client import create_client
+from omniload.error import MissingValueError
+from omniload.util.http import create_client
 
 
 class SolidgateClient:

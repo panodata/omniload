@@ -6,7 +6,8 @@ import dlt
 import pendulum
 from dlt.sources import DltResource
 
-from ..errors import MissingValueError
+from omniload.error import MissingValueError
+
 from .client import TrustpilotClient
 
 

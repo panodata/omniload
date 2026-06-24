@@ -25,7 +25,8 @@ from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.common.typing import TAnyDateTime, TDataItem, TDataItems
 from dlt.sources import DltResource
 
-from ..errors import MissingValueError
+from omniload.error import MissingValueError
+
 from .helpers.api_helpers import process_ticket, process_ticket_field
 from .helpers.credentials import (
     TZendeskCredentials,

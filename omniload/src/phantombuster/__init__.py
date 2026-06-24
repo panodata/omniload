@@ -8,7 +8,7 @@ from dlt.common.typing import TAnyDateTime, TDataItem
 from dlt.sources import DltResource
 from dlt.sources.helpers.requests import Client
 
-from omniload.src.errors import MissingValueError
+from omniload.error import MissingValueError
 from omniload.src.phantombuster.client import PhantombusterClient
 
 

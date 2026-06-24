@@ -23,7 +23,7 @@ from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
 from facebook_business.adobjects.ad import Ad
 
-from omniload.src.errors import MissingValueError
+from omniload.error import MissingValueError
 
 from .helpers import (
     execute_job,
