@@ -3,7 +3,7 @@ import json
 from urllib.parse import parse_qs, urlparse
 
 from omniload.error import InvalidBlobTableError, MissingValueError
-from omniload.source.endpoint import (
+from omniload.util.endpoint import (
     UnsupportedEndpointError,
     determine_endpoint,
     parse_uri,

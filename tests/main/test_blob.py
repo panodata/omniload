@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from omniload.source.endpoint import parse_uri
+from omniload.util.endpoint import parse_uri
 
 
 @dataclass

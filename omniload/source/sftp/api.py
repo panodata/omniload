@@ -2,7 +2,7 @@ from typing import Any, Dict
 from urllib.parse import urlparse
 
 from omniload.error import MissingValueError
-from omniload.source.endpoint import UnsupportedEndpointError, parse_endpoint
+from omniload.util.endpoint import UnsupportedEndpointError, parse_endpoint
 
 
 class SFTPSource:

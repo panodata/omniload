@@ -1,10 +1,11 @@
 import requests
-from dlt.sources.helpers.requests import Client
 
 
 def create_client(retry_status_codes: list[int] | None = None) -> requests.Session:
     if retry_status_codes is None:
         retry_status_codes = [502]
+    from dlt.sources.helpers.requests import Client
+
     return Client(
         raise_for_status=False,
         retry_condition=retry_on_status_code(retry_status_codes),

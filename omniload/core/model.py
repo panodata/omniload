@@ -1,7 +1,9 @@
+import typing
 from dataclasses import dataclass
 from typing import Protocol
 
-from dlt.common.destination import Destination
+if typing.TYPE_CHECKING:
+    from dlt.common.destination import Destination
 
 
 class SourceProtocol(Protocol):
@@ -13,7 +15,7 @@ class SourceProtocol(Protocol):
 
 
 class DestinationProtocol(Protocol):
-    def dlt_dest(self, uri: str, **kwargs) -> Destination:
+    def dlt_dest(self, uri: str, **kwargs) -> "Destination":
         pass
 
     def dlt_run_params(self, uri: str, table: str, **kwargs):
