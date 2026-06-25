@@ -68,7 +68,6 @@ jobs:
           fail_ci_if_error: true
 
   unit:
-    needs: integration
     strategy:
       fail-fast: false
       matrix:
