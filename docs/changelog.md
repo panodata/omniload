@@ -2,6 +2,8 @@
 
 ## in progress
 
+- CI: Validated support on Python 3.15
+
 ## 2026/06/25 v0.4.0
 
 - Maintenance: Refactored module namespace. If you are using omniload

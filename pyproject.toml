@@ -44,6 +44,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Topic :: Adaptive Technologies",
   "Topic :: Communications",
   "Topic :: Database",
@@ -77,10 +78,10 @@ dependencies = [
   "clickhouse-connect>=0.8,<2",
   "clickhouse-driver<0.3",
   "clickhouse-sqlalchemy<0.4",
-  "confluent-kafka<2.15",
-  "couchbase>=4,<5",
+  "confluent-kafka<2.15; python_version<'3.15'",
+  "couchbase>=4,<5; python_version<'3.15'",
   "databricks-sql-connector<5",
-  "databricks-sqlalchemy<3",
+  "databricks-sqlalchemy<3; python_version<'3.15'",
   "dataclasses-json<0.7",
   "dlt<1.29",
   "dlt-cratedb<0.2",
@@ -104,7 +105,7 @@ dependencies = [
   "psycopg2-binary<3",
   "py-machineid<2",
   "pyairtable<4",
-  "pyarrow>=18,<25",
+  "pyarrow>=18,<25; python_version<'3.15'",
   "pyathena<4",
   "pymongo<5",
   "pymongoarrow<2",
@@ -114,7 +115,7 @@ dependencies = [
   "requests<3",
   "rudder-sdk-python<2.2",
   "s3fs",
-  "simple-salesforce<2",
+  "simple-salesforce<2; python_version<'3.15'",
   "smartsheet-python-sdk<5",
   "snowflake-connector-python>=3.18,<5",
   "snowflake-sqlalchemy<2",
@@ -147,7 +148,7 @@ optional-dependencies.ibm-db = [
   "ibm-db-sa<0.5; platform_machine!='aarch64'",
 ]
 optional-dependencies.odbc = [
-  "pyodbc<5.4",
+  "pyodbc<5.4; python_version<'3.15'",
 ]
 optional-dependencies.oracle = [
   "oracledb>=2.0.0",
