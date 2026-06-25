@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Connectors: Updated to Asana client v5
+
 ## 2026/06/25 v0.4.0
 
 - Maintenance: Refactored module namespace. If you are using omniload

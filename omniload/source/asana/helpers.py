@@ -14,7 +14,8 @@
 
 """Asana source helpers"""
 
-from asana import Client as AsanaClient
+from asana import ApiClient as AsanaClient
+from asana import Configuration
 
 
 def get_client(
@@ -27,4 +28,6 @@ def get_client(
     Returns:
         AsanaClient: The Asana API client.
     """
-    return AsanaClient.access_token(access_token)
+    configuration = Configuration()
+    configuration.access_token = access_token
+    return AsanaClient(configuration=configuration)
