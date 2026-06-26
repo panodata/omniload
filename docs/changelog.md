@@ -13,7 +13,6 @@
   merely carried the package, and read fine everywhere else. omniload declares no
   dependency on isal, but anything pulling `xopen` into the same environment brings it on
   x86-64 and AArch64.
-
 - Core: Add `--reshape <engine>:<spec>`, restructuring each source document before it
   is loaded. It flattens nested objects into columns, coerces types, and leaves arrays
   as real lists rather than opaque JSON. Three engines:
@@ -30,6 +29,7 @@
   shared context replayed each earlier batch as a row of nulls: a collection spanning
   two batches emitted phantom all-null rows, and did so on any primary key. Reachable
   since `data_item_format` became settable per run.
+- Connector: Added source and target adapters for the Delta Lake table format
 
 ## 2026/08/27 v0.13.0
 

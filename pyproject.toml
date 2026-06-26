@@ -84,7 +84,7 @@ dependencies = [
   "databricks-sql-connector<5",
   "databricks-sqlalchemy<3",
   "dataclasses-json<0.7",
-  "dlt>=1.22,<1.31",
+  "dlt[az,deltalake,polars]>=1.22,<1.31",
   "dlt-cratedb<0.2",
   "duckdb<1.6",
   "duckdb-engine<0.18",
@@ -99,7 +99,8 @@ dependencies = [
   "google-cloud-bigquery-storage<3",
   "google-cloud-spanner<4",
   "influxdb-client<2",
-  "mq-bridge-py>=0.4.7,<0.5",
+  "lakefs-spec",
+  "mq-bridge-py>=0.3.2,<0.5,!=0.3.9",
   "mysql-connector-python<27",
   "omniload[filesystem]",
   "oracledb<5",
@@ -138,6 +139,7 @@ dependencies = [
   "trino[sqlalchemy]==0.339.0",
   "typer<0.28",
   "urllib3<2.8",
+  "yarl<2",
 ]
 optional-dependencies.develop = [
   "pkginfo<2",
