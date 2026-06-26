@@ -6,15 +6,17 @@ import typer
 from typing_extensions import Annotated
 
 from omniload.api import (
+    run_ingest,
+)
+from omniload.error import IngestJobError, ValidationError
+from omniload.model import (
     IncrementalStrategy,
     LoaderFileFormat,
     Progress,
     SchemaNaming,
     SqlBackend,
     SqlReflectionLevel,
-    run_ingest,
 )
-from omniload.error import IngestJobError, ValidationError
 
 try:
     from duckdb_engine import DuckDBEngineWarning

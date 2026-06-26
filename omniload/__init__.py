@@ -2,15 +2,17 @@ from importlib.metadata import PackageNotFoundError, version
 from unittest import mock
 
 from omniload.api import (
+    run_ingest,
+)
+from omniload.error import IngestJobError, ValidationError
+from omniload.model import (
     IncrementalStrategy,
     LoaderFileFormat,
     Progress,
     SchemaNaming,
     SqlBackend,
     SqlReflectionLevel,
-    run_ingest,
 )
-from omniload.error import IngestJobError, ValidationError
 
 __appname__ = "omniload"
 

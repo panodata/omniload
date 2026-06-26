@@ -13,67 +13,23 @@ Heavy imports (dlt and friends) stay inside `run_ingest` so importing this modul
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
 from typing import TYPE_CHECKING
 
 from omniload.error import IngestJobError, ValidationError
+from omniload.model import (
+    JSON_RETURNING_SOURCES,
+    PARQUET_SUPPORTED_DESTINATIONS,
+    IncrementalStrategy,
+    LoaderFileFormat,
+    LoadRequest,
+    Progress,
+    SchemaNaming,
+    SqlBackend,
+    SqlReflectionLevel,
+)
 
 if TYPE_CHECKING:
     from dlt.common.pipeline import LoadInfo
-
-# https://dlthub.com/docs/dlt-ecosystem/file-formats/parquet#supported-destinations
-PARQUET_SUPPORTED_DESTINATIONS = [
-    "athena",
-    "bigquery",
-    "duckdb",
-    "snowflake",
-    "databricks",
-    "synapse",
-    "s3",
-]
-
-# these sources would return a JSON for sure, which means they cannot be used with Parquet loader for BigQuery
-JSON_RETURNING_SOURCES = ["notion"]
-
-
-class IncrementalStrategy(str, Enum):
-    create_replace = "replace"
-    append = "append"
-    delete_insert = "delete+insert"
-    merge = "merge"
-    scd2 = "scd2"
-    none = "none"
-
-
-class LoaderFileFormat(str, Enum):
-    jsonl = "jsonl"
-    parquet = "parquet"
-    insert_values = "insert_values"
-    csv = "csv"
-
-
-class SqlBackend(str, Enum):
-    default = "default"
-    sqlalchemy = "sqlalchemy"
-    pyarrow = "pyarrow"
-    connectorx = "connectorx"
-
-
-class Progress(str, Enum):
-    interactive = "interactive"
-    log = "log"
-    spinner = "spinner"
-
-
-class SchemaNaming(str, Enum):
-    default = "default"
-    direct = "direct"
-
-
-class SqlReflectionLevel(str, Enum):
-    minimal = "minimal"
-    full = "full"
-    full_with_precision = "full_with_precision"
 
 
 def _coerce(value, enum_cls):
@@ -83,39 +39,7 @@ def _coerce(value, enum_cls):
     return enum_cls(value)
 
 
-def run_ingest(
-    *,
-    source_uri: str,
-    dest_uri: str,
-    source_table: str,
-    dest_table: str | None = None,
-    incremental_key: str | None = None,
-    incremental_strategy: IncrementalStrategy
-    | str = IncrementalStrategy.create_replace,
-    interval_start: datetime | None = None,
-    interval_end: datetime | None = None,
-    primary_key: list[str] | None = None,
-    partition_by: str | None = None,
-    cluster_by: str | None = None,
-    dry_run: bool = False,
-    full_refresh: bool = False,
-    progress: Progress | str = Progress.interactive,
-    sql_backend: SqlBackend | str = SqlBackend.default,
-    loader_file_format: LoaderFileFormat | str | None = None,
-    page_size: int = 50000,
-    loader_file_size: int = 100000,
-    schema_naming: SchemaNaming | str = SchemaNaming.default,
-    pipelines_dir: str | None = None,
-    extract_parallelism: int = 5,
-    sql_reflection_level: SqlReflectionLevel | str = SqlReflectionLevel.full,
-    sql_limit: int | None = None,
-    sql_exclude_columns: list[str] | None = None,
-    columns: list[str] | None = None,
-    yield_limit: int | None = None,
-    staging_bucket: str | None = None,
-    mask: list[str] | None = None,
-    quiet: bool = False,
-) -> LoadInfo | None:
+def run_ingest(**kwargs) -> LoadInfo | None:
     """Load data from ``source_uri`` into ``dest_uri`` and return the dlt ``LoadInfo``.
 
     This is the embeddable core of the ``omniload ingest`` command. Defaults match
@@ -136,7 +60,6 @@ def run_ingest(
     import hashlib
     import tempfile
     import time
-    from datetime import datetime
     from typing import Any, Dict, Optional
 
     import dlt
@@ -159,15 +82,17 @@ def run_ingest(
     from omniload.target.clickhouse import ClickhouseDestination
     from omniload.util.spinner import SpinnerCollector
 
-    incremental_strategy = _coerce(incremental_strategy, IncrementalStrategy)
-    progress = _coerce(progress, Progress)
-    sql_backend = _coerce(sql_backend, SqlBackend)
-    loader_file_format = _coerce(loader_file_format, LoaderFileFormat)
-    schema_naming = _coerce(schema_naming, SchemaNaming)
-    sql_reflection_level = _coerce(sql_reflection_level, SqlReflectionLevel)
+    jr = LoadRequest(**kwargs)
+
+    incremental_strategy = _coerce(jr.incremental_strategy, IncrementalStrategy)
+    progress = _coerce(jr.progress, Progress)
+    sql_backend = _coerce(jr.sql_backend, SqlBackend)
+    loader_file_format = _coerce(jr.loader_file_format, LoaderFileFormat)
+    schema_naming = _coerce(jr.schema_naming, SchemaNaming)
+    sql_reflection_level = _coerce(jr.sql_reflection_level, SqlReflectionLevel)
 
     def emit(message: str = "") -> None:
-        if not quiet:
+        if not jr.quiet:
             print(message)
 
     def report_errors(run_info: LoadInfo):
@@ -241,24 +166,26 @@ def run_ingest(
 
     # The CLI used a mutable [] default; the SqlSource excluder expects a list,
     # not None, so normalise here before passing it downstream.
-    sql_exclude_columns = sql_exclude_columns or []
+    sql_exclude_columns = jr.sql_exclude_columns or []
     clean_sql_exclude_columns = []
     for col in sql_exclude_columns:
         for possible_col in col.split(","):
             clean_sql_exclude_columns.append(possible_col.strip())
     sql_exclude_columns = clean_sql_exclude_columns
 
-    dlt.config["data_writer.buffer_max_items"] = page_size
-    dlt.config["data_writer.file_max_items"] = loader_file_size
-    dlt.config["extract.workers"] = extract_parallelism
-    dlt.config["extract.max_parallel_items"] = extract_parallelism
+    dlt.config["data_writer.buffer_max_items"] = jr.page_size
+    dlt.config["data_writer.file_max_items"] = jr.loader_file_size
+    dlt.config["extract.workers"] = jr.extract_parallelism
+    dlt.config["extract.max_parallel_items"] = jr.extract_parallelism
     dlt.config["load.raise_on_max_retries"] = 15
     if schema_naming != SchemaNaming.default:
         dlt.config["schema.naming"] = schema_naming.value
 
-    (source_table, dest_table) = validate_source_dest_tables(source_table, dest_table)
+    (source_table, dest_table) = validate_source_dest_tables(
+        jr.source_table, jr.dest_table
+    )
 
-    factory = SourceDestinationFactory(source_uri, dest_uri)
+    factory = SourceDestinationFactory(jr.source_uri, jr.dest_uri)
 
     source = factory.get_source()
     destination = factory.get_destination()
@@ -266,7 +193,7 @@ def run_ingest(
     column_hints: dict[str, TColumnSchema] = {}
     original_incremental_strategy = incremental_strategy
 
-    column_types = parse_columns(columns) if columns else None
+    column_types = parse_columns(jr.columns) if jr.columns else None
     if column_types:
         for column_name, column_type in column_types.items():
             if column_type == "bigdecimal":
@@ -280,13 +207,13 @@ def run_ingest(
 
     merge_key = None
     if incremental_strategy == IncrementalStrategy.delete_insert:
-        merge_key = incremental_key
+        merge_key = jr.incremental_key
         incremental_strategy = IncrementalStrategy.merge
-        if incremental_key:
-            if incremental_key not in column_hints:
-                column_hints[incremental_key] = {}
+        if jr.incremental_key:
+            if jr.incremental_key not in column_hints:
+                column_hints[jr.incremental_key] = {}
 
-            column_hints[incremental_key]["merge_key"] = True
+            column_hints[jr.incremental_key]["merge_key"] = True
 
     m = hashlib.sha256()
     m.update(dest_table.encode("utf-8"))
@@ -298,29 +225,29 @@ def run_ingest(
         progressInstance = SpinnerCollector()
 
     is_pipelines_dir_temp = False
-    if pipelines_dir is None:
+    if jr.pipelines_dir is None:
         pipelines_dir = tempfile.mkdtemp()
         is_pipelines_dir_temp = True
 
     dlt_dest = destination.dlt_dest(
-        uri=dest_uri, dest_table=dest_table, staging_bucket=staging_bucket
+        uri=jr.dest_uri, dest_table=dest_table, staging_bucket=jr.staging_bucket
     )
     validate_loader_file_format(dlt_dest, loader_file_format)
 
-    if partition_by:
-        if partition_by not in column_hints:
-            column_hints[partition_by] = {}
+    if jr.partition_by:
+        if jr.partition_by not in column_hints:
+            column_hints[jr.partition_by] = {}
 
-        column_hints[partition_by]["partition"] = True
+        column_hints[jr.partition_by]["partition"] = True
 
-    if cluster_by:
-        if cluster_by not in column_hints:
-            column_hints[cluster_by] = {}
+    if jr.cluster_by:
+        if jr.cluster_by not in column_hints:
+            column_hints[jr.cluster_by] = {}
 
-        column_hints[cluster_by]["cluster"] = True
+        column_hints[jr.cluster_by]["cluster"] = True
 
-    if primary_key:
-        for key in primary_key:
+    if jr.primary_key:
+        for key in jr.primary_key:
             if key not in column_hints:
                 column_hints[key] = {}
 
@@ -331,12 +258,12 @@ def run_ingest(
         destination=dlt_dest,
         progress=progressInstance,
         pipelines_dir=pipelines_dir,
-        refresh="drop_resources" if full_refresh else None,  # ty: ignore[invalid-argument-type]
+        refresh="drop_resources" if jr.full_refresh else None,  # ty: ignore[invalid-argument-type]
     )
 
     if source.handles_incrementality():
         incremental_strategy = IncrementalStrategy.none
-        incremental_key = None
+        jr.incremental_key = None
 
     incremental_strategy_text = (
         incremental_strategy.value
@@ -358,15 +285,15 @@ def run_ingest(
         f"[bold yellow]  Incremental Strategy:[/bold yellow] {incremental_strategy_text}"
     )
     emit(
-        f"[bold yellow]  Incremental Key:[/bold yellow] {incremental_key if incremental_key else 'None'}"
+        f"[bold yellow]  Incremental Key:[/bold yellow] {jr.incremental_key if jr.incremental_key else 'None'}"
     )
     emit(
-        f"[bold yellow]  Primary Key:[/bold yellow] {primary_key if primary_key else 'None'}"
+        f"[bold yellow]  Primary Key:[/bold yellow] {jr.primary_key if jr.primary_key else 'None'}"
     )
     emit(f"[bold yellow]  Pipeline ID:[/bold yellow] {m.hexdigest()}")
     emit()
 
-    if dry_run:
+    if jr.dry_run:
         emit("Skipping data transfer, because `--dry-run` was selected.")
         return None
 
@@ -377,19 +304,19 @@ def run_ingest(
         source_table = "main." + source_table.split(".")[-1]
 
     if (
-        incremental_key
-        and incremental_key in column_hints
-        and "data_type" in column_hints[incremental_key]
-        and column_hints[incremental_key]["data_type"] == "date"
+        jr.incremental_key
+        and jr.incremental_key in column_hints
+        and "data_type" in column_hints[jr.incremental_key]
+        and column_hints[jr.incremental_key]["data_type"] == "date"
     ):
         # By default, omniload treats the start and end dates as datetime objects. While this worked fine for many cases, if the
         # incremental field is a date, the start and end dates cannot be compared to the incremental field, and the ingestion would fail.
         # In order to eliminate this, we have introduced a new option to omniload, --columns, which allows the user to specify the column types for the destination table.
         # This way, omniload will know the data type of the incremental field, and will be able to convert the start and end dates to the correct data type before running the ingestion.
-        if interval_start:
-            interval_start = interval_start.date()  # ty: ignore[invalid-assignment]
-        if interval_end:
-            interval_end = interval_end.date()  # ty: ignore[invalid-assignment]
+        if jr.interval_start:
+            jr.interval_start = jr.interval_start.date()  # ty: ignore[invalid-assignment]
+        if jr.interval_end:
+            jr.interval_end = jr.interval_end.date()  # ty: ignore[invalid-assignment]
 
     if factory.source_scheme.startswith("spanner"):
         # we tend to use the 'pyarrow' backend in general, however, it has issues with JSON objects, so we override it to 'sqlalchemy' for Spanner.
@@ -401,18 +328,18 @@ def run_ingest(
         sql_backend = SqlBackend.pyarrow
 
     dlt_source = source.dlt_source(
-        uri=source_uri,
+        uri=jr.source_uri,
         table=source_table,
-        incremental_key=incremental_key,
+        incremental_key=jr.incremental_key,
         merge_key=merge_key,
-        interval_start=interval_start,
-        interval_end=interval_end,
+        interval_start=jr.interval_start,
+        interval_end=jr.interval_end,
         sql_backend=sql_backend.value,
-        page_size=page_size,
+        page_size=jr.page_size,
         sql_reflection_level=sql_reflection_level.value,
-        sql_limit=sql_limit,
+        sql_limit=jr.sql_limit,
         sql_exclude_columns=sql_exclude_columns,
-        extract_parallelism=extract_parallelism,
+        extract_parallelism=jr.extract_parallelism,
         column_types=column_types,
     )
 
@@ -433,12 +360,12 @@ def run_ingest(
 
         resource.for_each(dlt_source, lambda x: x.add_map(arrow.as_list))
 
-    if mask:
-        masking_filter = create_masking_filter(mask)
+    if jr.mask:
+        masking_filter = create_masking_filter(jr.mask)
         resource.for_each(dlt_source, lambda x: x.add_map(masking_filter))
 
-    if yield_limit:
-        resource.for_each(dlt_source, lambda x: x.add_limit(yield_limit))
+    if jr.yield_limit:
+        resource.for_each(dlt_source, lambda x: x.add_limit(jr.yield_limit))
 
     if isinstance(source, MongoDbSource):
         from omniload.core.resource import TypeHintMap
@@ -451,14 +378,14 @@ def run_ingest(
 
     resource.for_each(dlt_source, col_h)
 
-    if isinstance(destination, AthenaDestination) and partition_by:
-        hint.apply_athena_hints(dlt_source, partition_by, column_hints)
+    if isinstance(destination, AthenaDestination) and jr.partition_by:
+        hint.apply_athena_hints(dlt_source, jr.partition_by, column_hints)
 
     if isinstance(destination, ClickhouseDestination):
         from dlt.destinations.adapters import clickhouse_adapter
 
-        settings = ClickhouseDestination.engine_settings(dest_uri)
-        engine_type = ClickhouseDestination.engine_type(dest_uri)
+        settings = ClickhouseDestination.engine_settings(jr.dest_uri)
+        engine_type = ClickhouseDestination.engine_type(jr.dest_uri)
 
         def apply_clickhouse_adapter(x):
             kwargs: Dict[str, Any] = {"settings": settings}
@@ -496,7 +423,7 @@ def run_ingest(
         write_disposition = incremental_strategy.value
 
     if factory.source_scheme == "influxdb":
-        if primary_key:
+        if jr.primary_key:
             write_disposition = "merge"
 
     start_time = datetime.now()
@@ -505,12 +432,14 @@ def run_ingest(
         return pipeline.run(
             dlt_source,
             **destination.dlt_run_params(
-                uri=dest_uri,
+                uri=jr.dest_uri,
                 table=dest_table,
-                staging_bucket=staging_bucket,
+                staging_bucket=jr.staging_bucket,
             ),
             write_disposition=write_disposition,
-            primary_key=(primary_key if primary_key and len(primary_key) > 0 else None),
+            primary_key=(
+                jr.primary_key if jr.primary_key and len(jr.primary_key) > 0 else None
+            ),
             loader_file_format=(
                 loader_file_format.value if loader_file_format is not None else None
             ),
