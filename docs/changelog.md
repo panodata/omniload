@@ -3,6 +3,7 @@
 ## in progress
 
 - Connectors: Updated to Asana client v5
+- Connectors: Added source and target adapters for the Delta Lake table format
 
 ## 2026/06/25 v0.4.0
 
