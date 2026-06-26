@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Connector: Added source and target adapters for the Delta Lake table format
+
 ## 2026/08/18 v0.10.1
 
 - Azure: Scope file-level incremental cursors from connection-string sources to
