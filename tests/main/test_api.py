@@ -32,7 +32,6 @@ def test_run_ingest_sqlite_to_duckdb(tmp_path):
         source_table="main.widgets",
         dest_table="out.widgets",
         progress="log",
-        quiet=True,
     )
 
     assert isinstance(info, LoadInfo)
@@ -59,7 +58,6 @@ def test_run_ingest_accepts_string_enums(tmp_path):
         incremental_strategy="merge",
         primary_key=["id"],
         progress="log",
-        quiet=True,
     )
 
     assert isinstance(info, LoadInfo)
@@ -84,7 +82,6 @@ def test_run_ingest_dry_run_returns_none_and_writes_nothing(tmp_path):
         source_table="main.widgets",
         dest_table="out.widgets",
         dry_run=True,
-        quiet=True,
     )
 
     assert result is None
@@ -107,5 +104,4 @@ def test_run_ingest_invalid_source_table_raises_validation_error(tmp_path):
             source_uri="sqlite:///does-not-matter.db",
             dest_uri=f"duckdb:///{dest}",
             source_table="widgets",  # missing schema, and no dest_table given
-            quiet=True,
         )

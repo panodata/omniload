@@ -3,6 +3,7 @@
 ## in progress
 
 - Connectors: Updated to Asana client v5
+- Core: Started using standard Python logger, removed `--quiet` option
 
 ## 2026/06/25 v0.4.0
 

@@ -91,9 +91,6 @@ See {ref}`Incremental loading <incremental-loading>` for what the strategies do.
 
 ## Output, dry runs, and errors
 
-- **`quiet`** silences the progress chrome that the CLI prints to stdout. Pass
-  `quiet=True` when embedding omniload so it does not write to your application's
-  output.
 - **`dry_run=True`** prints the planned transfer and returns `None` without
   loading anything.
 - Instead of exiting the process the way the CLI does, the API raises exceptions

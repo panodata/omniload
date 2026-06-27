@@ -92,4 +92,3 @@ class LoadRequest:
     yield_limit: int | None = None
     staging_bucket: str | None = None
     mask: list[str] | None = None
-    quiet: bool = False

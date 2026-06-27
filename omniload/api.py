@@ -12,6 +12,7 @@ Heavy imports (dlt and friends) stay inside `run_ingest` so importing this modul
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -30,6 +31,8 @@ from omniload.model import (
 
 if TYPE_CHECKING:
     from dlt.common.pipeline import LoadInfo
+
+logger = logging.getLogger(__name__)
 
 
 def _coerce(value, enum_cls):
@@ -53,9 +56,6 @@ def run_ingest(**kwargs) -> LoadInfo | None:
     Returns ``None`` when ``dry_run`` is true (nothing is loaded). Raises
     :class:`omniload.ValidationError` for invalid parameters and
     :class:`omniload.IngestJobError` when one or more load jobs fail.
-
-    Set ``quiet=True`` to suppress the progress chrome printed to stdout when
-    embedding omniload in another application.
     """
     import hashlib
     import tempfile
@@ -91,22 +91,15 @@ def run_ingest(**kwargs) -> LoadInfo | None:
     schema_naming = _coerce(jr.schema_naming, SchemaNaming)
     sql_reflection_level = _coerce(jr.sql_reflection_level, SqlReflectionLevel)
 
-    def emit(message: str = "") -> None:
-        if not jr.quiet:
-            print(message)
-
     def report_errors(run_info: LoadInfo):
         for load_package in run_info.load_packages:
             failed_jobs = load_package.jobs["failed_jobs"]
             if len(failed_jobs) == 0:
                 continue
 
-            emit()
-            emit("[bold red]Failed jobs:[/bold red]")
-            emit()
+            logger.error("Failed jobs:")
             for job in failed_jobs:
-                emit(f"[bold red]  {job.job_file_info.job_id()}[/bold red]")
-                emit(f"    [bold yellow]Error:[/bold yellow] {job.failed_message}")
+                logger.error(f"{job.job_file_info.job_id()}: {job.failed_message}")
 
             raise IngestJobError(failed_jobs)
 
@@ -119,9 +112,8 @@ def run_ingest(**kwargs) -> LoadInfo | None:
                     "Table name must be in the format schema.table for source table when dest-table is not given."
                 )
 
-            emit()
-            emit(
-                "[yellow]Destination table is not given, defaulting to the source table.[/yellow]"
+            logger.info(
+                "Destination table is not given, defaulting to the source table."
             )
             dest_table = source_table
         return (source_table, dest_table)
@@ -273,32 +265,21 @@ def run_ingest(**kwargs) -> LoadInfo | None:
 
     source_table_print = source_table.split(":")[0]
 
-    emit()
-    emit("[bold green]Initiated the pipeline with the following:[/bold green]")
-    emit(
-        f"[bold yellow]  Source:[/bold yellow] {factory.source_scheme} / {source_table_print}"
+    logger.info("Initiated the pipeline with the following:")
+    logger.info("Source: %s / %s", factory.source_scheme, source_table_print)
+    logger.info("Destination: %s / %s", factory.destination_scheme, dest_table)
+    logger.info("Incremental Strategy: %s", incremental_strategy_text)
+    logger.info(
+        "Incremental Key: %s", jr.incremental_key if jr.incremental_key else "None"
     )
-    emit(
-        f"[bold yellow]  Destination:[/bold yellow] {factory.destination_scheme} / {dest_table}"
-    )
-    emit(
-        f"[bold yellow]  Incremental Strategy:[/bold yellow] {incremental_strategy_text}"
-    )
-    emit(
-        f"[bold yellow]  Incremental Key:[/bold yellow] {jr.incremental_key if jr.incremental_key else 'None'}"
-    )
-    emit(
-        f"[bold yellow]  Primary Key:[/bold yellow] {jr.primary_key if jr.primary_key else 'None'}"
-    )
-    emit(f"[bold yellow]  Pipeline ID:[/bold yellow] {m.hexdigest()}")
-    emit()
+    logger.info("Primary Key: %s", jr.primary_key if jr.primary_key else "None")
+    logger.info("Pipeline ID: %s", m.hexdigest())
 
     if jr.dry_run:
-        emit("Skipping data transfer, because `--dry-run` was selected.")
+        logger.info("Skipping data transfer, because `--dry-run` was selected.")
         return None
 
-    emit()
-    emit("[bold green]Starting the ingestion...[/bold green]")
+    logger.info("Starting the ingestion")
 
     if factory.source_scheme == "sqlite":
         source_table = "main." + source_table.split(".")[-1]
@@ -466,8 +447,8 @@ def run_ingest(**kwargs) -> LoadInfo | None:
         except PipelineStepFailed as e:
             if is_databricks_retryable_error(e) and attempt < max_retries - 1:
                 delay = (attempt + 1) * 2  # 2s, 4s backoff
-                emit(
-                    f"[yellow]Databricks concurrency error, retrying in {delay}s (attempt {attempt + 1}/{max_retries})...[/yellow]"
+                logger.warning(
+                    f"Databricks concurrency error, retrying in {delay}s (attempt {attempt + 1}/{max_retries})"
                 )
                 time.sleep(delay)
                 continue
@@ -486,9 +467,8 @@ def run_ingest(**kwargs) -> LoadInfo | None:
 
         shutil.rmtree(pipelines_dir)
 
-    emit(
-        f"[bold green]Successfully finished loading data from '{factory.source_scheme}' to '{factory.destination_scheme}' {elapsedHuman} [/bold green]"
+    logger.info(
+        f"Successfully finished loading data from '{factory.source_scheme}' to '{factory.destination_scheme}' {elapsedHuman}"
     )
-    emit()
 
     return run_info
