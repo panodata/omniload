@@ -17,6 +17,7 @@ from omniload.model import (
     SqlBackend,
     SqlReflectionLevel,
 )
+from omniload.util.log import setup_logging
 
 try:
     from duckdb_engine import DuckDBEngineWarning
@@ -244,6 +245,7 @@ def ingest(
         ),
     ] = [],
 ):
+    setup_logging()
     try:
         run_ingest(
             source_uri=source_uri,
