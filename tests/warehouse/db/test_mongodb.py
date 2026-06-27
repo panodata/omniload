@@ -186,10 +186,7 @@ def mongodb_test_cases():
             )
             # Should fail because no primary key is specified
             assert result.exit_code != 0
-            assert (
-                "merge operation requires primary keys" in result.output.lower()
-                or "primary key" in result.output.lower()
-            )
+            assert "Merge operation requires primary keys" in str(result.exception)
 
     def merge_with_multiple_primary_keys(mongo):
         """
