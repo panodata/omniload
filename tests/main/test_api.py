@@ -3,6 +3,7 @@ import sqlite3
 import duckdb
 import pytest
 from dlt.common.pipeline import LoadInfo
+from sqlalchemy.exc import NoSuchTableError
 
 from omniload import ValidationError, run_ingest
 
@@ -105,3 +106,25 @@ def test_run_ingest_invalid_source_table_raises_validation_error(tmp_path):
             dest_uri=f"duckdb:///{dest}",
             source_table="widgets",  # missing schema, and no dest_table given
         )
+
+
+def test_run_ingest_without_tables_source_table_does_not_exist(tmp_path):
+    """For streaming pipeline elements, should support invocation without table option."""
+    # As a consequence, expect an SQLAlchemy `NoSuchTableError`.
+    dest = tmp_path / "warehouse.duckdb"
+    with pytest.raises(NoSuchTableError):
+        run_ingest(
+            source_uri="sqlite:///does-not-matter.db",
+            dest_uri=f"duckdb://{dest}",
+        )
+
+
+def test_run_ingest_without_tables_invalid_destination_table(tmp_path):
+    """When invoking without destination table, fail on destinations that need it."""
+    dest = tmp_path / "warehouse.duckdb"
+    with pytest.raises(ValueError) as excinfo:
+        run_ingest(
+            source_uri="csv://omniload/testdata/create_replace.csv",
+            dest_uri=f"duckdb://{dest}",
+        )
+    assert excinfo.match("Table name must be in the format <schema>.<table>")

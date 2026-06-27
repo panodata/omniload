@@ -60,13 +60,13 @@ def ingest(
             envvar=["DESTINATION_URI", "OMNILOAD_DESTINATION_URI"],
         ),
     ],
-    source_table: Annotated[
+    source_table: Annotated[  # ty: ignore[invalid-parameter-default]
         str,
         typer.Option(
             help="The table name in the [green]source[/green] to fetch",
             envvar=["SOURCE_TABLE", "OMNILOAD_SOURCE_TABLE"],
         ),
-    ],
+    ] = None,
     dest_table: Annotated[  # ty: ignore[invalid-parameter-default]
         str,
         typer.Option(

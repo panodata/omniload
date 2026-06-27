@@ -104,9 +104,9 @@ def run_ingest(**kwargs) -> LoadInfo | None:
             raise IngestJobError(failed_jobs)
 
     def validate_source_dest_tables(
-        source_table: str, dest_table: str | None
+        source_table: str | None, dest_table: str | None
     ) -> tuple[str, str]:
-        if not dest_table:
+        if dest_table is None and source_table is not None:
             if len(source_table.split(".")) != 2:
                 raise ValidationError(
                     "Table name must be in the format schema.table for source table when dest-table is not given."
@@ -116,6 +116,18 @@ def run_ingest(**kwargs) -> LoadInfo | None:
                 "Destination table is not given, defaulting to the source table."
             )
             dest_table = source_table
+        # TODO: Permit empty source and target table options to better support streaming
+        #       elements and others which do not have a notion of a table at all.
+        #       This might be dangerous for downstream decoders that expect
+        #       source_table or dest_table to be non-empty. omniload needs to
+        #       start keeping track of which dlt sources exactly need a table
+        #       option and those which don't, so it can error out more appropriately.
+        #       Currently, operating on strings, this defies type checking pretty much.
+        #       omniload should introduce a data class that handles
+        #       `(catalog, schema, table) | None` more properly.
+        source_table = source_table or ""
+        dest_table = dest_table or ""
+
         return (source_table, dest_table)
 
     def validate_loader_file_format(
@@ -207,6 +219,8 @@ def run_ingest(**kwargs) -> LoadInfo | None:
 
             column_hints[jr.incremental_key]["merge_key"] = True
 
+    # TODO: What is this hash used for?
+    #       Arrow test cases are failing if you modify it.
     m = hashlib.sha256()
     m.update(dest_table.encode("utf-8"))
 
@@ -263,10 +277,8 @@ def run_ingest(**kwargs) -> LoadInfo | None:
         else "Platform-specific"
     )
 
-    source_table_print = source_table.split(":")[0]
-
     logger.info("Initiated the pipeline with the following:")
-    logger.info("Source: %s / %s", factory.source_scheme, source_table_print)
+    logger.info("Source: %s / %s", factory.source_scheme, source_table)
     logger.info("Destination: %s / %s", factory.destination_scheme, dest_table)
     logger.info("Incremental Strategy: %s", incremental_strategy_text)
     logger.info(

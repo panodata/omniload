@@ -4,6 +4,7 @@
 
 - Connectors: Updated to Asana client v5
 - Core: Started using standard Python logger, removed `--quiet` option
+- API: Made option `--source-table` optional to prepare for streaming sources
 
 ## 2026/06/25 v0.4.0
 

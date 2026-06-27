@@ -66,7 +66,7 @@ class LoadRequest:
     _: dataclasses.KW_ONLY
     source_uri: str
     dest_uri: str
-    source_table: str
+    source_table: str | None = None
     dest_table: str | None = None
     incremental_key: str | None = None
     incremental_strategy: IncrementalStrategy | str = IncrementalStrategy.create_replace
