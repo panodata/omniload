@@ -139,6 +139,11 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>-</td>
     </tr>
     <tr>
+        <td>Amazon SQS</td>
+        <td>✅</td>
+        <td>-</td>
+    </tr>
+    <tr>
         <td>Apache Kafka</td>
         <td>✅</td>
         <td>-</td>
@@ -209,6 +214,16 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>-</td>
     </tr>
     <tr>
+        <td>MQTT</td>
+        <td>✅</td>
+        <td>-</td>
+    </tr>
+    <tr>
+        <td>NATS</td>
+        <td>✅</td>
+        <td>-</td>
+    </tr>
+    <tr>
         <td>Notion</td>
         <td>✅</td>
         <td>-</td>
@@ -225,6 +240,11 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
     </tr>
     <tr>
         <td>Pipedrive</td>
+        <td>✅</td>
+        <td>-</td>
+    </tr>
+    <tr>
+        <td>RabbitMQ</td>
         <td>✅</td>
         <td>-</td>
     </tr>
@@ -270,6 +290,11 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
     </tr>
     <tr>
         <td>Zendesk</td>
+        <td>✅</td>
+        <td>-</td>
+    </tr>
+    <tr>
+        <td>ZeroMQ</td>
         <td>✅</td>
         <td>-</td>
     </tr>

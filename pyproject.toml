@@ -147,6 +147,9 @@ optional-dependencies.ibm-db = [
   "ibm-db<4; platform_machine!='aarch64'",
   "ibm-db-sa<0.5; platform_machine!='aarch64'",
 ]
+optional-dependencies.mq-bridge = [
+  "mq-bridge-py>=0.3.1,<0.4",
+]
 optional-dependencies.odbc = [
   "pyodbc<5.4",
 ]

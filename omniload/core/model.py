@@ -14,6 +14,11 @@ class SourceProtocol(Protocol):
     def handles_incrementality(self) -> bool:
         pass
 
+    def post_load(self) -> None:
+        # Optional hook, run after the load commits. Used by sources that ack their own
+        # offsets (e.g. mq-bridge). run_ingest calls it only when present.
+        pass
+
 
 class DestinationProtocol(Protocol):
     def dlt_dest(self, uri: str, **kwargs) -> "Destination":

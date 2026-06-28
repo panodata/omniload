@@ -360,6 +360,17 @@ def example_uris():
         "These are all coming from SQLAlchemy's URI format, so they should be familiar to most users."
     )
 
+    print()
+    typer.echo("Streaming sources use their own URI schemes:")
+
+    print()
+    print(
+        "[bold green]mq-bridge:[/bold green] [white]kafka+mqb://localhost:9092?group_id=g (also nats/amqp/mqtt/zeromq/aws/memory) [/white]"
+    )
+    print(
+        "[white dim]└── https://omniload.readthedocs.io/supported-sources/mqbridge.html[/white dim]"
+    )
+
 
 @app.command()
 def version():
