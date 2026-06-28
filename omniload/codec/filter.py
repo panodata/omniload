@@ -15,7 +15,7 @@ def cast_spanner_types(row):
 
     for key in row.keys():
         if isinstance(row[key], JsonObject):
-            import json
+            from dlt.common import json
 
             row[key] = json.loads(row[key].serialize())
     return row

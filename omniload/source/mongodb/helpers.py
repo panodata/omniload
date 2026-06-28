@@ -969,7 +969,7 @@ __source_name__ = "mongodb"
 # MongoDB destination helper functions
 def process_file_items(file_path: str) -> list[dict]:
     """Process items from a file path (JSONL format)."""
-    import json
+    from dlt.common import json
 
     documents = []
     with open(file_path, "r") as f:

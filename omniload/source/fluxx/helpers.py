@@ -1,4 +1,3 @@
-import json
 from typing import Any, Dict, Iterator, List, Optional
 from urllib.parse import urlparse
 
@@ -6,6 +5,7 @@ import dlt
 import pendulum
 import requests
 import tldextract
+from dlt.common import json
 
 FLUXX_OAUTH_TOKEN_PATH = "/oauth/token"
 FLUXX_API_V2_PATH = "/api/rest/v2"

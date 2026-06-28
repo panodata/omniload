@@ -1,6 +1,5 @@
-import json
-
 import requests
+from dlt.common import json
 from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.sources.helpers.requests import Client
 

@@ -156,7 +156,7 @@ def normalize_dict(data: Dict[str, Any]) -> Dict[str, Any]:
         >>> normalize_dict({"user": {"id": "123"}, "plan": {"tier": "pro"}})
         {"user_id": "123", "plan_tier": "pro"}
     """
-    import json
+    from dlt.common import json
 
     normalized: Dict[str, Any] = {}
 

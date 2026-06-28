@@ -17,11 +17,11 @@ This module contains helpers that process data and make it ready for loading int
 """
 
 import base64
-import json
 from typing import Any, Iterator, List, Union
 from urllib.parse import parse_qs, urlparse
 
 import proto
+from dlt.common import json
 from dlt.common.exceptions import MissingDependencyException
 from dlt.common.pendulum import pendulum
 from dlt.common.typing import DictStrAny, TDataItem, TDataItems

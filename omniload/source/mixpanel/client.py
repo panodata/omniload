@@ -1,7 +1,7 @@
-import json
 from typing import Iterable
 
 import pendulum
+from dlt.common import json
 from dlt.sources.helpers.requests import Client
 
 

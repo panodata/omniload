@@ -1,9 +1,9 @@
 """Docebo source for omniload."""
 
-import json
 from typing import Any, Dict, Iterator, Optional
 
 import dlt
+from dlt.common import json
 from dlt.sources import DltResource
 
 from .client import DoceboClient

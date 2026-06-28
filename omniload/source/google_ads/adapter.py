@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from datetime import date, datetime
 from typing import Any, Iterator, Optional
 
 import dlt
 import proto
+from dlt.common import json
 from dlt.common.exceptions import MissingDependencyException
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource

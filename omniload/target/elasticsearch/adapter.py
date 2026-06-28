@@ -1,11 +1,11 @@
 """Elasticsearch destination helpers"""
 
-import json
 import logging
 from typing import Any, Dict, Iterator, Set
 from urllib.parse import urlparse
 
 import dlt
+from dlt.common import json
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 

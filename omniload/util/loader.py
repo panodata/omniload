@@ -1,10 +1,10 @@
 import csv
 import gzip
-import json
 import subprocess
 from contextlib import contextmanager
 from typing import Generator
 
+from dlt.common import json
 from pyarrow.parquet import ParquetFile
 
 PARQUET_BATCH_SIZE = 64
