@@ -1,6 +1,6 @@
 # mq-bridge
 
-[mq-bridge](https://github.com/panodata/mq-bridge) is a generic, transport-agnostic
+[mq-bridge](https://github.com/marcomq/mq-bridge) is a generic, transport-agnostic
 message broker binding. omniload uses it to consume messages from Kafka, NATS, AMQP
 (RabbitMQ), MQTT, ZeroMQ, AWS SQS, or an in-memory transport, and load them into any omniload
 destination.
@@ -18,10 +18,11 @@ several brokers also have a short landing page: [NATS](nats.md), [MQTT](mqtt.md)
 > commit-after-load delivery and a single engine shared across all brokers.
 
 ## Installation
-mq-bridge ships as a native wheel and is an optional extra:
+mq-bridge ships as a native wheel and is bundled with omniload, so no extra install step is
+needed:
 
 ```sh
-pip install 'omniload[mq-bridge]'
+pip install omniload
 ```
 
 ## URI format
@@ -79,8 +80,8 @@ coerced from their string form. The consumer-relevant fields per transport:
 | memory | `capacity`, `subscribe_mode` (fan-out vs queue), `enable_nack` |
 
 For the authoritative field list per transport, see mq-bridge's
-[configuration guide](https://github.com/panodata/mq-bridge/blob/main/CONFIGURATION.md) and
-[`mq-bridge.schema.json`](https://github.com/panodata/mq-bridge/blob/main/mq-bridge.schema.json).
+[configuration guide](https://github.com/marcomq/mq-bridge/blob/main/CONFIGURATION.md) and
+[`mq-bridge.schema.json`](https://github.com/marcomq/mq-bridge/blob/main/mq-bridge.schema.json).
 Fields exposed only to publishers (e.g. `request_reply`, `stream_max_messages`) are accepted but
 have no effect on a source. Note that mq-bridge's AWS `max_messages` (the SQS receive batch
 size, ≤ 10) is shadowed by omniload's own `max_messages` transfer parameter below and uses the

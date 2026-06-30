@@ -162,9 +162,9 @@ def test_memory_transport_end_to_end(tmp_path):
     rows = con.sql(
         "select order_id, amount from out.orders order by order_id"
     ).fetchall()
-    distinct_ids = con.sql("select count(distinct _mqb_id) from out.orders").fetchone()[
-        0
-    ]
+    distinct_row = con.sql("select count(distinct _mqb_id) from out.orders").fetchone()
+    assert distinct_row is not None
+    distinct_ids = distinct_row[0]
     con.close()
 
     assert rows == [(0, 0), (1, 10), (2, 20), (3, 30), (4, 40)]

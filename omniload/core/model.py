@@ -14,10 +14,10 @@ class SourceProtocol(Protocol):
     def handles_incrementality(self) -> bool:
         pass
 
-    def post_load(self) -> None:
-        # Optional hook, run after the load commits. Used by sources that ack their own
-        # offsets (e.g. mq-bridge). run_ingest calls it only when present.
-        pass
+    # Note: an optional ``post_load(self) -> None`` hook may be defined by sources that ack
+    # their own offsets (e.g. mq-bridge). It is intentionally NOT part of this protocol so
+    # that ordinary sources need not implement it; run_ingest invokes it only when present
+    # via ``getattr(source, "post_load", lambda: None)()``.
 
 
 class DestinationProtocol(Protocol):

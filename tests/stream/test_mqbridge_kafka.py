@@ -1,14 +1,14 @@
 """Integration tests for the mq-bridge source over a real Kafka broker.
 
-These live in the ``tests/warehouse`` subtree, so conftest auto-marks them ``integration``
-(Docker/testcontainers). They complement the brokerless unit/e2e tests in
-``tests/saas/test_mqbridge.py``: here we exercise the real transport, the ``_mqb_id`` derived
+These live outside the ``tests/warehouse`` subtree, so the module is marked ``integration``
+explicitly (Docker/testcontainers). They complement the brokerless unit/e2e tests in
+``tests/stream/test_mqbridge.py``: here we exercise the real transport, the ``_mqb_id`` derived
 from a Kafka ``partition:offset``, and — most importantly — the deferred-ack guarantee, none of
 which the in-memory transport covers.
 
 Kafka is the cheapest real broker to test because the container fixtures already exist (see
-``test_kafka.py``); the same ``DockerService(id="kafka", lock_dir=...)`` is shared, so this file
-does not spin up a second container.
+``tests/warehouse/db/test_kafka.py``); the same ``DockerService(id="kafka", lock_dir=...)`` is
+shared, so this file does not spin up a second container.
 """
 
 import json
@@ -27,7 +27,10 @@ from tests.util.container.model import DockerService
 from tests.warehouse.manager import KAFKA_IMAGE
 from tests.warehouse.settings import DESTINATIONS
 
-# mq-bridge is an optional extra (`omniload[mq-bridge]`); skip the whole module if absent.
+# Marked explicitly (not auto-marked by path) because this module lives outside tests/warehouse.
+pytestmark = pytest.mark.integration
+
+# mq-bridge is a core dependency, but guard against a broken/partial install of the native wheel.
 pytest.importorskip("mq_bridge")
 
 ROWS = [{"order_id": i, "amount": i * 10} for i in range(5)]
