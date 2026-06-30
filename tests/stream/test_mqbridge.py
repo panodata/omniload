@@ -133,6 +133,35 @@ def test_endpoint_from_uri_rejects_unknown_transport():
         endpoint_from_uri("frobnicate+mqb://host", "t")
 
 
+def test_dlt_source_rejects_incremental_key():
+    # mq-bridge manages incrementality itself; run_ingest forwards the user's original request as
+    # ``requested_incremental_key`` (it nulls ``incremental_key`` for handles_incrementality
+    # sources before calling dlt_source), so the rejection must key off that.
+    from omniload.source.mqbridge.api import MqBridgeSource
+
+    with pytest.raises(ValueError, match="incremental"):
+        MqBridgeSource().dlt_source(
+            "memory+mqb://?topic=t", "t", requested_incremental_key="ts"
+        )
+
+
+def test_dlt_source_rejects_primary_key():
+    # A user-supplied --primary-key would override the _mqb_id merge key and break dedup.
+    from omniload.source.mqbridge.api import MqBridgeSource
+
+    with pytest.raises(ValueError, match="primary-key"):
+        MqBridgeSource().dlt_source(
+            "memory+mqb://?topic=t", "t", requested_primary_key=["order_id"]
+        )
+
+
+def test_dlt_source_rejects_unknown_format():
+    from omniload.source.mqbridge.api import MqBridgeSource
+
+    with pytest.raises(ValueError, match="format"):
+        MqBridgeSource().dlt_source("memory+mqb://?topic=t&format=xml", "t")
+
+
 def test_memory_transport_end_to_end(tmp_path):
     """Publish to an in-memory topic, then ingest it into DuckDB via run_ingest."""
     pytest.importorskip("mq_bridge")

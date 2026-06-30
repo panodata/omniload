@@ -267,6 +267,10 @@ def run_ingest(**kwargs) -> LoadInfo | None:
         refresh="drop_resources" if jr.full_refresh else None,  # ty: ignore[invalid-argument-type]
     )
 
+    # Capture the user's original request before it is nulled below: sources that manage
+    # incrementality themselves (e.g. mq-bridge) need to see what was asked for so they can
+    # reject conflicting flags, rather than silently ignoring them.
+    requested_incremental_key = jr.incremental_key
     if source.handles_incrementality():
         incremental_strategy = IncrementalStrategy.none
         jr.incremental_key = None
@@ -324,6 +328,8 @@ def run_ingest(**kwargs) -> LoadInfo | None:
         uri=jr.source_uri,
         table=source_table,
         incremental_key=jr.incremental_key,
+        requested_incremental_key=requested_incremental_key,
+        requested_primary_key=jr.primary_key,
         merge_key=merge_key,
         interval_start=jr.interval_start,
         interval_end=jr.interval_end,

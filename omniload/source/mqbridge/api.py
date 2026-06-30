@@ -16,13 +16,21 @@ class MqBridgeSource:
         return True
 
     def dlt_source(self, uri: str, table: str, **kwargs):
-        if kwargs.get("incremental_key"):
+        # mq-bridge owns both keys, so reject conflicting flags loudly instead of letting them
+        # silently subvert the delivery guarantee. It manages offsets itself (incrementality),
+        # and the resource merges on ``_mqb_id`` for effectively-once delivery. We read the user's
+        # *original* request via the ``requested_*`` kwargs because run_ingest nulls
+        # ``incremental_key`` for ``handles_incrementality`` sources before this runs.
+        if kwargs.get("requested_incremental_key"):
             raise ValueError(
                 "mq-bridge takes care of incrementality on its own, "
-                "you should not provide incremental_key"
+                "you should not provide --incremental-key"
             )
-
-        from mq_bridge import Consumer
+        if kwargs.get("requested_primary_key"):
+            raise ValueError(
+                "mq-bridge dedups on its own message id (_mqb_id); do not pass --primary-key, "
+                "which would override the merge key and break exactly-once delivery"
+            )
 
         from omniload.source.mqbridge.adapter import (
             endpoint_from_uri,
@@ -40,6 +48,14 @@ class MqBridgeSource:
         idle_timeout_ms = _param("idle_timeout_ms", 2_000, int)
         batch_size = _param("batch_size", 500, int)
         fmt = _param("format", "json", str)
+        if fmt not in ("json", "text"):
+            raise ValueError(
+                f"Unsupported mq-bridge format {fmt!r}; expected 'json' or 'text'"
+            )
+
+        # Imported lazily (and after the cheap input validation above) so a bad URI or flag fails
+        # fast without requiring the native mq-bridge wheel to be importable.
+        from mq_bridge import Consumer
 
         self._consumer = Consumer.from_config(config)
         name = table.split(".")[-1] if table else transport

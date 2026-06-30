@@ -110,7 +110,7 @@ These drive the consume loop and are **not** forwarded to the broker config:
 - `idle_timeout_ms`: how long to wait for new messages before stopping, defaults to 2000.
 - `batch_size`: messages fetched per poll, defaults to 500.
 - `format`: `json` (default) decodes the payload as JSON; `text` stores the raw text under
-  a `value` column.
+  a `value` column. Any other value is rejected.
 
 ## Output format
 Each message is stored as a row. The decoded payload becomes the top-level columns, plus:
@@ -124,8 +124,16 @@ Each message is stored as a row. The decoded payload becomes the top-level colum
 Delivery is **at-least-once**: the consumer offset is committed only **after** the dlt load
 has durably committed. If the load fails, nothing is committed and the broker redelivers the
 batch on the next run. Because the resource merges on `_mqb_id`, redelivered messages are
-deduplicated — effectively-once. mq-bridge owns incrementality, so `--incremental-key` is not
-accepted.
+deduplicated — effectively-once.
+
+mq-bridge owns both keys behind this guarantee, so two flags are rejected rather than silently
+honored: `--incremental-key` (mq-bridge manages incrementality itself) and `--primary-key`
+(which would override the `_mqb_id` merge key and break deduplication).
+
+> **Avoid `--yield-limit` with this source.** The consume loop polls a whole batch before
+> yielding, so a limit that stops mid-batch lets the next run commit offsets for messages that
+> were polled but never loaded — silently dropping the remainder. A future mq-bridge release
+> will allow committing only the loaded messages, which will lift this restriction.
 
 ## Sample command
 
