@@ -144,8 +144,12 @@ def test_endpoint_from_uri_ibmmq_failover_list_and_topic_mode():
         "",
     )
     ibmmq = config["ibmmq"]
-    assert ibmmq["url"] == "h1(1414),h2(1414)"  # comma-separated failover list translated
-    assert ibmmq["topic"] == "news"  # explicit ?topic= switches to pub/sub subscriber mode
+    assert (
+        ibmmq["url"] == "h1(1414),h2(1414)"
+    )  # comma-separated failover list translated
+    assert (
+        ibmmq["topic"] == "news"
+    )  # explicit ?topic= switches to pub/sub subscriber mode
     assert "queue" not in ibmmq  # no --source-table, so no queue slot
 
 
