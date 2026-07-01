@@ -1,3 +1,4 @@
+import logging
 import warnings
 from datetime import datetime
 from typing import Optional
@@ -18,6 +19,8 @@ from omniload.model import (
     SqlReflectionLevel,
 )
 from omniload.util.log import setup_logging
+
+logger = logging.getLogger(__name__)
 
 try:
     from duckdb_engine import DuckDBEngineWarning
@@ -359,6 +362,13 @@ def example_uris():
     typer.echo(
         "These are all coming from SQLAlchemy's URI format, so they should be familiar to most users."
     )
+
+    logger.info("Streaming sources use their own URI schemes:")
+    logger.info(
+        "mq-bridge: kafka+mqb://localhost:9092?group_id=g "
+        "(also nats/amqp/mqtt/zeromq/aws/ibmmq/memory)"
+    )
+    logger.info("└── https://omniload.readthedocs.io/supported-sources/mqbridge.html")
 
 
 @app.command()

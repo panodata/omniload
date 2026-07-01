@@ -267,6 +267,10 @@ def run_ingest(**kwargs) -> LoadInfo | None:
         refresh="drop_resources" if jr.full_refresh else None,  # ty: ignore[invalid-argument-type]
     )
 
+    # Capture the user's original request before it is nulled below: sources that manage
+    # incrementality themselves (e.g. mq-bridge) need to see what was asked for so they can
+    # reject conflicting flags, rather than silently ignoring them.
+    requested_incremental_key = jr.incremental_key
     if source.handles_incrementality():
         incremental_strategy = IncrementalStrategy.none
         jr.incremental_key = None
@@ -324,6 +328,8 @@ def run_ingest(**kwargs) -> LoadInfo | None:
         uri=jr.source_uri,
         table=source_table,
         incremental_key=jr.incremental_key,
+        requested_incremental_key=requested_incremental_key,
+        requested_primary_key=jr.primary_key,
         merge_key=merge_key,
         interval_start=jr.interval_start,
         interval_end=jr.interval_end,
@@ -451,24 +457,39 @@ def run_ingest(**kwargs) -> LoadInfo | None:
         error_str = str(exception)
         return any(pattern in error_str for pattern in DATABRICKS_RETRYABLE_ERRORS)
 
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            run_info: LoadInfo = run_pipeline()
-            break
-        except PipelineStepFailed as e:
-            if is_databricks_retryable_error(e) and attempt < max_retries - 1:
-                delay = (attempt + 1) * 2  # 2s, 4s backoff
-                logger.warning(
-                    f"Databricks concurrency error, retrying in {delay}s (attempt {attempt + 1}/{max_retries})"
-                )
-                time.sleep(delay)
-                continue
-            raise
+    # Guard the load itself: mq-bridge opens a Consumer when the resource is first pulled
+    # (inside run_pipeline) and acks its offsets only after the load durably commits. If the
+    # load fails we must release the source (without acking) so the batches redeliver; ordinary
+    # sources have no such hooks and the getattr calls are no-ops for them. Nothing touches the
+    # broker before this point, so the transform registration above need not be guarded.
+    try:
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                run_info: LoadInfo = run_pipeline()
+                break
+            except PipelineStepFailed as e:
+                if is_databricks_retryable_error(e) and attempt < max_retries - 1:
+                    delay = (attempt + 1) * 2  # 2s, 4s backoff
+                    logger.warning(
+                        f"Databricks concurrency error, retrying in {delay}s (attempt {attempt + 1}/{max_retries})"
+                    )
+                    time.sleep(delay)
+                    continue
+                raise
 
-    report_errors(run_info)
+        report_errors(run_info)
 
-    destination.post_load()
+        destination.post_load()
+
+        # Let the source commit, now that the load is durably committed (e.g. mq-bridge ack).
+        getattr(source, "post_load", lambda: None)()
+    except BaseException:
+        # Load failed: release the source without committing, so it redelivers.
+        release = getattr(source, "release", None)
+        if callable(release):
+            release()
+        raise
 
     end_time = datetime.now()
     elapsed = end_time - start_time

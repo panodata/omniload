@@ -3,6 +3,12 @@
 
 omniload supports Apache Kafka as a source.
 
+> **Also available via mq-bridge.** Kafka can also be consumed through the
+> [mq-bridge](mqbridge.md) connector (`kafka+mqb://`), which commits offsets only after a
+> successful load (effectively-once) and shares one engine with NATS/AMQP/MQTT/ZeroMQ/SQS. This
+> native source offers richer event decoding (`key_type`/`value_type`/`select`/`include`); the
+> mq-bridge source is simpler but has a stronger delivery guarantee. Pick by your needs.
+
 ## URI format
 The URI format for Apache Kafka is as follows:
 

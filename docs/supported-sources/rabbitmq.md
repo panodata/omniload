@@ -3,6 +3,12 @@
 
 omniload supports RabbitMQ as a source.
 
+> **Also available via mq-bridge.** AMQP brokers can also be consumed through the
+> [mq-bridge](mqbridge.md) connector (`amqp+mqb://`), which commits offsets only after a
+> successful load (effectively-once) and shares one engine with Kafka/NATS/MQTT/ZeroMQ/SQS. This
+> native source has its own output columns (`data`/`metadata`/`msg_id`); the mq-bridge source
+> uses `_mqb_id`/`_mqb_metadata`. Pick by your needs.
+
 ## URI format
 The URI format for RabbitMQ is as follows:
 
