@@ -98,7 +98,7 @@ dependencies = [
   "google-cloud-bigquery-storage<3",
   "google-cloud-spanner<4",
   "influxdb-client<2",
-  "mq-bridge-py>=0.3.1,<0.4",
+  "mq-bridge-py>=0.3.2,<0.4",
   "mysql-connector-python<10",
   "oracledb<4",
   "orjson<4",

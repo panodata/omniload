@@ -2805,18 +2805,18 @@ wheels = [
 
 [[package]]
 name = "mq-bridge-py"
-version = "0.3.1"
+version = "0.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0d/1b/a96dbd3711b9c7c445b07c6fc17bb344597ec4bd85f579366e1763dab467/mq_bridge_py-0.3.1.tar.gz", hash = "sha256:e3ac7a707b21a7e3f1d1efdf9db11e214c8646639d2f51b3feaea087919e7312", size = 696164, upload-time = "2026-06-27T12:23:00.63Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/39/87/a1fb4a805da3a00dfef255758cc37680f666185e52cbd31889029ea69faa/mq_bridge_py-0.3.2.tar.gz", hash = "sha256:dd3b67cfcace7ab5ff7b123fa633f1eb40b5753f5d222117ff0e0ebf02928d23", size = 716621, upload-time = "2026-06-30T18:59:56.121Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/47/96/e26bd985da378f33799d890c5dc577c1b6d651808cb766e2aa0a6aa57cdf/mq_bridge_py-0.3.1-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:65ad2374844f19cb769451af67cfed02e7fb650d4aaa828054d5d0c0f2557286", size = 23654438, upload-time = "2026-06-27T12:22:38.703Z" },
-    { url = "https://files.pythonhosted.org/packages/65/3f/1cca2b67285181b1f8a5b99cf7a076fb3e1b1e934099918ec2cabfe86ff0/mq_bridge_py-0.3.1-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:623b316fe2017e2528e37c18f1b336ba6dedb69da636bd16c8ba674eb1ad9d0d", size = 22409345, upload-time = "2026-06-27T12:22:41.187Z" },
-    { url = "https://files.pythonhosted.org/packages/28/b6/15b014121ff20287e5df6c520e9174ef8a632e5097a93c13be3fe727ef5d/mq_bridge_py-0.3.1-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c7a4f8ae9657527b9f80da29da23e1387eead2feac3ed5c7a0874ed57894dce7", size = 23746757, upload-time = "2026-06-27T12:22:43.57Z" },
-    { url = "https://files.pythonhosted.org/packages/b2/06/94e9d731450f26f819efdad0cdd6215194fe228d82c3c923cb7b472a2d25/mq_bridge_py-0.3.1-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d96a118905cd791d4fe9e34f6e07f7c23db7bca72499cff1efec0d5a3dcbfebe", size = 24995051, upload-time = "2026-06-27T12:22:45.896Z" },
-    { url = "https://files.pythonhosted.org/packages/4a/6f/e4288aa7f1f34bdc85129f5afdf99d8778b0dfcdf6225e40b6ed00ab9f20/mq_bridge_py-0.3.1-cp38-abi3-win_amd64.whl", hash = "sha256:f91e0789c4f698b037ecb7f11f7c1507214732e8d3af181ce79f96801bde51dd", size = 25067309, upload-time = "2026-06-27T12:22:49.015Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/e7/2a3dcd650943c838bb7140a2c35cd4fcd51a9998f1b676a1838f640e58e8/mq_bridge_py-0.3.2-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:acd5b3b33519c63f7928b8cd2aad7b664af9e4bcf0862b0dd433b10f0fba05a7", size = 23795520, upload-time = "2026-06-30T18:59:15.147Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/3c/6749e8d579cd44fd11de3f3d4b939aa837686a0fe319240e9bac91439a02/mq_bridge_py-0.3.2-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:c1900cac146a4b81d0a3549c5d476865eb06971be8eb444fbd387444b849a2a8", size = 22549808, upload-time = "2026-06-30T18:59:19.653Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/62/3bf49edfc5714c009aab02273860af38809bb4e66d4f35a7ab2f3fcd0dca/mq_bridge_py-0.3.2-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:32218c3fd281d3db8861fe35b5aae9aac90fd89baf2d07e7156ace43d552cfa5", size = 23852172, upload-time = "2026-06-30T18:59:23.084Z" },
+    { url = "https://files.pythonhosted.org/packages/33/14/e77539ca78303d9d539fefb5e04bcfa1ae70c9e74a7e1ad626a019631993/mq_bridge_py-0.3.2-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2fe9fd5f8d4292c9a8e2bc11825361e18365f77b63687acfdfac92b6c73d7e7c", size = 25170424, upload-time = "2026-06-30T18:59:26.527Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/c9/8ad4678a43eb36b5b33305712d39dcf2b28d156f336611cc632e72c9a880/mq_bridge_py-0.3.2-cp38-abi3-win_amd64.whl", hash = "sha256:1754a2d533a598b766dd40b69af847f00ff02008234cc37831825c98ceda20ba", size = 25173005, upload-time = "2026-06-30T18:59:29.962Z" },
 ]
 
 [[package]]
@@ -3397,7 +3397,7 @@ requires-dist = [
     { name = "ibm-db", marker = "platform_machine != 'aarch64' and extra == 'ibm-db'", specifier = "<4" },
     { name = "ibm-db-sa", marker = "platform_machine != 'aarch64' and extra == 'ibm-db'", specifier = "<0.5" },
     { name = "influxdb-client", specifier = "<2" },
-    { name = "mq-bridge-py", specifier = ">=0.3.1,<0.4" },
+    { name = "mq-bridge-py", specifier = ">=0.3.2,<0.4" },
     { name = "mysql-connector-python", specifier = "<10" },
     { name = "omniload", extras = ["ibm-db", "odbc", "oracle"], marker = "extra == 'full'" },
     { name = "oracledb", specifier = "<4" },

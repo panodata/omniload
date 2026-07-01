@@ -162,6 +162,115 @@ def test_dlt_source_rejects_unknown_format():
         MqBridgeSource().dlt_source("memory+mqb://?topic=t&format=xml", "t")
 
 
+class _FakeMessage:
+    def __init__(self, id_: str, value: int) -> None:
+        self._id = id_
+        self._value = value
+
+    @property
+    def id(self) -> str:
+        return self._id
+
+    @property
+    def metadata(self) -> dict:
+        return {}
+
+    def json(self) -> dict:
+        return {"value": self._value}
+
+    def text(self) -> str:
+        return str(self._value)
+
+
+class _FakeConsumer:
+    """Hands out preset batches via poll_batch and records which tokens get acked."""
+
+    instance = None  # returned by from_config, so dlt_source picks it up
+
+    def __init__(self, batches):
+        self._batches = batches
+        self._i = 0
+        self.acked: list = []
+        self.closed = False
+
+    @classmethod
+    def from_config(cls, _config):
+        return cls.instance
+
+    def poll_batch(self, max, timeout_ms):
+        if self._i >= len(self._batches):
+            return [], None
+        batch = self._batches[self._i]
+        token = self._i
+        self._i += 1
+        return list(batch), token
+
+    def ack(self, token) -> None:
+        self.acked.append(token)
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def _wire_fake_consumer(monkeypatch, batches):
+    import mq_bridge
+
+    from omniload.source.mqbridge.api import MqBridgeSource
+
+    fake = _FakeConsumer(batches)
+    _FakeConsumer.instance = fake
+    monkeypatch.setattr(mq_bridge, "Consumer", _FakeConsumer)
+    return MqBridgeSource(), fake
+
+
+def test_post_load_acks_every_fully_drained_batch(monkeypatch):
+    # Full drain: both batches make it into the load package, so post_load acks both tokens.
+    src, fake = _wire_fake_consumer(
+        monkeypatch,
+        [[_FakeMessage("a", 1), _FakeMessage("b", 2)], [_FakeMessage("c", 3)]],
+    )
+    resource = src.dlt_source("memory+mqb://?topic=t&batch_size=10", "t")
+
+    items = list(resource)
+    assert [item["_mqb_id"] for item in items] == ["a", "b", "c"]
+
+    src.post_load()
+    assert fake.acked == [0, 1]  # both batch tokens acked after the load
+    assert fake.closed
+
+
+def test_yield_limit_truncation_leaves_partial_batch_unacked(monkeypatch):
+    # A --yield-limit stops iteration mid-batch: the first batch is never fully yielded, so its
+    # token is not recorded and post_load acks nothing — the batch redelivers and dedups instead
+    # of silently losing the un-yielded remainder (the old bare commit() footgun).
+    src, fake = _wire_fake_consumer(
+        monkeypatch,
+        [[_FakeMessage("a", 1), _FakeMessage("b", 2)], [_FakeMessage("c", 3)]],
+    )
+    resource = src.dlt_source("memory+mqb://?topic=t&batch_size=10", "t")
+
+    first = next(iter(resource))  # pull just one of the batch's two messages
+    assert first["_mqb_id"] == "a"
+
+    src.post_load()
+    assert fake.acked == []  # nothing acked: whole batch redelivers next run
+    assert fake.closed
+
+
+def test_release_acks_nothing_even_after_a_full_batch(monkeypatch):
+    # A failure after batches were drained must not ack them: release closes without acking so the
+    # broker redelivers everything.
+    src, fake = _wire_fake_consumer(monkeypatch, [[_FakeMessage("a", 1)]])
+    resource = src.dlt_source("memory+mqb://?topic=t&batch_size=10", "t")
+
+    list(resource)
+    assert list(src._pending_batches) == [0]  # recorded, but not yet acked
+
+    src.release()
+    assert fake.acked == []
+    assert fake.closed
+
+
 def test_memory_transport_end_to_end(tmp_path):
     """Publish to an in-memory topic, then ingest it into DuckDB via run_ingest."""
     pytest.importorskip("mq_bridge")

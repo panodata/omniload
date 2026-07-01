@@ -157,23 +157,25 @@ def mqbridge_resource(
     idle_timeout_ms: int,
     batch_size: int,
     fmt: str,
+    record_batch: Callable[[Any], None],
 ):
     """Bounded merge-mode resource draining ``consumer`` for one pipeline run.
 
-    Records carry ``_mqb_id`` (the merge key) and ``_mqb_metadata``. The consumer is not
-    acked here; ``MqBridgeSource.post_load`` commits it after the load commits.
+    Records carry ``_mqb_id`` (the merge key) and ``_mqb_metadata``. Nothing is acked here;
+    each fully-yielded batch's token is handed to ``record_batch`` so
+    ``MqBridgeSource.post_load`` can ack exactly those batches after the load commits.
     """
 
     def reader() -> Iterable[TDataItem]:
         drained = 0
         while drained < max_messages:
-            batch = consumer.poll(
+            messages, token = consumer.poll_batch(
                 max=min(batch_size, max_messages - drained),
                 timeout_ms=idle_timeout_ms,
             )
-            if not batch:
+            if not messages:
                 break  # idle or end-of-stream
-            for message in batch:
+            for message in messages:
                 if fmt == "text":
                     payload: Any = {"value": message.text()}
                 else:
@@ -185,7 +187,13 @@ def mqbridge_resource(
                     "_mqb_metadata": dict(message.metadata),
                     **payload,
                 }
-            drained += len(batch)
+            # Every message in this batch has now been yielded (so it is in the load
+            # package); record its token for post_load to ack. If a --yield-limit
+            # (dlt add_limit) truncates the stream mid-batch, control never reaches here
+            # for that batch, so its token stays outstanding and the batch is redelivered
+            # next run and deduped on _mqb_id — we never ack messages we didn't load.
+            record_batch(token)
+            drained += len(messages)
 
     return dlt.resource(
         reader,

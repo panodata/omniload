@@ -5,12 +5,16 @@ from urllib.parse import parse_qs, urlparse
 class MqBridgeSource:
     """Consume from a broker via ``mq_bridge.Consumer`` and load through dlt.
 
-    Delivery is at-least-once: the consumer is committed in ``post_load``, after the load
-    commits. A failed load is redelivered, so the resource merges on ``_mqb_id`` to dedup.
+    Delivery is at-least-once: each fully-yielded batch's token is acked in ``post_load``,
+    after the load commits. A failed load — or a ``--yield-limit`` that truncates a batch
+    mid-stream — leaves that batch un-acked, so it is redelivered and the resource merges on
+    ``_mqb_id`` to dedup.
     """
 
     def __init__(self) -> None:
         self._consumer: Optional[Any] = None
+        # Tokens of batches fully handed to the load package, to ack in post_load.
+        self._pending_batches: list[Any] = []
 
     def handles_incrementality(self) -> bool:
         return True
@@ -58,6 +62,7 @@ class MqBridgeSource:
         from mq_bridge import Consumer
 
         self._consumer = Consumer.from_config(config)
+        self._pending_batches = []
         name = table.split(".")[-1] if table else transport
         return mqbridge_resource(
             self._consumer,
@@ -66,19 +71,24 @@ class MqBridgeSource:
             idle_timeout_ms=idle_timeout_ms,
             batch_size=batch_size,
             fmt=fmt,
+            record_batch=self._pending_batches.append,
         )
 
     def post_load(self) -> None:
-        # Ack what we polled this run, then close.
+        # Ack exactly the batches that made it into the load package, then close. Batches
+        # left un-acked (e.g. truncated by --yield-limit) stay outstanding and redeliver.
         if self._consumer is not None:
             try:
-                self._consumer.commit()
+                for token in self._pending_batches:
+                    self._consumer.ack(token)
             finally:
+                self._pending_batches = []
                 self._consumer.close()
                 self._consumer = None
 
     def release(self) -> None:
-        # Close without committing, so the batch is redelivered.
+        # Close without acking, so the whole run's batches are redelivered.
         if self._consumer is not None:
+            self._pending_batches = []
             self._consumer.close()
             self._consumer = None

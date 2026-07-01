@@ -121,19 +121,19 @@ Each message is stored as a row. The decoded payload becomes the top-level colum
 | `_mqb_metadata` | JSON | The message metadata as reported by mq-bridge. |
 
 ## Delivery semantics
-Delivery is **at-least-once**: the consumer offset is committed only **after** the dlt load
-has durably committed. If the load fails, nothing is committed and the broker redelivers the
-batch on the next run. Because the resource merges on `_mqb_id`, redelivered messages are
-deduplicated — effectively-once.
+Delivery is **at-least-once**: each batch's offset is acked only **after** the dlt load has
+durably committed. If the load fails, nothing is acked and the broker redelivers the batch on
+the next run. Because the resource merges on `_mqb_id`, redelivered messages are deduplicated —
+effectively-once.
+
+Acks are per-batch (via mq-bridge's `poll_batch`/`ack` tokens), so only batches that were fully
+handed to the load package are acked. `--yield-limit` is therefore safe: a limit that stops
+mid-batch leaves that batch un-acked, so it is redelivered on the next run and deduplicated on
+`_mqb_id` rather than being silently dropped.
 
 mq-bridge owns both keys behind this guarantee, so two flags are rejected rather than silently
 honored: `--incremental-key` (mq-bridge manages incrementality itself) and `--primary-key`
 (which would override the `_mqb_id` merge key and break deduplication).
-
-> **Avoid `--yield-limit` with this source.** The consume loop polls a whole batch before
-> yielding, so a limit that stops mid-batch lets the next run commit offsets for messages that
-> were polled but never loaded — silently dropping the remainder. A future mq-bridge release
-> will allow committing only the loaded messages, which will lift this restriction.
 
 ## Sample command
 
