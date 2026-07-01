@@ -25,7 +25,9 @@ _INT_FIELDS = frozenset(
         "stream_max_bytes",
         "stream_max_messages",
         "wait_time_seconds",  # aws (SQS long-poll)
-        "internal_buffer_size",  # zeromq
+        "internal_buffer_size",  # zeromq, ibmmq
+        "max_message_size",  # ibmmq
+        "wait_timeout_ms",  # ibmmq (consumer poll timeout)
     }
 )
 _BOOL_FIELDS = frozenset(
@@ -42,6 +44,7 @@ _BOOL_FIELDS = frozenset(
         "shared",
         "binary_payload_mode",  # aws
         "bind",  # zeromq
+        "disable_status_inq",  # ibmmq
         "required",  # tls.required
         "accept_invalid_certs",  # tls.accept_invalid_certs
     }
@@ -65,9 +68,30 @@ class _Transport(NamedTuple):
     render: Optional[Callable[[ParseResult], str]] = None
 
 
+def _ibmmq_conn_name(parsed: ParseResult) -> str:
+    """Render the authority as an IBM MQ connection name list (``host(port)``).
+
+    IBM MQ addresses queue managers as ``host(port)`` rather than ``host:port``, and accepts a
+    comma-separated list for failover. We accept the familiar ``host:port[,host:port]`` authority
+    (consistent with kafka/nats) and translate each entry; a bare host is passed through as-is.
+    """
+    names = []
+    for hostport in parsed.netloc.split(","):
+        hostport = hostport.strip()
+        if not hostport:
+            continue
+        if ":" in hostport:
+            host, _, port = hostport.rpartition(":")
+            names.append(f"{host}({port})")
+        else:
+            names.append(hostport)
+    return ",".join(names)
+
+
 # kafka/nats take a comma-separated host list in the authority (cluster/replica); mqtt and amqp
 # are single-host (front them with a load balancer / DNS for HA). zeromq also accepts ipc:// —
-# pass ?url= to override the tcp:// default.
+# pass ?url= to override the tcp:// default. ibmmq needs queue_manager + channel as query params
+# and consumes from a queue (?topic= switches to pub/sub subscriber mode).
 _TRANSPORTS: Dict[str, _Transport] = {
     "kafka": _Transport(
         "topic", "url", lambda p: p.netloc
@@ -79,6 +103,7 @@ _TRANSPORTS: Dict[str, _Transport] = {
     "aws": _Transport(
         "queue_url"
     ),  # SQS: queue_url is itself the URL, no connection url
+    "ibmmq": _Transport("queue", "url", _ibmmq_conn_name),
     "memory": _Transport("topic", "topic", lambda p: f"{p.netloc}{p.path}"),
 }
 

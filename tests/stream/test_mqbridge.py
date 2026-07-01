@@ -123,6 +123,46 @@ def test_endpoint_from_uri_aws_maps_table_to_queue_url_without_connection_url():
     assert config["aws"]["wait_time_seconds"] == 20
 
 
+def test_endpoint_from_uri_ibmmq_translates_conn_name_and_requires_qm_channel():
+    transport, config = endpoint_from_uri(
+        "ibmmq+mqb://mqhost:1414"
+        "?queue_manager=QM1&channel=DEV.APP.SVRCONN&wait_timeout_ms=5000",
+        "DEV.QUEUE.1",
+    )
+    assert transport == "ibmmq"
+    ibmmq = config["ibmmq"]
+    assert ibmmq["url"] == "mqhost(1414)"  # host:port -> host(port)
+    assert ibmmq["queue_manager"] == "QM1"
+    assert ibmmq["channel"] == "DEV.APP.SVRCONN"
+    assert ibmmq["queue"] == "DEV.QUEUE.1"  # --source-table fills the queue
+    assert ibmmq["wait_timeout_ms"] == 5000  # int field coerced
+
+
+def test_endpoint_from_uri_ibmmq_failover_list_and_topic_mode():
+    _, config = endpoint_from_uri(
+        "ibmmq+mqb://h1:1414,h2:1414?queue_manager=QM1&channel=C&topic=news",
+        "",
+    )
+    ibmmq = config["ibmmq"]
+    assert ibmmq["url"] == "h1(1414),h2(1414)"  # comma-separated failover list translated
+    assert ibmmq["topic"] == "news"  # explicit ?topic= switches to pub/sub subscriber mode
+    assert "queue" not in ibmmq  # no --source-table, so no queue slot
+
+
+def test_endpoint_from_uri_ibmmq_bare_host_and_empty_segment():
+    # A host with no port is kept verbatim; an empty segment (trailing comma) is skipped.
+    _, config = endpoint_from_uri(
+        "ibmmq+mqb://mqhost,?queue_manager=QM1&channel=C", "Q"
+    )
+    assert config["ibmmq"]["url"] == "mqhost"
+
+
+def test_endpoint_from_uri_rejects_non_integer_query_param():
+    # An int-typed field that can't be parsed fails loudly rather than being forwarded as junk.
+    with pytest.raises(ValueError, match="integer"):
+        endpoint_from_uri("kafka+mqb://b:9092?prefetch_count=notanumber", "t")
+
+
 def test_endpoint_from_uri_rejects_plain_scheme():
     with pytest.raises(ValueError):
         endpoint_from_uri("kafka://localhost:9092", "t")
@@ -180,6 +220,13 @@ class _FakeMessage:
 
     def text(self) -> str:
         return str(self._value)
+
+
+class _ScalarMessage(_FakeMessage):
+    """A message whose JSON payload is a scalar (not a dict), to exercise the value-wrap path."""
+
+    def json(self):
+        return self._value
 
 
 class _FakeConsumer:
@@ -269,6 +316,52 @@ def test_release_acks_nothing_even_after_a_full_batch(monkeypatch):
     src.release()
     assert fake.acked == []
     assert fake.closed
+
+
+def test_reader_text_format_wraps_payload_under_value(monkeypatch):
+    # format=text stores the raw text under a `value` column instead of decoding JSON.
+    src, _ = _wire_fake_consumer(monkeypatch, [[_FakeMessage("a", 7)]])
+    resource = src.dlt_source("memory+mqb://?topic=t&format=text&batch_size=10", "t")
+
+    items = list(resource)
+    assert items[0]["value"] == "7"  # text() rendering, not a decoded dict
+
+
+def test_reader_non_dict_json_wrapped_under_value(monkeypatch):
+    # A JSON payload that isn't an object (scalar/array) is wrapped so it still forms a row.
+    src, _ = _wire_fake_consumer(monkeypatch, [[_ScalarMessage("a", 42)]])
+    resource = src.dlt_source("memory+mqb://?topic=t&batch_size=10", "t")
+
+    items = list(resource)
+    assert items[0]["value"] == 42
+
+
+def test_run_ingest_releases_consumer_when_the_load_fails(monkeypatch, tmp_path):
+    # End-to-end guard for the item-7 fix: if consumption/load raises after the Consumer is opened
+    # in dlt_source, run_ingest must release it (close, ack nothing) so the batch redelivers.
+    pytest.importorskip("mq_bridge")
+    import mq_bridge
+
+    from omniload import run_ingest
+
+    class _BoomConsumer(_FakeConsumer):
+        def poll_batch(self, max, timeout_ms):
+            raise RuntimeError("broker exploded mid-drain")
+
+    fake = _BoomConsumer([])
+    _BoomConsumer.instance = fake
+    monkeypatch.setattr(mq_bridge, "Consumer", _BoomConsumer)
+
+    dest = tmp_path / "warehouse.duckdb"
+    with pytest.raises(Exception):
+        run_ingest(
+            source_uri="memory+mqb://?topic=t&idle_timeout_ms=100&max_messages=10",
+            dest_uri=f"duckdb:///{dest}",
+            dest_table="out.orders",
+        )
+
+    assert fake.closed  # release() ran on the failure path
+    assert fake.acked == []  # nothing acked, so the broker redelivers
 
 
 def test_memory_transport_end_to_end(tmp_path):

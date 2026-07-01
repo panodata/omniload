@@ -366,7 +366,7 @@ def example_uris():
     logger.info("Streaming sources use their own URI schemes:")
     logger.info(
         "mq-bridge: kafka+mqb://localhost:9092?group_id=g "
-        "(also nats/amqp/mqtt/zeromq/aws/memory)"
+        "(also nats/amqp/mqtt/zeromq/aws/ibmmq/memory)"
     )
     logger.info("└── https://omniload.readthedocs.io/supported-sources/mqbridge.html")
 

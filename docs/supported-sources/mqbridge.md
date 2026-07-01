@@ -7,7 +7,7 @@ destination.
 
 omniload supports mq-bridge as a source. This page is the full reference for every transport;
 several brokers also have a short landing page: [NATS](nats.md), [MQTT](mqtt.md),
-[ZeroMQ](zeromq.md), and [Amazon SQS](sqs.md).
+[ZeroMQ](zeromq.md), [Amazon SQS](sqs.md), and [IBM MQ](ibm-mq.md).
 
 > AMQP/RabbitMQ is also available as a **native** source (`amqp://`, see [RabbitMQ](rabbitmq.md))
 > with its own output columns (`data`/`metadata`/`msg_id`). Use this mq-bridge variant
@@ -24,6 +24,9 @@ needed:
 ```sh
 pip install omniload
 ```
+
+> **IBM MQ** is the one exception: it additionally requires the IBM MQ redistributable client to
+> be present at runtime. See [IBM MQ → Installation](ibm-mq.md#installation).
 
 ## URI format
 Each broker is addressed via a compound `<transport>+mqb://` scheme. The broker URL and the
@@ -42,6 +45,7 @@ query parameters.
 | MQTT      | `mqtt+mqb://localhost:1883?qos=1`         | `topic` |
 | ZeroMQ    | `zeromq+mqb://localhost:5555?socket_type=pull` | `topic` |
 | AWS SQS   | `aws+mqb://?region=us-east-1` (queue via `--source-table`) | `queue_url` |
+| IBM MQ    | `ibmmq+mqb://host:1414?queue_manager=QM1&channel=DEV.APP.SVRCONN` | `queue` |
 | memory    | `memory+mqb://orders?capacity=4096`       | `topic` |
 
 The `--source-table` value supplies the topic-like field for the transport. An explicit
@@ -53,7 +57,10 @@ authority for clusters/replicas (e.g. `kafka+mqb://b1:9092,b2:9092?group_id=g`).
 AMQP are single-host** — front multiple brokers with a load balancer or DNS. **AWS SQS** has no
 separate connection URL: the queue is named by its full `queue_url`, supplied via
 `--source-table` (or `?queue_url=...`, percent-encoded), with `region` discovered from the URL
-or `?region=`.
+or `?region=`. **IBM MQ** addresses queue managers as `host(port)`, but you write the familiar
+`host:port` authority (comma-separated for failover, e.g. `ibmmq+mqb://h1:1414,h2:1414`) and
+omniload translates it. `queue_manager` and `channel` are required query parameters;
+`--source-table` names the target queue, or pass `?topic=` to consume in pub/sub subscriber mode.
 
 #### memory: in-process & IPC channels
 The memory transport's `url`/`topic` are aliases for a single channel identifier, which may be:
@@ -77,6 +84,7 @@ coerced from their string form. The consumer-relevant fields per transport:
 | MQTT   | `qos` (0/1/2), `protocol` (`v5`/`v3`), `client_id`, `clean_session`, `keep_alive_seconds`, `max_inflight`, `session_expiry_interval`, `queue_capacity` |
 | ZeroMQ | `socket_type` (`pull`/`sub`/`rep`/…), `bind` (bind vs connect), `topic` (SUB filter), `internal_buffer_size` |
 | AWS SQS | `region`, `access_key` / `secret_key` / `session_token`, `endpoint_url` (e.g. LocalStack), `wait_time_seconds` (long-poll), `binary_payload_mode` |
+| IBM MQ | `queue_manager` **(required)**, `channel` **(required)**, `username` / `password`, `cipher_spec`, `topic` (switch to pub/sub subscriber mode), `wait_timeout_ms`, `max_message_size`, `disable_status_inq` |
 | memory | `capacity`, `subscribe_mode` (fan-out vs queue), `enable_nack` |
 
 For the authoritative field list per transport, see mq-bridge's
