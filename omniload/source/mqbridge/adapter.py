@@ -175,7 +175,7 @@ def endpoint_from_uri(uri: str, table: str) -> Tuple[str, Dict[str, Dict[str, An
 
 
 def mqbridge_resource(
-    consumer: Any,
+    open_consumer: Callable[[], Any],
     *,
     name: str,
     max_messages: int,
@@ -184,14 +184,17 @@ def mqbridge_resource(
     fmt: str,
     record_batch: Callable[[Any], None],
 ):
-    """Bounded merge-mode resource draining ``consumer`` for one pipeline run.
+    """Bounded merge-mode resource draining a consumer for one pipeline run.
 
-    Records carry ``_mqb_id`` (the merge key) and ``_mqb_metadata``. Nothing is acked here;
-    each fully-yielded batch's token is handed to ``record_batch`` so
-    ``MqBridgeSource.post_load`` can ack exactly those batches after the load commits.
+    ``open_consumer`` is invoked once on the resource's first pull to open the broker
+    connection, so nothing is opened until extraction actually starts. Records carry
+    ``_mqb_id`` (the merge key) and ``_mqb_metadata``. Nothing is acked here; each
+    fully-yielded batch's token is handed to ``record_batch`` so ``MqBridgeSource.post_load``
+    can ack exactly those batches after the load commits.
     """
 
     def reader() -> Iterable[TDataItem]:
+        consumer = open_consumer()
         drained = 0
         while drained < max_messages:
             messages, token = consumer.poll_batch(

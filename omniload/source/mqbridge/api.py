@@ -61,11 +61,20 @@ class MqBridgeSource:
         # fast without requiring the native mq-bridge wheel to be importable.
         from mq_bridge import Consumer
 
-        self._consumer = Consumer.from_config(config)
+        self._consumer = None
         self._pending_batches = []
+
+        # Open the Consumer lazily, on the resource's first pull (i.e. inside pipeline.run), not
+        # here. run_ingest only guards the load region; opening eagerly would leak the broker
+        # connection if a transform between here and the load raised. release/post_load see the
+        # consumer via ``self._consumer``, which stays None until this runs.
+        def open_consumer():
+            self._consumer = Consumer.from_config(config)
+            return self._consumer
+
         name = table.split(".")[-1] if table else transport
         return mqbridge_resource(
-            self._consumer,
+            open_consumer,
             name=name,
             max_messages=max_messages,
             idle_timeout_ms=idle_timeout_ms,
