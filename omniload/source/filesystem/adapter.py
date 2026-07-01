@@ -14,10 +14,10 @@
 
 """Reads files in s3, gs or azure buckets using fsspec and provides convenience resources for chunked reading of various file formats"""
 
-from typing import Iterator, List, Optional, Tuple, Union
+from typing import Any, Iterator, List, Optional, Tuple, Union
 
 import dlt
-from dlt.sources import DltResource
+from dlt.sources import DltResource, TDataItems
 from dlt.sources.credentials import FileSystemCredentials
 from dlt.sources.filesystem import FileItem, FileItemDict, fsspec_filesystem, glob_files
 
@@ -132,3 +132,33 @@ read_parquet = dlt.transformer(standalone=True, max_table_nesting=0)(_read_parqu
 read_csv_duckdb = dlt.transformer(standalone=True, max_table_nesting=0)(
     _read_csv_duckdb
 )
+
+
+def resource_for_reader(
+    bucket_url: str,
+    credentials: Union[FileSystemCredentials, AbstractFileSystem],
+    file_glob: str,
+    reader_name: str,
+    column_types: Optional[dict[str, Any]] = None,
+) -> Any:
+    if reader_name != "read_csv_headless":
+        return readers(bucket_url, credentials, file_glob).with_resources(reader_name)
+
+    column_names = list(column_types.keys()) if column_types else None
+
+    def read_csv_headless_with_cols(
+        items: Iterator[FileItemDict],
+        chunksize: int = 10000,
+        **pandas_kwargs: Any,
+    ) -> Iterator[TDataItems]:
+        yield from _read_csv_headless(
+            items,
+            chunksize=chunksize,
+            column_names=column_names,
+            **pandas_kwargs,
+        )
+
+    filesystem_resource = filesystem(bucket_url, credentials, file_glob=file_glob)
+    return filesystem_resource | dlt.transformer(
+        name="read_csv_headless", max_table_nesting=0
+    )(read_csv_headless_with_cols)

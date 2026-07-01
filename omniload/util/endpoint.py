@@ -1,5 +1,5 @@
 import warnings
-from typing import Tuple, TypeAlias
+from typing import Optional, Tuple, TypeAlias
 from urllib.parse import ParseResult, urlparse
 
 BucketName: TypeAlias = str
@@ -8,6 +8,27 @@ FileGlob: TypeAlias = str
 
 class UnsupportedEndpointError(Exception):
     pass
+
+
+FORMAT_TO_READER: dict[str, str] = {
+    "csv": "read_csv",
+    "csv_headless": "read_csv_headless",
+    "jsonl": "read_jsonl",
+    "parquet": "read_parquet",
+}
+SUPPORTED_FILE_FORMATS = tuple(FORMAT_TO_READER)
+SUPPORTED_FILE_FORMATS_TEXT = ", ".join(SUPPORTED_FILE_FORMATS)
+
+
+def reader_for_format(file_format: str) -> str:
+    try:
+        return FORMAT_TO_READER[file_format]
+    except KeyError as e:
+        raise UnsupportedEndpointError(f"Unsupported file format: {file_format}") from e
+
+
+def supported_file_format_message(source_name: str) -> str:
+    return f"{source_name} Source only supports file formats: {SUPPORTED_FILE_FORMATS_TEXT}"
 
 
 def parse_uri(uri: ParseResult, table: str) -> Tuple[BucketName, FileGlob]:
@@ -65,15 +86,21 @@ def parse_endpoint(path: str) -> str:
     file_extension = path.split(".")[-1]
     if file_extension == "gz":
         file_extension = path.split(".")[-2]
-    if file_extension == "csv":
-        endpoint = "read_csv"
-    elif file_extension == "jsonl":
-        endpoint = "read_jsonl"
-    elif file_extension == "parquet":
-        endpoint = "read_parquet"
-    else:
-        raise UnsupportedEndpointError(f"Unsupported file format: {file_extension}")
-    return endpoint
+    return reader_for_format(file_extension)
+
+
+def split_format_hint(table: str) -> Tuple[str, Optional[str]]:
+    """Split a table spec into ``(path, format_hint)``.
+
+    A trailing ``#segment`` is treated as an explicit format hint only when
+    ``segment`` is a recognized format. Otherwise the ``#`` is part of the
+    path and the hint is ``None``, so literal ``#`` characters in file paths
+    keep working (e.g. ``/feeds/vendor#1/data.csv``).
+    """
+    path, sep, suffix = table.rpartition("#")
+    if sep and suffix in FORMAT_TO_READER:
+        return path, suffix
+    return table, None
 
 
 def determine_endpoint(table: str, path: str) -> str:
@@ -81,15 +108,11 @@ def determine_endpoint(table: str, path: str) -> str:
     determines the endpoint/method to use for reading data from a blob source
     """
 
-    if "#" in table:
-        _, endpoint = table.split("#")
-        if endpoint not in ["csv", "csv_headless", "jsonl", "parquet"]:
-            raise UnsupportedEndpointError(f"Unsupported file format: {endpoint}")
-        endpoint = f"read_{endpoint}"
-    else:
-        try:
-            endpoint = parse_endpoint(path)
-        except Exception as e:
-            raise ValueError(f"Failed to parse endpoint from path: {path}") from e
+    _, file_format = split_format_hint(table)
+    if file_format is not None:
+        return reader_for_format(file_format)
 
-    return endpoint
+    try:
+        return parse_endpoint(path)
+    except Exception as e:
+        raise ValueError(f"Failed to parse endpoint from path: {path}") from e

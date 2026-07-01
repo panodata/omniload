@@ -7,6 +7,7 @@ from omniload.util.endpoint import (
     UnsupportedEndpointError,
     determine_endpoint,
     parse_uri,
+    supported_file_format_message,
 )
 
 
@@ -60,48 +61,17 @@ class GCSSource:
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(
-                "GCS Source only supports specific formats files: csv, csv_headless, jsonl, parquet"
-            )
+            raise ValueError(supported_file_format_message("GCS"))
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        # Handle csv_headless with column_names
-        if endpoint == "read_csv_headless":
-            from typing import Any, Iterator
+        from omniload.source.filesystem.adapter import resource_for_reader
 
-            import dlt
-            from dlt.sources import TDataItems
-            from dlt.sources.filesystem import FileItemDict
-
-            from omniload.source.filesystem.adapter import filesystem
-            from omniload.source.filesystem.readers import _read_csv_headless
-
-            column_types = kwargs.get("column_types")
-            column_names = list(column_types.keys()) if column_types else None
-
-            def read_csv_headless_with_cols(
-                items: Iterator[FileItemDict],
-                chunksize: int = 10000,
-                **pandas_kwargs: Any,
-            ) -> Iterator[TDataItems]:
-                yield from _read_csv_headless(
-                    items,
-                    chunksize=chunksize,
-                    column_names=column_names,
-                    **pandas_kwargs,
-                )
-
-            filesystem_resource = filesystem(bucket_url, fs, file_glob=path_to_file)
-            return filesystem_resource | dlt.transformer(
-                name="read_csv_headless", max_table_nesting=0
-            )(read_csv_headless_with_cols)
-
-        from omniload.source.filesystem.adapter import readers
-
-        return readers(bucket_url, fs, path_to_file).with_resources(endpoint)
+        return resource_for_reader(
+            bucket_url, fs, path_to_file, endpoint, kwargs.get("column_types")
+        )
 
 
 class S3Source:
@@ -145,45 +115,14 @@ class S3Source:
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(
-                "S3 Source only supports specific formats files: csv, csv_headless, jsonl, parquet"
-            )
+            raise ValueError(supported_file_format_message("S3"))
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        # Handle csv_headless with column_names
-        if endpoint == "read_csv_headless":
-            from typing import Any, Iterator
+        from omniload.source.filesystem.adapter import resource_for_reader
 
-            import dlt
-            from dlt.sources import TDataItems
-            from dlt.sources.filesystem import FileItemDict
-
-            from omniload.source.filesystem.adapter import filesystem
-            from omniload.source.filesystem.readers import _read_csv_headless
-
-            column_types = kwargs.get("column_types")
-            column_names = list(column_types.keys()) if column_types else None
-
-            def read_csv_headless_with_cols(
-                items: Iterator[FileItemDict],
-                chunksize: int = 10000,
-                **pandas_kwargs: Any,
-            ) -> Iterator[TDataItems]:
-                yield from _read_csv_headless(
-                    items,
-                    chunksize=chunksize,
-                    column_names=column_names,
-                    **pandas_kwargs,
-                )
-
-            filesystem_resource = filesystem(bucket_url, fs, file_glob=path_to_file)
-            return filesystem_resource | dlt.transformer(
-                name="read_csv_headless", max_table_nesting=0
-            )(read_csv_headless_with_cols)
-
-        from omniload.source.filesystem.adapter import readers
-
-        return readers(bucket_url, fs, path_to_file).with_resources(endpoint)
+        return resource_for_reader(
+            bucket_url, fs, path_to_file, endpoint, kwargs.get("column_types")
+        )

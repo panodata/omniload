@@ -2,7 +2,12 @@ from typing import Any, Dict
 from urllib.parse import urlparse
 
 from omniload.error import MissingValueError
-from omniload.util.endpoint import UnsupportedEndpointError, parse_endpoint
+from omniload.util.endpoint import (
+    UnsupportedEndpointError,
+    determine_endpoint,
+    split_format_hint,
+    supported_file_format_message,
+)
 
 
 class SFTPSource:
@@ -37,21 +42,21 @@ class SFTPSource:
             )
         bucket_url = f"sftp://{host}:{port}"
 
-        if table.startswith("/"):
-            file_glob = table
+        table_path, _ = split_format_hint(table)
+        if table_path.startswith("/"):
+            file_glob = table_path
         else:
-            file_glob = f"/{table}"
+            file_glob = f"/{table_path}"
 
         try:
-            endpoint = parse_endpoint(table)
+            endpoint = determine_endpoint(table, file_glob)
         except UnsupportedEndpointError:
-            raise ValueError(
-                "SFTP Source only supports specific formats files: csv, jsonl, parquet"
-            )
+            raise ValueError(supported_file_format_message("SFTP"))
         except Exception as e:
             raise ValueError(f"Failed to parse endpoint from path: {table}") from e
 
-        from omniload.source.filesystem.adapter import readers
+        from omniload.source.filesystem.adapter import resource_for_reader
 
-        dlt_source_resource = readers(bucket_url, fs, file_glob)
-        return dlt_source_resource.with_resources(endpoint)
+        return resource_for_reader(
+            bucket_url, fs, file_glob, endpoint, kwargs.get("column_types")
+        )
