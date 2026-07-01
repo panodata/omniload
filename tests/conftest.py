@@ -118,28 +118,40 @@ def start_containers(config):
         container.lock_dir = config.shared_directory  # ty: ignore[invalid-assignment, unresolved-attribute, unused-ignore-comment]
 
     with ThreadPoolExecutor() as executor:
-        futures = [
-            executor.submit(container.start_fully) for container in unique_containers
-        ]
+        futures = {
+            executor.submit(container.start_fully): container
+            for container in unique_containers
+        }
 
-    # ThreadPoolExecutor.__exit__ has joined every start_fully() call by now. Surface
-    # the first startup failure with its real traceback, instead of letting it be
-    # swallowed and resurface as a misleading "Failed to start container after bunch
-    # of attempts" timeout in every test that depends on the container.
-    for future in futures:
-        if future.exception() is None:
+    # ThreadPoolExecutor.__exit__ has joined every start_fully() call by now. Record
+    # each container's startup failure as a per-container marker instead of re-raising
+    # the first one here. This hook runs in pytest_sessionstart (before collection), so
+    # a single re-raise INTERNALERRORs the whole session and runs zero tests, gating
+    # every integration test on the least-reliable container. With markers,
+    # DockerService.start() fails or skips only the tests that depend on the dead
+    # container; every other integration test still runs. #67's loud surfacing is kept
+    # (required containers fail their dependents with the real cause) and #73 already
+    # dumped the dead container's own logs to stderr. Containers that came up stay up
+    # and are torn down by pytest_sessionfinish, which now runs because we don't raise.
+    unsupported = None
+    for future, container in futures.items():
+        exc = future.exception()
+        if exc is None:
             continue
-        # pytest skips pytest_sessionfinish (so stop_containers never runs) when
-        # pytest_sessionstart raises, and Ryuk is disabled in the default test run.
-        # Stop any containers that did come up so they don't leak, then re-raise.
-        for container in unique_containers:
-            try:
-                container.stop_fully()
-            except Exception:
-                logger.exception(
-                    f"Failed to stop container: {getattr(container, 'id')}"
-                )
-        future.result()  # re-raises the captured exception with its traceback
+        record = getattr(container, "record_start_failure", None)
+        if record is None:
+            # A non-DockerService service (e.g. a local ephemeral one) can't carry a
+            # marker, so its failure can't be isolated; fall back to failing the
+            # session rather than silently swallowing a real startup error.
+            unsupported = unsupported or future
+            continue
+        logger.error(
+            "Container %r failed to start: %r", getattr(container, "id", container), exc
+        )
+        record(exc)
+
+    if unsupported is not None:
+        unsupported.result()  # re-raise with traceback; cannot be isolated
 
 
 def stop_containers(config):

@@ -19,8 +19,8 @@ def test_couchbase_source_local(dest):
     """
     Test Couchbase source with local containerized Couchbase instance.
 
-    NOTE: This test requires local Couchbase Server to be stopped first,
-    as it uses 1:1 port mapping (8091, 11210, etc.) to avoid SDK connection issues.
+    The container advertises Docker's mapped host ports through Couchbase alternate
+    addresses, so it can run alongside a local Couchbase Server.
     """
 
     couchbase = CouchbaseContainer(COUCHBASE_IMAGE)

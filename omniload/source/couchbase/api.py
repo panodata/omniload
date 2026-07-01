@@ -90,7 +90,7 @@ class CouchbaseSource:
             netloc = netloc.split("@", 1)[1]
 
         # Parse query parameters from URI
-        from urllib.parse import parse_qs
+        from urllib.parse import parse_qs, urlencode
 
         query_params = parse_qs(parsed.query)
 
@@ -104,6 +104,12 @@ class CouchbaseSource:
                 scheme = "couchbases"
 
         connection_string = f"{scheme}://{netloc}"
+        connection_query = urlencode(
+            {key: value for key, value in query_params.items() if key != "ssl"},
+            doseq=True,
+        )
+        if connection_query:
+            connection_string = f"{connection_string}?{connection_query}"
 
         # Extract bucket from URI path if present (e.g., couchbase://host/bucket)
         bucket_from_uri = None

@@ -10,6 +10,7 @@ from dlt.sources.credentials import ConnectionStringCredentials
 import omniload.source.adjust.adapter
 from omniload.core.router import SqlSourceRouter
 from omniload.source.adjust.api import AdjustSource
+from omniload.source.couchbase.api import CouchbaseSource
 from omniload.source.fluxx.api import FluxxSource
 from omniload.source.mongodb.api import MongoDbSource
 
@@ -181,6 +182,56 @@ class MongoDbSourceTest(unittest.TestCase):
         source = MongoDbSource(table_builder=mongo)
         res = source.dlt_source(uri, table, incremental_key=incremental_key)
         self.assertIsNotNone(res)
+
+
+class CouchbaseSourceTest(unittest.TestCase):
+    def test_preserves_sdk_query_params_and_strips_ssl_flag(self):
+        captured = {}
+
+        class DummyResource:
+            max_table_nesting = None
+
+        def couchbase_collection(**kwargs):
+            captured.update(kwargs)
+            return DummyResource()
+
+        source = CouchbaseSource(table_builder=couchbase_collection)
+        res = source.dlt_source(
+            "couchbase://Administrator:password@localhost:33083?network=external&ssl=false",
+            "test_bucket._default._default",
+        )
+
+        self.assertIsNotNone(res)
+        self.assertEqual(
+            captured["connection_string"],
+            "couchbase://localhost:33083?network=external",
+        )
+        self.assertEqual(captured["username"], "Administrator")
+        self.assertEqual(captured["password"], "password")
+        self.assertEqual(captured["bucket"], "test_bucket")
+        self.assertEqual(captured["scope"], "_default")
+        self.assertEqual(captured["collection"], "_default")
+
+    def test_ssl_true_upgrades_scheme_without_leaking_ssl_query_param(self):
+        captured = {}
+
+        class DummyResource:
+            max_table_nesting = None
+
+        def couchbase_collection(**kwargs):
+            captured.update(kwargs)
+            return DummyResource()
+
+        source = CouchbaseSource(table_builder=couchbase_collection)
+        source.dlt_source(
+            "couchbase://Administrator:password@localhost:33083?ssl=true&network=external",
+            "test_bucket._default._default",
+        )
+
+        self.assertEqual(
+            captured["connection_string"],
+            "couchbases://localhost:33083?network=external",
+        )
 
 
 @pytest.fixture(scope="function")

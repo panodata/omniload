@@ -8,15 +8,7 @@ class CouchbaseContainer(DockerContainer):
 
     def __init__(self, image: str = "couchbase:community", **kwargs):
         super().__init__(image, **kwargs)
-        # Use 1:1 port mapping (requires local Couchbase to be stopped)
-        # This allows SDK to connect without alternate addresses
-        self.with_bind_ports(8091, 8091)
-        self.with_bind_ports(8092, 8092)
-        self.with_bind_ports(8093, 8093)
-        self.with_bind_ports(8094, 8094)
-        self.with_bind_ports(8095, 8095)
-        self.with_bind_ports(8096, 8096)
-        self.with_bind_ports(11210, 11210)
+        self.with_exposed_ports(8091, 8092, 8093, 11210)
         self.username = "Administrator"
         self.password = "password"
         self.bucket_name = "test_bucket"
@@ -35,6 +27,9 @@ class CouchbaseContainer(DockerContainer):
 
         # Create bucket
         self._create_bucket()
+
+        # Advertise Docker's mapped host ports to Couchbase SDK clients.
+        self._setup_alternate_addresses()
 
         # Wait for bucket to be ready
         time.sleep(10)
@@ -88,25 +83,21 @@ class CouchbaseContainer(DockerContainer):
 
     def _setup_alternate_addresses(self):
         """Setup alternate addresses for SDK bootstrap."""
-        import requests
-
         host = self.get_container_host_ip()
-        port = self.get_exposed_port(8091)
-
-        # Configure alternate addresses so SDK can connect from outside container
-        requests.post(
-            f"http://{host}:{port}/node/controller/setupAlternateAddresses/external",
-            auth=(self.username, self.password),
-            json={
-                "hostname": host,
-                "mgmt": int(self.get_exposed_port(8091)),
-                "kv": int(self.get_exposed_port(11210)),
-                "n1ql": int(self.get_exposed_port(8093)),
-                "capi": int(self.get_exposed_port(8092)),
-                "fts": int(self.get_exposed_port(8094)),
-                "cbas": int(self.get_exposed_port(8095)),
-                "eventingAdminPort": int(self.get_exposed_port(8096)),
-            },
+        port_spec = ",".join(
+            [
+                f"mgmt={self.get_exposed_port(8091)}",
+                f"kv={self.get_exposed_port(11210)}",
+                f"n1ql={self.get_exposed_port(8093)}",
+                f"capi={self.get_exposed_port(8092)}",
+            ]
+        )
+        self._exec_checked(
+            f"couchbase-cli setting-alternate-address -c 127.0.0.1 "
+            f"-u {self.username} -p {self.password} "
+            f"--set --node 127.0.0.1 "
+            f"--hostname {host} --ports {port_spec}",
+            "alternate address setup",
         )
         time.sleep(2)
 
@@ -174,13 +165,15 @@ class CouchbaseContainer(DockerContainer):
 
     def get_connection_string(self) -> str:
         """Get Couchbase connection string."""
-        # With 1:1 port mapping, use localhost
-        return "couchbase://localhost"
+        host = self.get_container_host_ip()
+        port = self.get_exposed_port(11210)
+        return f"couchbase://{host}:{port}?network=external"
 
     def get_connection_url(self) -> str:
         """Get connection URL with credentials."""
-        # With 1:1 port mapping, use localhost
-        return f"couchbase://{self.username}:{self.password}@localhost"
+        host = self.get_container_host_ip()
+        port = self.get_exposed_port(11210)
+        return f"couchbase://{self.username}:{self.password}@{host}:{port}?network=external"
 
     def insert_documents(self, documents: list):
         """Insert documents using Couchbase Python SDK from test machine."""

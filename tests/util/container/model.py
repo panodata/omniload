@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Callable, Optional
 
+import pytest
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.generic import DbContainer
 from testcontainers.kafka import KafkaContainer
@@ -51,6 +52,7 @@ class DockerService(AbstractService):
         connection_suffix: str = "",
         lock_dir: Optional[Path] = None,
         shutdown: Optional[bool] = False,
+        optional: bool = False,
     ) -> None:
         super().__init__()
         self.id = id
@@ -59,16 +61,56 @@ class DockerService(AbstractService):
         self.connection_suffix = connection_suffix
         self.lock_dir = lock_dir
         self.register_for_shutdown = shutdown
+        # When True, a boot failure skips this container's dependent tests instead of
+        # failing them. Reserved for flaky, non-product containers (SQL Server is a
+        # source-only engine-version check); required containers must fail loudly.
+        self.optional = optional
 
     def start(self) -> str:
         """Wait for the controller to spin up the container."""
         attempts = 0
         while self.lock_dir is None or not self._conn_url_file.exists():
+            self._raise_if_failed()
             time.sleep(0.5)
             attempts += 1
             if attempts > 80:
                 raise RuntimeError(f"Failed to start container: {self.id}")
         return self._conn_url_file.read_text()
+
+    def record_start_failure(self, exc: Exception) -> None:
+        """Mark this container as failed so dependent tests fail/skip fast.
+
+        Written to the shared lock dir, so xdist workers (separate processes) read it
+        too. The marker carries a one-line exception summary; the dead container's
+        full logs were already dumped to stderr by ``_report_failed_start``.
+        """
+        if self.lock_dir is None:
+            return
+        self._failed_file.write_text(f"{type(exc).__name__}: {exc}")
+
+    def _raise_if_failed(self) -> None:
+        """Fail or skip the dependent test immediately if the controller recorded a
+        boot failure for this container, instead of polling 40s for a connection-URL
+        file that will never appear.
+
+        Optional containers skip their dependent tests (flaky, non-product engine
+        checks); required containers fail them, so a genuine regression still surfaces
+        loudly. This keeps the blast radius of one dead container to the tests that
+        actually use it, rather than aborting the whole session from
+        ``pytest_sessionstart``.
+        """
+        if self.lock_dir is None or not self._failed_file.exists():
+            return
+        detail = self._failed_file.read_text().strip()
+        if self.optional:
+            pytest.skip(
+                f"optional container {self.id!r} did not start; "
+                f"skipping dependent test. Cause: {detail}"
+            )
+        raise RuntimeError(
+            f"required container {self.id!r} did not start; "
+            f"failing dependent test. Cause: {detail}"
+        )
 
     def stop(self):
         """Container lifecycle is managed by the controller."""
@@ -206,6 +248,10 @@ class DockerService(AbstractService):
     @property
     def _starter_file(self) -> Path:
         return Path(f"{self.lock_dir}/{self.id}.starting")
+
+    @property
+    def _failed_file(self) -> Path:
+        return Path(f"{self.lock_dir}/{self.id}.failed")
 
     @property
     def _shutdown_file(self) -> Path:
