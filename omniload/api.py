@@ -342,123 +342,130 @@ def run_ingest(**kwargs) -> LoadInfo | None:
         column_types=column_types,
     )
 
-    resource.for_each(dlt_source, lambda x: x.add_map(cast_set_to_list))
-    if factory.source_scheme.startswith("mysql"):
-        resource.for_each(dlt_source, lambda x: x.add_map(handle_mysql_empty_dates))
-
-    if factory.source_scheme.startswith("spanner"):
-        resource.for_each(dlt_source, lambda x: x.add_map(cast_spanner_types))
-
-    if factory.source_scheme.startswith(
-        "mmap"
-    ) and factory.destination_scheme.startswith("clickhouse"):
-        # https://github.com/dlt-hub/dlt/issues/2248
-        # TODO(turtledev): only apply for write dispositions that actually cause an exception.
-        # TODO(turtledev): make batch size configurable
-        import omniload.source.arrow.adapter as arrow
-
-        resource.for_each(dlt_source, lambda x: x.add_map(arrow.as_list))
-
-    if jr.mask:
-        masking_filter = create_masking_filter(jr.mask)
-        resource.for_each(dlt_source, lambda x: x.add_map(masking_filter))
-
-    if jr.yield_limit:
-        resource.for_each(dlt_source, lambda x: x.add_limit(jr.yield_limit))
-
-    if isinstance(source, MongoDbSource):
-        from omniload.core.resource import TypeHintMap
-
-        resource.for_each(dlt_source, lambda x: x.add_map(TypeHintMap().type_hint_map))
-
-    def col_h(x):
-        if column_hints:
-            x.apply_hints(columns=column_hints)
-
-    resource.for_each(dlt_source, col_h)
-
-    if isinstance(destination, AthenaDestination) and jr.partition_by:
-        hint.apply_athena_hints(dlt_source, jr.partition_by, column_hints)
-
-    if isinstance(destination, ClickhouseDestination):
-        from dlt.destinations.adapters import clickhouse_adapter
-
-        settings = ClickhouseDestination.engine_settings(jr.dest_uri)
-        engine_type = ClickhouseDestination.engine_type(jr.dest_uri)
-
-        def apply_clickhouse_adapter(x):
-            kwargs: Dict[str, Any] = {"settings": settings}
-            if engine_type:
-                kwargs["table_engine_type"] = engine_type
-            clickhouse_adapter(x, **kwargs)
-
-        resource.for_each(
-            dlt_source,
-            apply_clickhouse_adapter,
-        )
-
-    if original_incremental_strategy == IncrementalStrategy.delete_insert:
-
-        def set_primary_key(x):
-            x.incremental.primary_key = ()
-
-        resource.for_each(dlt_source, set_primary_key)
-
-    if (
-        factory.destination_scheme in PARQUET_SUPPORTED_DESTINATIONS
-        and loader_file_format is None
-    ):
-        loader_file_format = LoaderFileFormat.parquet
-
-        # if the source is a JSON returning source, we cannot use Parquet loader for BigQuery
-        if (
-            factory.destination_scheme == "bigquery"
-            and factory.source_scheme in JSON_RETURNING_SOURCES
-        ):
-            loader_file_format = None
-
-    write_disposition = None
-    if incremental_strategy != IncrementalStrategy.none:
-        write_disposition = incremental_strategy.value
-
-    if factory.source_scheme == "influxdb":
-        if jr.primary_key:
-            write_disposition = "merge"
-
-    start_time = datetime.now()
-
-    def run_pipeline():
-        return pipeline.run(
-            dlt_source,
-            **destination.dlt_run_params(
-                uri=jr.dest_uri,
-                table=dest_table,
-                staging_bucket=jr.staging_bucket,
-            ),
-            write_disposition=write_disposition,
-            primary_key=(
-                jr.primary_key if jr.primary_key and len(jr.primary_key) > 0 else None
-            ),
-            loader_file_format=(
-                loader_file_format.value if loader_file_format is not None else None
-            ),
-        )
-
-    # Databricks concurrency error patterns that are safe to retry
-    DATABRICKS_RETRYABLE_ERRORS = [
-        "SCHEMA_ALREADY_EXISTS",
-        "DELTA_METADATA_CHANGED",
-        "MetadataChangedException",
-    ]
-
-    def is_databricks_retryable_error(exception: Exception) -> bool:
-        if factory.destination_scheme != "databricks":
-            return False
-        error_str = str(exception)
-        return any(pattern in error_str for pattern in DATABRICKS_RETRYABLE_ERRORS)
-
-    max_retries = 3
+    # The source may open resources eagerly in dlt_source (mq-bridge opens its Consumer there),
+    # so guard the whole transform + load region: any failure from here on must release the
+    # source, otherwise a for_each transform raising before the load would leak the connection.
     try:
+        resource.for_each(dlt_source, lambda x: x.add_map(cast_set_to_list))
+        if factory.source_scheme.startswith("mysql"):
+            resource.for_each(dlt_source, lambda x: x.add_map(handle_mysql_empty_dates))
+
+        if factory.source_scheme.startswith("spanner"):
+            resource.for_each(dlt_source, lambda x: x.add_map(cast_spanner_types))
+
+        if factory.source_scheme.startswith(
+            "mmap"
+        ) and factory.destination_scheme.startswith("clickhouse"):
+            # https://github.com/dlt-hub/dlt/issues/2248
+            # TODO(turtledev): only apply for write dispositions that actually cause an exception.
+            # TODO(turtledev): make batch size configurable
+            import omniload.source.arrow.adapter as arrow
+
+            resource.for_each(dlt_source, lambda x: x.add_map(arrow.as_list))
+
+        if jr.mask:
+            masking_filter = create_masking_filter(jr.mask)
+            resource.for_each(dlt_source, lambda x: x.add_map(masking_filter))
+
+        if jr.yield_limit:
+            resource.for_each(dlt_source, lambda x: x.add_limit(jr.yield_limit))
+
+        if isinstance(source, MongoDbSource):
+            from omniload.core.resource import TypeHintMap
+
+            resource.for_each(
+                dlt_source, lambda x: x.add_map(TypeHintMap().type_hint_map)
+            )
+
+        def col_h(x):
+            if column_hints:
+                x.apply_hints(columns=column_hints)
+
+        resource.for_each(dlt_source, col_h)
+
+        if isinstance(destination, AthenaDestination) and jr.partition_by:
+            hint.apply_athena_hints(dlt_source, jr.partition_by, column_hints)
+
+        if isinstance(destination, ClickhouseDestination):
+            from dlt.destinations.adapters import clickhouse_adapter
+
+            settings = ClickhouseDestination.engine_settings(jr.dest_uri)
+            engine_type = ClickhouseDestination.engine_type(jr.dest_uri)
+
+            def apply_clickhouse_adapter(x):
+                kwargs: Dict[str, Any] = {"settings": settings}
+                if engine_type:
+                    kwargs["table_engine_type"] = engine_type
+                clickhouse_adapter(x, **kwargs)
+
+            resource.for_each(
+                dlt_source,
+                apply_clickhouse_adapter,
+            )
+
+        if original_incremental_strategy == IncrementalStrategy.delete_insert:
+
+            def set_primary_key(x):
+                x.incremental.primary_key = ()
+
+            resource.for_each(dlt_source, set_primary_key)
+
+        if (
+            factory.destination_scheme in PARQUET_SUPPORTED_DESTINATIONS
+            and loader_file_format is None
+        ):
+            loader_file_format = LoaderFileFormat.parquet
+
+            # if the source is a JSON returning source, we cannot use Parquet loader for BigQuery
+            if (
+                factory.destination_scheme == "bigquery"
+                and factory.source_scheme in JSON_RETURNING_SOURCES
+            ):
+                loader_file_format = None
+
+        write_disposition = None
+        if incremental_strategy != IncrementalStrategy.none:
+            write_disposition = incremental_strategy.value
+
+        if factory.source_scheme == "influxdb":
+            if jr.primary_key:
+                write_disposition = "merge"
+
+        start_time = datetime.now()
+
+        def run_pipeline():
+            return pipeline.run(
+                dlt_source,
+                **destination.dlt_run_params(
+                    uri=jr.dest_uri,
+                    table=dest_table,
+                    staging_bucket=jr.staging_bucket,
+                ),
+                write_disposition=write_disposition,
+                primary_key=(
+                    jr.primary_key
+                    if jr.primary_key and len(jr.primary_key) > 0
+                    else None
+                ),
+                loader_file_format=(
+                    loader_file_format.value if loader_file_format is not None else None
+                ),
+            )
+
+        # Databricks concurrency error patterns that are safe to retry
+        DATABRICKS_RETRYABLE_ERRORS = [
+            "SCHEMA_ALREADY_EXISTS",
+            "DELTA_METADATA_CHANGED",
+            "MetadataChangedException",
+        ]
+
+        def is_databricks_retryable_error(exception: Exception) -> bool:
+            if factory.destination_scheme != "databricks":
+                return False
+            error_str = str(exception)
+            return any(pattern in error_str for pattern in DATABRICKS_RETRYABLE_ERRORS)
+
+        max_retries = 3
         for attempt in range(max_retries):
             try:
                 run_info: LoadInfo = run_pipeline()
@@ -480,7 +487,7 @@ def run_ingest(**kwargs) -> LoadInfo | None:
         # Let the source commit, now that the load is durably committed (e.g. mq-bridge ack).
         getattr(source, "post_load", lambda: None)()
     except BaseException:
-        # Load failed: release the source without committing, so the batch is redelivered.
+        # Transform or load failed: release the source without committing, so it redelivers.
         release = getattr(source, "release", None)
         if callable(release):
             release()
