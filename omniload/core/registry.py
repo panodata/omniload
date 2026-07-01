@@ -71,6 +71,7 @@ sources: LazyRegistry = LazyRegistry(
         "http": "omniload.source.http.api:HttpSource",
         "https": "omniload.source.http.api:HttpSource",
         "hubspot": "omniload.source.hubspot.api:HubspotSource",
+        "ibmmq+mqb": "omniload.source.mqbridge.api:MqBridgeSource",
         "indeed": "omniload.source.indeed.api:IndeedSource",
         "influxdb": "omniload.source.influxdb.api:InfluxDBSource",
         "intercom": "omniload.source.intercom.api:IntercomSource",
