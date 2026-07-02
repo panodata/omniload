@@ -12,14 +12,54 @@ from omniload.util.endpoint import (
 _GLOB_CHARS = "*?["
 
 
+def _is_windows_drive(path: str) -> bool:
+    """True for a path that starts with a Windows drive letter, e.g. ``C:/data``."""
+    return len(path) >= 2 and path[0].isalpha() and path[1] == ":"
+
+
+def _url_path_to_local(spec: str) -> str:
+    """Turn the path portion of a ``file://`` URL into a slash-normalized local path.
+
+    Everything after ``file://`` is treated as a path, never a host, so the two-slash
+    relative form (``file://dir/x.csv``) keeps working. On top of that this recognizes
+    the platform-independent absolute forms:
+
+    - ``//server/share/...`` (from ``file:////server/share/...`` or backslash UNC input)
+      -> a UNC path, kept as-is.
+    - ``/C:/...`` (from ``file:///C:/...``) -> the leading slash before the drive letter
+      is dropped, giving ``C:/...``.
+
+    Backslashes are normalized to forward slashes so Windows separators survive the trip
+    through fsspec (a literal backslash in a POSIX filename is not supported, matching the
+    other filesystem sources).
+    """
+    s = spec.replace("\\", "/")
+    if s.startswith("//"):
+        return s  # UNC: //server/share/...
+    if len(s) >= 3 and s[0] == "/" and _is_windows_drive(s[1:]):
+        return s[1:]  # /C:/... -> C:/...
+    return s
+
+
+def _is_absolute_local(path: str) -> bool:
+    """True for POSIX-absolute, UNC, or Windows drive-letter paths (any OS)."""
+    return path.startswith("/") or _is_windows_drive(path)
+
+
 class LocalFilesystemSource:
     """Read local CSV / JSONL / Parquet files through the shared filesystem readers.
 
     Everything after ``file://`` is treated as a filesystem path, never an RFC-8089
     host, matching how ``csv://`` and ``mmap://`` already work. This keeps the
     reporter's two-slash relative form (``file://dir/x.csv`` -> ``<cwd>/dir/x.csv``)
-    working, while ``file:///abs/x.csv`` resolves to an absolute path. See #106 for
-    the URI-semantics discussion.
+    working. Absolute forms are recognized across platforms:
+
+    - ``file:///abs/x.csv`` -> ``/abs/x.csv`` (POSIX)
+    - ``file:///C:/x.csv`` or ``file://C:/x.csv`` -> ``C:/x.csv`` (Windows drive)
+    - ``file:////server/share/x.csv`` or ``file://\\\\server\\share\\x.csv``
+      -> ``//server/share/x.csv`` (UNC)
+
+    See #106 for the URI-semantics discussion.
     """
 
     def handles_incrementality(self) -> bool:
@@ -60,8 +100,13 @@ class LocalFilesystemSource:
         except (UnsupportedEndpointError, ValueError):
             raise ValueError(supported_file_format_message("Local file")) from None
 
-        abspath = os.path.abspath(path)
-        directory, file_glob = self._split_dir_glob(abspath)
+        local = _url_path_to_local(path)
+        if not _is_absolute_local(local):
+            # Relative to the working directory; normalize separators so the split below
+            # and dlt's path handling are slash-delimited on Windows too.
+            local = os.path.abspath(local).replace(os.sep, "/")
+
+        directory, file_glob = self._split_dir_glob(local)
 
         import fsspec
 
@@ -69,24 +114,32 @@ class LocalFilesystemSource:
 
         from omniload.source.filesystem.adapter import resource_for_reader
 
+        # Pass the plain absolute directory (not a hand-built file:// URL). dlt's
+        # glob_files routes a local path through make_file_url/make_local_path, which is
+        # documented to handle POSIX, Windows drive-letter and UNC paths correctly, so we
+        # inherit that instead of reconstructing a file:// URL ourselves (a naive
+        # "file://" + "C:/dir" parses the drive as a URL host and reads nothing).
         return resource_for_reader(
-            f"file://{directory}", fs, file_glob, endpoint, kwargs.get("column_types")
+            directory, fs, file_glob, endpoint, kwargs.get("column_types")
         )
 
     @staticmethod
-    def _split_dir_glob(abspath: str) -> Tuple[str, str]:
-        """Split an absolute path into a (directory, glob) pair for the readers adapter.
+    def _split_dir_glob(path: str) -> Tuple[str, str]:
+        """Split a slash-normalized path into a (directory, glob) pair for the readers.
 
         The readers treat the bucket_url as a directory and the third argument as a
         filename/glob relative to it. When the path contains a glob pattern, split at
-        the first path segment that carries a glob char so a recursive pattern like
+        the first segment that carries a glob char so a recursive pattern like
         ``/abs/data/**/*.csv`` becomes ``("/abs/data", "**/*.csv")``. A plain file
-        becomes ``(dirname, basename)``.
+        becomes ``(dirname, basename)``. Splitting is always on ``/`` (separators were
+        normalized upstream), so UNC (``//server/share``) and drive (``C:/…``) paths
+        split correctly on any platform.
         """
-        parts = abspath.split(os.sep)
+        parts = path.split("/")
         for i, part in enumerate(parts):
             if any(c in part for c in _GLOB_CHARS):
-                directory = os.sep.join(parts[:i]) or os.sep
-                file_glob = os.sep.join(parts[i:])
+                directory = "/".join(parts[:i]) or "/"
+                file_glob = "/".join(parts[i:])
                 return directory, file_glob
-        return os.path.dirname(abspath), os.path.basename(abspath)
+        directory, _, basename = path.rpartition("/")
+        return (directory or "/"), basename

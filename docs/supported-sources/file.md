@@ -20,7 +20,9 @@ file://<path>
 | Form | Example | Resolves to |
 | :--- | :--- | :--- |
 | Relative path | `file://data/users.csv` | `<cwd>/data/users.csv` |
-| Absolute path | `file:///srv/data/users.jsonl` | `/srv/data/users.jsonl` |
+| Absolute path (POSIX) | `file:///srv/data/users.jsonl` | `/srv/data/users.jsonl` |
+| Windows drive | `file:///C:/data/users.csv` (or `file://C:/data/users.csv`) | `C:\data\users.csv` |
+| Windows UNC | `file:////server/share/users.csv` | `\\server\share\users.csv` |
 | Path via `--source-table` | `--source-uri file:// --source-table data/users.parquet` | `<cwd>/data/users.parquet` |
 | Glob | `file://data/*.csv` | all matching files in `<cwd>/data` |
 | Format hint | `file://feed.dat#csv` | `feed.dat` read as CSV |
@@ -28,16 +30,18 @@ file://<path>
 The file format is inferred from the extension (`.csv`, `.jsonl`, `.parquet`,
 optionally `.gz`) or from an explicit [format hint](#file-type-hinting).
 
-::: tip
+:::{tip}
 `file://` intentionally treats the first path segment as part of the path, not
 as an RFC-8089 host. This is what makes the two-slash form `file://data/x.csv`
 (relative to the working directory) work, matching how `csv://` already behaves.
 Use the three-slash form `file:///abs/x.csv` for absolute paths.
 :::
 
-::: warning
-Paths are resolved POSIX-first. Windows drive-letter paths
-(`file:///C:/data/x.csv`) are not supported yet.
+:::{note}
+Windows paths are supported: `file:///C:/data/x.csv` (or `file://C:/data/x.csv`)
+reads the drive path `C:\data\x.csv`, and `file:////server/share/x.csv` reads the
+UNC path `\\server\share\x.csv`. Backslash input (`file://\\server\share\x.csv`)
+is accepted as well.
 :::
 
 ## Example: Loading a local CSV into DuckDB
