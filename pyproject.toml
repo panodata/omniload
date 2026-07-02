@@ -100,7 +100,7 @@ dependencies = [
   "influxdb-client<2",
   "mq-bridge-py>=0.3.2,<0.4",
   "mysql-connector-python<10",
-  "oracledb<4",
+  "oracledb<5",
   "orjson<4",
   "pendulum>=3,<4",
   "psycopg2-binary<3",
