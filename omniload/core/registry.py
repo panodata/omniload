@@ -56,6 +56,7 @@ sources: LazyRegistry = LazyRegistry(
         "dynamodb": "omniload.source.dynamodb.api:DynamoDBSource",
         "elasticsearch": "omniload.source.elasticsearch.api:ElasticsearchSource",
         "facebookads": "omniload.source.facebook_ads.api:FacebookAdsSource",
+        "file": "omniload.source.filesystem.api:LocalFilesystemSource",
         "fireflies": "omniload.source.fireflies.api:FirefliesSource",
         "fluxx": "omniload.source.fluxx.api:FluxxSource",
         "frankfurter": "omniload.source.frankfurter.api:FrankfurterSource",
