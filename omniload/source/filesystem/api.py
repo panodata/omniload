@@ -112,7 +112,10 @@ class LocalFilesystemSource:
 
         fs = fsspec.filesystem("file")
 
-        from omniload.source.filesystem.adapter import resource_for_reader
+        from omniload.source.filesystem.adapter import (
+            ReaderResourceRequest,
+            resource_for_reader,
+        )
 
         # Pass the plain absolute directory (not a hand-built file:// URL). dlt's
         # glob_files routes a local path through make_file_url/make_local_path, which is
@@ -120,7 +123,14 @@ class LocalFilesystemSource:
         # inherit that instead of reconstructing a file:// URL ourselves (a naive
         # "file://" + "C:/dir" parses the drive as a URL host and reads nothing).
         return resource_for_reader(
-            directory, fs, file_glob, endpoint, kwargs.get("column_types"), table
+            ReaderResourceRequest(
+                bucket_url=directory,
+                credentials=fs,
+                file_glob=file_glob,
+                reader_name=endpoint,
+                column_types=kwargs.get("column_types"),
+                table=table,
+            )
         )
 
     @staticmethod

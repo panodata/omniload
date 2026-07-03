@@ -67,10 +67,20 @@ class GCSSource:
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from omniload.source.filesystem.adapter import resource_for_reader
+        from omniload.source.filesystem.adapter import (
+            ReaderResourceRequest,
+            resource_for_reader,
+        )
 
         return resource_for_reader(
-            bucket_url, fs, path_to_file, endpoint, kwargs.get("column_types"), table
+            ReaderResourceRequest(
+                bucket_url=bucket_url,
+                credentials=fs,
+                file_glob=path_to_file,
+                reader_name=endpoint,
+                column_types=kwargs.get("column_types"),
+                table=table,
+            )
         )
 
 
@@ -121,8 +131,18 @@ class S3Source:
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from omniload.source.filesystem.adapter import resource_for_reader
+        from omniload.source.filesystem.adapter import (
+            ReaderResourceRequest,
+            resource_for_reader,
+        )
 
         return resource_for_reader(
-            bucket_url, fs, path_to_file, endpoint, kwargs.get("column_types"), table
+            ReaderResourceRequest(
+                bucket_url=bucket_url,
+                credentials=fs,
+                file_glob=path_to_file,
+                reader_name=endpoint,
+                column_types=kwargs.get("column_types"),
+                table=table,
+            )
         )

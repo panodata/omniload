@@ -25,13 +25,13 @@ def capture_reader_args(uri: str, table: str = "", **kwargs) -> dict:
     """
     captured: dict = {}
 
-    def fake_reader(bucket_url, fs, file_glob, reader_name, column_types, table):
+    def fake_reader(request):
         captured.update(
-            bucket_url=bucket_url,
-            file_glob=file_glob,
-            reader_name=reader_name,
-            column_types=column_types,
-            table=table,
+            bucket_url=request.bucket_url,
+            file_glob=request.file_glob,
+            reader_name=request.reader_name,
+            column_types=request.column_types,
+            table=request.table,
         )
         return "SENTINEL"
 

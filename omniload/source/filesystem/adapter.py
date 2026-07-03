@@ -14,6 +14,7 @@
 
 """Reads files in s3, gs or azure buckets using fsspec and provides convenience resources for chunked reading of various file formats"""
 
+from dataclasses import dataclass
 from typing import Any, Iterator, List, Optional, Tuple, Union
 
 import dlt
@@ -136,16 +137,37 @@ read_csv_duckdb = dlt.transformer(standalone=True, max_table_nesting=0)(
 )
 
 
-def resource_for_reader(
-    bucket_url: str,
-    credentials: Union[FileSystemCredentials, AbstractFileSystem],
-    file_glob: str,
-    reader_name: str,
-    column_types: Optional[dict[str, Any]] = None,
-    table: Optional[str] = None,
-) -> Any:
+@dataclass
+class ReaderResourceRequest:
+    """Bundles the arguments needed by `resource_for_reader` to build a resource.
+
+    Args:
+        bucket_url (str): The url to the bucket.
+        credentials (FileSystemCredentials | AbstractFilesystem): The credentials to the filesystem or fsspec `AbstractFilesystem` instance.
+        file_glob (str): The filter to apply to the files in glob format.
+        reader_name (str): The name of the reader resource to build, e.g. `read_csv`.
+        column_types (dict[str, Any], optional): Column name to type mapping, used by `read_csv_headless`.
+        table (str, optional): The table name, used as the sheet name by `read_excel`.
+    """
+
+    bucket_url: str
+    credentials: Union[FileSystemCredentials, AbstractFileSystem]
+    file_glob: str
+    reader_name: str
+    column_types: Optional[dict[str, Any]] = None
+    table: Optional[str] = None
+
+
+def resource_for_reader(request: ReaderResourceRequest) -> Any:
+    bucket_url = request.bucket_url
+    credentials = request.credentials
+    file_glob = request.file_glob
+    reader_name = request.reader_name
+
     if reader_name == "read_csv_headless":
-        column_names = list(column_types.keys()) if column_types else None
+        column_names = (
+            list(request.column_types.keys()) if request.column_types else None
+        )
 
         def read_csv_headless_with_cols(
             items: Iterator[FileItemDict],
@@ -164,13 +186,14 @@ def resource_for_reader(
             name="read_csv_headless", max_table_nesting=0
         )(read_csv_headless_with_cols)
     elif reader_name == "read_excel":
+        sheet_name = request.table
 
         def read_excel(
             items: Iterator[FileItemDict],
         ) -> Iterator[TDataItems]:
             yield from _read_excel(
                 items,
-                sheet_name=table,
+                sheet_name=sheet_name,
             )
 
         filesystem_resource = filesystem(bucket_url, credentials, file_glob=file_glob)

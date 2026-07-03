@@ -55,8 +55,18 @@ class SFTPSource:
         except Exception as e:
             raise ValueError(f"Failed to parse endpoint from path: {table}") from e
 
-        from omniload.source.filesystem.adapter import resource_for_reader
+        from omniload.source.filesystem.adapter import (
+            ReaderResourceRequest,
+            resource_for_reader,
+        )
 
         return resource_for_reader(
-            bucket_url, fs, file_glob, endpoint, kwargs.get("column_types")
+            ReaderResourceRequest(
+                bucket_url=bucket_url,
+                credentials=fs,
+                file_glob=file_glob,
+                reader_name=endpoint,
+                column_types=kwargs.get("column_types"),
+                table=table,
+            )
         )
