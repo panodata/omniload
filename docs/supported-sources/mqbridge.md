@@ -1,17 +1,12 @@
 # mq-bridge
 
 [mq-bridge](https://github.com/marcomq/mq-bridge) is a generic, transport-agnostic
-message broker binding. omniload uses it to consume messages from Kafka, NATS, AMQP
-(RabbitMQ), MQTT, ZeroMQ, AWS SQS, or an in-memory transport, and load them into any omniload
-destination.
+message broker binding. omniload uses it to consume messages from
+[AMQP](amqp.md), [AWS SQS](sqs.md), [IBM MQ](ibm-mq.md), [MQTT](mqtt.md),
+[NATS](nats.md), [ZeroMQ](zeromq.md), or an in-memory transport, and load
+them into any omniload destination.
 
-omniload supports mq-bridge as a source. This page is the full reference for every transport;
-several brokers also have a short landing page: [NATS](nats.md), [MQTT](mqtt.md),
-[ZeroMQ](zeromq.md), [Amazon SQS](sqs.md), and [IBM MQ](ibm-mq.md).
-
-> AMQP/RabbitMQ is also available as a **native** source (`amqp://`, see [RabbitMQ](rabbitmq.md))
-> with its own output columns (`data`/`metadata`/`msg_id`). Use this mq-bridge variant
-> (`amqp+mqb://`) for commit-after-load delivery and a single engine shared across all brokers.
+omniload supports mq-bridge as a source.
 
 > Kafka is also available as a **native** source (`kafka://`, see [Apache Kafka](kafka.md)) with
 > richer event decoding. Use this mq-bridge variant (`kafka+mqb://`) for durable

@@ -1,13 +1,11 @@
 # RabbitMQ
-[RabbitMQ](https://www.rabbitmq.com/) is an open-source message broker that implements the Advanced Message Queuing Protocol (AMQP). It is widely used for building distributed systems, microservices communication, and asynchronous task processing.
 
-omniload supports RabbitMQ as a source.
+:::{attention}
+**RabbitMQ source is defunct.**
+See {ref}`amqp` for the supported `amqp+mqb://` flow.
+:::
 
-> **Also available via mq-bridge.** AMQP brokers can also be consumed through the
-> [mq-bridge](mqbridge.md) connector (`amqp+mqb://`), which commits offsets only after a
-> successful load (effectively-once) and shares one engine with Kafka/NATS/MQTT/ZeroMQ/SQS. This
-> native source has its own output columns (`data`/`metadata`/`msg_id`); the mq-bridge source
-> uses `_mqb_id`/`_mqb_metadata`. Pick by your needs.
+This page is retained only for legacy reference.
 
 ## URI format
 The URI format for RabbitMQ is as follows:

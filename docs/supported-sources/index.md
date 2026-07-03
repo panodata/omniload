@@ -14,6 +14,11 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <th style="width: 5em">Destination</th>
     </tr>
     <tr>
+        <td>AMQP</td>
+        <td>✅</td>
+        <td>-</td>
+    </tr>
+    <tr>
         <td>BigQuery</td>
         <td>✅</td>
         <td>✅</td>
@@ -250,11 +255,6 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
     </tr>
     <tr>
         <td>Pipedrive</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
-        <td>RabbitMQ</td>
         <td>✅</td>
         <td>-</td>
     </tr>
