@@ -51,11 +51,10 @@ def excel_source(
 
     write_disposition = "merge" if merge_key else "replace"
 
-    return dlt.resource(
+    resource = dlt.resource(
         reader,
         name=table,
         write_disposition=write_disposition,
-        merge_key=merge_key,
     )(
         incremental=dlt_incremental(
             incremental_key or "",
@@ -65,3 +64,8 @@ def excel_source(
             range_start="closed",
         )
     )
+
+    if merge_key:
+        resource.apply_hints(merge_key=merge_key)
+
+    return resource
