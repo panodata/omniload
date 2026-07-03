@@ -30,6 +30,7 @@ from .readers import (
     _read_csv,
     _read_csv_duckdb,
     _read_csv_headless,
+    _read_excel,
     _read_jsonl,
     _read_parquet,
 )
@@ -127,6 +128,7 @@ read_csv = dlt.transformer(standalone=True, max_table_nesting=0)(_read_csv)
 read_csv_headless = dlt.transformer(standalone=True, max_table_nesting=0)(
     _read_csv_headless
 )
+read_excel = dlt.transformer(standalone=True, max_table_nesting=0)(_read_excel)
 read_jsonl = dlt.transformer(standalone=True, max_table_nesting=0)(_read_jsonl)
 read_parquet = dlt.transformer(standalone=True, max_table_nesting=0)(_read_parquet)
 read_csv_duckdb = dlt.transformer(standalone=True, max_table_nesting=0)(
@@ -140,25 +142,41 @@ def resource_for_reader(
     file_glob: str,
     reader_name: str,
     column_types: Optional[dict[str, Any]] = None,
+    table: Optional[str] = None,
 ) -> Any:
-    if reader_name != "read_csv_headless":
+    if reader_name == "read_csv_headless":
+        column_names = list(column_types.keys()) if column_types else None
+
+        def read_csv_headless_with_cols(
+            items: Iterator[FileItemDict],
+            chunksize: int = 10000,
+            **pandas_kwargs: Any,
+        ) -> Iterator[TDataItems]:
+            yield from _read_csv_headless(
+                items,
+                chunksize=chunksize,
+                column_names=column_names,
+                **pandas_kwargs,
+            )
+
+        filesystem_resource = filesystem(bucket_url, credentials, file_glob=file_glob)
+        return filesystem_resource | dlt.transformer(
+            name="read_csv_headless", max_table_nesting=0
+        )(read_csv_headless_with_cols)
+    elif reader_name == "read_excel":
+
+        def read_excel(
+            items: Iterator[FileItemDict],
+        ) -> Iterator[TDataItems]:
+            yield from _read_excel(
+                items,
+                sheet_name=table,
+            )
+
+        filesystem_resource = filesystem(bucket_url, credentials, file_glob=file_glob)
+        return filesystem_resource | dlt.transformer(
+            name="read_excel", max_table_nesting=0
+        )(read_excel)
+
+    else:
         return readers(bucket_url, credentials, file_glob).with_resources(reader_name)
-
-    column_names = list(column_types.keys()) if column_types else None
-
-    def read_csv_headless_with_cols(
-        items: Iterator[FileItemDict],
-        chunksize: int = 10000,
-        **pandas_kwargs: Any,
-    ) -> Iterator[TDataItems]:
-        yield from _read_csv_headless(
-            items,
-            chunksize=chunksize,
-            column_names=column_names,
-            **pandas_kwargs,
-        )
-
-    filesystem_resource = filesystem(bucket_url, credentials, file_glob=file_glob)
-    return filesystem_resource | dlt.transformer(
-        name="read_csv_headless", max_table_nesting=0
-    )(read_csv_headless_with_cols)

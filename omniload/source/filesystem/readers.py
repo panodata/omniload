@@ -85,6 +85,25 @@ def _read_csv_headless(
                 yield df.to_dict(orient="records")
 
 
+def _read_excel(
+    items: Iterator[FileItemDict],
+    sheet_name: Optional[str],
+) -> Iterator[TDataItems]:
+    """Reads XLSX file content and extract the data.
+
+    Args:
+        sheet_name (str, optional): The name of the sheet within a spreadsheet file.
+
+    Returns:
+        TDataItem: The file content
+    """
+    import polars as pl
+
+    for file_obj in items:
+        with file_obj.open() as f:
+            yield pl.read_excel(f.read(), sheet_name=sheet_name).rows(named=True)
+
+
 def _read_jsonl(
     items: Iterator[FileItemDict], chunksize: int = 1000
 ) -> Iterator[TDataItems]:

@@ -110,5 +110,5 @@ def test_parse_endpoint_rejects_unsupported_format():
 def test_supported_file_format_message():
     assert (
         supported_file_format_message("S3")
-        == "S3 Source only supports file formats: csv, csv_headless, jsonl, parquet"
+        == "S3 Source only supports file formats: csv, csv_headless, jsonl, parquet, xlsx"
     )

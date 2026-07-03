@@ -55,7 +55,6 @@ sources: LazyRegistry = LazyRegistry(
         "dune": "omniload.source.dune.api:DuneSource",
         "dynamodb": "omniload.source.dynamodb.api:DynamoDBSource",
         "elasticsearch": "omniload.source.elasticsearch.api:ElasticsearchSource",
-        "excel": "omniload.source.excel.api:ExcelSource",
         "facebookads": "omniload.source.facebook_ads.api:FacebookAdsSource",
         "file": "omniload.source.filesystem.api:LocalFilesystemSource",
         "fireflies": "omniload.source.fireflies.api:FirefliesSource",

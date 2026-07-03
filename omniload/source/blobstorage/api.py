@@ -70,7 +70,7 @@ class GCSSource:
         from omniload.source.filesystem.adapter import resource_for_reader
 
         return resource_for_reader(
-            bucket_url, fs, path_to_file, endpoint, kwargs.get("column_types")
+            bucket_url, fs, path_to_file, endpoint, kwargs.get("column_types"), table
         )
 
 
@@ -124,5 +124,5 @@ class S3Source:
         from omniload.source.filesystem.adapter import resource_for_reader
 
         return resource_for_reader(
-            bucket_url, fs, path_to_file, endpoint, kwargs.get("column_types")
+            bucket_url, fs, path_to_file, endpoint, kwargs.get("column_types"), table
         )

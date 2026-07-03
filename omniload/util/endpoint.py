@@ -15,6 +15,7 @@ FORMAT_TO_READER: dict[str, str] = {
     "csv_headless": "read_csv_headless",
     "jsonl": "read_jsonl",
     "parquet": "read_parquet",
+    "xlsx": "read_excel",
 }
 SUPPORTED_FILE_FORMATS = tuple(FORMAT_TO_READER)
 SUPPORTED_FILE_FORMATS_TEXT = ", ".join(SUPPORTED_FILE_FORMATS)

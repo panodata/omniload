@@ -2,7 +2,7 @@
 
 ## in progress
 
-- Connectors: Added source adapter for the XLSX file format
+- Connectors: Added filesystem reader for the XLSX file format
 
 ## 2026/07/02 v0.5.0
 

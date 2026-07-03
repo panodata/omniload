@@ -120,7 +120,7 @@ class LocalFilesystemSource:
         # inherit that instead of reconstructing a file:// URL ourselves (a naive
         # "file://" + "C:/dir" parses the drive as a URL host and reads nothing).
         return resource_for_reader(
-            directory, fs, file_glob, endpoint, kwargs.get("column_types")
+            directory, fs, file_glob, endpoint, kwargs.get("column_types"), table
         )
 
     @staticmethod
