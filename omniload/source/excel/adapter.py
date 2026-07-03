@@ -1,5 +1,5 @@
 # https://github.com/dlt-hub/dlt-studio/blob/devel/dlt/sources/_core_source_templates/filesystem_pipeline.py
-from typing import Any, Iterable, Optional
+from typing import Any, Optional
 
 import dlt
 import polars as pl
@@ -12,7 +12,7 @@ def excel_source(
     uri: str,
     table: str,
     **kwargs: Any,
-) -> Iterable[DltResource]:
+) -> DltResource:
     """
     Read from an Excel spreadsheet.
 
@@ -21,7 +21,7 @@ def excel_source(
         table (str): The name of the sheet to read from the spreadsheet.
 
     Returns:
-        Iterable[DltResource]: Resources with data.
+        DltResource: Resource with data.
     """
 
     incremental_key = kwargs.get("incremental_key")
