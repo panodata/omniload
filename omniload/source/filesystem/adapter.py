@@ -20,11 +20,9 @@ import dlt
 from dlt.sources import DltResource, TDataItems
 from dlt.sources.credentials import FileSystemCredentials
 from dlt.sources.filesystem import FileItem, FileItemDict, fsspec_filesystem, glob_files
+from fsspec import AbstractFileSystem
 
-from .helpers import (
-    AbstractFileSystem,
-    FilesystemConfigurationResource,
-)
+from .model import FilesystemConfigurationResource
 from .readers import (
     ReadersSource,
     _read_csv,

@@ -13,6 +13,7 @@ from fsspec.implementations.memory import MemoryFileSystem
 from pyarrow import parquet as pya_parquet
 
 from omniload.error import InvalidBlobTableError
+from omniload.target.filesystem import S3Destination
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string, has_exception
 from tests.warehouse.settings import DESTINATIONS
@@ -393,3 +394,12 @@ def test_gcs(dest, test_case):
 def test_s3(dest, test_case):
     test_case(dest.start())
     dest.stop()
+
+
+def test_s3_destination():
+    # should raise an error if endpoint_url doesn't have a scheme or a host
+    with pytest.raises(ValueError, match="Invalid endpoint_url"):
+        S3Destination().dlt_dest(
+            uri="s3://?access_key_id=KEY&secret_access_key=SECRET&endpoint_url=localhost:9000",
+            dest_table="bucket/test_table",
+        )

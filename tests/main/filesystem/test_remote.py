@@ -3,8 +3,8 @@ from urllib.parse import urlparse
 
 import pytest
 
-from omniload.util.endpoint import (
-    UnsupportedEndpointError,
+from omniload.source.filesystem.error import UnsupportedEndpointError
+from omniload.source.filesystem.router import (
     determine_endpoint,
     parse_endpoint,
     parse_uri,
