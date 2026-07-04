@@ -1,14 +1,18 @@
 import warnings
-from typing import Optional, Tuple, TypeAlias
+from typing import Any, Dict, Optional, Tuple, TypeAlias
 from urllib.parse import ParseResult, urlparse
+
+import dlt
+from dlt.common.configuration import with_config
+from dlt.common.storages import FilesystemConfiguration, fsspec_filesystem
+from dlt.common.storages.configuration import FileSystemCredentials
+from dlt.extract import DltResource
+from fsspec import AbstractFileSystem
+
+from omniload.source.filesystem.error import UnsupportedEndpointError
 
 BucketName: TypeAlias = str
 FileGlob: TypeAlias = str
-
-
-class UnsupportedEndpointError(Exception):
-    pass
-
 
 FORMAT_TO_READER: dict[str, str] = {
     "csv": "read_csv",
@@ -116,3 +120,24 @@ def determine_endpoint(table: str, path: str) -> str:
         return parse_endpoint(path)
     except Exception as e:
         raise ValueError(f"Failed to parse endpoint from path: {path}") from e
+
+
+def fsspec_from_resource(filesystem_instance: DltResource) -> AbstractFileSystem:
+    """Extract authorized fsspec client from a filesystem resource"""
+
+    @with_config(
+        spec=FilesystemConfiguration,
+        sections=("sources", filesystem_instance.section, filesystem_instance.name),
+    )
+    def _get_fsspec(
+        bucket_url: str, credentials: Optional[FileSystemCredentials]
+    ) -> AbstractFileSystem:
+        kwargs: Dict[str, Any] = {}
+        if credentials is not None:
+            kwargs["credentials"] = credentials
+        return fsspec_filesystem(bucket_url, **kwargs)[0]
+
+    return _get_fsspec(
+        filesystem_instance.explicit_args.get("bucket_url", dlt.config.value),
+        filesystem_instance.explicit_args.get("credentials", dlt.secrets.value),
+    )

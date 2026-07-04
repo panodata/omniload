@@ -1,12 +1,14 @@
 import base64
 import json
+from typing import Any, Dict
 from urllib.parse import parse_qs, urlparse
 
 from omniload.error import InvalidBlobTableError, MissingValueError
-from omniload.util.endpoint import (
-    UnsupportedEndpointError,
+from omniload.source.filesystem.error import UnsupportedEndpointError
+from omniload.source.filesystem.router import (
     determine_endpoint,
     parse_uri,
+    split_format_hint,
     supported_file_format_message,
 )
 
@@ -125,4 +127,56 @@ class S3Source:
 
         return resource_for_reader(
             bucket_url, fs, path_to_file, endpoint, kwargs.get("column_types")
+        )
+
+
+class SFTPSource:
+    def handles_incrementality(self) -> bool:
+        return True
+
+    def dlt_source(self, uri: str, table: str, **kwargs):
+        parsed_uri = urlparse(uri)
+        host = parsed_uri.hostname
+        if not host:
+            raise MissingValueError("host", "SFTP URI")
+        port = parsed_uri.port or 22
+        username = parsed_uri.username
+        password = parsed_uri.password
+
+        params: Dict[str, Any] = {
+            "host": host,
+            "port": port,
+            "username": username,
+            "password": password,
+            "look_for_keys": False,
+            "allow_agent": False,
+        }
+
+        import fsspec
+
+        try:
+            fs = fsspec.filesystem("sftp", **params)
+        except Exception as e:
+            raise ConnectionError(
+                f"Failed to connect or authenticate to sftp server {host}:{port}. Error: {e}"
+            ) from e
+        bucket_url = f"sftp://{host}:{port}"
+
+        table_path, _ = split_format_hint(table)
+        if table_path.startswith("/"):
+            file_glob = table_path
+        else:
+            file_glob = f"/{table_path}"
+
+        try:
+            endpoint = determine_endpoint(table, file_glob)
+        except UnsupportedEndpointError:
+            raise ValueError(supported_file_format_message("SFTP")) from None
+        except Exception as e:
+            raise ValueError(f"Failed to parse endpoint from path: {table}") from e
+
+        from omniload.source.filesystem.adapter import resource_for_reader
+
+        return resource_for_reader(
+            bucket_url, fs, file_glob, endpoint, kwargs.get("column_types")
         )

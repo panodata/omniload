@@ -1,0 +1,2 @@
+class UnsupportedEndpointError(Exception):
+    pass

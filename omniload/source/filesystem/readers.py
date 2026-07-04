@@ -19,7 +19,8 @@ from dlt.common.typing import copy_sig
 from dlt.sources import DltResource, DltSource, TDataItems
 from dlt.sources.filesystem import FileItemDict
 
-from .helpers import DEFAULT_CHUNK_SIZE, fetch_arrow, fetch_json
+from .helpers import fetch_arrow, fetch_json
+from .model import DEFAULT_CHUNK_SIZE
 
 
 def _read_csv(
