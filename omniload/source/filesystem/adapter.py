@@ -121,17 +121,6 @@ def filesystem(
         yield files_chunk
 
 
-read_csv = dlt.transformer(standalone=True, max_table_nesting=0)(_read_csv)
-read_csv_headless = dlt.transformer(standalone=True, max_table_nesting=0)(
-    _read_csv_headless
-)
-read_jsonl = dlt.transformer(standalone=True, max_table_nesting=0)(_read_jsonl)
-read_parquet = dlt.transformer(standalone=True, max_table_nesting=0)(_read_parquet)
-read_csv_duckdb = dlt.transformer(standalone=True, max_table_nesting=0)(
-    _read_csv_duckdb
-)
-
-
 def resource_for_reader(
     bucket_url: str,
     credentials: Union[FileSystemCredentials, AbstractFileSystem],
