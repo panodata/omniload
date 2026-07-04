@@ -2,7 +2,7 @@
 
 These live outside the ``tests/warehouse`` subtree, so the module is marked ``integration``
 explicitly (Docker/testcontainers). They complement the brokerless unit/e2e tests in
-``tests/stream/test_mqbridge.py``: here we exercise the real transport, the ``_mqb_id`` derived
+``tests/stream/test_mqbridge_brokerless.py``: here we exercise the real transport, the ``_mqb_id`` derived
 from a Kafka ``partition:offset``, and — most importantly — the deferred-ack guarantee, none of
 which the in-memory transport covers.
 
@@ -17,14 +17,9 @@ from concurrent.futures import ThreadPoolExecutor
 import duckdb
 import pytest
 import sqlalchemy
-from confluent_kafka import KafkaError, KafkaException, Producer
-from confluent_kafka.admin import AdminClient
-from testcontainers.kafka import KafkaContainer
+from confluent_kafka import Producer
 
 from tests.util import invoke_ingest_command
-from tests.util.common import get_random_string
-from tests.util.container.model import DockerService
-from tests.warehouse.manager import KAFKA_IMAGE
 from tests.warehouse.settings import DESTINATIONS
 
 # Marked explicitly (not auto-marked by path) because this module lives outside tests/warehouse.
@@ -35,37 +30,6 @@ pytest.importorskip("mq_bridge")
 
 ROWS = [{"order_id": i, "amount": i * 10} for i in range(5)]
 EXPECTED = [(r["order_id"], r["amount"]) for r in ROWS]
-
-
-@pytest.fixture(scope="session")
-def kafka_service(request, shared_directory) -> DockerService:
-    """Session-wide Kafka container, shared with the native kafka tests via the lock dir."""
-    return DockerService(
-        id="kafka",
-        container_creator=lambda: KafkaContainer(KAFKA_IMAGE),
-        lock_dir=shared_directory,
-        shutdown=True,
-    ).start_background()
-
-
-@pytest.fixture(scope="function")
-def topic(kafka_service) -> str:
-    """A unique topic per test (doubles as the consumer group, so offsets never collide)."""
-    return "test_" + get_random_string(5)
-
-
-@pytest.fixture(scope="function")
-def kafka(kafka_service, topic) -> str:
-    """Kafka address on a clean canvas: delete the test topic before running."""
-    address = kafka_service.start()
-    admin = AdminClient({"bootstrap.servers": address})
-    for name, fut in admin.delete_topics([topic]).items():
-        try:
-            fut.result(10)
-        except KafkaException as exc:
-            if exc.args[0].code() != KafkaError.UNKNOWN_TOPIC_OR_PART:
-                raise
-    return address
 
 
 def _produce(address: str, topic: str, rows) -> None:

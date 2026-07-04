@@ -2,7 +2,7 @@
 
 Like ``test_mqbridge_kafka.py`` these live outside ``tests/warehouse``, so the module is marked
 ``integration`` explicitly. They complement the brokerless unit/e2e tests in
-``test_mqbridge.py`` by exercising the real MQTT transport and — most importantly — the
+``test_mqbridge_brokerless.py`` by exercising the real MQTT transport and — most importantly — the
 deferred-ack guarantee (offset/PUBACK withheld until the load durably commits).
 
 MQTT has an ordering constraint Kafka does not: a broker only queues messages for a subscriber
@@ -24,7 +24,6 @@ import duckdb
 import pytest
 
 from tests.util import invoke_ingest_command
-from tests.util.common import get_random_string
 
 # Marked explicitly (not auto-marked by path) because this module lives outside tests/warehouse.
 pytestmark = pytest.mark.integration
@@ -65,12 +64,6 @@ def mosquitto() -> Iterator[str]:
         yield f"{host}:{port}"
     finally:
         container.stop()
-
-
-@pytest.fixture(scope="function")
-def topic() -> str:
-    """A unique topic per test; doubles as the durable consumer's ``client_id`` seed."""
-    return "test_" + get_random_string(5)
 
 
 def _source_uri(address: str, topic: str) -> str:
