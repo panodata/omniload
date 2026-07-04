@@ -6,8 +6,6 @@ from dlt.common.storages import FilesystemConfiguration
 from dlt.common.storages.configuration import FileSystemCredentials
 from fsspec import AbstractFileSystem
 
-DEFAULT_CHUNK_SIZE = 5_000
-
 
 @configspec
 class FilesystemConfigurationResource(FilesystemConfiguration):

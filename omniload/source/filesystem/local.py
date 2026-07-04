@@ -3,10 +3,10 @@ from typing import Tuple
 
 from omniload.error import MissingValueError
 from omniload.source.filesystem.error import UnsupportedEndpointError
+from omniload.source.filesystem.format.registry import supported_file_format_message
 from omniload.source.filesystem.router import (
     determine_endpoint,
     split_format_hint,
-    supported_file_format_message,
 )
 
 _GLOB_CHARS = "*?["

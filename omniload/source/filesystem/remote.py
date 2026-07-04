@@ -5,11 +5,11 @@ from urllib.parse import parse_qs, urlparse
 
 from omniload.error import InvalidBlobTableError, MissingValueError
 from omniload.source.filesystem.error import UnsupportedEndpointError
+from omniload.source.filesystem.format.registry import supported_file_format_message
 from omniload.source.filesystem.router import (
     determine_endpoint,
     parse_uri,
     split_format_hint,
-    supported_file_format_message,
 )
 
 

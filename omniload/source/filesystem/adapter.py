@@ -22,8 +22,7 @@ from dlt.sources.credentials import FileSystemCredentials
 from dlt.sources.filesystem import FileItem, FileItemDict, fsspec_filesystem, glob_files
 from fsspec import AbstractFileSystem
 
-from .model import FilesystemConfigurationResource
-from .readers import (
+from omniload.source.filesystem.format.readers import (
     ReadersSource,
     _read_csv,
     _read_csv_duckdb,
@@ -31,6 +30,8 @@ from .readers import (
     _read_jsonl,
     _read_parquet,
 )
+
+from .model import FilesystemConfigurationResource
 
 
 @dlt.source(_impl_cls=ReadersSource, spec=FilesystemConfigurationResource)
