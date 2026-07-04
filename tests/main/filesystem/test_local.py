@@ -31,7 +31,7 @@ def capture_reader_args(uri: str, table: str = "", **kwargs) -> dict:
         )
         return "SENTINEL"
 
-    with patch("omniload.source.filesystem.impl.core.resource_for_reader", fake_reader):
+    with patch("omniload.source.filesystem.adapter.resource_for_reader", fake_reader):
         result = LocalFilesystemSource().dlt_source(uri, table, **kwargs)
 
     assert result == "SENTINEL"

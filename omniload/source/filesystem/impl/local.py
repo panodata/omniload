@@ -80,7 +80,7 @@ class LocalFilesystemSource:
 
         fs = fsspec.filesystem("file")
 
-        from omniload.source.filesystem.impl.core import resource_for_reader
+        from omniload.source.filesystem.adapter import resource_for_reader
 
         # Pass the plain absolute directory (not a hand-built file:// URL). dlt's
         # glob_files routes a local path through make_file_url/make_local_path, which is
