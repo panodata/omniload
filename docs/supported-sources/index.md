@@ -91,7 +91,7 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
     <tr>
         <td>MySQL</td>
         <td>✅</td>
-        <td>❌</td>
+        <td>✅</td>
     </tr>
     <tr>
         <td>Oracle</td>
@@ -109,7 +109,7 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>✅</td>
     </tr>
     <tr>
-        <td>SAP Hana</td>
+        <td>SAP HANA</td>
         <td>✅</td>
         <td>❌</td>
     </tr>
@@ -121,7 +121,7 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
     <tr>
         <td>SQLite</td>
         <td>✅</td>
-        <td>❌</td>
+        <td>✅</td>
     </tr>
     <tr>
         <td>Trino</td>
