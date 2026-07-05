@@ -27,6 +27,7 @@ from dlt.common.utils import map_nested_values_in_place
 from omniload import run_ingest
 from omniload.source.filesystem.api import LocalFilesystemSource
 from omniload.source.filesystem.format.bson_codec import convert_bson_objs
+from omniload.source.filesystem.format.readers import read_bson
 
 OID = "507f1f77bcf86cd799439011"
 OID2 = "507f1f77bcf86cd799439012"
@@ -172,6 +173,23 @@ def test_reads_gzipped_bson(tmp_path):
     assert len(rows) == 1
     assert rows[0]["_id"] == OID
     assert rows[0]["name"] == "gzipped"
+
+
+def test_reader_yields_chunks_across_boundary(tmp_path):
+    """read_bson yields at each chunksize boundary and flushes the final partial chunk.
+    The end-to-end reader tests use the default chunksize (1000) with a few docs, so they
+    never cross a boundary; this drives read_bson directly with a small chunksize."""
+    path = _write_bson(tmp_path / "many.bson", [{"_id": i} for i in range(5)])
+
+    class _Item:
+        # read_bson only calls file_obj.open() as a context manager yielding a binary
+        # stream, so a real FileItemDict is not needed to exercise the chunking.
+        def open(self):
+            return open(path, "rb")
+
+    chunks = list(read_bson(iter([_Item()]), chunksize=2))  # ty: ignore[invalid-argument-type]
+    assert [len(chunk) for chunk in chunks] == [2, 2, 1]
+    assert [doc["_id"] for chunk in chunks for doc in chunk] == [0, 1, 2, 3, 4]
 
 
 def test_reader_normalizes_binary_and_nested(tmp_path):

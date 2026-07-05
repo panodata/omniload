@@ -53,9 +53,9 @@ Parquet loader used for warehouses):
 | `datetime` | UTC datetime |
 | `Timestamp` | UTC datetime |
 | `Regex` | pattern string |
-| `DBRef` | `{"$ref", "$id", "$db"}` object |
+| `DBRef` | `{"$ref": collection, "$id": id, "$db": database}` object (`$db` only when set) |
 | `MinKey` / `MaxKey` | `{"$minKey": 1}` / `{"$maxKey": 1}` |
-| `Code` | code string (or `{"$code", "$scope"}` when it carries scope) |
+| `Code` | code string (or `{"$code": source, "$scope": document}` when it carries scope) |
 
 `Binary` is base64-encoded (rather than passed through as raw bytes) so the value is
 portable across text-based loaders as well as Parquet. Nested documents and arrays are
