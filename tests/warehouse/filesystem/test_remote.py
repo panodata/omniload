@@ -13,7 +13,7 @@ from fsspec.implementations.memory import MemoryFileSystem
 from pyarrow import parquet as pya_parquet
 
 from omniload.error import InvalidBlobTableError
-from omniload.target.filesystem import S3Destination
+from omniload.target.filesystem.api import S3Destination
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string, has_exception
 from tests.warehouse.settings import DESTINATIONS

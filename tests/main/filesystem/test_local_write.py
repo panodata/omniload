@@ -8,10 +8,10 @@ import pytest
 
 from omniload.core.factory import SourceDestinationFactory
 from omniload.error import MissingValueError
-from omniload.target.filesystem.local import (
+from omniload.target.filesystem.api import (
     LocalFilesystemDestination,
-    _resolve_output_target,
 )
+from omniload.target.filesystem.util import _resolve_output_target
 from tests.util import invoke_ingest_command
 
 # Normalized so the relative-form expectations hold on Windows too (os.getcwd() there

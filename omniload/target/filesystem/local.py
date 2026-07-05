@@ -20,144 +20,9 @@ import os
 import shutil
 import tempfile
 
-from omniload.error import MissingValueError
-from omniload.source.filesystem.format.registry import FORMAT_TO_READER
-from omniload.source.filesystem.impl.util import (
-    _is_absolute_local,
-    _url_path_to_local,
-)
+from omniload.target.filesystem.registry import writer_for_format
+from omniload.target.filesystem.util import _resolve_output_target, _strip_dlt_columns
 from omniload.util.loader import load_dlt_file
-
-# csv_headless is a read-only concept (parsing a header-less CSV); writing always emits a
-# header, so the write side supports the plain-format subset of FORMAT_TO_READER.
-WRITE_FORMATS = ("csv", "jsonl", "parquet")
-WRITE_FORMATS_TEXT = ", ".join(WRITE_FORMATS)
-
-# Globbing is a read-only feature; a write target must name exactly one output file.
-_GLOB_CHARS = "*?["
-
-
-def _supported_write_format_message(file_format: str | None = None) -> str:
-    got = f" (got '{file_format}')" if file_format else ""
-    return (
-        f"Local file Destination only supports file formats: {WRITE_FORMATS_TEXT}{got}"
-    )
-
-
-def _split_format_hint(spec: str) -> tuple[str, str | None]:
-    """Split ``path#format`` into ``(path, format)``.
-
-    A trailing ``#segment`` is an explicit format hint only when ``segment`` is a
-    recognized format; otherwise the ``#`` is part of the path (so a literal ``#`` in a
-    filename keeps working). Mirrors ``source.filesystem.router.split_format_hint`` but is
-    reimplemented here to avoid importing that module's heavy dlt/fsspec dependencies just
-    for a string split.
-    """
-    head, sep, suffix = spec.rpartition("#")
-    if sep and suffix in FORMAT_TO_READER:
-        return head, suffix
-    return spec, None
-
-
-def _resolve_output_target(dest_uri: str) -> tuple[str, str]:
-    """Resolve a ``file://`` destination URI into ``(local_path, format)``.
-
-    Format precedence matches the source: an explicit ``#format`` hint wins, otherwise it
-    is inferred from the file extension. Unsupported/absent formats raise a ``ValueError``
-    listing the supported set.
-    """
-    spec = dest_uri.split("://", 1)[1] if "://" in dest_uri else dest_uri
-    spec = spec.strip()
-    if not spec:
-        raise MissingValueError("path", "file URI")
-
-    path, hint = _split_format_hint(spec)
-    if not path:
-        # e.g. file://#csv, where the whole spec was consumed by the format hint.
-        raise MissingValueError("path", "file URI")
-    if any(char in path for char in _GLOB_CHARS):
-        raise ValueError(
-            "file:// destinations must name a single output file; "
-            "globs (*, ?, []) are only supported when reading"
-        )
-
-    if hint:
-        file_format = hint
-    elif "." in path:
-        file_format = path.rsplit(".", 1)[-1].lower()
-    else:
-        file_format = None
-    if file_format not in WRITE_FORMATS:
-        raise ValueError(_supported_write_format_message(file_format))
-
-    local = _url_path_to_local(path)
-    if not _is_absolute_local(local):
-        # Relative to the working directory; normalize separators so Windows drive paths
-        # come back slash-delimited, matching the source side.
-        local = os.path.abspath(local).replace(os.sep, "/")
-    return local, file_format
-
-
-def _strip_dlt_columns(row: dict) -> dict:
-    """Drop dlt's bookkeeping columns (``_dlt_id``, ``_dlt_load_id``, ...)."""
-    return {key: value for key, value in row.items() if not key.startswith("_dlt_")}
-
-
-def _write_csv(path: str, rows: list[dict]) -> None:
-    import csv
-
-    # Union of keys in first-seen order: dlt omits null keys per row, so a later row can
-    # carry a column the first row lacked. First-seen order preserves the source column
-    # order (rather than sorting), which is what an export is expected to look like.
-    fieldnames: list[str] = []
-    seen: set[str] = set()
-    for row in rows:
-        for key in row:
-            if key not in seen:
-                seen.add(key)
-                fieldnames.append(key)
-
-    with open(path, "w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames, restval="")
-        writer.writeheader()
-        writer.writerows(rows)
-
-
-def _write_jsonl(path: str, rows: list[dict]) -> None:
-    # dlt's json handles datetime/Decimal/etc. that dlt may have produced; stdlib json
-    # would choke on them.
-    from dlt.common import json
-
-    with open(path, "w") as handle:
-        for row in rows:
-            handle.write(json.dumps(row) + "\n")
-
-
-def _write_parquet(path: str, rows: list[dict]) -> None:
-    import pyarrow as pa
-    import pyarrow.parquet as pq
-
-    # Union of keys, same reasoning as _write_csv: dlt omits null keys per row, and
-    # pa.Table.from_pylist infers the schema from the first row only, so a column that
-    # first appears in a later row would be silently dropped. Build explicit columns
-    # (missing values become None) so every row contributes its full key set.
-    fieldnames: list[str] = []
-    seen: set[str] = set()
-    for row in rows:
-        for key in row:
-            if key not in seen:
-                seen.add(key)
-                fieldnames.append(key)
-
-    columns = {name: [row.get(name) for row in rows] for name in fieldnames}
-    pq.write_table(pa.table(columns), path)
-
-
-_WRITERS = {
-    "csv": _write_csv,
-    "jsonl": _write_jsonl,
-    "parquet": _write_parquet,
-}
 
 
 class LocalFilesystemDestination:
@@ -224,7 +89,7 @@ class LocalFilesystemDestination:
             if out_dir:
                 os.makedirs(out_dir, exist_ok=True)
 
-            _WRITERS[self.output_format](self.output_path, rows)
+            writer_for_format(self.output_format)(self.output_path, rows)
         finally:
             # Always clear the temp bucket, even if reading or writing failed partway.
             shutil.rmtree(self.temp_path, ignore_errors=True)
