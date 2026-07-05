@@ -133,6 +133,7 @@ destinations: LazyRegistry = LazyRegistry(
         "databricks": "omniload.target.databricks:DatabricksDestination",
         "duckdb": "omniload.target.duckdb:DuckDBDestination",
         "elasticsearch": "omniload.target.elasticsearch.api:ElasticsearchDestination",
+        "file": "omniload.target.filesystem.local:LocalFilesystemDestination",
         "gs": "omniload.target.filesystem:GCSDestination",
         "md": "omniload.target.motherduck:MotherduckDestination",
         "mongodb": "omniload.target.mongodb:MongoDBDestination",

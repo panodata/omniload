@@ -5,7 +5,8 @@ readers used by the S3, GCS and SFTP sources. Any file format those sources
 support is supported here too, along with globbing, gzip decompression and
 `#format` hints.
 
-`omniload` supports local files as a data source.
+`omniload` supports local files as both a data source and a destination. See
+[Using `file://` as a destination](#using-file-as-a-destination) below for writing.
 
 ## URI Format
 
@@ -118,10 +119,42 @@ omniload ingest \
 Without column names, columns are auto-named `unknown_col_0`, `unknown_col_1`,
 and so on.
 
+## Using `file://` as a destination
+
+`file://` also writes local files. The output format is taken from the
+destination file extension (`.csv`, `.jsonl`, `.parquet`) or from an explicit
+`#format` hint, exactly like the source side. The written file drops dlt's
+internal bookkeeping columns, so it round-trips cleanly.
+
+```sh
+omniload ingest \
+    --source-uri 'postgres://user:password@host:5432/db' \
+    --source-table 'public.users' \
+    --dest-uri 'file://export/users.parquet' \
+    --dest-table 'public.users'
+```
+
+| Destination URI | Output |
+| :--- | :--- |
+| `file://out.csv` | CSV written to `<cwd>/out.csv` |
+| `file:///srv/out.jsonl` | JSONL written to `/srv/out.jsonl` |
+| `file://export/users.parquet` | Parquet written to `<cwd>/export/users.parquet` |
+| `file://feed.dat#csv` | CSV written to `<cwd>/feed.dat` |
+
+The path grammar is identical to the source (relative-to-cwd, absolute,
+Windows drive and UNC forms all resolve the same way). Supported output formats
+are `csv`, `jsonl` and `parquet`; any other extension (or none) is rejected with
+the supported-format list. `--dest-table` must be `<dataset>.<table>`; it only
+names the intermediate layout, the output file is the URI path.
+
+Parent directories in the destination path are created if they don't exist, and
+an existing file at the destination is overwritten. Globs are a read-only feature
+and are not supported when writing.
+
 ## Relationship to `csv://`
 
-The [`csv://`](csv.md) scheme still exists and is unchanged: it reads a single
-local CSV file and also works as a destination. `file://` is the broader local
-read path, covering JSONL and Parquet as well as CSV, with globbing and format
-hints. Use `csv://` when you specifically want the standalone CSV reader or a CSV
-destination; use `file://` for everything else local.
+The [`csv://`](csv.md) scheme still exists and is unchanged: it reads and writes
+a single local CSV file. `file://` is the broader local path, covering JSONL and
+Parquet as well as CSV, plus (on read) globbing and gzip decompression. Prefer
+`file://` for local files; use `csv://` only when you specifically want the
+standalone CSV reader.
