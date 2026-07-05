@@ -24,7 +24,9 @@ def _make_request(
 
     for attempt in range(max_retries + 1):
         try:
-            response = requests.get(url, headers=headers, params=params or {})
+            response = requests.get(
+                url, headers=headers, params=params or {}, timeout=15
+            )
 
             # Handle rate limiting (429 Too Many Requests)
             if response.status_code == 429:

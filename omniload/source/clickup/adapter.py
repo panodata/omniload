@@ -45,8 +45,8 @@ def clickup_source(
 
     @dlt.resource(name="lists", write_disposition="merge", primary_key="id")
     def lists() -> Iterable[dict]:
-        for list in client.get_lists():
-            yield list
+        for clickup_list in client.get_lists():
+            yield clickup_list
 
     @dlt.resource(
         name="tasks",

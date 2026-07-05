@@ -16,7 +16,7 @@ from quickbooks import QuickBooks
 def quickbooks_source(
     company_id: str,
     start_date: pendulum.DateTime,
-    object: str,
+    object: str,  # noqa: A002
     end_date: pendulum.DateTime | None,
     client_id: str,
     client_secret: str,
@@ -83,8 +83,9 @@ def quickbooks_source(
 
         where_clause = f"WHERE MetaData.LastUpdatedTime >= '{start_str}' AND MetaData.LastUpdatedTime < '{end_str}'"
         while True:
+            # TODO: Review "Possible SQL injection vector through string-based query construction"
             query = (
-                f"SELECT * FROM {obj_name} {where_clause} "
+                f"SELECT * FROM {obj_name} {where_clause} "  # noqa: S608
                 f"ORDERBY MetaData.LastUpdatedTime ASC STARTPOSITION {start_pos} MAXRESULTS 1000"
             )
 

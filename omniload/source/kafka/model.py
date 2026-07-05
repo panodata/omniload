@@ -42,7 +42,7 @@ class KafkaDecodingOptions:
         cls,
         key_type: List[str],
         value_type: List[str],
-        format: List[str],
+        format: List[str],  # noqa: A002
         include: List[str],
         select: List[str],
     ):

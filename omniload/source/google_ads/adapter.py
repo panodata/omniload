@@ -87,6 +87,7 @@ def daily_report(
     ga_service = client.get_service("GoogleAdsService")
     fields = report.dimensions + report.metrics + report.segments
     criteria = date_predicate("segments.date", date.last_value, date.end_value)  # type:ignore
+    # TODO: Review "Possible SQL injection vector through string-based query construction"
     query = f"""
         SELECT
             {", ".join(fields)}
@@ -94,7 +95,7 @@ def daily_report(
             {report.resource}
         WHERE
             {criteria}
-    """
+    """  # noqa: S608
     if report.unfilterable is True:
         i = query.index("WHERE", 0)
         query = query[:i]

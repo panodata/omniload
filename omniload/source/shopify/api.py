@@ -22,6 +22,7 @@ class ShopifySource:
             token_url,
             data=payload,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=15,
         )
 
         if response.status_code != 200:

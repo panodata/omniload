@@ -207,7 +207,7 @@ def get_data_types(data_row_metadata: List[DictStrAny]) -> List[TDataType]:
     # get data for 1st column and process them, if empty just return an empty list
     try:
         data_types: List[TDataType] = []
-        for idx, val_dict in enumerate(data_row_metadata):
+        for _idx, val_dict in enumerate(data_row_metadata):
             try:
                 data_type = val_dict["effectiveFormat"]["numberFormat"]["type"]
                 if data_type in ["DATE_TIME", "TIME"]:

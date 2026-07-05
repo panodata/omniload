@@ -74,7 +74,7 @@ def _create_time_chunks(start_ts: int, end_ts: int, num_chunks: int) -> List[tup
     chunks = []
     current_start = start_ts
 
-    for i in range(num_chunks):
+    for _ in range(num_chunks):
         current_end = min(current_start + chunk_duration, end_ts)
         if current_start < end_ts:
             chunks.append((current_start, current_end))

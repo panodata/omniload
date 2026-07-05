@@ -171,7 +171,7 @@ def stop_containers(config):
         try:
             container.stop_fully()
         except Exception:
-            logger.exception(f"Failed to stop container: {getattr(container, 'id')}")
+            logger.exception(f"Failed to stop container: {getattr(container, 'id')}")  # noqa: B009
 
 
 def stop_containers_more(config):

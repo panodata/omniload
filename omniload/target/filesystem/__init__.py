@@ -69,9 +69,6 @@ class BlobStorageDestination(abc.ABC):
             "table_name": table_parts[-1].strip(),
         }
 
-    def post_load(self) -> None:
-        pass
-
 
 class S3Destination(BlobStorageDestination):
     @property

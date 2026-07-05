@@ -99,7 +99,9 @@ class SnapchatAdsSource:
                         f"ad_account_id must be provided in format '{resource_name}:ad_account_id' or '{resource_name}:id1,id2,id3'"
                     )
                 ad_account_id = [
-                    id.strip() for id in ad_account_ids_str.split(",") if id.strip()
+                    _id.strip()
+                    for _id in ad_account_ids_str.split(",")
+                    if _id.strip()  # noqa: A001
                 ]
         else:
             resource_name = table

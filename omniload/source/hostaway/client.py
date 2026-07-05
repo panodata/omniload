@@ -1,7 +1,10 @@
+import logging
 from typing import Callable, Iterable, Optional
 
 import pendulum
 from dlt.sources.helpers.requests import Client
+
+logger = logging.getLogger(__name__)
 
 
 class HostawayClient:
@@ -130,7 +133,12 @@ class HostawayClient:
                     yield from self.fetch_listing_fee_settings(
                         listing_id, start_time, end_time
                     )
-                except Exception:
+                except Exception as ex:
+                    logger.warning(
+                        "Unable to fetch listing fee settings for listing %s: %s",
+                        listing_id,
+                        ex,
+                    )
                     continue
 
     def fetch_listing_agreement(
@@ -157,7 +165,12 @@ class HostawayClient:
             if listing_id:
                 try:
                     yield from self.fetch_listing_pricing_settings(listing_id)
-                except Exception:
+                except Exception as ex:
+                    logger.warning(
+                        "Unable to fetch listing pricing settings for listing %s: %s",
+                        listing_id,
+                        ex,
+                    )
                     continue
 
     def fetch_all_listing_agreements(
@@ -170,7 +183,12 @@ class HostawayClient:
             if listing_id:
                 try:
                     yield from self.fetch_listing_agreement(listing_id)
-                except Exception:
+                except Exception as ex:
+                    logger.warning(
+                        "Unable to fetch listing agreement for listing %s: %s",
+                        listing_id,
+                        ex,
+                    )
                     continue
 
     def fetch_cancellation_policies(self) -> Iterable[dict]:
@@ -203,7 +221,12 @@ class HostawayClient:
             if reservation_id:
                 try:
                     yield from self.fetch_finance_field(reservation_id)
-                except Exception:
+                except Exception as ex:
+                    logger.warning(
+                        "Unable to fetch finance field for reservation %s: %s",
+                        reservation_id,
+                        ex,
+                    )
                     continue
 
     def fetch_reservation_payment_methods(self) -> Iterable[dict]:
@@ -223,7 +246,12 @@ class HostawayClient:
             if reservation_id:
                 try:
                     yield from self.fetch_reservation_rental_agreement(reservation_id)
-                except Exception:
+                except Exception as ex:
+                    logger.warning(
+                        "Unable to fetch rental agreement for reservation %s: %s",
+                        reservation_id,
+                        ex,
+                    )
                     continue
 
     def fetch_listing_calendar(self, listing_id) -> Iterable[dict]:
@@ -240,7 +268,10 @@ class HostawayClient:
             if listing_id:
                 try:
                     yield from self.fetch_listing_calendar(listing_id)
-                except Exception:
+                except Exception as ex:
+                    logger.warning(
+                        "Unable to fetch calendar for listing %s: %s", listing_id, ex
+                    )
                     continue
 
     def fetch_conversations(self) -> Iterable[dict]:

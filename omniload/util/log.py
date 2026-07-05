@@ -15,7 +15,10 @@ def setup_logging(
         level = logging.DEBUG
 
     reset = escape_codes["reset"]
-    log_format = f"%(asctime)-15s [%(name)-{width}s] %(log_color)s%(levelname)-8s:{reset} %(message)s"
+    log_format = (
+        f"%(asctime)-15s [%(name)-{width}s] "
+        f"%(log_color)s%(levelname)-8s:{reset} %(message)s"
+    )
 
     handler = colorlog.StreamHandler()
     handler.setFormatter(colorlog.ColoredFormatter(log_format))

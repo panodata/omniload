@@ -179,55 +179,114 @@ scripts.omniload = "omniload.main:main"
 packages.find = {}
 
 [tool.ruff]
-lint.extend-select = [ "I" ]
-lint.ignore = [ "E501" ]
-# Exclude a variety of commonly ignored directories.
-lint.exclude = [
-  ".bzr",
-  ".direnv",
-  ".eggs",
-  ".git",
-  ".hg",
-  ".nox",
-  ".pants.d",
-  ".ruff_cache",
-  ".svn",
-  ".tox",
-  ".venv",
-  "__pycache__",
-  "__pypackages__",
-  "_build",
-  "buck-out",
-  "build",
-  "dist",
-  "node_modules",
-  "venv",
+line-length = 88
+lint.select = [
+  # Builtins
+  "A",
+  # Bugbear
+  "B",
+  # comprehensions
+  "C4",
+  # Pycodestyle
+  "E",
+  # eradicate
+  "ERA",
+  # Pyflakes
+  "F",
+  # isort
+  "I",
+  # pandas-vet
+  "PD",
+  # return
+  "RET",
+  # Bandit
+  "S",
+  # print
+  "T20",
+  "W",
+  # flake8-2020
+  "YTT",
 ]
-
-[tool.pylint]
-master.disable = [
-  "C0103",
-  "C0114",
-  "C0115",
-  "C0116",
-  "C0301",
-  "R0801",
-  "R0901",
-  "R0903",
-  "R0913",
-  "R1725",
-  "W0104",
-  "W0511",
-  "W0613",
-  "W0703",
-  "W1113",
+# lint.ignore = [ "E501" ]
+lint.extend-ignore = [
+  # Module `xxx` shadows a Python standard-library module
+  "A005",
+  # raise-without-from-inside-except
+  "B904",
+  # zip() without an explicit strict= parameter
+  "B905",
+  # Found commented-out code
+  "ERA001",
+  # collapsible-else-if
+  "PLR5501",
+  # Unnecessary variable assignment before `return` statement
+  "RET504",
+  # Unnecessary `elif` after `return` statement
+  "RET505",
+  # Unnecessary `elif` after `raise` statement
+  "RET506",
+  # Unnecessary `else` after `continue` statement
+  "RET507",
+  # Unnecessary `else` after `break` statement
+  "RET508",
+  # Probable insecure usage of temporary file or directory
+  "S108",
 ]
-master.extension-pkg-whitelist = "pydantic"
-master.init-hook = 'import sys; sys.path.append(".")'
-master.jobs = 0
-master.max-attributes = 15
-master.max-branches = 15
-master.max-locals = 20
+lint.per-file-ignores."omniload/api.py" = [
+  # line-too-long
+  "E501",
+]
+lint.per-file-ignores."omniload/core/router.py" = [
+  # line-too-long
+  "E501",
+]
+lint.per-file-ignores."omniload/{source,target}/*" = [
+  # TODO: Review B008
+  #       Do not perform function call in argument defaults;
+  #       instead, perform the call within the function,
+  #       or read the default from a module-level singleton variable
+  "B008",
+  # Unnecessary list comprehension (rewrite as a set comprehension)
+  "C403",
+  # Unnecessary `dict()` call (rewrite as a literal)
+  "C408",
+  # Unnecessary `list()` call within `sorted()`
+  "C414",
+  # Unnecessary list comprehension (rewrite using `list()`)
+  "C416",
+  # Unnecessary `map()` usage (rewrite using a generator expression)
+  "C417",
+  # line-too-long
+  "E501",
+  # FIXME: `print` found
+  "T201",
+]
+lint.per-file-ignores."tests/*" = [
+  # Variable is shadowing a Python builtin
+  "A001",
+  # Function argument is shadowing a Python builtin
+  "A002",
+  # Unnecessary list comprehension (rewrite using `list()`)
+  "C416",
+  # line-too-long
+  "E501",
+  # Allow use of `assert`, and `print`.
+  "S101",
+  # Possible SQL injection vector through string-based query construction
+  "S608",
+  # `print` found
+  "T201",
+]
+lint.per-file-ignores."tests/saas/*" = [
+  # Possible hardcoded password assigned to argument
+  "S106",
+]
+lint.per-file-ignores."tests/{warehouse,util}/*" = [
+  # `try`-`except`-`pass` detected, consider logging the exception
+  "S110",
+  # Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
+  "S310",
+]
 
 [tool.pytest]
 ini_options.minversion = "2.0"

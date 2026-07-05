@@ -119,7 +119,7 @@ def _publisher(address: str, topic: str):
 
 def _publish(publisher, rows) -> None:
     for row in rows:
-        for attempt in range(8):
+        for _attempt in range(8):
             try:
                 publisher.send_json(row)
                 break

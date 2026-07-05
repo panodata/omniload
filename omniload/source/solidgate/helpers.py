@@ -159,6 +159,7 @@ class SolidgateClient:
                         f"Failed to get report after {max_retries} attempts. Status code: {get_response.status_code}"
                     )
                 time.sleep(5)  # Wait 5 seconds before retrying
+        return None
 
     def generateSignature(self, json_string):
         data = self.public_key + json_string + self.public_key

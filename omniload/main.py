@@ -80,7 +80,8 @@ def ingest(
     incremental_key: Annotated[
         Optional[str],
         typer.Option(
-            help="The incremental key from the table to be used for incremental strategies",
+            help="The incremental key from the table "
+            "to be used for incremental strategies",
             envvar=["INCREMENTAL_KEY", "OMNILOAD_INCREMENTAL_KEY"],
         ),
     ] = None,
@@ -124,7 +125,8 @@ def ingest(
     cluster_by: Annotated[
         Optional[str],
         typer.Option(
-            help="The clustering key to be used for clustering the destination table, not every destination supports clustering.",
+            help="The clustering key to be used for clustering the destination table, "
+            "not every destination supports clustering.",
             envvar=["CLUSTER_BY", "OMNILOAD_CLUSTER_BY"],
         ),
     ] = None,
@@ -173,35 +175,44 @@ def ingest(
     loader_file_size: Annotated[
         int,
         typer.Option(
-            help="The file size to be used by the loader to split the data into multiple files. This can be set independent of the page size, since page size is used for fetching the data from the sources whereas this is used for the processing/loading part.",
+            help="The file size to be used by the loader to split the data into "
+            "multiple files. This can be set independent of the page size, "
+            "since page size is used for fetching the data from the sources "
+            "whereas this is used for the processing/loading part.",
             envvar=["LOADER_FILE_SIZE", "OMNILOAD_LOADER_FILE_SIZE"],
         ),
     ] = 100000,
     schema_naming: Annotated[
         SchemaNaming,
         typer.Option(
-            help="The naming convention to use when moving the tables from source to destination. The default behavior is explained here: https://dlthub.com/docs/general-usage/schema#naming-convention",
+            help="The naming convention to use when moving the tables from source to "
+            "destination. The default behavior is explained here: "
+            "https://dlthub.com/docs/general-usage/schema#naming-convention",
             envvar=["SCHEMA_NAMING", "OMNILOAD_SCHEMA_NAMING"],
         ),
     ] = SchemaNaming.default,
     pipelines_dir: Annotated[
         Optional[str],
         typer.Option(
-            help="The path to store dlt-related pipeline metadata. By default, omniload will create a temporary directory and delete it after the execution is done in order to make retries stateless.",
+            help="The path to store dlt-related pipeline metadata. By default, "
+            "omniload will create a temporary directory and delete it after "
+            "the execution is done in order to make retries stateless.",
             envvar=["PIPELINES_DIR", "OMNILOAD_PIPELINES_DIR"],
         ),
     ] = None,
     extract_parallelism: Annotated[
         int,
         typer.Option(
-            help="The number of parallel jobs to run for extracting data from the source, only applicable for certain sources",
+            help="The number of parallel jobs to run for extracting data "
+            "from the source, only applicable for certain sources",
             envvar=["EXTRACT_PARALLELISM", "OMNILOAD_EXTRACT_PARALLELISM"],
         ),
     ] = 5,
     sql_reflection_level: Annotated[
         SqlReflectionLevel,
         typer.Option(
-            help="The reflection level to use when reflecting the table schema from the source",
+            help="The reflection level to use when reflecting the table schema "
+            "from the source",
             envvar=["SQL_REFLECTION_LEVEL", "OMNILOAD_SQL_REFLECTION_LEVEL"],
         ),
     ] = SqlReflectionLevel.full,
@@ -218,11 +229,12 @@ def ingest(
             help="The columns to exclude from the source table",
             envvar=["SQL_EXCLUDE_COLUMNS", "OMNILOAD_SQL_EXCLUDE_COLUMNS"],
         ),
-    ] = [],
+    ] = None,
     columns: Annotated[
         Optional[list[str]],
         typer.Option(
-            help="The column types to be used for the destination table in the format of 'column_name:column_type'",
+            help="The column types to be used for the destination table "
+            "in the format of 'column_name:column_type'",
             envvar=["OMNILOAD_COLUMNS"],
         ),
     ] = None,
@@ -236,17 +248,19 @@ def ingest(
     staging_bucket: Annotated[
         Optional[str],
         typer.Option(
-            help="The staging bucket to be used for the ingestion, must be prefixed with 'gs://' or 's3://'",
+            help="The staging bucket to be used for the ingestion, "
+            "must be prefixed with 'gs://' or 's3://'",
             envvar=["STAGING_BUCKET", "OMNILOAD_STAGING_BUCKET"],
         ),
     ] = None,
     mask: Annotated[
         Optional[list[str]],
         typer.Option(
-            help="Column masking configuration in format 'column:algorithm[:param]'. Can be specified multiple times.",
+            help="Column masking configuration in format 'column:algorithm[:param]'. "
+            "Can be specified multiple times.",
             envvar=["MASK", "OMNILOAD_MASK"],
         ),
-    ] = [],
+    ] = None,
 ):
     setup_logging()
     try:
@@ -281,7 +295,7 @@ def ingest(
             mask=mask,
         )
     except ValidationError as e:
-        print(f"[red]{e}[/red]")
+        logger.error("Validation failed: %s", e)
         raise typer.Abort()
     except IngestJobError:
         raise typer.Exit(1)
@@ -289,6 +303,7 @@ def ingest(
 
 @app.command()
 def example_uris():
+    # ruff: disable[E501,T201]
     print()
     typer.echo(
         "Following are some example URI formats for supported sources and destinations:"
@@ -369,13 +384,14 @@ def example_uris():
         "(also nats/amqp/mqtt/zeromq/aws/ibmmq/memory)"
     )
     logger.info("└── https://omniload.readthedocs.io/supported-sources/mqbridge.html")
+    # ruff: enable[E501,T201]
 
 
 @app.command()
 def version():
     from omniload import __version__
 
-    print(f"v{__version__}")
+    print(f"v{__version__}")  # noqa: T201
 
 
 def main():

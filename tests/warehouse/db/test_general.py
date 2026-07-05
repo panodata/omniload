@@ -191,7 +191,7 @@ def test_sql_limit():
             f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER, val VARCHAR(20), updated_at DATE)"
         )
         conn.exec_driver_sql(
-            f"""INSERT INTO {schema_rand_prefix}.input VALUES 
+            f"""INSERT INTO {schema_rand_prefix}.input VALUES
                 (1, 'val1', '2024-01-01'),
                 (2, 'val2', '2024-01-01'),
                 (3, 'val3', '2024-01-01'),
@@ -254,7 +254,7 @@ def test_date_coercion_issue():
             f"CREATE TABLE {schema_rand_prefix}.input (id INTEGER, val VARCHAR(20), updated_at DATE)"
         )
         conn.exec_driver_sql(
-            f"""INSERT INTO {schema_rand_prefix}.input VALUES 
+            f"""INSERT INTO {schema_rand_prefix}.input VALUES
                 (1, 'val1', '2024-01-01'),
                 (2, 'val2', '2024-01-01'),
                 (3, 'val3', '2024-01-01'),

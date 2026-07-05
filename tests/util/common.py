@@ -20,7 +20,7 @@ def as_datetime2(date_str: str) -> datetime:
 
 def get_random_string(length) -> str:
     letters = string.ascii_lowercase
-    result_str = "".join(random.choice(letters) for i in range(length))
+    result_str = "".join(random.choice(letters) for i in range(length))  # noqa: S311
     return result_str
 
 

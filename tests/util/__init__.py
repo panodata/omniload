@@ -118,7 +118,7 @@ def invoke_ingest_command(
     cmd = [sys.executable, "-m", "omniload.main"] + args
     env = os.environ.copy()
 
-    process = subprocess.run(
+    process = subprocess.run(  # noqa: S603
         cmd,
         text=True,
         capture_output=True,

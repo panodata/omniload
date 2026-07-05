@@ -41,7 +41,7 @@ def kafka(kafka_service, topic) -> str:
     """
     kafka_address = kafka_service.start()
     admin = AdminClient({"bootstrap.servers": kafka_address})
-    for name, fut in admin.delete_topics([topic]).items():
+    for _name, fut in admin.delete_topics([topic]).items():
         try:
             fut.result(10)
         except KafkaException as exc:

@@ -122,7 +122,9 @@ def get_report(
             with tempfile.TemporaryDirectory() as temp_dir:
                 files = []
                 for segment in segments.data:
-                    payload = requests.get(segment.attributes.url, stream=True)
+                    payload = requests.get(
+                        segment.attributes.url, stream=True, timeout=15
+                    )
                     payload.raise_for_status()
 
                     csv_path = os.path.join(

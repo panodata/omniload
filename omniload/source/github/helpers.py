@@ -117,7 +117,7 @@ def get_reactions_data(
 
 
 def _extract_top_connection(data: StrAny, node_type: str) -> StrAny:
-    assert isinstance(data, dict) and len(data) == 1, (
+    assert isinstance(data, dict) and len(data) == 1, (  # noqa: S101
         f"The data with list of {node_type} must be a dictionary and contain only one element"
     )
     data = cast(StrAny, next(iter(data.values())))

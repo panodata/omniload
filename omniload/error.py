@@ -14,7 +14,8 @@ class MissingValueError(Exception):
 class UnsupportedResourceError(Exception):
     def __init__(self, resource, source):
         super().__init__(
-            f"Resource '{resource}' is not supported for {source} source yet, if you are interested in it please create a GitHub issue at https://github.com/panodata/omniload"
+            f"Resource '{resource}' is not supported for {source} source yet. "
+            f"Please create a GitHub issue at https://github.com/panodata/omniload"
         )
 
 
