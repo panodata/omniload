@@ -18,6 +18,7 @@ from typing import Any, Iterator, List, Optional, Tuple, Union
 
 import dlt
 from dlt.common.typing import TDataItems
+from dlt.extract import DltSource
 from dlt.sources import DltResource
 from dlt.sources.credentials import FileSystemCredentials
 from dlt.sources.filesystem import FileItem, FileItemDict, fsspec_filesystem, glob_files
@@ -32,7 +33,7 @@ from omniload.source.filesystem.format.readers import (
     _read_parquet,
 )
 
-from .model import FilesystemConfigurationResource
+from .model import FilesystemConfigurationResource, FilesystemReference
 
 
 @dlt.source(_impl_cls=ReadersSource, spec=FilesystemConfigurationResource)
@@ -123,17 +124,13 @@ def filesystem(
         yield files_chunk
 
 
-def resource_for_reader(
-    bucket_url: str,
-    credentials: Union[FileSystemCredentials, AbstractFileSystem],
-    file_glob: str,
-    reader_name: str,
-    column_types: Optional[dict[str, Any]] = None,
-) -> Any:
-    if reader_name != "read_csv_headless":
-        return readers(bucket_url, credentials, file_glob).with_resources(reader_name)
+def resource_for_reader(ref: FilesystemReference) -> DltSource | DltResource:
+    if ref.reader_name != "read_csv_headless":
+        return readers(ref.bucket_url, ref.fs, ref.file_glob).with_resources(
+            ref.reader_name
+        )
 
-    column_names = list(column_types.keys()) if column_types else None
+    column_names = list(ref.column_types.keys()) if ref.column_types else None
 
     def read_csv_headless_with_cols(
         items: Iterator[FileItemDict],
@@ -147,7 +144,7 @@ def resource_for_reader(
             **pandas_kwargs,
         )
 
-    filesystem_resource = filesystem(bucket_url, credentials, file_glob=file_glob)
+    filesystem_resource = filesystem(ref.bucket_url, ref.fs, file_glob=ref.file_glob)
     return filesystem_resource | dlt.transformer(
         name="read_csv_headless", max_table_nesting=0
     )(read_csv_headless_with_cols)

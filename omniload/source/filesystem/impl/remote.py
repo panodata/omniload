@@ -70,9 +70,17 @@ class GCSSource:
             ) from e
 
         from omniload.source.filesystem.adapter import resource_for_reader
+        from omniload.source.filesystem.model import FilesystemReference
 
         return resource_for_reader(
-            bucket_url, fs, path_to_file, endpoint, kwargs.get("column_types")
+            FilesystemReference(
+                fs=fs,
+                bucket_url=bucket_url,
+                file_glob=path_to_file,
+                reader_name=endpoint,
+                page=table,
+                column_types=kwargs.get("column_types"),
+            )
         )
 
 
@@ -124,9 +132,17 @@ class S3Source:
             ) from e
 
         from omniload.source.filesystem.adapter import resource_for_reader
+        from omniload.source.filesystem.model import FilesystemReference
 
         return resource_for_reader(
-            bucket_url, fs, path_to_file, endpoint, kwargs.get("column_types")
+            FilesystemReference(
+                fs=fs,
+                bucket_url=bucket_url,
+                file_glob=path_to_file,
+                reader_name=endpoint,
+                page=table,
+                column_types=kwargs.get("column_types"),
+            )
         )
 
 
@@ -176,7 +192,15 @@ class SFTPSource:
             raise ValueError(f"Failed to parse endpoint from path: {table}") from e
 
         from omniload.source.filesystem.adapter import resource_for_reader
+        from omniload.source.filesystem.model import FilesystemReference
 
         return resource_for_reader(
-            bucket_url, fs, file_glob, endpoint, kwargs.get("column_types")
+            FilesystemReference(
+                fs=fs,
+                bucket_url=bucket_url,
+                file_glob=file_glob,
+                reader_name=endpoint,
+                page=table,
+                column_types=kwargs.get("column_types"),
+            )
         )
