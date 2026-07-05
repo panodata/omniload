@@ -103,6 +103,7 @@ dependencies = [
   "oracledb<5",
   "orjson<4",
   "pendulum>=3,<4",
+  "polars<2",
   "psycopg2-binary<3",
   "py-machineid<2",
   "pyairtable<4",

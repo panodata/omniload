@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Connectors: Migrated filesystem CSV reader from pandas to Polars
+
 ## 2026/07/02 v0.5.0
 
 - Connectors: Updated to Asana client v5

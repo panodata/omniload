@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TYPE_CHECKING, Any, Iterator, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional
 
 from dlt.common import json
 from dlt.common.typing import copy_sig
@@ -24,34 +24,33 @@ from omniload.source.filesystem.format.settings import DEFAULT_CHUNK_SIZE
 
 
 def _read_csv(
-    items: Iterator[FileItemDict], chunksize: int = 10000, **pandas_kwargs: Any
+    items: Iterator[FileItemDict], chunksize: int = 10000, **polars_kwargs: Any
 ) -> Iterator[TDataItems]:
-    """Reads csv file with Pandas chunk by chunk.
+    """Reads csv file with Polars chunk by chunk.
 
     Args:
         chunksize (int): Number of records to read in one chunk
-        **pandas_kwargs: Additional keyword arguments passed to Pandas.read_csv
+        **polars_kwargs: Additional keyword arguments passed to polars.read_csv
     Returns:
         TDataItem: The file content
     """
-    import pandas as pd
+    import polars as pl
 
-    # apply defaults to pandas kwargs
-    kwargs = {**{"header": "infer", "chunksize": chunksize}, **pandas_kwargs}
+    # apply defaults to Polars kwargs
+    kwargs: Dict[str, Any] = {**{"batch_size": chunksize}, **polars_kwargs}
 
     for file_obj in items:
-        # Here we use pandas chunksize to read the file in chunks and avoid loading the whole file
-        # in memory.
+        # Read the file in chunks to avoid loading the whole file into memory.
         with file_obj.open() as file:
-            for df in pd.read_csv(file, **kwargs):  # ty: ignore[no-matching-overload]
-                yield df.to_dict(orient="records")
+            df = pl.read_csv(file, **kwargs)
+            yield df.to_dicts()
 
 
 def _read_csv_headless(
     items: Iterator[FileItemDict],
     chunksize: int = 10000,
     column_names: Optional[List[str]] = None,
-    **pandas_kwargs: Any,
+    **polars_kwargs: Any,
 ) -> Iterator[TDataItems]:
     """Reads csv file without headers, using provided column names or generating them.
 
@@ -59,11 +58,11 @@ def _read_csv_headless(
         chunksize (int): Number of records to read in one chunk
         column_names (list[str], optional): Column names for the CSV. If not provided,
             columns will be named unknown_col_0, unknown_col_1, etc.
-        **pandas_kwargs: Additional keyword arguments passed to Pandas.read_csv
+        **polars_kwargs: Additional keyword arguments passed to polars.read_csv
     Returns:
         TDataItem: The file content
     """
-    import pandas as pd
+    import polars as pl
 
     for file_obj in items:
         with file_obj.open() as file:
@@ -72,18 +71,18 @@ def _read_csv_headless(
                 names = column_names
             else:
                 # Count columns from first row
-                first_row = pd.read_csv(file, header=None, nrows=1)
+                first_row = pl.read_csv(file, has_header=False, n_rows=1)
                 num_columns = len(first_row.columns)
                 names = [f"unknown_col_{i}" for i in range(num_columns)]
                 file.seek(0)  # Reset file pointer after reading first row
 
-            kwargs = {
-                **{"header": None, "names": names, "chunksize": chunksize},
-                **pandas_kwargs,
+            kwargs: Dict[str, Any] = {
+                **{"has_header": False, "columns": names, "batch_size": chunksize},
+                **polars_kwargs,
             }
 
-            for df in pd.read_csv(file, **kwargs):  # ty: ignore[no-matching-overload]
-                yield df.to_dict(orient="records")
+            df = pl.read_csv(file, **kwargs)
+            yield df.to_dicts()
 
 
 def _read_jsonl(
