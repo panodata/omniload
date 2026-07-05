@@ -5,6 +5,8 @@ FORMAT_TO_READER: dict[str, str] = {
     "csv_headless": "read_csv_headless",
     "jsonl": "read_jsonl",
     "parquet": "read_parquet",
+    # bson is read-only: the file:// destination's WRITE_FORMATS is a separate tuple.
+    "bson": "read_bson",
 }
 SUPPORTED_FILE_FORMATS = tuple(FORMAT_TO_READER)
 SUPPORTED_FILE_FORMATS_TEXT = ", ".join(SUPPORTED_FILE_FORMATS)

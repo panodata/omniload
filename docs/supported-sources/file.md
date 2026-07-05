@@ -1,6 +1,6 @@
 # Local files
 
-The `file://` source reads local files (CSV, JSONL, Parquet) through the same
+The `file://` source reads local files (CSV, JSONL, Parquet, BSON) through the same
 readers used by the S3, GCS and SFTP sources. Any file format those sources
 support is supported here too, along with globbing, gzip decompression and
 `#format` hints.
@@ -29,7 +29,7 @@ file://<path>
 | Format hint | `file://feed.dat#csv` | `feed.dat` read as CSV |
 
 The file format is inferred from the extension (`.csv`, `.jsonl`, `.parquet`,
-optionally `.gz`) or from an explicit [format hint](#file-type-hinting).
+`.bson`, optionally `.gz`) or from an explicit [format hint](#file-type-hinting).
 
 :::{tip}
 `file://` intentionally treats the first path segment as part of the path, not
@@ -67,6 +67,9 @@ The same set the blob sources support:
 - `#csv_headless` - CSV without a header row (see below)
 - `#jsonl` - line-delimited JSON
 - `#parquet` - Parquet
+- `#bson` - BSON (MongoDB dump format), read-only. See [BSON](bson.md).
+
+BSON is a read format only; the write side below supports `csv`, `jsonl` and `parquet`.
 
 ## File glob patterns
 

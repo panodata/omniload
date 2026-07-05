@@ -51,6 +51,8 @@ def test_parse_uri(test_case: URITestCase):
         ("data.jsonl", "read_jsonl"),
         ("data.jsonl.gz", "read_jsonl"),
         ("data.parquet", "read_parquet"),
+        ("data.bson", "read_bson"),
+        ("data.bson.gz", "read_bson"),
     ],
 )
 def test_parse_endpoint(path: str, endpoint: str):
@@ -68,6 +70,7 @@ def test_parse_endpoint(path: str, endpoint: str):
         ),
         ("bucket/path/no-extension#jsonl", "path/no-extension", "read_jsonl"),
         ("bucket/path/no-extension#parquet", "path/no-extension", "read_parquet"),
+        ("bucket/path/no-extension#bson", "path/no-extension", "read_bson"),
     ],
 )
 def test_determine_endpoint_format_hint(table: str, path: str, endpoint: str):
@@ -110,5 +113,5 @@ def test_parse_endpoint_rejects_unsupported_format():
 def test_supported_file_format_message():
     assert (
         supported_file_format_message("S3")
-        == "S3 Source only supports file formats: csv, csv_headless, jsonl, parquet"
+        == "S3 Source only supports file formats: csv, csv_headless, jsonl, parquet, bson"
     )

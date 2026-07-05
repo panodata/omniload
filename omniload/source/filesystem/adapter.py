@@ -26,6 +26,7 @@ from fsspec import AbstractFileSystem
 
 from omniload.source.filesystem.format.readers import (
     ReadersSource,
+    read_bson,
     read_csv,
     read_csv_duckdb,
     read_csv_headless,
@@ -70,6 +71,8 @@ def readers(
         ),
         filesystem_resource
         | dlt.transformer(name="read_jsonl", max_table_nesting=0)(read_jsonl),
+        filesystem_resource
+        | dlt.transformer(name="read_bson", max_table_nesting=0)(read_bson),
         filesystem_resource
         | dlt.transformer(name="read_parquet", max_table_nesting=0)(read_parquet),
         filesystem_resource

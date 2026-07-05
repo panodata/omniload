@@ -108,6 +108,41 @@ def read_jsonl(
             yield lines_chunk
 
 
+def read_bson(
+    items: Iterator[FileItemDict], chunksize: int = 1000
+) -> Iterator[TDataItems]:
+    """BSON reader using bson.decode_file_iter.
+
+    Mirrors ``read_jsonl`` but streams BSON documents with ``bson.decode_file_iter``
+    and normalizes BSON extended values (ObjectId, Decimal128, Binary, datetime,
+    Timestamp, Regex) into dlt-serializable Python types before yielding. ``bson`` and
+    the normalizer are imported lazily so no other reader pays for them.
+
+    Args:
+        chunksize (int, optional): The number of BSON documents to load and yield at once, defaults to 1000
+
+    Returns:
+        TDataItem: The file content
+    """
+    import bson
+    from dlt.common.utils import map_nested_values_in_place
+
+    from omniload.source.filesystem.format.bson_codec import convert_bson_objs
+
+    for file_obj in items:
+        with file_obj.open() as f:
+            docs_chunk = []
+            for doc in bson.decode_file_iter(f):
+                docs_chunk.append(map_nested_values_in_place(convert_bson_objs, doc))
+                if len(docs_chunk) >= chunksize:
+                    yield docs_chunk
+                    docs_chunk = []
+            # Flush this file's remainder before the next file resets docs_chunk, so a
+            # multi-file glob doesn't drop a partial final chunk.
+            if docs_chunk:
+                yield docs_chunk
+
+
 def read_parquet(
     items: Iterator[FileItemDict],
     chunksize: int = 10,
@@ -176,6 +211,9 @@ if TYPE_CHECKING:
 
         @copy_sig(read_jsonl)
         def read_jsonl(self) -> DltResource: ...
+
+        @copy_sig(read_bson)
+        def read_bson(self) -> DltResource: ...
 
         @copy_sig(read_parquet)
         def read_parquet(self) -> DltResource: ...

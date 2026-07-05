@@ -67,6 +67,20 @@ def test_unsupported_format_reports_supported_formats(uri):
         _resolve_output_target(uri)
 
 
+@pytest.mark.parametrize("uri", ["file:///data/out.bson", "file:///data/out.dat#bson"])
+def test_bson_destination_is_rejected(uri):
+    """BSON is read-only. Adding ``bson`` to ``FORMAT_TO_READER`` lights up the read
+    path, but the destination's ``WRITE_FORMATS`` is a separate tuple, so a ``.bson``
+    output (or an explicit ``#bson`` hint) is still rejected. This pins that contract
+    and documents the harmless edge that a destination ``#bson`` suffix now reads as an
+    (unsupported) format hint rather than part of the filename.
+    """
+    with pytest.raises(
+        ValueError, match="only supports file formats: csv, jsonl, parquet"
+    ):
+        _resolve_output_target(uri)
+
+
 @pytest.mark.parametrize("uri", ["file://", "file://#csv", "file://   "])
 def test_empty_path_raises(uri):
     with pytest.raises(MissingValueError):
