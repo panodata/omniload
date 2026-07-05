@@ -11,9 +11,12 @@ reviews:
   auto_review:
     # Disabled to conserve CodeRabbit's limited OSS review cycles; matches the
     # panodata org-wide setting. Trigger reviews on demand with `@coderabbitai
-    # review` or the "Please review now!" checkbox.
-    enabled: false
+    # review`, the "Please review now!" checkbox,
+    # or by adding the `coderabbit-review` label.
     drafts: true
+    enabled: true
+    labels:
+      - "coderabbit-review"
   path_filters:
     - "!**/*.lock"
     - "!docs/_build/**"
