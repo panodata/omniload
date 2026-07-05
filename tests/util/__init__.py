@@ -7,12 +7,20 @@ from typer.testing import CliRunner
 
 from omniload.main import app
 
+# Sentinel for a required-but-positionally-late argument. `dest_uri` must stay
+# effectively required (omitting it is a caller bug), but `source_table` sits
+# before it in the public positional order and needs a default so it can be
+# omitted. A plain `=None` default on `dest_uri` would silently accept a missing
+# destination; the sentinel keeps it required while dodging the "non-default
+# argument follows default argument" SyntaxError.
+_MISSING = object()
 
-def invoke_ingest_command(
+
+def build_ingest_args(
     source_uri,
-    source_table,
     dest_uri,
-    dest_table,
+    source_table=None,
+    dest_table=None,
     inc_strategy=None,
     inc_key=None,
     primary_key=None,
@@ -26,21 +34,33 @@ def invoke_ingest_command(
     sql_limit=None,
     yield_limit=None,
     mask=None,
-    print_output=True,
-    run_in_subprocess=False,
-    subprocess_timeout=120,
 ):
+    """Build the ``ingest`` CLI argument list. Pure: no I/O, no CliRunner.
+
+    ``--source-table`` / ``--dest-table`` are emitted only when the respective
+    table is not ``None``. Omission is keyed on ``is None`` (not truthiness), so
+    an explicit empty string is still forwarded as ``--source-table ""``. The
+    table flags keep their original inline positions (source table between
+    ``--source-uri`` and ``--dest-uri``, dest table right after ``--dest-uri``),
+    so a call that supplies both produces a list byte-identical to the previous
+    hard-coded literal.
+    """
     args = [
         "ingest",
         "--source-uri",
         source_uri,
-        "--source-table",
-        source_table,
-        "--dest-uri",
-        dest_uri,
-        "--dest-table",
-        dest_table,
     ]
+
+    if source_table is not None:
+        args.append("--source-table")
+        args.append(source_table)
+
+    args.append("--dest-uri")
+    args.append(dest_uri)
+
+    if dest_table is not None:
+        args.append("--dest-table")
+        args.append(dest_table)
 
     if inc_strategy:
         args.append("--incremental-strategy")
@@ -101,6 +121,68 @@ def invoke_ingest_command(
         for m in mask:
             args.append("--mask")
             args.append(m)
+
+    return args
+
+
+def invoke_ingest_command(
+    source_uri,
+    source_table=None,
+    dest_uri=_MISSING,
+    dest_table=None,
+    inc_strategy=None,
+    inc_key=None,
+    primary_key=None,
+    merge_key=None,
+    interval_start=None,
+    interval_end=None,
+    sql_backend=None,
+    loader_file_format=None,
+    sql_exclude_columns=None,
+    columns=None,
+    sql_limit=None,
+    yield_limit=None,
+    mask=None,
+    print_output=True,
+    run_in_subprocess=False,
+    subprocess_timeout=120,
+):
+    """Invoke the ``ingest`` CLI command for a test.
+
+    Both table arguments are optional, matching the CLI contract (``--source-table``
+    and ``--dest-table`` are optional options). Omit the destination table by
+    passing it positionally short::
+
+        invoke_ingest_command(src_uri, src_table, dest_uri)  # no dest_table
+
+    Omit the source table via the ``dest_uri`` keyword::
+
+        invoke_ingest_command(src_uri, dest_uri=dest_uri)    # no source_table
+
+    ``dest_uri`` remains required; omitting it raises ``TypeError``.
+    """
+    if dest_uri is _MISSING:
+        raise TypeError("dest_uri is required")
+
+    args = build_ingest_args(
+        source_uri,
+        dest_uri,
+        source_table=source_table,
+        dest_table=dest_table,
+        inc_strategy=inc_strategy,
+        inc_key=inc_key,
+        primary_key=primary_key,
+        merge_key=merge_key,
+        interval_start=interval_start,
+        interval_end=interval_end,
+        sql_backend=sql_backend,
+        loader_file_format=loader_file_format,
+        sql_exclude_columns=sql_exclude_columns,
+        columns=columns,
+        sql_limit=sql_limit,
+        yield_limit=yield_limit,
+        mask=mask,
+    )
 
     if not run_in_subprocess:
         result = CliRunner().invoke(
