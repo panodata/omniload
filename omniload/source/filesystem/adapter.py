@@ -26,11 +26,11 @@ from fsspec import AbstractFileSystem
 
 from omniload.source.filesystem.format.readers import (
     ReadersSource,
-    _read_csv,
-    _read_csv_duckdb,
-    _read_csv_headless,
-    _read_jsonl,
-    _read_parquet,
+    read_csv,
+    read_csv_duckdb,
+    read_csv_headless,
+    read_jsonl,
+    read_parquet,
 )
 
 from .model import FilesystemConfigurationResource, FilesystemReference
@@ -63,19 +63,17 @@ def readers(
     # )
     return (
         filesystem_resource
-        | dlt.transformer(name="read_csv", max_table_nesting=0)(_read_csv),
+        | dlt.transformer(name="read_csv", max_table_nesting=0)(read_csv),
         filesystem_resource
         | dlt.transformer(name="read_csv_headless", max_table_nesting=0)(
-            _read_csv_headless
+            read_csv_headless
         ),
         filesystem_resource
-        | dlt.transformer(name="read_jsonl", max_table_nesting=0)(_read_jsonl),
+        | dlt.transformer(name="read_jsonl", max_table_nesting=0)(read_jsonl),
         filesystem_resource
-        | dlt.transformer(name="read_parquet", max_table_nesting=0)(_read_parquet),
+        | dlt.transformer(name="read_parquet", max_table_nesting=0)(read_parquet),
         filesystem_resource
-        | dlt.transformer(name="read_csv_duckdb", max_table_nesting=0)(
-            _read_csv_duckdb
-        ),
+        | dlt.transformer(name="read_csv_duckdb", max_table_nesting=0)(read_csv_duckdb),
     )
 
 
@@ -137,7 +135,7 @@ def resource_for_reader(ref: FilesystemReference) -> DltSource | DltResource:
         chunksize: int = 10000,
         **pandas_kwargs: Any,
     ) -> Iterator[TDataItems]:
-        yield from _read_csv_headless(
+        yield from read_csv_headless(
             items,
             chunksize=chunksize,
             column_names=column_names,

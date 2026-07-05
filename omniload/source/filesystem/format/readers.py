@@ -23,10 +23,10 @@ from omniload.source.filesystem.format.helpers import fetch_arrow, fetch_json
 from omniload.source.filesystem.format.settings import DEFAULT_CHUNK_SIZE
 
 
-def _read_csv(
+def read_csv(
     items: Iterator[FileItemDict], chunksize: int = 10000, **polars_kwargs: Any
 ) -> Iterator[TDataItems]:
-    """Reads csv file with Polars chunk by chunk.
+    """CSV reader using Polars.
 
     Args:
         chunksize (int): Number of records to read in one chunk
@@ -46,13 +46,13 @@ def _read_csv(
             yield df.to_dicts()
 
 
-def _read_csv_headless(
+def read_csv_headless(
     items: Iterator[FileItemDict],
     chunksize: int = 10000,
     column_names: Optional[List[str]] = None,
     **polars_kwargs: Any,
 ) -> Iterator[TDataItems]:
-    """Reads csv file without headers, using provided column names or generating them.
+    """CSV reader using Polars. Reads CSV file without headers, using provided column names or generating them.
 
     Args:
         chunksize (int): Number of records to read in one chunk
@@ -85,10 +85,10 @@ def _read_csv_headless(
             yield df.to_dicts()
 
 
-def _read_jsonl(
+def read_jsonl(
     items: Iterator[FileItemDict], chunksize: int = 1000
 ) -> Iterator[TDataItems]:
-    """Reads jsonl file content and extract the data.
+    """JSONL reader using Polars.
 
     Args:
         chunksize (int, optional): The number of JSON lines to load and yield at once, defaults to 1000
@@ -108,11 +108,11 @@ def _read_jsonl(
             yield lines_chunk
 
 
-def _read_parquet(
+def read_parquet(
     items: Iterator[FileItemDict],
     chunksize: int = 10,
 ) -> Iterator[TDataItems]:
-    """Reads parquet file content and extract the data.
+    """Parquet reader using pyarrow.
 
     Args:
         chunksize (int, optional): The number of files to process at once, defaults to 10.
@@ -129,13 +129,13 @@ def _read_parquet(
                 yield rows.to_pylist()
 
 
-def _read_csv_duckdb(
+def read_csv_duckdb(
     items: Iterator[FileItemDict],
     chunk_size: Optional[int] = DEFAULT_CHUNK_SIZE,
     use_pyarrow: bool = False,
     **duckdb_kwargs: Any,
 ) -> Iterator[TDataItems]:
-    """A resource to extract data from the given CSV files.
+    """CSV reader using DuckDB.
 
     Uses DuckDB engine to import and cast CSV data.
 
@@ -168,19 +168,19 @@ if TYPE_CHECKING:
     class ReadersSource(DltSource):
         """This is a typing stub that provides docstrings and signatures to the resources in `readers" source"""
 
-        @copy_sig(_read_csv)
+        @copy_sig(read_csv)
         def read_csv(self) -> DltResource: ...
 
-        @copy_sig(_read_csv_headless)
+        @copy_sig(read_csv_headless)
         def read_csv_headless(self) -> DltResource: ...
 
-        @copy_sig(_read_jsonl)
+        @copy_sig(read_jsonl)
         def read_jsonl(self) -> DltResource: ...
 
-        @copy_sig(_read_parquet)
+        @copy_sig(read_parquet)
         def read_parquet(self) -> DltResource: ...
 
-        @copy_sig(_read_csv_duckdb)
+        @copy_sig(read_csv_duckdb)
         def read_csv_duckdb(self) -> DltResource: ...
 
 else:
