@@ -109,6 +109,11 @@ linkcheck_anchors_ignore_for_url = [
     r"https://docs.customer.io/",
 ]
 
+# Retry a link a few times before declaring it broken. The linkcheck runs against ~150
+# external URLs on every PR (and nightly); without retries a single transient timeout on
+# any one host reds the whole lane.
+linkcheck_retries = 3
+
 # Disable caching remote inventories completely.
 # http://www.sphinx-doc.org/en/stable/ext/intersphinx.html#confval-intersphinx_cache_limit
 # intersphinx_cache_limit = 0

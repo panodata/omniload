@@ -21,7 +21,7 @@ The URI is used to connect to the Intercom API for extracting data.
 
 ## Setting up an Intercom Integration
 
-Intercom requires a few steps to set up an integration, please follow the guide dltHub [has built here](https://dlthub.com/docs/dlt-ecosystem/verified-sources/intercom).
+Intercom requires a few steps to set up an integration; follow [Intercom's authentication guide](https://developers.intercom.com/docs/build-an-integration/learn-more/authentication) to create an access token.
 
 Once you complete the guide, you should have an access token. Let's say your access token is `dG9rOjE...` and your workspace is in the US region, here's a sample command that will copy the data from Intercom into a DuckDB database:
 

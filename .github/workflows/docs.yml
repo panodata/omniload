@@ -46,4 +46,14 @@ jobs:
           uv pip install poethepoet -r docs/requirements.txt
 
       - name: Run link checker
-        run: poe docs-linkcheck
+        # Retry the whole check a few times: linkcheck_retries (in docs/conf.py) covers a
+        # brief per-URL blip, but a host that is down for the length of one build only
+        # recovers on a fresh attempt after a wait. Belt-and-suspenders against transient
+        # external outages reddening an unrelated PR.
+        run: |
+          for attempt in 1 2 3; do
+            poe docs-linkcheck && exit 0
+            echo "::warning::linkcheck attempt ${attempt} failed; retrying in 30s"
+            sleep 30
+          done
+          exit 1
