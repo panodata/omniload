@@ -10,7 +10,7 @@ class CouchbaseContainer(DockerContainer):
         super().__init__(image, **kwargs)
         self.with_exposed_ports(8091, 8092, 8093, 11210)
         self.username = "Administrator"
-        self.password = "password"
+        self.password = "password"  # noqa: S105
         self.bucket_name = "test_bucket"
         self.scope_name = "_default"
         self.collection_name = "_default"
@@ -47,7 +47,7 @@ class CouchbaseContainer(DockerContainer):
         base_url = f"http://{self.get_container_host_ip()}:{port}"
 
         max_attempts = 30
-        for i in range(max_attempts):
+        for _ in range(max_attempts):
             try:
                 response = requests.get(f"{base_url}/pools", timeout=2)
                 if response.status_code == 200:
@@ -124,7 +124,7 @@ class CouchbaseContainer(DockerContainer):
         host = self.get_container_host_ip()
         port = self.get_exposed_port(8091)
 
-        for i in range(30):
+        for _ in range(30):
             try:
                 response = requests.get(
                     f"http://{host}:{port}/pools/default/buckets/{self.bucket_name}",

@@ -1,3 +1,4 @@
+# ruff: noqa: W293
 from typing import Any, Dict, Iterable, Iterator
 
 import dlt
@@ -68,10 +69,10 @@ query Issues($cursor: String) {
       sourceComment { id }
       state { id }
       
-      labels(first: 250) { 
-        nodes { 
-          id 
-        } 
+      labels(first: 250) {
+        nodes {
+          id
+        }
       }
     }
     pageInfo { hasNextPage endCursor }
@@ -116,7 +117,7 @@ query Comments($cursor: String) {
       createdAt
       editedAt
       quotedText
-      reactionData 
+      reactionData
       resolvedAt
       threadSummary
       updatedAt

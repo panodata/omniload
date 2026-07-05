@@ -137,7 +137,6 @@ query ($limit: Int!, $page: Int!) {
         }
         tags {
             id
-            
         }
     }
 }

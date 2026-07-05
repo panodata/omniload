@@ -538,12 +538,14 @@ def docebo_source(
         if not survey_data:
             return
 
+        # ruff: disable[S101]
         assert "answers" in survey_data, "no answers in survey data " + json.dumps(
             survey_data
         )
         assert isinstance(survey_data["answers"], list), "answers is not a list"
         assert "questions" in survey_data, "no questions in survey data"
         assert isinstance(survey_data["questions"], dict), "questions is not a dict"
+        # ruff: enable[S101]
 
         questions = survey_data["questions"]
         answers = survey_data["answers"]

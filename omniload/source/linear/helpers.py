@@ -15,6 +15,7 @@ def _graphql(
         LINEAR_GRAPHQL_ENDPOINT,
         json={"query": query, "variables": variables or {}},
         headers=headers,
+        timeout=15,
     )
     response.raise_for_status()
     payload = response.json()

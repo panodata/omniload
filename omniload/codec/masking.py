@@ -1,11 +1,15 @@
+# ruff: noqa: S311, S324
 import hashlib
 import hmac
+import logging
 import random
 import re
 import string
 import uuid
 from datetime import date, datetime, timedelta
 from typing import Any, Callable, Dict, Optional, Tuple, Union
+
+logger = logging.getLogger(__name__)
 
 
 class MaskingEngine:
@@ -21,7 +25,8 @@ class MaskingEngine:
             return parts[0], parts[1], parts[2]
         else:
             raise ValueError(
-                f"Invalid mask configuration: {config}. Expected format: 'column:algorithm[:param]'"
+                f"Invalid mask configuration: {config}. "
+                f"Expected format: 'column:algorithm[:param]'"
             )
 
     def get_masking_function(
@@ -335,7 +340,7 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
                     try:
                         data[column] = mask_func(data[column])
                     except Exception as e:
-                        print(f"Warning: Failed to mask column {column}: {e}")
+                        logger.warning("Failed to mask column %s: %s", column, e)
             return data
 
         # Return as-is if not a supported type

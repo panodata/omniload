@@ -121,7 +121,7 @@ class GorgiasApi:
             limiter.try_acquire(f"gorgias-{self.domain}")
 
             # this is to retry a back-off if we get a 429
-            for i in range(RETRY_COUNT):
+            for _ in range(RETRY_COUNT):
                 try:
                     response = requests.get(
                         url, params=params, auth=HTTPBasicAuth(self.email, self.api_key)

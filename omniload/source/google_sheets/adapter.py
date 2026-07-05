@@ -84,7 +84,7 @@ def google_spreadsheet(
         spreadsheet_id=spreadsheet_id,
         range_names=list(all_range_names),
     )
-    assert len(all_range_names) == len(all_range_data), (
+    assert len(all_range_names) == len(all_range_data), (  # noqa: S101
         "Google Sheets API must return values for all requested ranges"
     )
 

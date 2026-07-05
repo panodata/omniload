@@ -29,7 +29,7 @@ def get_databricks_oauth_token(
 
     Raises:
         ValueError: If inputs are invalid or the token request fails
-    """
+    """  # noqa: E501
     if not server_hostname:
         raise ValueError("server_hostname is required for OAuth token exchange")
     if not client_id:

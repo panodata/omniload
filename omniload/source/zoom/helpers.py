@@ -24,7 +24,7 @@ class ZoomClient:
         self._refresh_access_token()
 
     def _refresh_access_token(self) -> None:
-        token_url = "https://zoom.us/oauth/token"
+        token_url = "https://zoom.us/oauth/token"  # noqa: S105
         if self.client_id and self.client_secret:
             auth = (self.client_id, self.client_secret)
         else:

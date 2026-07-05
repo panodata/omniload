@@ -19,8 +19,8 @@ def load_dlt_file(filepath: str) -> Generator:
     load_dlt_file reads dlt loader files. It handles different loader file formats
     automatically. It returns a generator that yield data items as a python dict
     """
-    result = subprocess.run(
-        ["file", "-b", filepath],
+    result = subprocess.run(  # noqa: S603
+        ["file", "-b", filepath],  # noqa: S607
         check=True,
         capture_output=True,
         text=True,

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from . import field
 
@@ -27,15 +27,15 @@ class Report:
     def __init__(
         self,
         resource: str = "",
-        dimensions: List[str] = [],
-        metrics: List[str] = [],
-        segments: List[str] = [],
+        dimensions: Optional[List[str]] = None,
+        metrics: Optional[List[str]] = None,
+        segments: Optional[List[str]] = None,
         unfilterable: bool = False,
     ):
         self.resource = resource
-        self.dimensions = dimensions
-        self.metrics = metrics
-        self.segments = segments
+        self.dimensions = dimensions or []
+        self.metrics = metrics or []
+        self.segments = segments or []
         self.unfilterable = unfilterable
 
     def primary_keys(self) -> List[str]:

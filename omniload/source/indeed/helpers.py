@@ -6,7 +6,7 @@ from typing import Any, Dict, Iterator, Optional
 
 import requests
 
-INDEED_TOKEN_URL = "https://apis.indeed.com/oauth/v2/tokens"
+INDEED_TOKEN_URL = "https://apis.indeed.com/oauth/v2/tokens"  # noqa: S105
 INDEED_API_BASE_URL = "https://apis.indeed.com/ads/v1"
 
 DEFAULT_SCOPES = [
@@ -31,6 +31,7 @@ def _get_oauth_token(
             "employer": employer_id,
         },
         headers={"Content-Type": "application/x-www-form-urlencoded"},
+        timeout=15,
     )
     response.raise_for_status()
     payload = response.json()
@@ -51,7 +52,7 @@ def _api_request(
         "Authorization": f"Bearer {token}",
         "Accept": "application/json",
     }
-    response = requests.get(url, headers=headers, params=params)
+    response = requests.get(url, headers=headers, params=params, timeout=15)
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -186,7 +187,7 @@ def _get_traffic_report_for_day(
             if location.startswith("/v1"):
                 location = location[3:]
 
-            for attempt in range(max_retries):
+            for _attempt in range(max_retries):
                 time.sleep(retry_delay)
                 report_response = _api_request(token, location)
 

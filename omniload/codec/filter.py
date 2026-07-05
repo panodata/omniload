@@ -22,7 +22,8 @@ def cast_spanner_types(row):
 
 
 def handle_mysql_empty_dates(row):
-    # MySQL returns empty dates as 0000-00-00, which is not a valid date, we handle them here.
+    # MySQL returns empty dates as 0000-00-00, which is not a valid date.
+    # We handle them here.
     if not isinstance(row, dict):
         return row
 

@@ -234,7 +234,7 @@ def test_duckdb_masking_basic():
             )"""
         )
         conn.exec_driver_sql(
-            f"""INSERT INTO {schema_rand_prefix}.customers VALUES 
+            f"""INSERT INTO {schema_rand_prefix}.customers VALUES
                 (1, 'John Doe', 'john.doe@example.com', '555-123-4567', '123-45-6789', 52300, '2024-01-15'),
                 (2, 'Jane Smith', 'jane.smith@gmail.com', '555-987-6543', '987-65-4321', 67800, '2024-02-20'),
                 (3, 'Bob Johnson', 'bob.j@company.org', '555-555-1234', '456-78-9012', 45000, '2024-03-10')
@@ -319,7 +319,7 @@ def test_duckdb_masking_consistency():
             )"""
         )
         conn.exec_driver_sql(
-            f"""INSERT INTO {schema_rand_prefix}.users VALUES 
+            f"""INSERT INTO {schema_rand_prefix}.users VALUES
                 (1, 'user1', 'user1@example.com'),
                 (2, 'user2', 'user2@example.com')
             """
@@ -403,7 +403,7 @@ def test_duckdb_masking_format_preserving():
             )"""
         )
         conn.exec_driver_sql(
-            f"""INSERT INTO {schema_rand_prefix}.contacts VALUES 
+            f"""INSERT INTO {schema_rand_prefix}.contacts VALUES
                 (1, 'alice@example.com', '555-123-4567', '4111-1111-1111-1111', '123-45-6789', 'Alice Brown'),
                 (2, 'bob@company.org', '555-987-6543', '5500-0000-0000-0004', '987-65-4321', 'Bob Smith')
             """
@@ -491,7 +491,7 @@ def test_duckdb_masking_numeric_and_date():
             )"""
         )
         conn.exec_driver_sql(
-            f"""INSERT INTO {schema_rand_prefix}.transactions VALUES 
+            f"""INSERT INTO {schema_rand_prefix}.transactions VALUES
                 (1, 12345.67, 34, 456, 'Transaction notes 1'),
                 (2, 98765.43, 57, 789, 'Transaction notes 2'),
                 (3, 5432.10, 28, 234, 'Transaction notes 3')

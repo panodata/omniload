@@ -22,7 +22,7 @@ def create_client() -> requests.Session:
 class SnapchatAdsAPI:
     """Helper class for Snapchat Ads API authentication and requests."""
 
-    TOKEN_URL = "https://accounts.snapchat.com/login/oauth2/access_token"
+    TOKEN_URL = "https://accounts.snapchat.com/login/oauth2/access_token"  # noqa: S105
 
     def __init__(self, refresh_token: str, client_id: str, client_secret: str):
         self.refresh_token = refresh_token

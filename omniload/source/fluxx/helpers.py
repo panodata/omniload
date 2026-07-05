@@ -7,7 +7,7 @@ import requests
 import tldextract
 from dlt.common import json
 
-FLUXX_OAUTH_TOKEN_PATH = "/oauth/token"
+FLUXX_OAUTH_TOKEN_PATH = "/oauth/token"  # noqa: S105
 FLUXX_API_V2_PATH = "/api/rest/v2"
 
 
@@ -45,6 +45,7 @@ def get_access_token(instance: str, client_id: str, client_secret: str) -> str:
             "client_id": client_id,
             "client_secret": client_secret,
         },
+        timeout=15,
     )
     response.raise_for_status()
 
@@ -74,6 +75,7 @@ def fluxx_api_request(
         headers=headers,
         params=params,
         json=data,
+        timeout=15,
     )
     response.raise_for_status()
 

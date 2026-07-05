@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 from dlt.common.schema.typing import TColumnSchema
 from dlt.sources import DltResource, DltSource
@@ -9,9 +9,11 @@ import omniload.core.resource as resource
 def apply_athena_hints(
     source: DltSource | DltResource,
     partition_column: str,
-    additional_hints: Dict[str, TColumnSchema] = {},
+    additional_hints: Optional[Dict[str, TColumnSchema]] = None,
 ) -> None:
     from dlt.destinations.adapters import athena_adapter, athena_partition
+
+    additional_hints = additional_hints or {}
 
     def _apply_partition_hint(resource: DltResource) -> None:
         columns = resource.columns if resource.columns else {}

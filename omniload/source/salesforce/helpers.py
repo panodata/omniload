@@ -61,7 +61,8 @@ def get_records(
         if last_state:
             predicate = f"WHERE {replication_key} > {last_state}"
         order_by = f"ORDER BY {replication_key} ASC"
-    query = f"SELECT {', '.join(fields)} FROM {sobject} {predicate} {order_by}"
+    # FIXME: S608 Possible SQL injection vector through string-based query construction
+    query = f"SELECT {', '.join(fields)} FROM {sobject} {predicate} {order_by}"  # noqa: S608
 
     # Query all records in batches
     for page in getattr(sf.bulk, sobject).query_all(query, lazy_operation=True):

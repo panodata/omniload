@@ -445,7 +445,7 @@ def db_to_db_delete_insert_with_timerange(
             )
 
         source_conn.exec_driver_sql(
-            f"""INSERT INTO {schema_rand_prefix}.input VALUES 
+            f"""INSERT INTO {schema_rand_prefix}.input VALUES
             (1, 'val1', '2022-01-01T00:00:00'),
             (2, 'val2', '2022-01-01T00:00:00'),
             (3, 'val3', '2022-01-02T00:00:00'),

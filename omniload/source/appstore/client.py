@@ -48,6 +48,7 @@ class AppStoreConnectClient(AppStoreConnectClientInterface):
         res = requests.get(
             f"https://api.appstoreconnect.apple.com/v1/apps/{app_id}/analyticsReportRequests",
             auth=self.auth,
+            timeout=15,
         )
         res.raise_for_status()
 
@@ -61,6 +62,7 @@ class AppStoreConnectClient(AppStoreConnectClientInterface):
             f"https://api.appstoreconnect.apple.com/v1/analyticsReportRequests/{req_id}/reports",
             auth=self.auth,
             params=params,
+            timeout=15,
         )
         res.raise_for_status()
         return AnalyticsReportResponse.from_json(res.text)  # type: ignore
@@ -75,7 +77,7 @@ class AppStoreConnectClient(AppStoreConnectClientInterface):
         params: Optional[dict] = {"filter[granularity]": granularity}
 
         while url:
-            res = requests.get(url, auth=self.auth, params=params)
+            res = requests.get(url, auth=self.auth, params=params, timeout=15)
             res.raise_for_status()
 
             response_data = AnalyticsReportInstancesResponse.from_json(res.text)  # type: ignore
@@ -95,7 +97,7 @@ class AppStoreConnectClient(AppStoreConnectClientInterface):
         url = f"https://api.appstoreconnect.apple.com/v1/analyticsReportInstances/{instance_id}/segments"
 
         while url:
-            res = requests.get(url, auth=self.auth)
+            res = requests.get(url, auth=self.auth, timeout=15)
             res.raise_for_status()
 
             response_data = AnalyticsReportSegmentsResponse.from_json(res.text)  # type: ignore

@@ -66,7 +66,7 @@ def elasticsearch_container_with_auth():
     container.with_env("xpack.security.http.ssl.enabled", "false")
     container.with_env("ELASTIC_PASSWORD", "testpass123")
     container.with_env("transport.host", "127.0.0.1")
-    container.with_env("http.host", "0.0.0.0")
+    container.with_env("http.host", "0.0.0.0")  # noqa: S104
     # Memory settings for CI environments
     container.with_env("ES_JAVA_OPTS", "-Xms512m -Xmx512m")
     container.with_env("bootstrap.memory_lock", "false")

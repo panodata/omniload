@@ -357,7 +357,7 @@ def test_run_ingest_releases_consumer_when_the_load_fails(monkeypatch, tmp_path)
     monkeypatch.setattr(mq_bridge, "Consumer", _BoomConsumer)
 
     dest = tmp_path / "warehouse.duckdb"
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         run_ingest(
             source_uri="memory+mqb://?topic=t&idle_timeout_ms=100&max_messages=10",
             dest_uri=f"duckdb:///{dest}",

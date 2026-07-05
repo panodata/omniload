@@ -383,7 +383,7 @@ class DoceboClient:
                         for session in session_batch:
                             session["course_id"] = course_id
                         yield session_batch
-                except Exception:
+                except Exception:  # noqa: S112
                     # Many courses may not have sessions, so just continue
                     continue
 
