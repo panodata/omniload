@@ -1,10 +1,11 @@
-# Postgres
-Postgres is an open source, object-relational database system that provides reliability, data integrity, and correctness.
+# PostgreSQL
 
-omniload supports Postgres as both a source and destination.
+PostgreSQL is an open source, object-relational database system that provides reliability, data integrity, and correctness.
+
+omniload supports PostgreSQL as both a source and destination.
 
 ## URI format
-The URI format for Postgres is as follows:
+The URI format for PostgreSQL is as follows:
 
 ```text
 postgresql://<username>:<password>@<host>:<port>/<database-name>?sslmode=<sslmode>
@@ -18,4 +19,4 @@ URI parameters:
 - `database-name`: the name of the database to connect to
 - `sslmode`: optional, the SSL mode to use when connecting to the database
 
-The same URI structure can be used both for sources and destinations. You can read more about SQLAlchemy's Postgres dialect [here](https://docs.sqlalchemy.org/en/14/dialects/postgresql.html).
+The same URI structure can be used both for sources and destinations. You can read more about SQLAlchemy's PostgreSQL dialect [here](https://docs.sqlalchemy.org/en/14/dialects/postgresql.html).

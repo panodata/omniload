@@ -1,4 +1,4 @@
-# Custom Queries for SQL Sources
+# SQL: Custom Queries
 
 omniload has primarily supported table replication for SQL sources due to that being a common use case. However, there are certain scenarios where loading a table only is not possible:
 - you might want to load a subset of rows from a table

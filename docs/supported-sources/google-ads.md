@@ -1,4 +1,5 @@
 # Google Ads
+
 [Google Ads](https://business.google.com/en-all/google-ads/), formerly known as Google Adwords, is an online advertising platform developed by Google, where advertisers bid to display brief advertisements, service offerings, product listings, and videos to web users. It can place ads in the results of search engines like Google Search (the Google Search Network), mobile apps, videos, and on non-search websites.
 
 ## URI format

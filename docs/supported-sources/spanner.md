@@ -1,4 +1,5 @@
-# GCP Spanner
+# Spanner
+
 [GCP Spanner](https://cloud.google.com/spanner) is a fully managed, scalable, and strongly consistent database service.
 
 omniload supports GCP Spanner as a source.

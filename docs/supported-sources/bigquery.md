@@ -1,5 +1,6 @@
-# Google BigQuery
-BigQuery is a fully managed, serverless data warehouse that enables scalable analysis over petabytes of data.
+# BigQuery
+
+Google BigQuery is a fully managed, serverless data warehouse that enables scalable analysis over petabytes of data.
 
 omniload supports BigQuery as both a source and destination.
 

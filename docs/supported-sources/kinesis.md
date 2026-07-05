@@ -1,4 +1,4 @@
-# Amazon Kinesis
+# Kinesis
 
 [Amazon Kinesis](https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html) is a
 cloud-based service for real-time data streaming and analytics, enabling the processing and analysis of large streams of data in real time.

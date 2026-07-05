@@ -1,4 +1,4 @@
-# Amazon SQS
+# SQS
 
 [Amazon SQS](https://aws.amazon.com/sqs/) is a fully managed message queuing service.
 

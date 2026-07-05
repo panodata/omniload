@@ -12,7 +12,7 @@ There is no BSON *destination*; `file://` writes `csv`, `jsonl` and `parquet` on
 BSON is available on every source that goes through the shared file readers:
 
 - Local files: [`file://`](file.md)
-- [`s3://`](s3.md), [`gs://`](gcs.md) (blob storage)
+- [`s3://`](s3.md), [`gs://`](google-cloud-storage.md) (blob storage)
 - [`sftp://`](sftp.md)
 
 A file is read as BSON when its extension is `.bson` (optionally `.bson.gz`) or when an

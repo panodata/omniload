@@ -1,4 +1,4 @@
-# Local files
+# Filesystem
 
 The `file://` source reads local files (BSON, CSV, JSONL, Parquet) through the same
 readers used by the S3, GCS and SFTP sources. Any file format those sources
