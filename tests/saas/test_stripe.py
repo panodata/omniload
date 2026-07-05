@@ -1,8 +1,9 @@
 import os
 from datetime import datetime, timedelta, timezone
 
-import duckdb
 import pytest
+
+duckdb = pytest.importorskip("duckdb")
 
 from omniload.source.stripe.helpers import generate_date_ranges
 from tests.util import invoke_ingest_command

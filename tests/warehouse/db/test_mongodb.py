@@ -2,9 +2,11 @@ import json
 import tempfile
 from datetime import datetime, timezone
 
-import pandas as pd
-import pyarrow as pa
 import pytest
+
+pd = pytest.importorskip("pandas")
+pa = pytest.importorskip("pyarrow")
+
 import sqlalchemy
 from pyarrow import ipc
 from testcontainers.mongodb import MongoDbContainer

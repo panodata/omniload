@@ -2,7 +2,9 @@ import csv
 import os
 import tempfile
 
-import duckdb
+import pytest
+
+duckdb = pytest.importorskip("duckdb")
 import sqlalchemy
 from sqlalchemy.pool import NullPool
 

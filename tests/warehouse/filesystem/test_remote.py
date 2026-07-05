@@ -5,12 +5,10 @@ import json
 from typing import Callable, Iterable
 from unittest.mock import patch
 
-import pyarrow.csv
 import pytest
 import sqlalchemy
 from dlt.common.storages.fsspec_filesystem import glob_files
 from fsspec.implementations.memory import MemoryFileSystem
-from pyarrow import parquet as pya_parquet
 
 from omniload.error import InvalidBlobTableError
 from omniload.target.filesystem import S3Destination
@@ -27,6 +25,10 @@ def fs_test_cases(
     """
     Tests for filesystem based sources
     """
+
+    pya_csv = pytest.importorskip("pyarrow.csv")
+    pya_parquet = pytest.importorskip("pyarrow.parquet")
+
     testdata = (
         "name,phone,email,country\n"
         "Rajah Roach,1-459-646-7421,adipiscing.ligula@outlook.net,Austria\n"
@@ -54,7 +56,7 @@ def fs_test_cases(
 
     # For Parquet tests
     with test_fs.open("/data.parquet", "wb") as f:
-        table = pyarrow.csv.read_csv(io.BytesIO(testdata.encode()))
+        table = pya_csv.read_csv(io.BytesIO(testdata.encode()))
         pya_parquet.write_table(table, f)
     with io.BytesIO() as buf:
         pya_parquet.write_table(table, buf)

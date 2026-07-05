@@ -2,10 +2,12 @@ import tempfile
 from datetime import datetime, timezone
 from typing import Optional
 
-import numpy as np
-import pandas as pd
-import pyarrow as pa
 import pytest
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+pa = pytest.importorskip("pyarrow")
+
 import sqlalchemy
 from pyarrow import ipc as ipc
 

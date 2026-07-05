@@ -1,4 +1,6 @@
 import pytest
+
+pytest.importorskip("confluent_kafka")
 from confluent_kafka import KafkaError, KafkaException
 from confluent_kafka.admin import AdminClient
 from testcontainers.kafka import KafkaContainer

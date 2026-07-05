@@ -2,10 +2,8 @@ import csv
 import io
 import json
 
-import pyarrow.csv
 import pytest
 import sqlalchemy
-from pyarrow import parquet as pya_parquet
 
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string, get_testdata_path
@@ -20,12 +18,14 @@ PEOPLE = "name,age\nAlice,30\nBob,25\nCarol,41\n"
 
 @pytest.fixture(scope="module")
 def people_dir(tmp_path_factory):
+    pya_csv = pytest.importorskip("pyarrow.csv")
+    pya_parquet = pytest.importorskip("pyarrow.parquet")
     d = tmp_path_factory.mktemp("file_local")
     (d / "people.csv").write_text(PEOPLE)
     with (d / "people.jsonl").open("w") as f:
         for row in csv.DictReader(io.StringIO(PEOPLE)):
             f.write(json.dumps(row) + "\n")
-    table = pyarrow.csv.read_csv(io.BytesIO(PEOPLE.encode()))
+    table = pya_csv.read_csv(io.BytesIO(PEOPLE.encode()))
     pya_parquet.write_table(table, d / "people.parquet")
     return d
 

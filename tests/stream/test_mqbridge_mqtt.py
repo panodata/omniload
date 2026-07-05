@@ -20,8 +20,10 @@ import time
 from collections.abc import Iterator
 from pathlib import Path
 
-import duckdb
 import pytest
+
+duckdb = pytest.importorskip("duckdb")
+
 
 from tests.util import invoke_ingest_command
 

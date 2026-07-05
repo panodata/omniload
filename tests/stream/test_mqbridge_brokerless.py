@@ -5,8 +5,10 @@ Docker/services and stays out of the `integration` lane. The unit tests cover th
 ``<transport>+mqb://`` URI -> endpoint-config mapping and need no mq-bridge install.
 """
 
-import duckdb
 import pytest
+
+duckdb = pytest.importorskip("duckdb")
+
 
 from omniload.source.mqbridge.adapter import endpoint_from_uri
 

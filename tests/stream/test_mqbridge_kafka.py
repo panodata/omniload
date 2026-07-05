@@ -14,8 +14,11 @@ shared, so this file does not spin up a second container.
 import json
 from concurrent.futures import ThreadPoolExecutor
 
-import duckdb
 import pytest
+
+pytest.importorskip("confluent_kafka")
+duckdb = pytest.importorskip("duckdb")
+
 import sqlalchemy
 from confluent_kafka import Producer
 

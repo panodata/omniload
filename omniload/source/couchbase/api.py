@@ -6,12 +6,19 @@ class CouchbaseSource:
     table_builder: Callable
 
     def __init__(self, table_builder=None) -> None:
-        if table_builder is None:
+        self._table_builder = table_builder
+
+    @property
+    def table_builder(self):
+        if self._table_builder is None:
             from omniload.source.couchbase.adapter import couchbase_collection
 
-            table_builder = couchbase_collection
+            self._table_builder = couchbase_collection
+        return self._table_builder
 
-        self.table_builder = table_builder
+    @table_builder.setter
+    def table_builder(self, table_builder):
+        self._table_builder = table_builder
 
     def handles_incrementality(self) -> bool:
         return False

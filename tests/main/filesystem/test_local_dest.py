@@ -20,6 +20,8 @@ CWD = os.getcwd().replace(os.sep, "/")
 
 PEOPLE = "name,age\nAlice,30\nBob,25\nCarol,41\n"
 
+pytest.importorskip("pyarrow")
+
 
 def test_factory_dispatches_file_scheme_to_local_destination():
     factory = SourceDestinationFactory("file://in.csv", "file://out.jsonl")

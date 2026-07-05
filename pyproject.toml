@@ -269,6 +269,8 @@ lint.per-file-ignores."tests/*" = [
   "A002",
   # Unnecessary list comprehension (rewrite using `list()`)
   "C416",
+  # Module level import not at top of file
+  "E402",
   # line-too-long
   "E501",
   # Allow use of `assert`, and `print`.
