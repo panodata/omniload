@@ -8,6 +8,7 @@ from omniload.source.filesystem.format.registry import supported_file_format_mes
 from omniload.source.filesystem.router import (
     determine_endpoint,
     parse_endpoint,
+    parse_fragment,
     parse_uri,
     split_format_hint,
 )
@@ -90,6 +91,67 @@ def test_determine_endpoint_format_hint(table: str, path: str, endpoint: str):
 )
 def test_split_format_hint(table: str, expected: tuple[str, str | None]):
     assert split_format_hint(table) == expected
+
+
+@pytest.mark.parametrize(
+    ("spec", "expected"),
+    [
+        # no fragment
+        ("file.csv", ("file.csv", None, {})),
+        # bare format hint preserved (unchanged from split_format_hint)
+        ("file#csv", ("file", "csv", {})),
+        ("path/no-extension#csv_headless", ("path/no-extension", "csv_headless", {})),
+        # a single named hint
+        ("book.xlsx#sheet=foo", ("book.xlsx", None, {"sheet": "foo"})),
+        # multiple named hints
+        (
+            "book.xlsx#sheet=foo&header=0",
+            ("book.xlsx", None, {"sheet": "foo", "header": "0"}),
+        ),
+        # format hint and named hint coexist in one fragment
+        ("feed.dat#csv&sheet=foo", ("feed.dat", "csv", {"sheet": "foo"})),
+        # empty value is kept (reader decides if "" means unset)
+        ("book.xlsx#sheet=", ("book.xlsx", None, {"sheet": ""})),
+        # '=' in the value: parse_qsl partitions on the first '=', not split
+        ("book.xlsx#x=a=b", ("book.xlsx", None, {"x": "a=b"})),
+        # percent-decoding of values
+        ("book.xlsx#sheet=My%20Sheet", ("book.xlsx", None, {"sheet": "My Sheet"})),
+        ("book.xlsx#sheet=R%26D", ("book.xlsx", None, {"sheet": "R&D"})),
+        # duplicate key: last wins
+        ("book.xlsx#sheet=foo&sheet=bar", ("book.xlsx", None, {"sheet": "bar"})),
+        # trailing '&' is harmless separator noise
+        ("book.xlsx#sheet=foo&", ("book.xlsx", None, {"sheet": "foo"})),
+        # mixed valid hint + invalid bare token -> whole '#...' stays literal
+        ("book.xlsx#sheet=foo&bad", ("book.xlsx#sheet=foo&bad", None, {})),
+        # duplicate/conflicting bare formats -> literal
+        ("feed.dat#csv&parquet", ("feed.dat#csv&parquet", None, {})),
+        # literal '#' in a path (trailing segment is neither hint nor format)
+        ("/feeds/vendor#1/data.csv", ("/feeds/vendor#1/data.csv", None, {})),
+        ("path/data#unknown", ("path/data#unknown", None, {})),
+        # a bare trailing '#' interprets to nothing -> kept literal
+        ("file.csv#", ("file.csv#", None, {})),
+        # %23 forces a literal '#' that would otherwise look like a hint fragment
+        ("book.xlsx%23sheet=foo", ("book.xlsx%23sheet=foo", None, {})),
+    ],
+)
+def test_parse_fragment(spec: str, expected: tuple[str, str | None, dict[str, str]]):
+    assert parse_fragment(spec) == expected
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        "path/file.csv#csv",
+        "path/no-extension#csv_headless",
+        "path/vendor#1/data.csv",
+        "path/data#unknown",
+        "path/file.csv",
+    ],
+)
+def test_split_format_hint_matches_parse_fragment(spec: str):
+    """split_format_hint stays a faithful (path, format) projection of parse_fragment."""
+    path, fmt, _ = parse_fragment(spec)
+    assert split_format_hint(spec) == (path, fmt)
 
 
 @pytest.mark.parametrize(

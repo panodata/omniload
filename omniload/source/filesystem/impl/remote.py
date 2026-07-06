@@ -7,9 +7,10 @@ from omniload.error import InvalidBlobTableError, MissingValueError
 from omniload.source.filesystem.error import UnsupportedEndpointError
 from omniload.source.filesystem.format.registry import supported_file_format_message
 from omniload.source.filesystem.router import (
+    blob_hints,
     determine_endpoint,
+    parse_fragment,
     parse_uri,
-    split_format_hint,
 )
 from omniload.util.auth import AzureBlobAuth, parse_azure_blob_auth
 
@@ -79,7 +80,7 @@ class GCSSource:
                 bucket_url=bucket_url,
                 file_glob=path_to_file,
                 reader_name=endpoint,
-                page=table,
+                hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
         )
@@ -141,7 +142,7 @@ class S3Source:
                 bucket_url=bucket_url,
                 file_glob=path_to_file,
                 reader_name=endpoint,
-                page=table,
+                hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
         )
@@ -265,7 +266,7 @@ class SFTPSource:
             ) from e
         bucket_url = f"sftp://{host}:{port}"
 
-        table_path, _ = split_format_hint(table)
+        table_path, _, hints = parse_fragment(table)
         if table_path.startswith("/"):
             file_glob = table_path
         else:
@@ -287,7 +288,7 @@ class SFTPSource:
                 bucket_url=bucket_url,
                 file_glob=file_glob,
                 reader_name=endpoint,
-                page=table,
+                hints=hints,
                 column_types=kwargs.get("column_types"),
             )
         )

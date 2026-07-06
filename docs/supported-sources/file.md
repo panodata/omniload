@@ -122,6 +122,39 @@ omniload ingest \
 Without column names, columns are auto-named `unknown_col_0`, `unknown_col_1`,
 and so on.
 
+## Reader hints
+
+The URI fragment is also a general **reader-hint channel**: besides a `#format`
+token it can carry `#key=value` pairs that a reader may use to parametrize how a
+file is read (for example, a future spreadsheet reader could take a sheet name).
+A format hint and named hints coexist in one fragment, `&`-separated:
+
+```text
+file://quotes.dat#csv&sheet=daily&header=0
+```
+
+The named-hint grammar:
+
+- Values are percent-decoded, so `#sheet=My%20Sheet` gives the value `My Sheet`
+  and `#sheet=R%26D` gives `R&D`.
+- Only the first `=` splits key from value, so a value may itself contain `=`
+  (`#range=A1=B2` gives `range` = `A1=B2`).
+- An empty value is preserved (`#sheet=` gives `sheet` = `""`); a reader decides
+  whether that means "unset".
+- Duplicate keys take the last value (`#sheet=a&sheet=b` gives `b`).
+- If any segment of the fragment is neither a `key=value` pair nor a single
+  known format, the whole `#...` is treated as a literal part of the path, so a
+  real `#` in a filename keeps working. Percent-encode a literal `#` as `%23`
+  when a trailing `path#key=value` would otherwise be read as a fragment.
+
+:::{note}
+Reader hints are a forward-looking channel. The built-in BSON, CSV, JSONL and
+Parquet readers take no hints today, so a `#key=value` pair is parsed and
+carried but has no effect on them yet. Only the `#format` token changes current
+read behavior. The same channel is available on the [S3](s3.md),
+[Google Cloud Storage](google-cloud-storage.md) and [SFTP](sftp.md) sources.
+:::
+
 ## Using `file://` as a destination
 
 `file://` also writes local files. The output format is taken from the

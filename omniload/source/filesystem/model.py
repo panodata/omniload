@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional, Type, Union
 
 from dlt.common.configuration import configspec, resolve_type
@@ -34,7 +34,10 @@ class FilesystemReference:
         bucket_url (str): The url to the bucket.
         file_glob (str): The filter to apply to the files in glob format.
         reader_name (str): The name of the reader resource to build, e.g. `read_csv`.
-        page (str, optional): The page name, e.g. used as the sheet name by `read_excel`. Currently populated with `table` value.
+        hints (dict[str, str]): Free-form per-URI reader hints parsed from the
+            `#key=value` fragment (e.g. `{"sheet": "ticker-symbols"}`). The
+            key a reader looks up is that reader's contract; no reader consumes
+            hints yet, so this is currently populated but unread.
         column_types (dict[str, Any], optional): Column name to type mapping, e.g. used by `read_csv_headless`.
     """
 
@@ -42,5 +45,5 @@ class FilesystemReference:
     bucket_url: str
     file_glob: str
     reader_name: str
-    page: Optional[str] = None
+    hints: dict[str, str] = field(default_factory=dict)
     column_types: Optional[dict[str, Any]] = None

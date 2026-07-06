@@ -10,7 +10,7 @@ from omniload.source.filesystem.impl.util import (
 )
 from omniload.source.filesystem.router import (
     determine_endpoint,
-    split_format_hint,
+    parse_fragment,
 )
 
 
@@ -54,10 +54,11 @@ class LocalFilesystemSource:
         if not spec:
             raise MissingValueError("path", "file URI")
 
-        # Strip a trailing #format hint before splitting into dir/glob, so
-        # file://feed.dat#csv globs feed.dat (not feed.dat#csv). Literal '#' in a path
-        # is preserved by split_format_hint when the suffix isn't a known format.
-        path, _ = split_format_hint(spec)
+        # Strip the trailing #fragment (format hint and/or #key=value reader
+        # hints) before splitting into dir/glob, so file://feed.dat#csv and
+        # file://book.xlsx#sheet=foo glob the bare path. Literal '#' in a path is
+        # preserved by parse_fragment when the fragment isn't a valid directive.
+        path, _, hints = parse_fragment(spec)
 
         # Resolve the reader from the original hinted string (determine_endpoint re-runs
         # split_format_hint internally and falls back to the file extension). It wraps an
@@ -94,7 +95,7 @@ class LocalFilesystemSource:
                 bucket_url=directory,
                 file_glob=file_glob,
                 reader_name=endpoint,
-                page=table,
+                hints=hints,
                 column_types=kwargs.get("column_types"),
             )
         )

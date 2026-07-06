@@ -1,6 +1,6 @@
 import warnings
 from typing import Any, Dict, Optional, Tuple, TypeAlias
-from urllib.parse import ParseResult, urlparse
+from urllib.parse import ParseResult, parse_qsl, urlparse
 
 import dlt
 from dlt.common.configuration import with_config
@@ -76,18 +76,102 @@ def parse_endpoint(path: str) -> str:
     return reader_for_format(file_extension)
 
 
+def parse_fragment(spec: str) -> Tuple[str, Optional[str], Dict[str, str]]:
+    """Split a filesystem-source spec into ``(path, format_hint, hints)``.
+
+    The trailing ``#fragment`` (everything after the *last* ``#``) is a per-URI
+    reader-directive channel. It may carry, in any combination:
+
+    - a bare **format hint** -- a single known-format token (``#csv``); and/or
+    - **named hints** -- ``key=value`` pairs (``#sheet=foo&header=0``), parsed
+      with :func:`urllib.parse.parse_qsl`. That means ``=``-partition semantics
+      (``#x=a=b`` -> ``{"x": "a=b"}``, not a split), percent-decoding of keys
+      and values (``#sheet=My%20Sheet`` -> ``My Sheet``; and, form-encoding
+      style, a literal ``+`` decodes to a space), and empty values are kept
+      (``#sheet=`` -> ``{"sheet": ""}``; a reader decides whether that means
+      "unset"). Duplicate keys are last-wins.
+
+    Grammar of the fragment (``&``-separated segments):
+
+    - at most one bare (no ``=``) segment, which must be a known format;
+    - any number of ``key=value`` segments;
+    - empty segments (from a trailing/doubled ``&``) are ignored.
+
+    **All-or-nothing.** If any segment is neither a ``key=value`` pair nor a
+    single known-format token -- an unknown bare token (``#sheet=foo&bad``), a
+    second/duplicate bare format (``#csv&parquet``) -- the whole ``#...`` is
+    treated as a *literal part of the path* and returned unchanged as
+    ``(spec, None, {})``. A malformed tail never silently drops a valid hint,
+    and a typo never gets silently absorbed as one. A fragment that interprets
+    to nothing (a bare trailing ``#``) is likewise left literal.
+
+    This preserves literal ``#`` in a path (``/feeds/vendor#1/data.csv``). The
+    one narrowed case is a trailing segment that looks exactly like
+    ``key=value`` (``vendor#x=y`` as the final segment), which now parses as a
+    hint; percent-encode the ``#`` as ``%23`` to force it literal.
+    """
+    path, sep, fragment = spec.rpartition("#")
+    if not sep:
+        return spec, None, {}
+
+    format_hint: Optional[str] = None
+    hints: Dict[str, str] = {}
+    for segment in fragment.split("&"):
+        if segment == "":
+            # Empty separator noise (trailing or doubled '&'); harmless.
+            continue
+        if "=" in segment:
+            for key, value in parse_qsl(segment, keep_blank_values=True):
+                hints[key] = value
+        elif segment in FORMAT_TO_READER and format_hint is None:
+            format_hint = segment
+        else:
+            # Unknown bare token, or a second/duplicate bare format: the '#' is
+            # a literal part of the path, not a fragment.
+            return spec, None, {}
+
+    if format_hint is None and not hints:
+        # Nothing to interpret (e.g. a bare trailing '#'); keep it literal.
+        return spec, None, {}
+
+    return path, format_hint, hints
+
+
 def split_format_hint(table: str) -> Tuple[str, Optional[str]]:
     """Split a table spec into ``(path, format_hint)``.
 
-    A trailing ``#segment`` is treated as an explicit format hint only when
-    ``segment`` is a recognized format. Otherwise the ``#`` is part of the
-    path and the hint is ``None``, so literal ``#`` characters in file paths
-    keep working (e.g. ``/feeds/vendor#1/data.csv``).
+    Thin wrapper over :func:`parse_fragment` that drops the named hints, so
+    every existing caller keeps its ``(path, format_hint)`` contract. A trailing
+    ``#segment`` is an explicit format hint only when ``segment`` is a
+    recognized format; otherwise the ``#`` stays part of the path (literal
+    ``#`` in file paths like ``/feeds/vendor#1/data.csv`` keep working).
     """
-    path, sep, suffix = table.rpartition("#")
-    if sep and suffix in FORMAT_TO_READER:
-        return path, suffix
-    return table, None
+    path, format_hint, _ = parse_fragment(table)
+    return path, format_hint
+
+
+def blob_hints(parsed_uri: ParseResult, table: str) -> Dict[str, str]:
+    """Extract ``#key=value`` reader hints for a blob (S3/GCS) source URI.
+
+    Mirrors :func:`parse_uri`'s carrier choice so hints always track the file
+    that is actually loaded. In the recommended form the fragment rides
+    ``--source-table`` (``s3://?...`` + table ``bucket/book.xlsx#sheet=foo``); in
+    the deprecated URI-path form (``s3://bucket/book.xlsx#sheet=foo``)
+    :func:`urllib.parse.urlparse` strips it into ``parsed_uri.fragment``.
+    ``parse_uri`` uses the URI-path form whenever ``parsed_uri.path`` is set (or
+    ``table`` is empty), so the fragment is read from there in that case and only
+    falls back to ``table`` for the pure table form -- otherwise a contradictory
+    ``s3://bucket/a.csv#x`` + ``--source-table b.csv#y`` would attach ``b``'s
+    hints to the ``a`` file that ``parse_uri`` actually loads. The bucket and
+    glob still come from :func:`parse_uri`.
+    """
+    if parsed_uri.path.strip() or not table.strip():
+        if parsed_uri.fragment:
+            _, _, hints = parse_fragment(f"{parsed_uri.path}#{parsed_uri.fragment}")
+            return hints
+        return {}
+    _, _, hints = parse_fragment(table)
+    return hints
 
 
 def determine_endpoint(table: str, path: str) -> str:
