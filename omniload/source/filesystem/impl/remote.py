@@ -228,7 +228,7 @@ class AzureSource:
                 bucket_url=bucket_url,
                 file_glob=path_to_file,
                 reader_name=endpoint,
-                page=table,
+                hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
         )
