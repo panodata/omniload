@@ -1,5 +1,6 @@
 import csv
 import gzip
+import importlib.util
 import io
 import json
 from typing import Callable, Iterable
@@ -19,6 +20,18 @@ from omniload.target.filesystem.api import AzureDestination, S3Destination
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string, has_exception
 from tests.warehouse.settings import DESTINATIONS
+
+# The MessagePack reader needs the optional `iterable` extra (iterabledata + msgpack). Probe
+# with find_spec so this module imports without them; the msgpack case is added only when
+# both are present.
+HAS_MSGPACK = (
+    importlib.util.find_spec("iterable") is not None
+    and importlib.util.find_spec("msgpack") is not None
+)
+HAS_CBOR = (
+    importlib.util.find_spec("iterable") is not None
+    and importlib.util.find_spec("cbor2") is not None
+)
 
 
 def fs_test_cases(
@@ -77,6 +90,31 @@ def fs_test_cases(
             for row in reader:
                 gz.write(json.dumps(row).encode())
                 gz.write(b"\n")
+
+    # For MessagePack tests (read through the iterabledata bridge). Written as a stream of
+    # concatenated maps, the same on-disk form the reader expects.
+    if HAS_MSGPACK:
+        import msgpack
+
+        msgpack_rows = [
+            {"name": row["name"], "country": row["country"]}
+            for row in csv.DictReader(io.StringIO(testdata))
+        ]
+        with test_fs.open("/data.msgpack", "wb") as f:
+            for row in msgpack_rows:
+                f.write(msgpack.packb(row, use_bin_type=True))
+
+    # For CBOR tests (read through the iterabledata bridge). Written as a single top-level
+    # array, the shape the reader requires (concatenated objects would truncate to the first).
+    if HAS_CBOR:
+        import cbor2
+
+        cbor_rows = [
+            {"name": row["name"], "country": row["country"]}
+            for row in csv.DictReader(io.StringIO(testdata))
+        ]
+        with test_fs.open("/data.cbor", "wb") as f:
+            f.write(cbor2.dumps(cbor_rows))
 
     # for testing unsupported files
     with test_fs.open("/bin/data.bin", "w") as f:
@@ -278,6 +316,50 @@ def fs_test_cases(
             assert result.exit_code == 0
             assert_rows(dest_uri, dest_table, 5)
 
+    def test_msgpack_load(dest_uri):
+        """When the source URI is a MessagePack file, the data should be ingested through the
+        iterabledata bridge over the source's own fsspec handle (no separate storage auth)."""
+        with (
+            patch(target_fs) as target_fs_mock,
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
+        ):
+            target_fs_mock.return_value = test_fs
+            schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
+            dest_table = f"{schema_rand_prefix}.fs_{get_random_string(5)}"
+            result = invoke_ingest_command(
+                f"{protocol}://bucket?{auth}",
+                "/data.msgpack",
+                dest_uri,
+                dest_table,
+            )
+            assert result.exit_code == 0
+            assert_rows(dest_uri, dest_table, 5)
+
+    def test_cbor_load(dest_uri):
+        """When the source URI is a CBOR file, the data should be ingested through the
+        iterabledata bridge over the source's own fsspec handle (no separate storage auth)."""
+        with (
+            patch(target_fs) as target_fs_mock,
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
+        ):
+            target_fs_mock.return_value = test_fs
+            schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
+            dest_table = f"{schema_rand_prefix}.fs_{get_random_string(5)}"
+            result = invoke_ingest_command(
+                f"{protocol}://bucket?{auth}",
+                "/data.cbor",
+                dest_uri,
+                dest_table,
+            )
+            assert result.exit_code == 0
+            assert_rows(dest_uri, dest_table, 5)
+
     def test_glob_load(dest_uri):
         """
         When the source URI is a glob pattern, all files matching the pattern should be ingested
@@ -350,7 +432,7 @@ def fs_test_cases(
             assert result.exit_code == 0
             assert_rows(dest_uri, dest_table, 6)
 
-    return [
+    cases = [
         test_empty_source_uri,
         test_missing_credentials,
         test_unsupported_file_format,
@@ -364,6 +446,11 @@ def fs_test_cases(
         test_compound_table_name,
         test_uri_precedence,
     ]
+    if HAS_MSGPACK:
+        cases.append(test_msgpack_load)
+    if HAS_CBOR:
+        cases.append(test_cbor_load)
+    return cases
 
 
 @pytest.mark.parametrize(

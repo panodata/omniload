@@ -27,10 +27,12 @@ from fsspec import AbstractFileSystem
 from omniload.source.filesystem.format.readers import (
     ReadersSource,
     read_bson,
+    read_cbor,
     read_csv,
     read_csv_duckdb,
     read_csv_headless,
     read_jsonl,
+    read_msgpack,
     read_parquet,
 )
 
@@ -73,6 +75,10 @@ def readers(
         | dlt.transformer(name="read_jsonl", max_table_nesting=0)(read_jsonl),
         filesystem_resource
         | dlt.transformer(name="read_bson", max_table_nesting=0)(read_bson),
+        filesystem_resource
+        | dlt.transformer(name="read_msgpack", max_table_nesting=0)(read_msgpack),
+        filesystem_resource
+        | dlt.transformer(name="read_cbor", max_table_nesting=0)(read_cbor),
         filesystem_resource
         | dlt.transformer(name="read_parquet", max_table_nesting=0)(read_parquet),
         filesystem_resource
@@ -126,6 +132,10 @@ def filesystem(
 
 
 def resource_for_reader(ref: FilesystemReference) -> DltSource | DltResource:
+    """Build the filesystem reader resource named by ``ref.reader_name``.
+
+    Threads ``column_types`` into ``read_csv_headless``; every other reader is selected as-is.
+    """
     if ref.reader_name != "read_csv_headless":
         return readers(ref.bucket_url, ref.fs, ref.file_glob).with_resources(
             ref.reader_name
@@ -138,6 +148,7 @@ def resource_for_reader(ref: FilesystemReference) -> DltSource | DltResource:
         chunksize: int = 10000,
         **pandas_kwargs: Any,
     ) -> Iterator[TDataItems]:
+        """Read header-less CSV with the column names derived from ``ref.column_types``."""
         yield from read_csv_headless(
             items,
             chunksize=chunksize,

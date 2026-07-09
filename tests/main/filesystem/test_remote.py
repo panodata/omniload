@@ -38,6 +38,7 @@ test_cases: list[URITestCase] = [
 
 @pytest.mark.parametrize("test_case", test_cases)
 def test_parse_uri(test_case: URITestCase):
+    """Parsing a source URI splits it into the expected bucket and file glob."""
     uri = urlparse(test_case.uri)
     (bucket, glob) = parse_uri(uri, test_case.table)
     assert bucket == test_case.expect_bucket
@@ -57,6 +58,7 @@ def test_parse_uri(test_case: URITestCase):
     ],
 )
 def test_parse_endpoint(path: str, endpoint: str):
+    """A file extension maps to the expected reader name."""
     assert parse_endpoint(path) == endpoint
 
 
@@ -75,6 +77,7 @@ def test_parse_endpoint(path: str, endpoint: str):
     ],
 )
 def test_determine_endpoint_format_hint(table: str, path: str, endpoint: str):
+    """An explicit `#format` hint selects the reader, overriding the extension."""
     assert determine_endpoint(table, path) == endpoint
 
 
@@ -90,6 +93,7 @@ def test_determine_endpoint_format_hint(table: str, path: str, endpoint: str):
     ],
 )
 def test_split_format_hint(table: str, expected: tuple[str, str | None]):
+    """Splitting a table spec yields the path and any trailing format hint."""
     assert split_format_hint(table) == expected
 
 
@@ -135,6 +139,7 @@ def test_split_format_hint(table: str, expected: tuple[str, str | None]):
     ],
 )
 def test_parse_fragment(spec: str, expected: tuple[str, str | None, dict[str, str]]):
+    """Parsing a spec fragment yields the path, format hint, and named hints."""
     assert parse_fragment(spec) == expected
 
 
@@ -164,16 +169,20 @@ def test_split_format_hint_matches_parse_fragment(spec: str):
     ],
 )
 def test_determine_endpoint_literal_hash_in_path(table: str, path: str, endpoint: str):
+    """A literal `#` in a path is not treated as a format hint."""
     assert determine_endpoint(table, path) == endpoint
 
 
 def test_parse_endpoint_rejects_unsupported_format():
+    """An unknown extension raises UnsupportedEndpointError."""
     with pytest.raises(UnsupportedEndpointError, match="Unsupported file format: bin"):
         parse_endpoint("data.bin")
 
 
 def test_supported_file_format_message():
-    assert (
-        supported_file_format_message("S3")
-        == "S3 Source only supports file formats: csv, csv_headless, jsonl, parquet, bson"
+    """The supported-formats message lists the base formats in order."""
+    # The base formats are always advertised, in order. Iterable-extra formats (msgpack, ...)
+    # are appended only when their decoder is installed, so assert the stable base prefix.
+    assert supported_file_format_message("S3").startswith(
+        "S3 Source only supports file formats: csv, csv_headless, jsonl, parquet, bson"
     )
