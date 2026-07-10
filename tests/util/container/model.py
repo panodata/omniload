@@ -7,9 +7,10 @@ from pathlib import Path
 from typing import Callable, Optional
 
 import pytest
+from testcontainers.community.generic import SqlContainer
+from testcontainers.community.kafka import KafkaContainer
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.generic import DbContainer
-from testcontainers.kafka import KafkaContainer
 
 from tests.util.container.impl.couchbase import CouchbaseContainer
 
