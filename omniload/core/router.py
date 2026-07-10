@@ -28,9 +28,12 @@ from omniload.core.model import TableDefinition, table_string_to_dataclass
 
 
 class SqlSourceRouter:
+    """Adapt SQLAlchemy-compatible source URIs into dlt SQL table resources."""
+
     table_builder: Callable
 
     def __init__(self, table_builder=None) -> None:
+        """Use dlt's SQL table builder unless a test double is supplied."""
         if table_builder is None:
             from dlt.sources.sql_database import sql_table
 
@@ -39,9 +42,11 @@ class SqlSourceRouter:
         self.table_builder = table_builder
 
     def handles_incrementality(self) -> bool:
+        """Return whether this source owns incremental cursor handling."""
         return False
 
     def dlt_source(self, uri: str, table: str, **kwargs):
+        """Build a dlt SQL resource after normalizing supported SQL URI variants."""
         table_fields = TableDefinition(dataset="custom", table="custom")
         if not table.startswith("query:"):
             if uri.startswith("spanner://"):
@@ -206,6 +211,7 @@ class SqlSourceRouter:
             uri = f"spanner+spanner:///projects/{project_id}/instances/{instance_id}/databases/{database}"
 
             def eng_callback(engine):
+                """Mark the Spanner SQLAlchemy engine as read-only for extraction."""
                 return engine.execution_options(read_only=True)
 
             engine_adapter_callback = eng_callback
@@ -305,6 +311,7 @@ class SqlSourceRouter:
                 resolve_foreign_keys: bool = False,
                 table_loader_class: Optional[Type[BaseTableLoader]] = None,
             ) -> Iterator[TDataItem]:
+                """Load custom-query rows through a synthetic dlt SQL table."""
                 hints = {
                     "columns": [],
                 }
@@ -385,6 +392,7 @@ class SqlSourceRouter:
                 dsn = ";".join([f"{k}={v}" for k, v in cfg.items()])
 
                 def creator():
+                    """Create an MSSQL pyodbc connection using an Azure access token."""
                     connection = pyodbc.connect(
                         dsn,
                         autocommit=True,

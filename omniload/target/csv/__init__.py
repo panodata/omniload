@@ -10,10 +10,14 @@ from omniload.util.loader import load_dlt_file
 
 
 class CustomCsvDestination(dlt.destinations.filesystem):
+    """Filesystem destination subclass used as the temporary CSV staging target."""
+
     pass
 
 
 class CsvDestination(GenericSqlDestination):
+    """Write a dlt load result into a single local CSV file."""
+
     temp_path: str
     actual_path: str
     uri: str
@@ -21,6 +25,7 @@ class CsvDestination(GenericSqlDestination):
     table_name: str
 
     def dlt_run_params(self, uri: str, table: str, **kwargs) -> dict:
+        """Record table metadata needed to locate the staged dlt output."""
         table_fields = table.split(".")
         if len(table_fields) != 2:
             raise ValueError("Table name must be in the format <schema>.<table>")
@@ -37,6 +42,7 @@ class CsvDestination(GenericSqlDestination):
         return res
 
     def dlt_dest(self, uri: str, **kwargs):
+        """Create a temporary filesystem destination for dlt's CSV output."""
         if uri.startswith("csv://"):
             uri = uri.replace("csv://", "file://")
 
@@ -50,7 +56,10 @@ class CsvDestination(GenericSqlDestination):
     # I tried to make it work with a nicer destination implementation but I couldn't, so I decided to go with this hack to experiment
     # if anyone has a better idea on how to do this, I am open to contributions or suggestions
     def post_load(self):
+        """Rewrite dlt's staged rows into the requested CSV file path."""
+
         def find_first_file(path):
+            """Return the first regular file directly under a directory."""
             for entry in os.listdir(path):
                 full_path = os.path.join(path, entry)
                 if os.path.isfile(full_path):
@@ -59,6 +68,7 @@ class CsvDestination(GenericSqlDestination):
             return None
 
         def filter_keys(dictionary):
+            """Remove dlt metadata columns from an output row."""
             return {
                 key: value
                 for key, value in dictionary.items()
@@ -74,6 +84,7 @@ class CsvDestination(GenericSqlDestination):
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         def _rewrite_csv_with_fieldnames(path, fieldnames):
+            """Rewrite an existing CSV file with an expanded field order."""
             tmp_fd, tmp_path = tempfile.mkstemp(
                 suffix=".csv", dir=os.path.dirname(path) or "."
             )

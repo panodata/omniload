@@ -26,10 +26,14 @@ def for_each(
 
 
 class TypeHintMap:
+    """Apply inferred JSON type hints for array-like values in a resource item."""
+
     def __init__(self):
+        """Track whether hints have already been applied for this mapper."""
         self.handled_typehints = False
 
     def type_hint_map(self, item):
+        """Mark list and tuple columns as JSON on the current dlt source."""
         if self.handled_typehints:
             return item
 

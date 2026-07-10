@@ -12,6 +12,7 @@ MSSQL_COPT_SS_ACCESS_TOKEN = 1256
 
 
 def build_mssql_dest():
+    """Build a dlt MSSQL destination class with Azure token authentication support."""
     # https://github.com/bruin-data/ingestr/issues/293
 
     from dlt.destinations.impl.mssql.configuration import MsSqlClientConfiguration
@@ -24,9 +25,12 @@ def build_mssql_dest():
     )
 
     class OdbcMsSqlClient(PyOdbcMsSqlClient):
+        """pyodbc client that can authenticate with an Azure access token."""
+
         SKIP_CREDENTIALS = {"PWD", "AUTHENTICATION", "UID"}
 
         def open_connection(self):
+            """Open a standard MSSQL connection or an Azure-token connection."""
             cfg = self.credentials.get_odbc_dsn_dict()
             if (
                 cfg.get("AUTHENTICATION", "").strip().lower()
@@ -54,12 +58,15 @@ def build_mssql_dest():
             return self._conn
 
     class MsSqlClient(MsSqlJobClient):
+        """dlt MSSQL job client wired to the custom pyodbc SQL client."""
+
         def __init__(
             self,
             schema: Schema,
             config: MsSqlClientConfiguration,
             capabilities: DestinationCapabilitiesContext,
         ) -> None:
+            """Initialize the job client with the custom ODBC SQL client."""
             sql_client = OdbcMsSqlClient(
                 config.normalize_dataset_name(schema),
                 config.normalize_staging_dataset_name(schema),
@@ -73,14 +80,20 @@ def build_mssql_dest():
             self.type_mapper = capabilities.get_type_mapper()
 
     class MsSqlDestImpl(dlt.destinations.mssql):
+        """dlt MSSQL destination implementation using the custom client class."""
+
         @property
         def client_class(self):
+            """Return the MSSQL job client implementation for this destination."""
             return MsSqlClient
 
     return MsSqlDestImpl
 
 
 class MsSQLDestination(GenericSqlDestination):
+    """Destination adapter for SQL Server and Azure SQL targets."""
+
     def dlt_dest(self, uri: str, **kwargs):
+        """Build the dlt MSSQL destination for the given connection URI."""
         cls = build_mssql_dest()
         return cls(credentials=uri, **kwargs)
