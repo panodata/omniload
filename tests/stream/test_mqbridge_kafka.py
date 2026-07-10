@@ -16,10 +16,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 import duckdb
 import pytest
-import sqlalchemy
 from confluent_kafka import Producer
 
 from tests.util import invoke_ingest_command
+from tests.util.db import get_query_result
 from tests.warehouse.settings import DESTINATIONS
 
 # Marked explicitly (not auto-marked by path) because this module lives outside tests/warehouse.
@@ -64,13 +64,11 @@ def test_mqbridge_kafka_to_db(kafka, dest, topic):
         assert res.exit_code == 0
 
     def rows():
-        engine = sqlalchemy.create_engine(dest_uri)
-        with engine.connect() as conn:
-            out = conn.exec_driver_sql(
-                f"select order_id, amount from {topic}.output order by order_id asc"
-            ).fetchall()
-        engine.dispose()
-        return [tuple(r) for r in out]
+        res = get_query_result(
+            dest_uri,
+            f"select order_id, amount from {topic}.output order by order_id asc",
+        )
+        return [tuple(r) for r in res]
 
     run()
     assert rows() == EXPECTED

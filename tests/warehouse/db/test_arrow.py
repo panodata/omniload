@@ -6,13 +6,13 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pytest
-import sqlalchemy
 from pyarrow import ipc as ipc
 
 from tests.util import (
     invoke_ingest_command,
 )
-from tests.util.common import as_datetime, as_datetime2, get_random_string
+from tests.util.common import as_datetime, as_datetime_notz, get_random_string
+from tests.util.db import get_query_result
 from tests.warehouse.settings import DESTINATIONS
 
 
@@ -44,7 +44,7 @@ def test_arrow_mmap_to_db_create_replace(dest):
                 ),
             )
 
-            assert res.exit_code == 0
+            assert res.exit_code == 0, res.stderr
             return res
 
     dest_uri = dest.start()
@@ -64,17 +64,15 @@ def test_arrow_mmap_to_db_create_replace(dest):
     table = pa.Table.from_pandas(df)
     run_command(table)
 
-    dest_engine = sqlalchemy.create_engine(dest_uri)
-    with dest_engine.begin() as conn:
-        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
-        assert res[0][0] == row_count
+    res = get_query_result(dest_uri, f"select count(*) from {schema}.output")
+    assert res[0][0] == row_count
 
-        res = conn.exec_driver_sql(
-            f"select date, count(*) from {schema}.output group by 1 order by 1 asc"
-        ).fetchall()
-        assert res[0][0] == as_datetime("2024-11-05")
-        assert res[0][1] == row_count
-    dest_engine.dispose()
+    res = get_query_result(
+        dest_uri,
+        f"select date, count(*) from {schema}.output group by 1 order by 1 asc",
+    )
+    assert res[0][0] == as_datetime("2024-11-05")
+    assert res[0][1] == row_count
 
     # let's add a new column to the dataframe
     df["new_col"] = "some value"
@@ -82,22 +80,22 @@ def test_arrow_mmap_to_db_create_replace(dest):
     run_command(table)
 
     # there should be no change, just a new column
-    with dest_engine.begin() as conn:
-        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
-        assert res[0][0] == row_count
+    res = get_query_result(dest_uri, f"select count(*) from {schema}.output")
+    assert res[0][0] == row_count
 
-        res = conn.exec_driver_sql(
-            f"select date, count(*) from {schema}.output group by 1 order by 1 asc"
-        ).fetchall()
-        assert res[0][0] == as_datetime("2024-11-05")
-        assert res[0][1] == row_count
+    res = get_query_result(
+        dest_uri,
+        f"select date, count(*) from {schema}.output group by 1 order by 1 asc",
+    )
+    assert res[0][0] == as_datetime("2024-11-05")
+    assert res[0][1] == row_count
 
-        res = conn.exec_driver_sql(
-            f"select new_col, count(*) from {schema}.output group by 1 order by 1 asc"
-        ).fetchall()
-        assert res[0][0] == "some value"
-        assert res[0][1] == row_count
-    dest_engine.dispose()
+    res = get_query_result(
+        dest_uri,
+        f"select new_col, count(*) from {schema}.output group by 1 order by 1 asc",
+    )
+    assert res[0][0] == "some value"
+    assert res[0][1] == row_count
 
 
 @pytest.mark.parametrize(
@@ -123,11 +121,10 @@ def test_arrow_mmap_to_db_delete_insert(dest):
                 inc_strategy="delete+insert",
             )
 
-            assert res.exit_code == 0
+            assert res.exit_code == 0, res.stderr
             return res
 
     dest_uri = dest.start()
-    dest_engine = sqlalchemy.create_engine(dest_uri)
 
     # let's start with a basic dataframe
     row_count = 1000
@@ -143,7 +140,7 @@ def test_arrow_mmap_to_db_delete_insert(dest):
     run_command(df, "date")
 
     def build_datetime(ds: str):
-        dt: datetime = as_datetime2(ds)
+        dt: datetime = as_datetime_notz(ds)
         if dest_uri.startswith("clickhouse"):
             dt = dt.replace(tzinfo=timezone.utc)
         return dt
@@ -167,29 +164,28 @@ def test_arrow_mmap_to_db_delete_insert(dest):
         return actual_date == expected_date
 
     # the first load, it should be loaded correctly
-    with dest_engine.begin() as conn:
-        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
-        assert res[0][0] == row_count
+    res = get_query_result(dest_uri, f"select count(*) from {schema}.output")
+    assert res[0][0] == row_count
 
-        res = conn.exec_driver_sql(
-            f"select date, count(*) from {schema}.output group by 1 order by 1 asc"
-        ).fetchall()
-        assert compare_dates(res[0][0], "2024-11-05")
-        assert res[0][1] == row_count
-    dest_engine.dispose()
+    res = get_query_result(
+        dest_uri,
+        f"select date, count(*) from {schema}.output group by 1 order by 1 asc",
+    )
+    assert compare_dates(res[0][0], "2024-11-05")
+    assert res[0][1] == row_count
 
     # run again, it should be deleted and reloaded
     run_command(df, "date")
-    with dest_engine.begin() as conn:
-        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
-        assert res[0][0] == row_count
 
-        res = conn.exec_driver_sql(
-            f"select date, count(*) from {schema}.output group by 1 order by 1 asc"
-        ).fetchall()
-        assert compare_dates(res[0][0], "2024-11-05")
-        assert res[0][1] == row_count
-    dest_engine.dispose()
+    res = get_query_result(dest_uri, f"select count(*) from {schema}.output")
+    assert res[0][0] == row_count
+
+    res = get_query_result(
+        dest_uri,
+        f"select date, count(*) from {schema}.output group by 1 order by 1 asc",
+    )
+    assert compare_dates(res[0][0], "2024-11-05")
+    assert res[0][1] == row_count
 
     # append 1000 new rows with a different date
     new_rows = pd.DataFrame(
@@ -204,18 +200,17 @@ def test_arrow_mmap_to_db_delete_insert(dest):
 
     run_command(df, "date")
 
-    with dest_engine.begin() as conn:
-        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
-        assert res[0][0] == row_count + 1000
+    res = get_query_result(dest_uri, f"select count(*) from {schema}.output")
+    assert res[0][0] == row_count + 1000
 
-        res = conn.exec_driver_sql(
-            f"select date, count(*) from {schema}.output group by 1 order by 1 asc"
-        ).fetchall()
-        assert compare_dates(res[0][0], "2024-11-05")
-        assert res[0][1] == row_count
-        assert compare_dates(res[1][0], "2024-11-06")
-        assert res[1][1] == 1000
-    dest_engine.dispose()
+    res = get_query_result(
+        dest_uri,
+        f"select date, count(*) from {schema}.output group by 1 order by 1 asc",
+    )
+    assert compare_dates(res[0][0], "2024-11-05")
+    assert res[0][1] == row_count
+    assert compare_dates(res[1][0], "2024-11-06")
+    assert res[1][1] == 1000
 
     # append 1000 old rows for a previous date, these should not be loaded
     old_rows = pd.DataFrame(
@@ -229,18 +224,18 @@ def test_arrow_mmap_to_db_delete_insert(dest):
     df = pd.concat([df, old_rows], ignore_index=True)
 
     run_command(df, "date")
-    with dest_engine.begin() as conn:
-        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
-        assert res[0][0] == row_count + 1000
 
-        res = conn.exec_driver_sql(
-            f"select date, count(*) from {schema}.output group by 1 order by 1 asc"
-        ).fetchall()
-        assert compare_dates(res[0][0], "2024-11-05")
-        assert res[0][1] == row_count
-        assert compare_dates(res[1][0], "2024-11-06")
-        assert res[1][1] == 1000
-    dest_engine.dispose()
+    res = get_query_result(dest_uri, f"select count(*) from {schema}.output")
+    assert res[0][0] == row_count + 1000
+
+    res = get_query_result(
+        dest_uri,
+        f"select date, count(*) from {schema}.output group by 1 order by 1 asc",
+    )
+    assert compare_dates(res[0][0], "2024-11-05")
+    assert res[0][1] == row_count
+    assert compare_dates(res[1][0], "2024-11-06")
+    assert res[1][1] == 1000
 
 
 @pytest.mark.parametrize(
@@ -265,11 +260,10 @@ def test_arrow_mmap_to_db_merge_without_incremental(dest):
                 inc_strategy="merge",
                 primary_key="id",
             )
-            assert res.exit_code == 0
+            assert res.exit_code == 0, res.stderr
             return res
 
     dest_uri = dest.start()
-    dest_engine = sqlalchemy.create_engine(dest_uri)
 
     # let's start with a basic dataframe
     row_count = 1000
@@ -278,29 +272,27 @@ def test_arrow_mmap_to_db_merge_without_incremental(dest):
     run_command(df)
 
     # the first load, it should be loaded correctly
-    with dest_engine.begin() as conn:
-        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
-        assert res[0][0] == row_count
+    res = get_query_result(dest_uri, f"select count(*) from {schema}.output")
+    assert res[0][0] == row_count
 
-        res = conn.exec_driver_sql(
-            f"select value, count(*) from {schema}.output group by 1 order by 1 asc"
-        ).fetchall()
-        assert res[0][0] == "a"
-        assert res[0][1] == row_count
-    dest_engine.dispose()
+    res = get_query_result(
+        dest_uri,
+        f"select value, count(*) from {schema}.output group by 1 order by 1 asc",
+    )
+    assert res[0][0] == "a"
+    assert res[0][1] == row_count
 
     # run again, no change
     run_command(df)
-    with dest_engine.begin() as conn:
-        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
-        assert res[0][0] == row_count
+    res = get_query_result(dest_uri, f"select count(*) from {schema}.output")
+    assert res[0][0] == row_count
 
-        res = conn.exec_driver_sql(
-            f"select value, count(*) from {schema}.output group by 1 order by 1 asc"
-        ).fetchall()
-        assert res[0][0] == "a"
-        assert res[0][1] == row_count
-    dest_engine.dispose()
+    res = get_query_result(
+        dest_uri,
+        f"select value, count(*) from {schema}.output group by 1 order by 1 asc",
+    )
+    assert res[0][0] == "a"
+    assert res[0][1] == row_count
 
     # append 1000 new rows with a different value
     new_rows = pd.DataFrame(
@@ -313,20 +305,17 @@ def test_arrow_mmap_to_db_merge_without_incremental(dest):
 
     run_command(df)
 
-    with dest_engine.begin() as conn:
-        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
+    res = get_query_result(dest_uri, f"select count(*) from {schema}.output")
+    assert res[0][0] == row_count + 1000
 
-        assert res[0][0] == row_count + 1000
-
-        res = conn.exec_driver_sql(
-            f"select value, count(*) from {schema}.output group by 1 order by 1 asc"
-        ).fetchall()
-        assert res[0][0] == "a"
-        assert res[0][1] == row_count
-        assert res[1][0] == "b"
-        assert res[1][1] == 1000
-
-    dest_engine.dispose()
+    res = get_query_result(
+        dest_uri,
+        f"select value, count(*) from {schema}.output group by 1 order by 1 asc",
+    )
+    assert res[0][0] == "a"
+    assert res[0][1] == row_count
+    assert res[1][0] == "b"
+    assert res[1][1] == 1000
 
     # append 1000 old rows for previous ids, they should be merged
     old_rows = pd.DataFrame(
@@ -336,12 +325,12 @@ def test_arrow_mmap_to_db_merge_without_incremental(dest):
         }
     )
     run_command(old_rows)
-    with dest_engine.begin() as conn:
-        res = conn.exec_driver_sql(f"select count(*) from {schema}.output").fetchall()
-        assert res[0][0] == row_count + 1000
-        res = conn.exec_driver_sql(
-            f"select value, count(*) from {schema}.output group by 1 order by 1 asc"
-        ).fetchall()
-        assert res[0][0] == "a"
-        assert res[0][1] == row_count + 1000
-    dest_engine.dispose()
+    res = get_query_result(dest_uri, f"select count(*) from {schema}.output")
+    assert res[0][0] == row_count + 1000
+
+    res = get_query_result(
+        dest_uri,
+        f"select value, count(*) from {schema}.output group by 1 order by 1 asc",
+    )
+    assert res[0][0] == "a"
+    assert res[0][1] == row_count + 1000

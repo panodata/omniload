@@ -9,8 +9,8 @@ import pytest
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string
 from tests.util.container.impl.floci import FlociContainer
+from tests.util.db import get_query_result
 from tests.warehouse.manager import FLOCI_IMAGE
-from tests.warehouse.operations import get_query_result
 from tests.warehouse.settings import DESTINATIONS
 
 

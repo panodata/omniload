@@ -4,10 +4,10 @@ from datetime import date
 from urllib.parse import quote_plus
 
 import pytest
-import sqlalchemy
 
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string
+from tests.util.db import get_query_result
 from tests.warehouse.settings import DESTINATIONS
 
 
@@ -60,11 +60,7 @@ def jira_test_cases():
 
             assert result.exit_code == 0
 
-            engine = sqlalchemy.create_engine(dest_uri)
-            with engine.connect() as conn:
-                res = conn.exec_driver_sql(
-                    f"select count(*) from {dest_table}"
-                ).fetchall()
+            res = get_query_result(dest_uri, f"select count(*) from {dest_table}")
             assert len(res) > 0, "No results"  # Verify the query returned a result
             count = res[0][0]
             print(f"Jira {table_name} count: {count}")
@@ -77,7 +73,6 @@ def jira_test_cases():
             elif table_name == "statuses":
                 assert count > 0, "Jira should have at least one status"
             # project_versions and project_components can be empty, so no assertion for them
-            engine.dispose()
 
         # Set function name for pytest identification
         table_test.__name__ = f"{table_name}_table"

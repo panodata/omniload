@@ -4,11 +4,11 @@ import json
 
 import pyarrow.csv
 import pytest
-import sqlalchemy
 from pyarrow import parquet as pya_parquet
 
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string, get_testdata_path
+from tests.util.db import get_query_result
 from tests.warehouse.settings import DESTINATIONS
 
 TESTDATA = get_testdata_path()
@@ -31,12 +31,7 @@ def people_dir(tmp_path_factory):
 
 
 def _scalar(dest_uri, sql):
-    engine = sqlalchemy.create_engine(dest_uri)
-    try:
-        with engine.connect() as conn:
-            return conn.exec_driver_sql(sql).fetchone()
-    finally:
-        engine.dispose()
+    return get_query_result(dest_uri, sql)[0]
 
 
 @pytest.mark.parametrize(

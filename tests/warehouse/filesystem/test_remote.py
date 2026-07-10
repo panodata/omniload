@@ -9,7 +9,6 @@ from unittest.mock import patch
 import fsspec
 import pyarrow.csv
 import pytest
-import sqlalchemy
 from dlt.common.storages.fsspec_filesystem import glob_files
 from fsspec.implementations.memory import MemoryFileSystem
 from fsspec.registry import _registry as _fsspec_registry
@@ -19,6 +18,7 @@ from omniload.error import InvalidBlobTableError, MissingValueError
 from omniload.target.filesystem.api import AzureDestination, S3Destination
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string, has_exception
+from tests.util.db import get_query_result
 from tests.warehouse.settings import DESTINATIONS
 
 # These formats need decoders from the optional `iterable` extra. Probe with find_spec so this
@@ -122,10 +122,7 @@ def fs_test_cases(
         return glob_files(fs_client, "memory://", file_glob)
 
     def assert_rows(dest_uri, dest_table, n):
-        engine = sqlalchemy.create_engine(dest_uri)
-        with engine.connect() as conn:
-            rows = conn.exec_driver_sql(f"select count(*) from {dest_table}").fetchall()
-        engine.dispose()
+        rows = get_query_result(dest_uri, f"select count(*) from {dest_table}")
         assert len(rows) == 1
         assert rows[0] == (n,)
 

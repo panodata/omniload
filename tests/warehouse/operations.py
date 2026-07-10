@@ -7,6 +7,7 @@ from tests.util import (
     invoke_ingest_command,
 )
 from tests.util.common import as_datetime, get_random_string
+from tests.util.db import get_query_result
 
 
 def db_to_db_create_replace(source_connection_url: str, dest_connection_url: str):
@@ -38,14 +39,12 @@ def db_to_db_create_replace(source_connection_url: str, dest_connection_url: str
         f"{schema_rand_prefix}.output",
     )
 
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result.stderr
 
-    dest_engine = sqlalchemy.create_engine(dest_connection_url)
-    with dest_engine.connect() as dest_conn:
-        res = dest_conn.exec_driver_sql(
-            f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
-        ).fetchall()
-    dest_engine.dispose()
+    res = get_query_result(
+        dest_connection_url,
+        f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc",
+    )
 
     assert len(res) == 2
     assert res[0] == (1, "val1", as_datetime("2022-01-01"))
@@ -56,7 +55,6 @@ def db_to_db_append(source_connection_url: str, dest_connection_url: str):
     schema_rand_prefix = f"testschema_append_{get_random_string(5)}"
 
     source_engine = sqlalchemy.create_engine(source_connection_url)
-    dest_engine = sqlalchemy.create_engine(dest_connection_url)
 
     with source_engine.begin() as conn:
         conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_rand_prefix}")
@@ -83,15 +81,13 @@ def db_to_db_append(source_connection_url: str, dest_connection_url: str):
             "updated_at",
             sql_backend="sqlalchemy",
         )
-        assert res.exit_code == 0
+        assert res.exit_code == 0, res.stderr
 
     def get_output_table():
-        with dest_engine.connect() as dest_conn:
-            results = dest_conn.exec_driver_sql(
-                f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
-            ).fetchall()
-        dest_engine.dispose()
-        return results
+        return get_query_result(
+            dest_connection_url,
+            f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc",
+        )
 
     run()
 
@@ -100,7 +96,7 @@ def db_to_db_append(source_connection_url: str, dest_connection_url: str):
     assert res[0] == (1, "val1", as_datetime("2022-01-01"))
     assert res[1] == (2, "val2", as_datetime("2022-01-02"))
 
-    # # run again, nothing should be inserted into the output table
+    # run again, nothing should be inserted into the output table
     run()
 
     res = get_output_table()
@@ -146,16 +142,14 @@ def db_to_db_merge_with_primary_key(
             "id",
             sql_backend="sqlalchemy",
         )
-        assert res.exit_code == 0
+        assert res.exit_code == 0, res.stderr
         return res
 
-    dest_engine = sqlalchemy.create_engine(dest_connection_url)
-
     def get_output_rows():
-        with dest_engine.connect() as dest_conn:
-            return dest_conn.exec_driver_sql(
-                f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc"
-            ).fetchall()
+        return get_query_result(
+            dest_connection_url,
+            f"select id, val, updated_at from {schema_rand_prefix}.output order by id asc",
+        )
 
     def assert_output_equals(expected):
         res = get_output_rows()
@@ -163,18 +157,15 @@ def db_to_db_merge_with_primary_key(
         for i, row in enumerate(expected):
             assert res[i] == row
 
-    dest_engine.dispose()
     res = run()
     assert_output_equals(
         [(1, "val1", as_datetime("2022-01-01")), (2, "val2", as_datetime("2022-02-01"))]
     )
 
-    with dest_engine.connect() as dest_conn:
-        first_run_id = dest_conn.exec_driver_sql(
-            f"select _dlt_load_id from {schema_rand_prefix}.output limit 1"
-        ).fetchall()[0][0]
-
-    dest_engine.dispose()
+    first_run_id = get_query_result(
+        dest_connection_url,
+        f"select _dlt_load_id from {schema_rand_prefix}.output limit 1",
+    )[0][0]
 
     ##############################
     # we'll run again, we don't expect any changes since the data hasn't changed
@@ -184,14 +175,14 @@ def db_to_db_merge_with_primary_key(
     )
 
     # we also ensure that the other rows were not touched
-    with dest_engine.connect() as dest_conn:
-        count_by_run_id = dest_conn.exec_driver_sql(
-            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc"
-        ).fetchall()
+    count_by_run_id = get_query_result(
+        dest_connection_url,
+        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc",
+    )
+
     assert len(count_by_run_id) == 1
     assert count_by_run_id[0][1] == 2
     assert count_by_run_id[0][0] == first_run_id
-    dest_engine.dispose()
     ##############################
 
     ##############################
@@ -208,14 +199,13 @@ def db_to_db_merge_with_primary_key(
     )
 
     # we also ensure that the other rows were not touched
-    with dest_engine.connect() as dest_conn:
-        count_by_run_id = dest_conn.exec_driver_sql(
-            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1"
-        ).fetchall()
+    count_by_run_id = get_query_result(
+        dest_connection_url,
+        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1",
+    )
     assert len(count_by_run_id) == 1
     assert count_by_run_id[0][1] == 2
     assert count_by_run_id[0][0] == first_run_id
-    dest_engine.dispose()
     ##############################
 
     ##############################
@@ -232,14 +222,13 @@ def db_to_db_merge_with_primary_key(
     )
 
     # we also ensure that the other rows were not touched
-    with dest_engine.connect() as dest_conn:
-        count_by_run_id = dest_conn.exec_driver_sql(
-            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1"
-        ).fetchall()
+    count_by_run_id = get_query_result(
+        dest_connection_url,
+        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1",
+    )
     assert len(count_by_run_id) == 1
     assert count_by_run_id[0][1] == 2
     assert count_by_run_id[0][0] == first_run_id
-    dest_engine.dispose()
     ##############################
 
     ##############################
@@ -260,16 +249,15 @@ def db_to_db_merge_with_primary_key(
     )
 
     # we have a new run that inserted rows to this table, so the run count should be 2
-    with dest_engine.connect() as dest_conn:
-        count_by_run_id = dest_conn.exec_driver_sql(
-            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc"
-        ).fetchall()
+    count_by_run_id = get_query_result(
+        dest_connection_url,
+        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc",
+    )
     assert len(count_by_run_id) == 2
     assert count_by_run_id[0][1] == 2
     assert count_by_run_id[0][0] == first_run_id
     # we don't care about the run ID
     assert count_by_run_id[1][1] == 1
-    dest_engine.dispose()
     ##############################
 
     ##############################
@@ -290,17 +278,16 @@ def db_to_db_merge_with_primary_key(
     )
 
     # we have a new run that inserted rows to this table, so the run count should be 2
-    with dest_engine.connect() as dest_conn:
-        count_by_run_id = dest_conn.exec_driver_sql(
-            f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc, 1 asc"
-        ).fetchall()
+    count_by_run_id = get_query_result(
+        dest_connection_url,
+        f"select _dlt_load_id, count(*) from {schema_rand_prefix}.output group by 1 order by 2 desc, 1 asc",
+    )
     assert len(count_by_run_id) == 3
     assert count_by_run_id[0][1] == 1
     assert count_by_run_id[0][0] == first_run_id
     # we don't care about the rest of the run IDs
     assert count_by_run_id[1][1] == 1
     assert count_by_run_id[2][1] == 1
-    dest_engine.dispose()
     ##############################
 
 
@@ -473,7 +460,7 @@ def db_to_db_delete_insert_with_timerange(
             interval_end=end_date,
             sql_backend="sqlalchemy",
         )
-        assert res.exit_code == 0
+        assert res.exit_code == 0, res.stderr
         return res
 
     run("2022-01-01", "2022-01-02")  # dlt runs them with the end date exclusive
@@ -612,14 +599,6 @@ def db_to_db_delete_insert_with_timerange(
     ##############################
 
 
-def get_query_result(uri: str, query: str):
-    engine = sqlalchemy.create_engine(uri, poolclass=NullPool)
-    with engine.connect() as conn:
-        res = conn.exec_driver_sql(query).fetchall()
-    engine.dispose()
-    return res
-
-
 def custom_query_tests():
     def replace(source_connection_url, dest_connection_url):
         schema = f"testschema_cr_cust_{get_random_string(5)}"
@@ -662,7 +641,7 @@ def custom_query_tests():
             run_in_subprocess=True,
         )
 
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.stderr
 
         res = get_query_result(
             dest_connection_url,
@@ -670,7 +649,9 @@ def custom_query_tests():
         )
 
         assert len(res) == 4
-        assert res[0] == (1, 1, "Item 1 for First Order", as_datetime("2024-01-01"))
+        assert res[0] == (1, 1, "Item 1 for First Order", as_datetime("2024-01-01")), (
+            res[0]
+        )
         assert res[1] == (2, 1, "Item 2 for First Order", as_datetime("2024-01-01"))
         assert res[2] == (3, 2, "Item 1 for Second Order", as_datetime("2024-01-01"))
         assert res[3] == (4, 3, "Item 1 for Third Order", as_datetime("2024-01-01"))
@@ -713,7 +694,7 @@ def custom_query_tests():
                 primary_key="id",
                 run_in_subprocess=True,
             )
-            assert result.exit_code == 0
+            assert result.exit_code == 0, result.stderr
 
         # Initial run to get all data
         run()

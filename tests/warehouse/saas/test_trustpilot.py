@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-import sqlalchemy
 
 from tests.util import invoke_ingest_command
+from tests.util.db import get_query_result
 from tests.warehouse.settings import DESTINATIONS
 
 
@@ -115,11 +115,8 @@ def trustpilot_test_case(dest_uri):
 
         assert result.exit_code == 0
 
-        engine = sqlalchemy.create_engine(dest_uri)
-        with engine.connect() as conn:
-            rows = conn.exec_driver_sql(f"SELECT * FROM {dest_table}").fetchall()
-            assert len(rows) > 0, "No data ingested into the destination"
-        engine.dispose()
+        rows = get_query_result(dest_uri, f"SELECT * FROM {dest_table}")
+        assert len(rows) > 0, "No data ingested into the destination"
 
 
 @pytest.mark.parametrize(

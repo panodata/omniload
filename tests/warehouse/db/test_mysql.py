@@ -5,6 +5,7 @@ import sqlalchemy
 
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string
+from tests.util.db import get_query_result
 from tests.warehouse.manager import registry
 from tests.warehouse.settings import DESTINATIONS
 
@@ -57,12 +58,9 @@ def test_mysql_zero_dates(source, dest):
 
     assert result.exit_code == 0
 
-    dest_engine = sqlalchemy.create_engine(dest_uri)
-    with dest_engine.connect() as dest_conn:
-        res = dest_conn.exec_driver_sql(
-            f"select * from {schema_rand_prefix}.output order by name"
-        ).fetchall()
-    dest_engine.dispose()
+    res = get_query_result(
+        dest_uri, f"select * from {schema_rand_prefix}.output order by name"
+    )
 
     # assert there are no new rows, since DBs like DuckDB accept NULL and dlt adds a separate string column for the value `0000-00-00 00:00:00`
     # we want 4 columns: name, created_at, _dlt_load_id, _dlt_id

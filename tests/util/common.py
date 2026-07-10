@@ -14,7 +14,7 @@ def as_datetime(date_str: str) -> date:
     return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc).date()
 
 
-def as_datetime2(date_str: str) -> datetime:
+def as_datetime_notz(date_str: str) -> datetime:
     return datetime.strptime(date_str, "%Y-%m-%d")
 
 

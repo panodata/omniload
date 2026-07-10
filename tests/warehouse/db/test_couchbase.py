@@ -3,11 +3,11 @@ import unittest
 from unittest.mock import MagicMock
 
 import pytest
-import sqlalchemy
 
 from omniload.source.couchbase.adapter import fetch_documents
 from tests.util import invoke_ingest_command
 from tests.util.container.impl.couchbase import CouchbaseContainer
+from tests.util.db import get_query_result
 from tests.warehouse.manager import COUCHBASE_IMAGE
 from tests.warehouse.settings import DESTINATIONS
 
@@ -83,13 +83,9 @@ def test_couchbase_source_local(dest):
             f"Command failed with exit code {result.exit_code}"
         )
 
-        dest_engine = sqlalchemy.create_engine(dest_uri)
-        with dest_engine.connect() as conn:
-            res = conn.exec_driver_sql(
-                "select * from raw.test_couchbase_collection order by id"
-            ).fetchall()
-        dest_engine.dispose()
-
+        res = get_query_result(
+            dest_uri, "select * from raw.test_couchbase_collection order by id"
+        )
         assert len(res) == 3, f"Expected 3 documents, got {len(res)}"
 
         # Verify documents were ingested correctly
@@ -170,14 +166,11 @@ def test_couchbase_capella_source(dest):
         assert result.exit_code == 0, f"Command failed with: {result.output}"
 
         # Verify data was ingested
-        dest_engine = sqlalchemy.create_engine(dest_uri)
-        with dest_engine.connect() as conn:
-            res = conn.exec_driver_sql(f"select * from {dest_table}").fetchall()
-            assert len(res) > 0, "No data was ingested from Couchbase Capella"
-            print(
-                f"Successfully ingested {len(res)} documents from Couchbase Capella (bucket in URI)"
-            )
-        dest_engine.dispose()
+        res = get_query_result(dest_uri, f"select * from {dest_table}")
+        assert len(res) > 0, "No data was ingested from Couchbase Capella"
+        print(
+            f"Successfully ingested {len(res)} documents from Couchbase Capella (bucket in URI)"
+        )
     finally:
         dest.stop()
 
@@ -222,14 +215,11 @@ def test_couchbase_capella_source_without_bucket_in_uri(dest):
         assert result.exit_code == 0, f"Command failed with: {result.output}"
 
         # Verify data was ingested
-        dest_engine = sqlalchemy.create_engine(dest_uri)
-        with dest_engine.connect() as conn:
-            res = conn.exec_driver_sql(f"select * from {dest_table}").fetchall()
-            assert len(res) > 0, "No data was ingested from Couchbase Capella"
-            print(
-                f"Successfully ingested {len(res)} documents from Couchbase Capella (bucket in table name)"
-            )
-        dest_engine.dispose()
+        res = get_query_result(dest_uri, f"select * from {dest_table}")
+        assert len(res) > 0, "No data was ingested from Couchbase Capella"
+        print(
+            f"Successfully ingested {len(res)} documents from Couchbase Capella (bucket in table name)"
+        )
     finally:
         dest.stop()
 
@@ -279,12 +269,9 @@ def test_couchbase_server_source(dest):
         assert result.exit_code == 0, f"Command failed with: {result.output}"
 
         # Verify data was ingested
-        dest_engine = sqlalchemy.create_engine(dest_uri)
-        with dest_engine.connect() as conn:
-            res = conn.exec_driver_sql(f"select * from {dest_table}").fetchall()
-            assert len(res) > 0, "No data was ingested from Couchbase Server"
-            print(f"Successfully ingested {len(res)} documents from Couchbase Server")
-        dest_engine.dispose()
+        res = get_query_result(dest_uri, f"select * from {dest_table}")
+        assert len(res) > 0, "No data was ingested from Couchbase Server"
+        print(f"Successfully ingested {len(res)} documents from Couchbase Server")
     finally:
         dest.stop()
 

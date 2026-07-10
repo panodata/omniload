@@ -2,10 +2,10 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
-import sqlalchemy
 from confluent_kafka import Producer
 
 from tests.util import invoke_ingest_command
+from tests.util.db import get_query_result
 from tests.warehouse.settings import DESTINATIONS
 
 # Marked explicitly (not auto-marked by path) because this module lives outside tests/warehouse.
@@ -43,13 +43,10 @@ def test_kafka_to_db_incremental(kafka, dest, topic):
         assert res.exit_code == 0
 
     def get_output_table():
-        dest_engine = sqlalchemy.create_engine(dest_uri)
-        with dest_engine.connect() as conn:
-            res = conn.exec_driver_sql(
-                f"select _kafka__data from {topic}.output order by _kafka_msg_id asc"
-            ).fetchall()
-        dest_engine.dispose()
-        return res
+        return get_query_result(
+            dest_uri,
+            f"select _kafka__data from {topic}.output order by _kafka_msg_id asc",
+        )
 
     run()
 
@@ -118,17 +115,11 @@ def test_kafka_to_db_decode_json(kafka, dest, topic):
         assert res.exit_code == 0
 
     def get_output_table():
-        dest_engine = sqlalchemy.create_engine(dest_uri)
-        with dest_engine.connect() as conn:
-            res = (
-                conn.exec_driver_sql(  # ty: ignore[no-matching-overload, unused-ignore-comment, unused-ignore-comment]
-                    f"SELECT id, temperature, humidity FROM {topic}.output WHERE temperature >= 38.00 ORDER BY id ASC"
-                )
-                .mappings()
-                .fetchall()
-            )
-        dest_engine.dispose()
-        return res
+        return get_query_result(
+            dest_uri,
+            f"SELECT id, temperature, humidity FROM {topic}.output WHERE temperature >= 38.00 ORDER BY id ASC",
+            mappings=True,
+        )
 
     run()
 
@@ -174,17 +165,11 @@ def test_kafka_to_db_include_metadata(kafka, dest, topic):
         assert res.exit_code == 0
 
     def get_output_table():
-        dest_engine = sqlalchemy.create_engine(dest_uri)
-        with dest_engine.connect() as conn:
-            res = (
-                conn.exec_driver_sql(
-                    f'SELECT "partition", "topic", "key", "offset" FROM {topic}.output ORDER BY "partition" ASC, "offset" ASC'
-                )
-                .mappings()
-                .fetchall()
-            )
-        dest_engine.dispose()
-        return res
+        return get_query_result(
+            dest_uri,
+            f'SELECT "partition", "topic", "key", "offset" FROM {topic}.output ORDER BY "partition" ASC, "offset" ASC',
+            mappings=True,
+        )
 
     run()
 

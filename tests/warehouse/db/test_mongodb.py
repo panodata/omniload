@@ -5,12 +5,12 @@ from datetime import datetime, timezone
 import pandas as pd
 import pyarrow as pa
 import pytest
-import sqlalchemy
 from pyarrow import ipc
 from testcontainers.mongodb import MongoDbContainer
 
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string
+from tests.util.db import get_query_result
 from tests.warehouse.manager import MONGODB_IMAGE
 from tests.warehouse.settings import DESTINATIONS
 
@@ -370,13 +370,10 @@ def test_mongodb_source(mongodb_function, dest):
             "raw.test_collection",
         )
 
-        engine = sqlalchemy.create_engine(dest_uri)
-        with engine.connect() as conn:
-            res = conn.exec_driver_sql(
-                "select id, name, nested_parent__key1, nested_parent__key2, nested_parent__key3, key4, value from raw.test_collection order by id"
-            ).fetchall()
-        engine.dispose()
-
+        res = get_query_result(
+            dest_uri,
+            "select id, name, nested_parent__key1, nested_parent__key2, nested_parent__key3, key4, value from raw.test_collection order by id",
+        )
         assert len(res) == 5
 
         # convert string to json if needed. this is a particular case for Clickhouse which does not have json types by default.
@@ -504,12 +501,10 @@ def mongodb_custom_query_test_cases():
 
             assert result.exit_code == 0
 
-            engine = sqlalchemy.create_engine(dest_uri)
-            with engine.connect() as conn:
-                res = conn.exec_driver_sql(
-                    f"select event_id, event_type, user_id, value from {schema_rand_prefix}.events_success order by event_id"
-                ).fetchall()
-            engine.dispose()
+            res = get_query_result(
+                dest_uri,
+                f"select event_id, event_type, user_id, value from {schema_rand_prefix}.events_success order by event_id",
+            )
 
             assert len(res) == 4  # Only successful events
             assert res[0] == (1, "login", "user1", 100)
@@ -578,12 +573,10 @@ def mongodb_custom_query_test_cases():
 
             assert result.exit_code == 0
 
-            engine = sqlalchemy.create_engine(dest_uri)
-            with engine.connect() as conn:
-                res = conn.exec_driver_sql(
-                    f"select _id, total_value, event_count from {schema_rand_prefix}.user_stats order by _id"
-                ).fetchall()
-            engine.dispose()
+            res = get_query_result(
+                dest_uri,
+                f"select _id, total_value, event_count from {schema_rand_prefix}.user_stats order by _id",
+            )
 
             assert len(res) == 2
             assert res[0] == (
@@ -665,12 +658,10 @@ def mongodb_custom_query_test_cases():
 
             assert result.exit_code == 0
 
-            engine = sqlalchemy.create_engine(dest_uri)
-            with engine.connect() as conn:
-                res = conn.exec_driver_sql(
-                    f"select event_id, event_type, user_id, value from {schema_rand_prefix}.events_incremental order by event_id"
-                ).fetchall()
-            engine.dispose()
+            res = get_query_result(
+                dest_uri,
+                f"select event_id, event_type, user_id, value from {schema_rand_prefix}.events_incremental order by event_id",
+            )
 
             # Should only get events from 2024-01-01 (events 1 and 2)
             assert len(res) == 2
@@ -759,12 +750,10 @@ def mongodb_custom_query_test_cases():
 
             assert result.exit_code == 0
 
-            engine = sqlalchemy.create_engine(dest_uri)
-            with engine.connect() as conn:
-                res = conn.exec_driver_sql(
-                    f"select event_id, event_type, user_id, value from {schema_rand_prefix}.events_multi order by event_id"
-                ).fetchall()
-            engine.dispose()
+            res = get_query_result(
+                dest_uri,
+                f"select event_id, event_type, user_id, value from {schema_rand_prefix}.events_multi order by event_id",
+            )
 
             # Should have events from both days (events 1, 2, and 3)
             assert len(res) == 3
