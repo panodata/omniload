@@ -108,7 +108,7 @@ dependencies = [
   "psycopg2-binary<3",
   "py-machineid<2",
   "pyairtable<4",
-  "pyarrow>=18,<25",
+  "pyarrow>=18,<26",
   "pyathena<4",
   "pymongo<5",
   "pymongoarrow<2",
