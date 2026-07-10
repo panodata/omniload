@@ -1,7 +1,7 @@
-from testcontainers.clickhouse import ClickHouseContainer
-from testcontainers.mongodb import MongoDbContainer
-from testcontainers.mysql import MySqlContainer
-from testcontainers.postgres import PostgresContainer
+from testcontainers.community.clickhouse import ClickHouseContainer
+from testcontainers.community.mongodb import MongoDbContainer
+from testcontainers.community.mysql import MySqlContainer
+from testcontainers.community.postgres import PostgresContainer
 
 from tests.util.container.impl.clickhouse import ClickhouseService
 from tests.util.container.impl.duckdb import EphemeralDuckDb
