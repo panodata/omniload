@@ -69,7 +69,7 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>✅</td>
     </tr>
     <tr>
-        <td>Local files (CSV / JSONL / Parquet / BSON read)</td>
+        <td>Local files (CSV / JSONL / Parquet / BSON / MessagePack / CBOR read)</td>
         <td>✅</td>
         <td>✅</td>
     </tr>

@@ -20,6 +20,7 @@ from dlt.sources import DltResource, DltSource, TDataItems
 from dlt.sources.filesystem import FileItemDict
 
 from omniload.source.filesystem.format.helpers import fetch_arrow, fetch_json
+from omniload.source.filesystem.format.iterable_codec import read_via_iterable
 from omniload.source.filesystem.format.settings import DEFAULT_CHUNK_SIZE
 
 
@@ -143,6 +144,49 @@ def read_bson(
                 yield docs_chunk
 
 
+def read_msgpack(
+    items: Iterator[FileItemDict], chunksize: int = 1000
+) -> Iterator[TDataItems]:
+    """MessagePack reader backed by iterabledata's ``MessagePackIterable``.
+
+    Thin wrapper over the generic ``read_via_iterable`` harness (see
+    ``format.iterable_codec``): streams the fsspec handle into the iterabledata class and
+    normalizes msgpack ``bytes`` / ``Timestamp`` values to dlt-safe types. ``iterable`` and
+    ``msgpack`` are imported lazily inside the harness, so no other reader pays for them.
+
+    Args:
+        chunksize (int, optional): The number of records to load and yield at once, defaults to 1000.
+
+    Returns:
+        TDataItem: The file content
+    """
+    yield from read_via_iterable(items, file_format="msgpack", chunksize=chunksize)
+
+
+def read_cbor(
+    items: Iterator[FileItemDict], chunksize: int = 1000
+) -> Iterator[TDataItems]:
+    """CBOR reader (decoded with cbor2 directly through the generic harness).
+
+    Thin wrapper over ``read_via_iterable`` (see ``format.iterable_codec``). CBOR is whole-file
+    and iterabledata's ``CBORIterable`` swallows decode errors, so the harness decodes with
+    ``cbor2`` directly (surfacing corrupt/truncated files) and normalizes CBOR ``bytes``
+    (base64) and unknown ``CBORTag`` values to dlt-safe types. ``cbor2`` is imported lazily.
+
+    The source must be a **single top-level CBOR value**: an array yields one row per element
+    and a single map yields one row. Files that concatenate several top-level CBOR objects are
+    read only up to the first (a cbor2 limitation that cannot be detected), so write a
+    top-level array instead. See ``docs/supported-sources/cbor.md``.
+
+    Args:
+        chunksize (int, optional): The number of records to load and yield at once, defaults to 1000.
+
+    Returns:
+        TDataItem: The file content
+    """
+    yield from read_via_iterable(items, file_format="cbor", chunksize=chunksize)
+
+
 def read_parquet(
     items: Iterator[FileItemDict],
     chunksize: int = 10,
@@ -204,22 +248,36 @@ if TYPE_CHECKING:
         """This is a typing stub that provides docstrings and signatures to the resources in `readers" source"""
 
         @copy_sig(read_csv)
-        def read_csv(self) -> DltResource: ...
+        def read_csv(self) -> DltResource:
+            """CSV reader resource (Polars)."""
 
         @copy_sig(read_csv_headless)
-        def read_csv_headless(self) -> DltResource: ...
+        def read_csv_headless(self) -> DltResource:
+            """Header-less CSV reader resource (Polars)."""
 
         @copy_sig(read_jsonl)
-        def read_jsonl(self) -> DltResource: ...
+        def read_jsonl(self) -> DltResource:
+            """JSONL reader resource."""
 
         @copy_sig(read_bson)
-        def read_bson(self) -> DltResource: ...
+        def read_bson(self) -> DltResource:
+            """BSON reader resource."""
+
+        @copy_sig(read_msgpack)
+        def read_msgpack(self) -> DltResource:
+            """MessagePack reader resource."""
+
+        @copy_sig(read_cbor)
+        def read_cbor(self) -> DltResource:
+            """CBOR reader resource."""
 
         @copy_sig(read_parquet)
-        def read_parquet(self) -> DltResource: ...
+        def read_parquet(self) -> DltResource:
+            """Parquet reader resource (pyarrow)."""
 
         @copy_sig(read_csv_duckdb)
-        def read_csv_duckdb(self) -> DltResource: ...
+        def read_csv_duckdb(self) -> DltResource:
+            """CSV reader resource (DuckDB)."""
 
 else:
     ReadersSource = DltSource
