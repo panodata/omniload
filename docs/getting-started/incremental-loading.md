@@ -231,6 +231,49 @@ The behavior is the same if there were new rows in the source table, they would 
 The `delete+insert` strategy is useful when you want to keep the destination table clean, as it will delete the existing rows in the destination table that match the `incremental_key` and then insert the new rows from the source table. `delete+insert` strategy also allows you to backfill the data, e.g. going back to a past date and ingesting the data again.
 :::
 
+(incremental-loading-filesystem)=
+
+## Filesystem sources
+
+The filesystem-family sources opt out of omniload's incremental strategies and do not use the four strategies above. This covers the local source and every remote transport:
+
+- `file://` (local files)
+- `az://`, `abfss://`, `adls://` (Azure Blob Storage / ADLS Gen2)
+- `gs://` (Google Cloud Storage)
+- `s3://` (Amazon S3)
+- `sftp://` (SFTP)
+
+After the URI is parsed they all converge on the same reader, so their loading behaviour is identical regardless of transport.
+
+### Default: append on re-run
+
+Each of these sources declares (via `handles_incrementality()`) that omniload should not apply its own incremental logic. omniload responds by disabling that logic and leaving the write disposition unset, so dlt's default applies: **every run appends the source rows to the destination table.** Running the same command a second time adds another copy of the data rather than replacing it.
+
+Because omniload's incremental logic is disabled for these sources, `--incremental-strategy` and `--incremental-key` do not drive loading. The local `file://` source rejects an explicit `--incremental-key` with an error, while the remote transports ignore it.
+
+### Resetting the destination with `--full-refresh`
+
+To reload from scratch instead of appending, pass `--full-refresh`:
+
+```bash
+omniload ingest \
+    --source-uri 's3://my-bucket/data.csv?access_key_id=...&secret_access_key=...' \
+    --source-table 'data.csv' \
+    --dest-uri 'duckdb://output.duckdb' \
+    --dest-table 'data' \
+    --full-refresh
+```
+
+`--full-refresh` maps to dlt's `refresh="drop_resources"`: it drops the resource's tables and pipeline state, then reloads. It is the only omniload flag that resets the destination for a filesystem source. The `FULL_REFRESH` and `OMNILOAD_FULL_REFRESH` environment variables set the same option.
+
+:::{tip}
+For a one-shot import where you re-run the command to pick up an updated file, add `--full-refresh` so each run produces a clean replica instead of appending another copy.
+:::
+
+### Why append is uniform across transports
+
+A local path is usually a single mutable file you re-import, whereas an `s3://` or `gs://` prefix is often an append-only collection of objects, so a case can be made for local defaulting to replace. omniload deliberately keeps the default uniform. Local and remote converge on the same reader after URI parsing, and a transport-dependent default would mean the same `--dest-table` mutates differently depending only on the scheme. If append is the wrong default for a one-shot local import, it is equally wrong for a single remote object, so the behaviour should change for the whole family or not at all.
+
 ## Conclusion
 Incremental loading is a powerful feature that allows you to ingest only the new rows from the source table into the destination table. It's useful when you want to keep the destination table up-to-date with the source table, as well as when you want to keep a version history of your data in the destination table. However, there are a few things to keep in mind when using incremental loading:
 

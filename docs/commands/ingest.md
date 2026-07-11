@@ -23,13 +23,14 @@ omniload ingest \
 
 - `--dest-table TEXT`: Designates the destination table to save the data. If not specified, defaults to the value of `--source-table`.
 - `--incremental-key TEXT`: Identifies the key used for incremental data strategies. Defaults to `None`.
-- `--incremental-strategy TEXT`: Defines the strategy for incremental updates. Options include `replace`, `append`, `delete+insert`, or `merge`. The default strategy is `replace`.
+- `--incremental-strategy TEXT`: Defines the strategy for incremental updates. Options include `replace`, `append`, `delete+insert`, or `merge`. The default strategy is `replace`. Filesystem-family sources (`file://`, `s3://`, `gs://`, `az://`, `sftp://`, ...) manage incrementality themselves and ignore this flag. See [Filesystem sources](../getting-started/incremental-loading.md#filesystem-sources).
 - `--interval-start`: Sets the start of the interval for the incremental key. Defaults to `None`.
 - `--interval-end`: Sets the end of the interval for the incremental key. Defaults to `None`.
 - `--primary-key TEXT`: Specifies the primary key for the merge operation. Defaults to `None`.
 - `--columns <column_name>:<column_type>`: Specifies the columns to be ingested. Defaults to `None`.
 - `--mask <column_name>:<algorithm>[:param]`: Applies data masking to specified columns. Can be used multiple times for different columns. See the [Data Masking](../getting-started/data-masking.md) documentation for available algorithms and usage examples. Defaults to `None`.
 - `--schema-naming` Specifies what naming convention to use for table and column names on the destination. Can be `default` or `direct`.default is snake_case. `direct is case sensitive and doesn't contract underscores.
+- `--full-refresh`: Ignores existing pipeline state and reloads the destination table from scratch (dlt's `refresh="drop_resources"`). Useful when a source appends on every run and you want a clean reload instead of another copy, as the filesystem family does by default. See [Filesystem sources](../getting-started/incremental-loading.md#filesystem-sources). Can also be set via the `FULL_REFRESH` / `OMNILOAD_FULL_REFRESH` environment variables. Defaults to `False`.
 
 The `interval-start` and `interval-end` options support various datetime formats, here are some examples:
 - `%Y-%m-%d`: `2023-01-31`
