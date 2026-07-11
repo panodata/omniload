@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 import pytest
+from testcontainers.community.cratedb import CrateDBContainer
 from testcontainers.community.generic import SqlContainer
 from testcontainers.community.kafka import KafkaContainer
 from testcontainers.core.container import DockerContainer
@@ -213,7 +214,10 @@ class DockerService(AbstractService):
             return self.container.get_bootstrap_server()
         elif isinstance(self.container, CouchbaseContainer):
             return self.container.get_connection_url() + self.connection_suffix
-        elif isinstance(self.container, DbContainer):
+        elif isinstance(self.container, CrateDBContainer):
+            uri = f"cratedb://{self.container.username}:{self.container.password}@{self.container.get_container_host_ip()}:{self.container.get_exposed_port(5432)}"
+            return uri + self.connection_suffix
+        elif isinstance(self.container, (DbContainer, SqlContainer)):
             return self.container.get_connection_url() + self.connection_suffix
         raise ValueError("Unable to get connection url")
 

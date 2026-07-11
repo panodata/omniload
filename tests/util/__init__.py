@@ -6,6 +6,7 @@ import traceback
 from typer.testing import CliRunner
 
 from omniload.main import app
+from tests.util.db import dbquery
 
 # Sentinel for a required-but-positionally-late argument. `dest_uri` must stay
 # effectively required (omitting it is a caller bug), but `source_table` sits
@@ -189,6 +190,15 @@ def invoke_ingest_command(
             app,
             args,
         )
+
+        if result.exit_code == 0:
+            post_ingest(
+                source_uri=source_uri,
+                source_table=source_table,
+                dest_uri=dest_uri,
+                dest_table=dest_table,
+            )
+
         if result.exit_code != 0 and print_output:
             if result.exc_info is not None:
                 traceback.print_exception(*result.exc_info)
@@ -218,9 +228,28 @@ def invoke_ingest_command(
 
     result = Result(process.returncode, process.stdout, process.stderr)
 
+    if result.exit_code == 0:
+        post_ingest(
+            source_uri=source_uri,
+            source_table=source_table,
+            dest_uri=dest_uri,
+            dest_table=dest_table,
+        )
+
     if result.exit_code != 0 and print_output:
         print(result.stdout)
         print(result.stderr)
         # traceback.print_exception(result.exc_info)
 
     return result
+
+
+def post_ingest(
+    source_uri=None,
+    source_table=None,
+    dest_uri=None,
+    dest_table=None,
+):
+    # CrateDB needs an explicit flush to make data available for reads immediately.
+    if dest_uri and dest_uri.startswith("cratedb://"):
+        dbquery(dest_uri, f"REFRESH TABLE {dest_table}")
