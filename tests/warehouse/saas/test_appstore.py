@@ -223,6 +223,13 @@ def appstore_test_cases() -> Iterable[Callable]:
         """
         When there are report instances for the given date range, the data should be ingested
         """
+
+        if dest_uri.startswith("cratedb://"):
+            pytest.skip(
+                "Fails on CrateDB with `DestinationSchemaTampered`, see "
+                "https://github.com/crate/dlt-cratedb/issues/14"
+            )
+
         client = MagicMock()
         client.list_analytics_report_requests = MagicMock(
             return_value=AnalyticsReportRequestsResponse(
@@ -323,6 +330,12 @@ def appstore_test_cases() -> Iterable[Callable]:
         when the pipeline is run till a specific end date, the next ingestion
         should load data from the last processing date, given that last_date is not provided
         """
+
+        if dest_uri.startswith("cratedb://"):
+            pytest.skip(
+                "Fails on CrateDB with `DestinationSchemaTampered`, see "
+                "https://github.com/crate/dlt-cratedb/issues/14"
+            )
 
         client = MagicMock()
         client.list_analytics_report_requests = MagicMock(

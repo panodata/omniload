@@ -8,6 +8,11 @@ from tests.warehouse.settings import DESTINATIONS
 
 
 def pinterest_test_case(dest_uri):
+    if dest_uri.startswith("cratedb://"):
+        pytest.skip(
+            "Fails on CrateDB with `DestinationSchemaTampered`, see "
+            "https://github.com/crate/dlt-cratedb/issues/14"
+        )
     sample_response = {
         "items": [
             {

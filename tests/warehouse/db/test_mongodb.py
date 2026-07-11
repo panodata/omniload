@@ -362,6 +362,12 @@ def test_mongodb_source(mongodb_function, dest):
 
     dest_uri = dest.start()
 
+    if dest_uri.startswith("cratedb://"):
+        pytest.skip(
+            'Fails on CrateDB with `"_id" conflicts with system column`, '
+            "see https://github.com/crate/dlt-cratedb/issues/19"
+        )
+
     try:
         invoke_ingest_command(
             mongo.get_connection_url(),
@@ -775,5 +781,11 @@ def mongodb_custom_query_test_cases():
 )
 def test_mongodb_custom_query(testcase, mongodb_function, dest):
     """Test MongoDB custom aggregation queries"""
-    testcase(mongodb_function, dest.start())
+    dest_uri = dest.start()
+    if dest_uri.startswith("cratedb://"):
+        pytest.skip(
+            'Fails on CrateDB with `"_id" conflicts with system column`, '
+            "see https://github.com/crate/dlt-cratedb/issues/19"
+        )
+    testcase(mongodb_function, dest_uri)
     dest.stop()

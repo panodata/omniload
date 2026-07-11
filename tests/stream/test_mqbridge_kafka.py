@@ -55,6 +55,12 @@ def test_mqbridge_kafka_to_db(kafka, dest, topic):
     with ThreadPoolExecutor() as executor:
         dest_uri = executor.submit(dest.start).result()
 
+    if dest_uri.startswith("cratedb://"):
+        pytest.skip(
+            "Fails on CrateDB with `DestinationSchemaTampered`, see "
+            "https://github.com/crate/dlt-cratedb/issues/14"
+        )
+
     _produce(kafka, topic, ROWS)
 
     def run():

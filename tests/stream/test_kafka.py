@@ -52,18 +52,30 @@ def test_kafka_to_db_incremental(kafka, dest, topic):
 
     res = get_output_table()
     assert len(res) == 3
-    assert res[0] == ("message1",)
-    assert res[1] == ("message2",)
-    assert res[2] == ("message3",)
+    if dest_uri.startswith("cratedb://"):
+        messages_db = [res[0][0], res[1][0], res[2][0]]
+        assert "message1" in messages_db
+        assert "message2" in messages_db
+        assert "message3" in messages_db
+    else:
+        assert res[0] == ("message1",)
+        assert res[1] == ("message2",)
+        assert res[2] == ("message3",)
 
     # run again, nothing should be inserted into the output table
     run()
 
     res = get_output_table()
     assert len(res) == 3
-    assert res[0] == ("message1",)
-    assert res[1] == ("message2",)
-    assert res[2] == ("message3",)
+    if dest_uri.startswith("cratedb://"):
+        messages_db = [res[0][0], res[1][0], res[2][0]]
+        assert "message1" in messages_db
+        assert "message2" in messages_db
+        assert "message3" in messages_db
+    else:
+        assert res[0] == ("message1",)
+        assert res[1] == ("message2",)
+        assert res[2] == ("message3",)
 
     # add a new message
     producer.produce(topic, "message4".encode("utf-8"))
@@ -73,10 +85,17 @@ def test_kafka_to_db_incremental(kafka, dest, topic):
     run()
     res = get_output_table()
     assert len(res) == 4
-    assert res[0] == ("message1",)
-    assert res[1] == ("message2",)
-    assert res[2] == ("message3",)
-    assert res[3] == ("message4",)
+    if dest_uri.startswith("cratedb://"):
+        messages_db = [res[0][0], res[1][0], res[2][0], res[3][0]]
+        assert "message1" in messages_db
+        assert "message2" in messages_db
+        assert "message3" in messages_db
+        assert "message4" in messages_db
+    else:
+        assert res[0] == ("message1",)
+        assert res[1] == ("message2",)
+        assert res[2] == ("message3",)
+        assert res[3] == ("message4",)
 
 
 @pytest.mark.parametrize(
