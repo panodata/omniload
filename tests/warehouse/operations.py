@@ -1,5 +1,6 @@
 import traceback
 
+import pytest
 import sqlalchemy
 from sqlalchemy.pool import NullPool
 
@@ -96,6 +97,12 @@ def db_to_db_append(source_connection_url: str, dest_connection_url: str):
     assert res[0] == (1, "val1", as_datetime("2022-01-01"))
     assert res[1] == (2, "val2", as_datetime("2022-01-02"))
 
+    if dest_connection_url.startswith("cratedb://"):
+        pytest.skip(
+            "Fails on CrateDB with `DestinationSchemaTampered`, see "
+            "https://github.com/crate/dlt-cratedb/issues/14"
+        )
+
     # run again, nothing should be inserted into the output table
     run()
 
@@ -108,6 +115,12 @@ def db_to_db_append(source_connection_url: str, dest_connection_url: str):
 def db_to_db_merge_with_primary_key(
     source_connection_url: str, dest_connection_url: str
 ):
+    if dest_connection_url.startswith("cratedb://"):
+        pytest.skip(
+            "Fails on CrateDB with `DestinationSchemaTampered`, see "
+            "https://github.com/crate/dlt-cratedb/issues/14"
+        )
+
     schema_rand_prefix = f"testschema_merge_{get_random_string(5)}"
 
     source_engine = sqlalchemy.create_engine(source_connection_url)
@@ -294,6 +307,12 @@ def db_to_db_merge_with_primary_key(
 def db_to_db_delete_insert_without_primary_key(
     source_connection_url: str, dest_connection_url: str
 ):
+    if dest_connection_url.startswith("cratedb://"):
+        pytest.skip(
+            "Fails on CrateDB with `DestinationSchemaTampered`, see "
+            "https://github.com/crate/dlt-cratedb/issues/14"
+        )
+
     schema_rand_prefix = f"testschema_delete_insert_{get_random_string(5)}"
 
     source_engine = sqlalchemy.create_engine(source_connection_url)
@@ -413,6 +432,12 @@ def db_to_db_delete_insert_without_primary_key(
 def db_to_db_delete_insert_with_timerange(
     source_connection_url: str, dest_connection_url: str
 ):
+    if dest_connection_url.startswith("cratedb://"):
+        pytest.skip(
+            "Fails on CrateDB with `DestinationSchemaTampered`, see "
+            "https://github.com/crate/dlt-cratedb/issues/14"
+        )
+
     schema_rand_prefix = f"testschema_delete_insert_timerange_{get_random_string(5)}"
     source_engine = sqlalchemy.create_engine(source_connection_url)
     with source_engine.begin() as source_conn:
@@ -657,6 +682,12 @@ def custom_query_tests():
         assert res[3] == (4, 3, "Item 1 for Third Order", as_datetime("2024-01-01"))
 
     def merge(source_connection_url, dest_connection_url):
+        if dest_connection_url.startswith("cratedb://"):
+            pytest.skip(
+                "Fails on CrateDB with `DestinationSchemaTampered`, see "
+                "https://github.com/crate/dlt-cratedb/issues/14"
+            )
+
         schema = f"testschema_merge_cust_{get_random_string(5)}"
         source_engine = sqlalchemy.create_engine(
             source_connection_url, poolclass=NullPool
