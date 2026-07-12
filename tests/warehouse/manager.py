@@ -16,7 +16,7 @@ KAFKA_IMAGE = "docker.io/confluentinc/cp-kafka:7.6.0"
 MONGODB_IMAGE = "docker.io/mongo:8.3"
 MYSQL_IMAGE = "docker.io/mariadb:12"
 MSSQL_IMAGE = "mcr.microsoft.com/mssql/server:2025-CU6-ubuntu-24.04"
-POSTGRESQL_IMAGE = "docker.io/postgres:18-alpine"
+POSTGRESQL_IMAGE = "docker.io/malisper/pgrust:v0.1"
 
 registry = ServiceRegistry(
     clickhouse=ClickhouseService(
