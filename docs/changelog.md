@@ -10,6 +10,7 @@
   aborting at the end of a load because the required `post_load` hook was
   missing from the shared base class. Thanks, @hampsterx.
 - Filesystem: Added `#key=value` reader hint channel to source URIs
+- Dependencies: Updated to dlt v1.29
 
 ## 2026/07/06 v0.6.0
 
