@@ -235,7 +235,7 @@ The `delete+insert` strategy is useful when you want to keep the destination tab
 
 ## Filesystem sources
 
-The filesystem-family sources opt out of omniload's incremental strategies and do not use the four strategies above. This covers the local source and every remote transport:
+The filesystem-family sources manage their own incrementality, so omniload's per-key strategies above do not apply to them; they append by default and support an explicit `append` or `replace`. This covers the local source and every remote transport:
 
 - `file://` (local files)
 - `az://`, `abfss://`, `adls://` (Azure Blob Storage / ADLS Gen2)
@@ -249,7 +249,24 @@ After the URI is parsed they all converge on the same reader, so their loading b
 
 Each of these sources declares (via `handles_incrementality()`) that omniload should not apply its own incremental logic. omniload responds by disabling that logic and leaving the write disposition unset, so dlt's default applies: **every run appends the source rows to the destination table.** Running the same command a second time adds another copy of the data rather than replacing it.
 
-Because omniload's incremental logic is disabled for these sources, `--incremental-strategy` and `--incremental-key` do not drive loading. The local `file://` source rejects an explicit `--incremental-key` with an error, while the remote transports ignore it.
+omniload's per-key incremental logic stays disabled, so `--incremental-key` does not drive loading: the local `file://` source rejects an explicit key with an error, while the remote transports ignore it. `--incremental-strategy` is honoured only for the two dispositions these sources can support, described next.
+
+### Choosing append or replace explicitly
+
+Pass `--incremental-strategy` to make the write disposition explicit instead of relying on the append default:
+
+- `append` keeps the default behaviour (each run adds the source rows), now as a stated, logged choice.
+- `replace` resets the destination table on every run, so each run produces a clean replica rather than another copy. This is the flag-driven equivalent of `--full-refresh` for the common "re-import an updated file" case.
+
+```bash
+omniload ingest \
+    --source-uri 'file:///data/people.csv' \
+    --dest-uri 'duckdb://output.duckdb' \
+    --dest-table 'people' \
+    --incremental-strategy replace
+```
+
+The key-dependent strategies (`delete+insert`, `merge`, `scd2`) are rejected with an error, because filesystem sources expose no incremental or merge key for them to use. Use `append` or `replace` instead.
 
 ### Resetting the destination with `--full-refresh`
 
@@ -264,7 +281,7 @@ omniload ingest \
     --full-refresh
 ```
 
-`--full-refresh` maps to dlt's `refresh="drop_resources"`: it drops the resource's tables and pipeline state, then reloads. It is the only omniload flag that resets the destination for a filesystem source. The `FULL_REFRESH` and `OMNILOAD_FULL_REFRESH` environment variables set the same option.
+`--full-refresh` maps to dlt's `refresh="drop_resources"`: it drops the resource's tables and pipeline state, then reloads. `--incremental-strategy replace` resets the destination too, via a `replace` write disposition; use whichever reads more clearly, and passing both together is harmless. The `FULL_REFRESH` and `OMNILOAD_FULL_REFRESH` environment variables set the same option.
 
 :::{tip}
 For a one-shot import where you re-run the command to pick up an updated file, add `--full-refresh` so each run produces a clean replica instead of appending another copy.

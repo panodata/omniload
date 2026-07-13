@@ -4,6 +4,7 @@ from typing import Any, Dict
 from urllib.parse import parse_qs, urlparse
 
 from omniload.error import InvalidBlobTableError, MissingValueError
+from omniload.source.filesystem.base import FilesystemSource
 from omniload.source.filesystem.error import UnsupportedEndpointError
 from omniload.source.filesystem.format.registry import supported_file_format_message
 from omniload.source.filesystem.router import (
@@ -15,10 +16,7 @@ from omniload.source.filesystem.router import (
 from omniload.util.auth import AzureBlobAuth, parse_azure_blob_auth
 
 
-class GCSSource:
-    def handles_incrementality(self) -> bool:
-        return True
-
+class GCSSource(FilesystemSource):
     def dlt_source(self, uri: str, table: str, **kwargs):
         if kwargs.get("incremental_key"):
             raise ValueError(
@@ -86,10 +84,7 @@ class GCSSource:
         )
 
 
-class S3Source:
-    def handles_incrementality(self) -> bool:
-        return True
-
+class S3Source(FilesystemSource):
     def dlt_source(self, uri: str, table: str, **kwargs):
         if kwargs.get("incremental_key"):
             raise ValueError(
@@ -179,7 +174,7 @@ def _azure_fs(auth: AzureBlobAuth):
     return adlfs.AzureBlobFileSystem(**kwargs)  # ty: ignore[invalid-argument-type]
 
 
-class AzureSource:
+class AzureSource(FilesystemSource):
     """Azure Blob Storage / ADLS Gen2 source (``az://``, ``adls://``, ``abfss://``).
 
     adlfs serves both Blob and ADLS Gen2 through one ``AzureBlobFileSystem`` and
@@ -187,9 +182,6 @@ class AzureSource:
     same ``az://`` backend; the ``adls://`` / ``abfss://`` schemes are registry
     aliases onto this class.
     """
-
-    def handles_incrementality(self) -> bool:
-        return True
 
     def dlt_source(self, uri: str, table: str, **kwargs):
         if kwargs.get("incremental_key"):
@@ -234,10 +226,7 @@ class AzureSource:
         )
 
 
-class SFTPSource:
-    def handles_incrementality(self) -> bool:
-        return True
-
+class SFTPSource(FilesystemSource):
     def dlt_source(self, uri: str, table: str, **kwargs):
         parsed_uri = urlparse(uri)
         host = parsed_uri.hostname

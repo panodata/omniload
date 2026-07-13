@@ -23,7 +23,7 @@ omniload ingest \
 
 - `--dest-table TEXT`: Designates the destination table to save the data. If not specified, defaults to the value of `--source-table`.
 - `--incremental-key TEXT`: Identifies the key used for incremental data strategies. Defaults to `None`.
-- `--incremental-strategy TEXT`: Defines the strategy for incremental updates. Options include `replace`, `append`, `delete+insert`, or `merge`. The default strategy is `replace`. Filesystem-family sources (`file://`, `s3://`, `gs://`, `az://`, `sftp://`, ...) manage incrementality themselves and ignore this flag. See [Filesystem sources](../getting-started/incremental-loading.md#filesystem-sources).
+- `--incremental-strategy TEXT`: Defines the strategy for incremental updates. Options include `replace`, `append`, `delete+insert`, or `merge`. When omitted, the default is `append` for filesystem-family sources (`file://`, `s3://`, `gs://`, `az://`, `sftp://`, ...) and `replace` for ordinary sources; sources that manage their own incrementality (many SaaS/streaming sources) keep their own per-resource disposition instead of applying a run-level one. Filesystem-family sources honour an explicit `append` or `replace`, but reject the key-based strategies (`delete+insert`, `merge`, `scd2`), which need an incremental or merge key they can't supply. See [Filesystem sources](../getting-started/incremental-loading.md#filesystem-sources).
 - `--interval-start`: Sets the start of the interval for the incremental key. Defaults to `None`.
 - `--interval-end`: Sets the end of the interval for the incremental key. Defaults to `None`.
 - `--primary-key TEXT`: Specifies the primary key for the merge operation. Defaults to `None`.
