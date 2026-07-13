@@ -1,6 +1,7 @@
 import os
 
 from omniload.error import MissingValueError
+from omniload.source.filesystem.base import FilesystemSource
 from omniload.source.filesystem.error import UnsupportedEndpointError
 from omniload.source.filesystem.format.registry import supported_file_format_message
 from omniload.source.filesystem.impl.util import (
@@ -14,7 +15,7 @@ from omniload.source.filesystem.router import (
 )
 
 
-class LocalFilesystemSource:
+class LocalFilesystemSource(FilesystemSource):
     """Read local CSV / JSONL / Parquet files through the shared filesystem readers.
 
     Everything after ``file://`` is treated as a filesystem path, never an RFC-8089
@@ -29,9 +30,6 @@ class LocalFilesystemSource:
 
     See #106 for the URI-semantics discussion.
     """
-
-    def handles_incrementality(self) -> bool:
-        return True
 
     def dlt_source(self, uri: str, table: str, **kwargs):
         # The shared filesystem adapter deliberately disables per-file incremental

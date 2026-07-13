@@ -84,6 +84,10 @@ def run_ingest(**kwargs) -> LoadInfo | None:
 
     jr = LoadRequest(**kwargs)
 
+    # `incremental_strategy` defaults to None ("not explicitly requested"). Capture the
+    # explicit-ness before resolving the default: for the filesystem family it decides
+    # whether a run-level write disposition is honoured (see the forcing block below).
+    strategy_was_explicit = jr.incremental_strategy is not None
     incremental_strategy = _coerce(jr.incremental_strategy, IncrementalStrategy)
     progress = _coerce(jr.progress, Progress)
     sql_backend = _coerce(jr.sql_backend, SqlBackend)
@@ -272,8 +276,41 @@ def run_ingest(**kwargs) -> LoadInfo | None:
     # reject conflicting flags, rather than silently ignoring them.
     requested_incremental_key = jr.incremental_key
     if source.handles_incrementality():
-        incremental_strategy = IncrementalStrategy.none
         jr.incremental_key = None
+        # Filesystem-family sources scan a set of files each run and can't derive a
+        # per-file incremental key, but (unlike SaaS/streaming sources) they hold no
+        # resource-level write disposition, so a run-level one is safe to apply. Honour an
+        # explicit --incremental-strategy append/replace for them; otherwise fall back to
+        # `none` and let the source/platform own the write. `honours_run_disposition` is
+        # absent on sources that set their own disposition, so getattr defaults to False.
+        honours_disposition = getattr(
+            source, "honours_run_disposition", lambda: False
+        )()
+        if strategy_was_explicit and honours_disposition:
+            if original_incremental_strategy in (
+                IncrementalStrategy.append,
+                IncrementalStrategy.create_replace,
+            ):
+                # Keep the explicit strategy; write_disposition flows through below.
+                pass
+            elif original_incremental_strategy in (
+                IncrementalStrategy.merge,
+                IncrementalStrategy.scd2,
+                IncrementalStrategy.delete_insert,
+            ):
+                raise ValidationError(
+                    f"Incremental strategy '{original_incremental_strategy.value}' needs an "
+                    "incremental or merge key, which filesystem sources do not expose. Use "
+                    "'append' or 'replace', or '--full-refresh' to reset the destination."
+                )
+            else:  # explicit 'none'
+                incremental_strategy = IncrementalStrategy.none
+        else:
+            incremental_strategy = IncrementalStrategy.none
+
+    # Resolve the "not explicitly requested" default for every path that reaches the run.
+    if incremental_strategy is None:
+        incremental_strategy = IncrementalStrategy.create_replace
 
     incremental_strategy_text = (
         incremental_strategy.value

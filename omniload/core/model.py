@@ -13,6 +13,13 @@ class SourceProtocol(Protocol):
     their own offsets (e.g. mq-bridge). It is intentionally NOT part of this protocol so
     that ordinary sources need not implement it; run_ingest invokes it only when present
     via ``getattr(source, "post_load", lambda: None)()``.
+
+    Likewise, an optional ``honours_run_disposition(self) -> bool`` hook may be defined by
+    ``handles_incrementality`` sources that hold no resource-level write disposition (the
+    filesystem family). It signals that an explicit run-level ``--incremental-strategy``
+    append/replace is safe to honour. It is absent on sources that set their own
+    resource-level disposition; run_ingest reads it via
+    ``getattr(source, "honours_run_disposition", lambda: False)()``, so the default is False.
     """  # noqa: E501
 
     def dlt_source(self, uri: str, table: str, **kwargs):

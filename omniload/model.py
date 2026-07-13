@@ -73,7 +73,11 @@ class LoadRequest:
     source_table: str | None = None
     dest_table: str | None = None
     incremental_key: str | None = None
-    incremental_strategy: IncrementalStrategy | str = IncrementalStrategy.create_replace
+    # None means "not explicitly requested": run_ingest resolves the default
+    # (replace for ordinary sources, append for the filesystem family) and uses
+    # the explicit-ness to decide whether to honour a run-level write disposition
+    # for filesystem sources.
+    incremental_strategy: IncrementalStrategy | str | None = None
     interval_start: dt.datetime | None = None
     interval_end: dt.datetime | None = None
     primary_key: list[str] | None = None

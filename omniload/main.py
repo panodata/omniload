@@ -86,12 +86,16 @@ def ingest(
         ),
     ] = None,
     incremental_strategy: Annotated[
-        IncrementalStrategy,
+        Optional[IncrementalStrategy],
         typer.Option(
-            help="The incremental strategy to use",
+            help="The incremental strategy to use. When omitted, defaults to "
+            "'append' for filesystem sources (file/s3/gcs/azure/sftp) and "
+            "'replace' for ordinary sources; sources that manage their own "
+            "incrementality (many SaaS/streaming sources) keep their own "
+            "per-resource disposition instead.",
             envvar=["INCREMENTAL_STRATEGY", "OMNILOAD_INCREMENTAL_STRATEGY"],
         ),
-    ] = IncrementalStrategy.create_replace,
+    ] = None,
     interval_start: Annotated[
         Optional[datetime],
         typer.Option(
