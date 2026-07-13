@@ -150,15 +150,18 @@ optional-dependencies.ibm-db = [
   "ibm-db<4; platform_machine!='aarch64'",
   "ibm-db-sa<0.5; platform_machine!='aarch64'",
 ]
-# Long-tail file formats (MessagePack via iterabledata; CBOR via cbor2 directly). iterabledata
-# core is light (chardet, tqdm); each format's decoder is its own extra, so the shipped
-# tranche's decoders (msgpack, cbor2) are pulled explicitly here. Note: iterabledata's import
+# Long-tail file formats (MessagePack via iterabledata; CBOR via cbor2, XML via lxml, YAML via
+# PyYAML directly). iterabledata core is light (chardet, tqdm); each format's decoder is pulled
+# explicitly here (msgpack, cbor2, lxml, pyyaml). lxml and pyyaml are commonly present
+# transitively but are declared so the extra is self-contained. Note: iterabledata's import
 # package name is the generic `iterable`, which can shadow a same-named local package.
 # See omniload/source/filesystem/format/iterable_codec.py.
 optional-dependencies.iterable = [
   "cbor2<7",
   "iterabledata>=1.0.15,<2",
+  "lxml<7",
   "msgpack<2",
+  "pyyaml<7",
 ]
 optional-dependencies.odbc = [
   "pyodbc<5.4",

@@ -12,14 +12,21 @@ BASE_FILE_FORMATS: dict[str, str] = {
     "xlsx": "read_excel",
 }
 
-# Formats backed by the optional `iterable` extra (msgpack via iterabledata; cbor via cbor2
-# directly -- see `format.iterable_codec`). They are routable so `.msgpack` / `#msgpack`
-# resolve and the reader can raise a precise install hint, but they are advertised as
-# supported only when their decoder is importable (see `supported_file_format_message`), so a
-# base install never claims a format it can't actually read.
+# Formats backed by the optional `iterable` extra (msgpack via iterabledata; cbor, xml and yaml
+# via their own libraries directly -- see `format.iterable_codec`). They are routable so
+# `.msgpack` / `#msgpack` resolve and the reader can raise a precise install hint, but they are
+# advertised as supported only when their decoder is importable (see
+# `supported_file_format_message`), so a base install never claims a format it can't actually
+# read. Lexically sorted by format name.
 ITERABLE_FILE_FORMATS: dict[str, str] = {
-    "msgpack": "read_msgpack",
     "cbor": "read_cbor",
+    "msgpack": "read_msgpack",
+    "xml": "read_xml",
+    "yaml": "read_yaml",
+    # `.yml` is the same format as `.yaml`; it routes to the same reader (which decodes as
+    # "yaml"). Only the canonical "yaml" is advertised (installed_iterable_formats reads the
+    # codec registry), so this alias just lets a `.yml` extension / `#yml` hint resolve.
+    "yml": "read_yaml",
 }
 
 FORMAT_TO_READER: dict[str, str] = {**BASE_FILE_FORMATS, **ITERABLE_FILE_FORMATS}

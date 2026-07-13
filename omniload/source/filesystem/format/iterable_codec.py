@@ -53,10 +53,13 @@ from dlt.common.typing import TDataItems
 from dlt.common.utils import map_nested_values_in_place
 from dlt.sources.filesystem import FileItemDict
 
-from omniload.source.filesystem.error import MissingDecoderError
+from omniload.source.filesystem.error import (
+    MissingDecoderError,
+    MissingReaderOptionError,
+)
 
 Normalizer = Callable[[Any], Any]
-EagerDecoder = Callable[[bytes], Iterator[Any]]
+EagerDecoder = Callable[[bytes, dict], Iterator[Any]]
 
 
 @dataclass(frozen=True)
@@ -75,10 +78,12 @@ class IterableFormat:
             e.g. ``"iterable.datatypes.msgpack.MessagePackIterable"``. The module name inside
             ``iterable.datatypes`` is non-obvious (msgpack lives in ``msgpack``, BSON in
             ``bsonf``), so it is pinned here and covered by an import-path test.
-        eager_decoder: For a whole-file format, a callable ``bytes -> Iterator[record]`` that
-            decodes the whole file and surfaces decode errors (instead of routing through an
-            iterabledata wrapper that would swallow them). ``iterable`` is not imported for
-            these formats.
+        eager_decoder: For a whole-file format, a callable ``(bytes, options) -> Iterator[record]``
+            that decodes the whole file and surfaces decode errors (instead of routing through an
+            iterabledata wrapper that would swallow them). ``options`` carries the per-URI reader
+            hints forwarded from the ``#key=value`` fragment (e.g. XML's mandatory ``tagname``);
+            a format that takes no options ignores it. ``iterable`` is not imported for these
+            formats.
         normalizer_factory: Optional builder returning a leaf-normalizer closure applied to
             every row. ``None`` when the format already decodes to dlt-safe values.
     """
@@ -149,7 +154,7 @@ def _cbor_normalizer() -> Normalizer:
     return convert
 
 
-def _cbor_eager_decode(data: bytes) -> Iterator[Any]:
+def _cbor_eager_decode(data: bytes, options: dict) -> Iterator[Any]:
     """Decode a whole CBOR file into records, surfacing decode errors.
 
     A CBOR source must be a single top-level value: a top-level array yields one row per
@@ -157,7 +162,8 @@ def _cbor_eager_decode(data: bytes) -> Iterator[Any]:
     other readers), but a non-empty **corrupt / truncated** payload raises ``CBORDecodeError``
     rather than silently loading nothing (which is what iterabledata's error-swallowing
     ``CBORIterable`` would do). Files that concatenate several top-level objects are read only
-    up to the first (a cbor2 limitation that cannot be detected).
+    up to the first (a cbor2 limitation that cannot be detected). CBOR takes no reader options,
+    so ``options`` is accepted (for the uniform eager-decoder signature) and ignored.
     """
     import cbor2
 
@@ -170,18 +176,206 @@ def _cbor_eager_decode(data: bytes) -> Iterator[Any]:
         yield obj
 
 
+def _yaml_normalizer() -> Normalizer:
+    """Build the YAML leaf normalizer.
+
+    ``yaml.safe_load`` decodes two tags to types a text / Parquet loader cannot serialize:
+    ``!!binary`` -> ``bytes`` and ``!!set`` -> ``set``. Convert ``bytes`` to a base64 string
+    (as msgpack / cbor / BSON do) and a ``set`` to a list (JSON / Parquet-safe), normalizing
+    each member too. ``!!timestamp`` decodes to ``datetime`` / ``date``, which are already
+    dlt-safe and pass through. No decoder import is needed (the values are plain Python types),
+    so this normalizer is dependency-free.
+    """
+
+    def convert(value: Any) -> Any:
+        """Convert one YAML leaf: ``bytes`` -> base64 str, ``set`` -> list of converted members."""
+        if isinstance(value, (bytes, bytearray)):
+            return base64.b64encode(bytes(value)).decode("ascii")
+        if isinstance(value, (set, frozenset)):
+            return [convert(member) for member in value]
+        return value
+
+    return convert
+
+
+def _yaml_eager_decode(data: bytes, options: dict) -> Iterator[Any]:
+    """Decode a whole YAML file into records, surfacing parse errors.
+
+    Uses ``yaml.safe_load_all`` (never ``load``), so a tag that would construct an arbitrary
+    Python object (``!!python/object/...``) is rejected with a ``yaml.YAMLError`` instead of
+    executed. Each YAML **document** becomes rows: a document that is a **list** expands to one
+    row per element (so a top-level sequence of records loads naturally); any other document
+    yields one row. A ``---``-only / empty document parses to ``None`` and is skipped (it
+    carries no record). An empty file yields no rows (matching the other readers); a malformed
+    document raises ``yaml.YAMLError`` rather than silently loading nothing. YAML takes no
+    reader options, so ``options`` is accepted (for the uniform eager-decoder signature) and
+    ignored.
+    """
+    import yaml
+
+    if not data.strip():
+        return
+    for document in yaml.safe_load_all(data):
+        if document is None:
+            continue
+        if isinstance(document, list):
+            yield from document
+        else:
+            yield document
+
+
+# Safe lxml parse flags, hardened against the XXE / entity-expansion / external-DTD / encoding
+# attack classes (see issue #45): entities are not resolved (``resolve_entities=False``), no DTD
+# is loaded (``load_dtd=False``), nothing is fetched over the network (``no_network=True``),
+# pathological trees are capped (``huge_tree=False``), and a malformed document raises rather
+# than being silently recovered (``recover=False``). So an **external** entity is never read or
+# fetched: in element text its reference is dropped, and in an attribute value it raises rather
+# than resolving. (An *internal* entity defined inline in the document still expands inside an
+# attribute value, because XML normalizes attribute values to strings; that is document-local
+# text, and libxml2's amplification cap bounds any expansion.) Passed as kwargs to
+# ``etree.iterparse``, which builds its own parser from them.
+_XML_PARSER_FLAGS: dict[str, bool] = {
+    "resolve_entities": False,
+    "load_dtd": False,
+    "no_network": True,
+    "huge_tree": False,
+    "recover": False,
+}
+
+
+def _xml_localname(tag: str) -> str:
+    """Return an XML tag's local name, stripping any ``{namespace}`` prefix.
+
+    ``"{http://ex/}item"`` -> ``"item"``; a plain ``"item"`` is returned unchanged. Done with
+    ``rpartition`` (not ``etree.QName``) so it stays a cheap string op in the per-element hot
+    path with no lxml import.
+    """
+    return tag.rpartition("}")[2]
+
+
+def _xml_element_to_record(elem: Any) -> Any:
+    """Convert one XML row element to a portable value per the pinned convention.
+
+    - A **leaf** (no attributes, no element children) -> its stripped text, or ``None`` if empty.
+    - Otherwise a **dict**: attributes under ``@name``, non-empty leading text under ``#text``,
+      and each child element under its local tag name. Repeated child tags collapse into a list
+      in document order. The ``@`` / ``#`` prefixes keep attribute and text keys from ever
+      colliding with a child element's key.
+
+    Comments, processing instructions and **unexpanded entity references** are skipped by the
+    ``isinstance(child.tag, str)`` guard (only real elements carry a ``str`` tag). That guard is
+    what keeps an unresolved external entity from leaking its target into a row: with
+    ``resolve_entities=False`` an ``&xxe;`` reference is an entity child, never text, so it is
+    dropped here. Inter-element tail text is not captured; namespaces are stripped to local
+    names (a name clash across namespaces collapses into the same list).
+    """
+    child_elems = [child for child in elem if isinstance(child.tag, str)]
+    if not elem.attrib and not child_elems:
+        text = (elem.text or "").strip()
+        return text or None
+
+    record: dict[str, Any] = {}
+    for name, value in elem.attrib.items():
+        record["@" + _xml_localname(name)] = value
+    leading_text = (elem.text or "").strip()
+    if leading_text:
+        record["#text"] = leading_text
+    for child in child_elems:
+        key = _xml_localname(child.tag)
+        value = _xml_element_to_record(child)
+        if key not in record:
+            record[key] = value
+        elif isinstance(record[key], list):
+            record[key].append(value)
+        else:
+            record[key] = [record[key], value]
+    return record
+
+
+def _xml_eager_decode(data: bytes, options: dict) -> Iterator[Any]:
+    """Decode a whole XML file into row records with a hardened parser.
+
+    Requires a ``tagname`` reader option (from ``#tagname=<row-tag>``) naming the repeated
+    element that is one row; without it a :class:`MissingReaderOptionError` is raised (never a
+    bare ``AttributeError``). The row tag is matched both bare and in any namespace
+    (``(tagname, "{*}" + tagname)``) so namespaced feeds work without the caller writing Clark
+    notation. Parsing uses :data:`_XML_PARSER_FLAGS`, which neutralizes XXE / entity-expansion /
+    external-DTD attacks; a corrupt or disallowed document raises ``lxml.etree.XMLSyntaxError``.
+
+    When the row tag nests inside another row tag (recursive / hierarchical XML), only the
+    **outermost** match is a row; an inner occurrence is a nested sub-record of its ancestor row,
+    not a separate row. This avoids emitting the same element twice and avoids corrupting the
+    ancestor row during memory cleanup.
+
+    Memory note: the eager seam hands the whole file's bytes to this decoder, so the file is
+    buffered in full (like CBOR / YAML). ``iterparse`` bounds only the parsed **element tree** --
+    each outermost row is cleared and its processed siblings dropped after it is yielded -- not
+    the raw bytes. True larger-than-memory streaming is a separate follow-up. An empty (or
+    whitespace-only) file yields no rows.
+    """
+    tagname = options.get("tagname")
+    if not tagname:
+        raise MissingReaderOptionError("tagname", "xml", "file://data.xml#tagname=item")
+    if not data.strip():
+        return
+
+    from lxml import etree  # ty: ignore[unresolved-import]
+
+    matcher = (tagname, "{*}" + tagname)
+    context = etree.iterparse(
+        io.BytesIO(data), events=("start", "end"), tag=matcher, **_XML_PARSER_FLAGS
+    )
+    # Depth of matching (row-tag) elements currently open. A row is only emitted when its `end`
+    # brings the depth back to 0, i.e. it is not nested inside another row tag -- so an inner
+    # match is left as part of its ancestor row instead of being yielded (and cleared) early,
+    # which would delete the ancestor's own not-yet-processed children.
+    depth = 0
+    for event, elem in context:
+        if event == "start":
+            depth += 1
+            continue
+        depth -= 1
+        if depth != 0:
+            continue  # a nested match; its outermost ancestor row already contains it
+        yield _xml_element_to_record(elem)
+        # Free the parsed row and any already-processed preceding siblings so the parent does
+        # not accumulate the whole tree (bounds the *element tree*, not the buffered bytes).
+        elem.clear()
+        parent = elem.getparent()
+        if parent is not None:
+            while elem.getprevious() is not None:
+                del parent[0]
+
+
+# Lexically sorted by format name. XML and YAML both use the whole-file `eager_decoder` seam
+# (never an iterabledata class): iterabledata's XML parser resolves entities and can't be locked
+# down through its API, and its YAML wrapper is eager and swallows parse errors, so omniload owns
+# both decodes -- a safe lxml parse for XML, `yaml.safe_load_all` for YAML. See
+# `docs/getting-started/file-format-routing.md`.
 FORMAT_TO_ITERABLE: dict[str, IterableFormat] = {
+    "cbor": IterableFormat(
+        decoder_dist="cbor2",
+        pip_hint="omniload[iterable]",
+        eager_decoder=_cbor_eager_decode,
+        normalizer_factory=_cbor_normalizer,
+    ),
     "msgpack": IterableFormat(
         decoder_dist="msgpack",
         pip_hint="omniload[iterable]",
         class_path="iterable.datatypes.msgpack.MessagePackIterable",
         normalizer_factory=_msgpack_normalizer,
     ),
-    "cbor": IterableFormat(
-        decoder_dist="cbor2",
+    "xml": IterableFormat(
+        decoder_dist="lxml",
         pip_hint="omniload[iterable]",
-        eager_decoder=_cbor_eager_decode,
-        normalizer_factory=_cbor_normalizer,
+        eager_decoder=_xml_eager_decode,
+        # XML decodes to str / dict / list / None leaves, all dlt-safe, so no normalizer.
+    ),
+    "yaml": IterableFormat(
+        decoder_dist="yaml",
+        pip_hint="omniload[iterable]",
+        eager_decoder=_yaml_eager_decode,
+        normalizer_factory=_yaml_normalizer,
     ),
 }
 
@@ -255,7 +449,7 @@ def _iter_file_records(
     ``[]`` (EOF only, for the binary tranche; no mid-file skip path is wired in this PR).
     """
     if spec.eager_decoder is not None:
-        yield from spec.eager_decoder(stream.read())
+        yield from spec.eager_decoder(stream.read(), options)
         return
     iterable_class = _load_iterable_class(spec)
     reader = iterable_class(stream=stream, options=options or None)
@@ -278,8 +472,9 @@ def read_via_iterable(
     Mirrors ``readers.read_bson``: opens each file's fsspec handle, produces its records (via
     the format's iterabledata class or its whole-file decoder), normalizes each row, and yields
     chunks, flushing per file so a multi-file glob never drops a partial final chunk.
-    ``options`` is forwarded to a streaming class's ctor (unused by the binary tranche in this
-    PR; the seam exists for later per-format options).
+    ``options`` carries the per-URI reader hints (from the ``#key=value`` fragment) and is
+    forwarded to a streaming class's ctor or to the ``eager_decoder`` (e.g. XML's ``tagname``);
+    a format that takes no options ignores it.
 
     Raises:
         MissingDecoderError: if the format's decoder (or iterabledata, for a streaming format)

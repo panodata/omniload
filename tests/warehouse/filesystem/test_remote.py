@@ -23,13 +23,16 @@ from tests.warehouse.settings import DESTINATIONS
 
 # These formats need decoders from the optional `iterable` extra. Probe with find_spec so this
 # module imports without them; each case is added only when its decoder is present. MessagePack
-# streams through iterabledata, so it also needs the `iterable` package itself; CBOR decodes
-# with `cbor2` directly (eager_decoder, no iterabledata), so it needs only `cbor2`.
+# streams through iterabledata, so it also needs the `iterable` package itself; CBOR / XML / YAML
+# decode with their own library directly (eager_decoder, no iterabledata), so each needs only
+# its own decoder.
 HAS_MSGPACK = (
     importlib.util.find_spec("iterable") is not None
     and importlib.util.find_spec("msgpack") is not None
 )
 HAS_CBOR = importlib.util.find_spec("cbor2") is not None
+HAS_XML = importlib.util.find_spec("lxml") is not None
+HAS_YAML = importlib.util.find_spec("yaml") is not None
 
 
 def fs_test_cases(
@@ -113,6 +116,26 @@ def fs_test_cases(
         ]
         with test_fs.open("/data.cbor", "wb") as f:
             f.write(cbor2.dumps(cbor_rows))
+
+    # For XML tests. Each <record> element is one row; the reader needs a #tagname=record hint.
+    if HAS_XML:
+        record_rows = "".join(
+            f"<record><name>{row['name']}</name><country>{row['country']}</country></record>"
+            for row in csv.DictReader(io.StringIO(testdata))
+        )
+        with test_fs.open("/data.xml", "wb") as f:
+            f.write(f"<data>{record_rows}</data>".encode())
+
+    # For YAML tests. Written as a single top-level list, which expands to one row per element.
+    if HAS_YAML:
+        import yaml
+
+        yaml_rows = [
+            {"name": row["name"], "country": row["country"]}
+            for row in csv.DictReader(io.StringIO(testdata))
+        ]
+        with test_fs.open("/data.yaml", "w") as f:
+            yaml.safe_dump(yaml_rows, f)
 
     # for testing unsupported files
     with test_fs.open("/bin/data.bin", "w") as f:
@@ -355,6 +378,50 @@ def fs_test_cases(
             assert result.exit_code == 0
             assert_rows(dest_uri, dest_table, 5)
 
+    def test_xml_load(dest_uri):
+        """When the source URI is an XML file, its <record> rows should be ingested over the
+        source's own fsspec handle. The #tagname=record hint threads through blob_hints."""
+        with (
+            patch(target_fs) as target_fs_mock,
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
+        ):
+            target_fs_mock.return_value = test_fs
+            schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
+            dest_table = f"{schema_rand_prefix}.fs_{get_random_string(5)}"
+            result = invoke_ingest_command(
+                f"{protocol}://bucket?{auth}",
+                "/data.xml#tagname=record",
+                dest_uri,
+                dest_table,
+            )
+            assert result.exit_code == 0
+            assert_rows(dest_uri, dest_table, 5)
+
+    def test_yaml_load(dest_uri):
+        """When the source URI is a YAML file, its top-level list expands to one row per element,
+        ingested over the source's own fsspec handle (no separate storage auth)."""
+        with (
+            patch(target_fs) as target_fs_mock,
+            patch(
+                "omniload.source.filesystem.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
+        ):
+            target_fs_mock.return_value = test_fs
+            schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
+            dest_table = f"{schema_rand_prefix}.fs_{get_random_string(5)}"
+            result = invoke_ingest_command(
+                f"{protocol}://bucket?{auth}",
+                "/data.yaml",
+                dest_uri,
+                dest_table,
+            )
+            assert result.exit_code == 0
+            assert_rows(dest_uri, dest_table, 5)
+
     def test_glob_load(dest_uri):
         """
         When the source URI is a glob pattern, all files matching the pattern should be ingested
@@ -445,6 +512,10 @@ def fs_test_cases(
         cases.append(test_msgpack_load)
     if HAS_CBOR:
         cases.append(test_cbor_load)
+    if HAS_XML:
+        cases.append(test_xml_load)
+    if HAS_YAML:
+        cases.append(test_yaml_load)
     return cases
 
 

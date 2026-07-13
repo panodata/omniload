@@ -12,6 +12,7 @@
 - Filesystem: Added `#key=value` reader hint channel to source URIs
 - Filesystem: Added readers for Excel workbook (XLSX) and OpenDocument
   spreadsheet (ODS) files.
+- Filesystem: Added readers for XML and YAML file formats. Thanks, @hampsterx.
 
 ## 2026/07/06 v0.6.0
 

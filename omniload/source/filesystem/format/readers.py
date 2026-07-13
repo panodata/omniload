@@ -405,6 +405,59 @@ def read_cbor(
     yield from read_via_iterable(items, file_format="cbor", chunksize=chunksize)
 
 
+def read_xml(
+    items: Iterator[FileItemDict], chunksize: int = 1000, **options: Any
+) -> Iterator[TDataItems]:
+    """XML reader (parsed with a hardened lxml parser through the generic harness).
+
+    Thin wrapper over ``read_via_iterable`` (see ``format.iterable_codec``). XML is whole-file
+    and iterabledata's XML parser resolves entities and can't be locked down through its API, so
+    the harness parses with ``lxml`` directly under a safe configuration (no entity resolution,
+    no DTD load, no network, capped tree) that neutralizes XXE / entity-expansion attacks.
+
+    A ``tagname`` option is **required**: it names the repeated element that is one row and
+    arrives via the ``#tagname=<row-tag>`` URI fragment (the first consumer of the reader-hint
+    channel). Without it the reader raises a clear ``MissingReaderOptionError``, never a bare
+    ``AttributeError``. Each row element becomes a record (attributes under ``@name``, repeated
+    children as lists); see ``docs/supported-sources/xml.md``. ``lxml`` is imported lazily.
+
+    Args:
+        chunksize (int, optional): The number of records to load and yield at once, defaults to 1000.
+        **options: Reader hints forwarded to the decoder (``tagname`` for XML).
+
+    Returns:
+        TDataItem: The file content
+    """
+    yield from read_via_iterable(
+        items, file_format="xml", chunksize=chunksize, **options
+    )
+
+
+def read_yaml(
+    items: Iterator[FileItemDict], chunksize: int = 1000, **options: Any
+) -> Iterator[TDataItems]:
+    """YAML reader (parsed with ``yaml.safe_load_all`` through the generic harness).
+
+    Thin wrapper over ``read_via_iterable`` (see ``format.iterable_codec``). YAML is whole-file
+    and iterabledata's YAML wrapper is eager and swallows parse errors, so the harness loads
+    with ``yaml.safe_load_all`` directly: a ``!!python/object`` tag is rejected (never executed)
+    and a malformed document raises instead of silently loading zero rows. Each YAML document
+    becomes rows -- a top-level list expands to one row per element, any other document is one
+    row -- and ``!!binary`` / ``!!set`` leaves are normalized to dlt-safe types. ``yaml`` is
+    imported lazily. See ``docs/supported-sources/yaml.md``.
+
+    Args:
+        chunksize (int, optional): The number of records to load and yield at once, defaults to 1000.
+        **options: Reader hints forwarded to the decoder (YAML takes none).
+
+    Returns:
+        TDataItem: The file content
+    """
+    yield from read_via_iterable(
+        items, file_format="yaml", chunksize=chunksize, **options
+    )
+
+
 def read_parquet(
     items: Iterator[FileItemDict],
     chunksize: int = 10,
@@ -496,6 +549,14 @@ if TYPE_CHECKING:
         @copy_sig(read_cbor)
         def read_cbor(self) -> DltResource:
             """CBOR reader resource."""
+
+        @copy_sig(read_xml)
+        def read_xml(self) -> DltResource:
+            """XML reader resource."""
+
+        @copy_sig(read_yaml)
+        def read_yaml(self) -> DltResource:
+            """YAML reader resource."""
 
         @copy_sig(read_parquet)
         def read_parquet(self) -> DltResource:

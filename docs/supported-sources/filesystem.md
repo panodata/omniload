@@ -27,6 +27,8 @@ URI does not include file extensions.
 | {ref}`ods`       | OpenDocument spreadsheet format                 | .ods       | #ods          | ✅   | ❌    |
 | [Parquet]        | Apache Parquet format                           | .parquet   | #parquet      | ✅   | ✅    |
 | {ref}`xlsx`      | Excel spreadsheet format                        | .xlsx      | #xlsx         | ✅   | ❌    |
+| {ref}`xml`       | XML format                                      | .xml       | #xml          | ✅   | ❌    |
+| {ref}`yaml`      | YAML format                                     | .yaml      | #yaml         | ✅   | ❌    |
 
 :::{note}
 Supported formats for write operations are currently CSV, JSONL, and Parquet.
@@ -88,6 +90,7 @@ omniload ingest \
 Without column names, columns are auto-named `unknown_col_0`, `unknown_col_1`,
 and so on.
 
+(reader-hint)=
 (reader-hints)=
 
 ## Reader hints
@@ -118,8 +121,10 @@ The named-hint grammar:
 :::{note}
 Reader hints can be used to forward additional parameters as `key=value` pairs
 to the underlying pipeline element implementation.
-For example, CSV and Excel readers forward corresponding parameters to the
-[polars.read_csv] and [polars.read_excel] functions.
+For example, CSV and {ref}`xlsx` readers forward corresponding parameters to
+the [polars.read_csv] and [polars.read_excel] functions, and the {ref}`xml`
+reader requires a `#tagname=<row-tag>` hint to define the repeated element
+that is one row.
 :::
 
 

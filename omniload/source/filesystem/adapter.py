@@ -14,9 +14,10 @@
 
 """Reads files in s3, gs or azure buckets using fsspec and provides convenience resources for chunked reading of various file formats"""
 
-from typing import Iterator, List, Optional, Tuple, Union
+from typing import Callable, Iterator, List, Optional, Tuple, Union
 
 import dlt
+from dlt.common.typing import TDataItems
 from dlt.extract import DltSource
 from dlt.sources import DltResource
 from dlt.sources.credentials import FileSystemCredentials
@@ -35,6 +36,8 @@ from omniload.source.filesystem.format.readers import (
     read_msgpack,
     read_ods,
     read_parquet,
+    read_xml,
+    read_yaml,
 )
 
 from .model import FilesystemConfigurationResource, FilesystemReference
@@ -84,6 +87,10 @@ def readers(
         | dlt.transformer(name="read_msgpack", max_table_nesting=0)(read_msgpack),
         filesystem_resource
         | dlt.transformer(name="read_cbor", max_table_nesting=0)(read_cbor),
+        filesystem_resource
+        | dlt.transformer(name="read_xml", max_table_nesting=0)(read_xml),
+        filesystem_resource
+        | dlt.transformer(name="read_yaml", max_table_nesting=0)(read_yaml),
         filesystem_resource
         | dlt.transformer(name="read_parquet", max_table_nesting=0)(read_parquet),
         filesystem_resource
@@ -136,10 +143,35 @@ def filesystem(
         yield files_chunk
 
 
+# Readers that consume per-URI `#key=value` reader hints, mapped to (reader function, the hint
+# keys each accepts). Only a listed key is forwarded to the reader, so an unrelated or typo'd
+# hint never reaches a decoder as a surprise kwarg. Values arrive as strings (#183); a decoder
+# that wants a non-str option coerces it itself. XML is the first consumer (`tagname`, the
+# mandatory row-element name).
+_HINT_READERS: dict[str, tuple[Callable[..., Iterator[TDataItems]], frozenset[str]]] = {
+    "read_xml": (read_xml, frozenset({"tagname"})),
+}
+
+
+def _reader_hint_options(ref: FilesystemReference) -> dict[str, str]:
+    """Filter ``ref.hints`` to the keys the selected reader actually accepts.
+
+    A reader not in ``_HINT_READERS`` consumes no hints (returns ``{}``); for one that does,
+    only its declared keys pass through. A required-but-missing option is left for the decoder
+    to report with its own clear error (e.g. XML's ``MissingReaderOptionError``).
+    """
+    entry = _HINT_READERS.get(ref.reader_name)
+    if entry is None:
+        return {}
+    _, accepted = entry
+    return {key: value for key, value in ref.hints.items() if key in accepted}
+
+
 def resource_for_reader(ref: FilesystemReference) -> DltSource | DltResource:
     """Build the filesystem reader resource named by ``ref.reader_name``.
 
-    Threads ``column_types`` into ``read_csv_headless``; every other reader is selected as-is.
+    Threads ``column_types`` into ``read_csv_headless`` and per-URI reader hints (e.g. XML's
+    ``#tagname``) into a hint-consuming reader; every other reader is selected as-is.
     """
 
     # Establish filesystem and reader elements.
