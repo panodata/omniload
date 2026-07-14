@@ -18,8 +18,16 @@ Gzipped files are decompressed automatically.
 
 The whole file is read into memory and decoded at once (XLSX is not a streaming
 format); a corrupt or truncated file raises rather than loading partial data.
-Map keys are expected to be strings. The loader is using [polars.read_excel],
-please consult its documentation about all available parameters and their meaning.
+Map keys are expected to be strings.
+
+## Options
+
+Options can be defined by using reader hints. The loader is using
+[polars.read_excel], please consult its documentation about all available
+parameters and their descriptions.
+
+Please note due to introspection and automatic type casting capabilities,
+the full set of parameters is only available with Python 3.14 and higher.
 
 ## Example: Load XLSX file into DuckDB
 

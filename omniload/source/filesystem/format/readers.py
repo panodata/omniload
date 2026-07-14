@@ -19,6 +19,7 @@ from dlt.common.typing import copy_sig
 from dlt.sources import DltResource, DltSource, TDataItems
 from dlt.sources.filesystem import FileItemDict
 
+from omniload.codec.python import cast_kwargs_to_signature
 from omniload.source.filesystem.format.helpers import fetch_arrow, fetch_json
 from omniload.source.filesystem.format.iterable_codec import read_via_iterable
 from omniload.source.filesystem.format.settings import DEFAULT_CHUNK_SIZE
@@ -173,6 +174,22 @@ def read_excel(
 
     if "sheet_name" in kwargs and not kwargs["sheet_name"]:
         kwargs["sheet_name"] = None
+
+    from polars._typing import (  # noqa: F401
+        ExcelSpreadsheetEngine,
+        FileSource,
+        SchemaDict,
+    )
+    from polars.datatypes import DataType, DataTypeClass  # noqa: F401
+
+    symbols = {
+        "ExcelSpreadsheetEngine": ExcelSpreadsheetEngine,
+        "FileSource": FileSource,
+        "SchemaDict": SchemaDict,
+        "DataType": DataType,
+        "DataTypeClass": DataTypeClass,
+    }
+    kwargs = cast_kwargs_to_signature(pl.read_excel, kwargs, symbols=symbols)
 
     for file_obj in items:
         with file_obj.open() as f:
