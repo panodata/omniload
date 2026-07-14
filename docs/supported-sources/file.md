@@ -71,7 +71,7 @@ omniload ingest \
 Here, `sheet_name` is a reader hint to address the worksheet within the workbook
 by name. If the parameter is omitted, the reader will read the first sheet of the
 workbook. The loader is using [polars.read_excel], please consult its documentation
-about all available parameters and their meaning.
+about all available parameters and their descriptions.
 
 ## Supported formats
 
