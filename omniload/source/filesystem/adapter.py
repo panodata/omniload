@@ -149,8 +149,8 @@ def resource_for_reader(ref: FilesystemReference) -> DltSource | DltResource:
     # Apply parameter bindings for certain readers.
     if ref.reader_name == "read_csv_headless":
         column_names = list(ref.column_types.keys()) if ref.column_types else None
-        reader = reader.bind(column_names=column_names)
-    elif ref.reader_name == "read_excel":
+        reader = reader.bind(column_names=column_names, **ref.hints)
+    elif ref.reader_name in ("read_csv", "read_excel"):
         reader = reader.bind(**ref.hints)
 
     # Connect and propagate elements.

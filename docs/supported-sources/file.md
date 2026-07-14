@@ -163,10 +163,12 @@ The named-hint grammar:
   when a trailing `path#key=value` would otherwise be read as a fragment.
 
 :::{note}
-Reader hints are a forward-looking channel. The built-in BSON, CSV, JSONL and
+Reader hints are a forward-looking channel. The built-in BSON, JSONL and
 Parquet readers take no hints today, so a `#key=value` pair is parsed and
-carried but has no effect on them yet. Only the `#format` token changes current
-read behavior. The same channel is available on the [S3](s3.md),
+carried but has no effect on them yet. `csv`, `csv_headless` and `xlsx` accept
+hints matching their respective [polars.read_csv] and [polars.read_excel]
+parameters. Only the `#format` token changes current read behavior for the
+readers that take no hints. The same channel is available on the [S3](s3.md),
 [Google Cloud Storage](google-cloud-storage.md) and [SFTP](sftp.md) sources.
 :::
 
@@ -211,4 +213,5 @@ Parquet as well as CSV, plus (on read) globbing and gzip decompression. Prefer
 standalone CSV reader.
 
 
+[polars.read_csv]: https://docs.pola.rs/api/python/stable/reference/api/polars.read_csv.html
 [polars.read_excel]: https://docs.pola.rs/api/python/stable/reference/api/polars.read_excel.html

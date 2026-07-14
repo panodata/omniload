@@ -25,8 +25,51 @@ from omniload.source.filesystem.format.iterable_codec import read_via_iterable
 from omniload.source.filesystem.format.settings import DEFAULT_CHUNK_SIZE
 
 
+def _polars_csv_symbols() -> Dict[str, Any]:
+    """Symbols needed to resolve `polars.read_csv`'s type hints for casting reader hints."""
+    from typing import Mapping
+
+    from polars import DataFrame
+    from polars._typing import (  # noqa: F401
+        CsvEncoding,
+        PolarsDataType,
+        SchemaDict,
+        StorageOptionsDict,
+    )
+    from polars.datatypes import DataType, DataTypeClass  # noqa: F401
+
+    return {
+        "CsvEncoding": CsvEncoding,
+        "PolarsDataType": PolarsDataType,
+        "SchemaDict": SchemaDict,
+        "StorageOptionsDict": StorageOptionsDict,
+        "DataType": DataType,
+        "DataTypeClass": DataTypeClass,
+        "Mapping": Mapping,
+        "DataFrame": DataFrame,
+    }
+
+
+def _polars_excel_symbols() -> Dict[str, Any]:
+    """Symbols needed to resolve `polars.read_excel`'s type hints for casting reader hints."""
+    from polars._typing import (  # noqa: F401
+        ExcelSpreadsheetEngine,
+        FileSource,
+        SchemaDict,
+    )
+    from polars.datatypes import DataType, DataTypeClass  # noqa: F401
+
+    return {
+        "ExcelSpreadsheetEngine": ExcelSpreadsheetEngine,
+        "FileSource": FileSource,
+        "SchemaDict": SchemaDict,
+        "DataType": DataType,
+        "DataTypeClass": DataTypeClass,
+    }
+
+
 def read_csv(
-    items: Iterator[FileItemDict], chunksize: int = 10000, **polars_kwargs: Any
+    items: Iterator[FileItemDict], chunksize: int = 10000, **kwargs: Any
 ) -> Iterator[TDataItems]:
     """CSV reader using Polars.
 
@@ -38,8 +81,12 @@ def read_csv(
     """
     import polars as pl
 
-    # apply defaults to Polars kwargs
-    kwargs: Dict[str, Any] = {**{"batch_size": chunksize}, **polars_kwargs}
+    kwargs = cast_kwargs_to_signature(
+        pl.read_csv, kwargs, symbols=_polars_csv_symbols()
+    )
+
+    # Apply defaults.
+    kwargs.setdefault("batch_size", chunksize)
 
     for file_obj in items:
         # Read the file in chunks to avoid loading the whole file into memory.
@@ -65,6 +112,10 @@ def read_csv_headless(
         TDataItem: The file content
     """
     import polars as pl
+
+    polars_kwargs = cast_kwargs_to_signature(
+        pl.read_csv, polars_kwargs, symbols=_polars_csv_symbols()
+    )
 
     for file_obj in items:
         with file_obj.open() as file:
@@ -175,21 +226,9 @@ def read_excel(
     if "sheet_name" in kwargs and not kwargs["sheet_name"]:
         kwargs["sheet_name"] = None
 
-    from polars._typing import (  # noqa: F401
-        ExcelSpreadsheetEngine,
-        FileSource,
-        SchemaDict,
+    kwargs = cast_kwargs_to_signature(
+        pl.read_excel, kwargs, symbols=_polars_excel_symbols()
     )
-    from polars.datatypes import DataType, DataTypeClass  # noqa: F401
-
-    symbols = {
-        "ExcelSpreadsheetEngine": ExcelSpreadsheetEngine,
-        "FileSource": FileSource,
-        "SchemaDict": SchemaDict,
-        "DataType": DataType,
-        "DataTypeClass": DataTypeClass,
-    }
-    kwargs = cast_kwargs_to_signature(pl.read_excel, kwargs, symbols=symbols)
 
     for file_obj in items:
         with file_obj.open() as f:

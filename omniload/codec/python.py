@@ -25,13 +25,11 @@ def cast_kwargs_to_signature(
     try:
         type_hints = typing.get_type_hints(func, localns=symbols)
     except (NameError, TypeError) as exc:
-        # NameError
-        # Unresolved forward reference in a third-party callable; fall back
-        # to the raw (unresolved) annotations rather than crashing.
-
-        # TypeError
-        # On older Python versions, `get_type_hints()` fails for
-        # types that are not subscriptable during runtime.
+        # `get_type_hints()` can fail for signatures that reference names only
+        # available under `TYPE_CHECKING` and not supplied via `symbols`
+        # (`NameError`), or for types that are not subscriptable during runtime,
+        # depending on the Python version (`TypeError`). Fall back to no casting
+        # (values pass through as strings) rather than crashing the reader.
         # https://github.com/python/typing/issues/819
         # https://github.com/tfranzel/drf-spectacular/issues/795
         # https://github.com/OpenBMB/ProAgent/issues/17
@@ -39,7 +37,7 @@ def cast_kwargs_to_signature(
         # https://www.devzery.com/post/typeerror-type-object-is-not-subscriptable
         if isinstance(exc, TypeError) and "is not subscriptable" not in str(exc):
             raise
-        logger.warning("Unrecognized type hints %s", exc)
+        logger.warning("Unrecognized type hints: %s", exc)
         type_hints = {}
     casted: Dict[str, Any] = {}
     for key, value in hints.items():
