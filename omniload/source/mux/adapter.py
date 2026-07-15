@@ -18,10 +18,10 @@ from typing import Iterable
 
 import dlt
 from dlt.common import pendulum
-from dlt.sources.helpers import requests
-from requests.auth import HTTPBasicAuth
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
+from dlt.sources.helpers import requests
+from requests.auth import HTTPBasicAuth
 
 from .settings import API_BASE_URL, DEFAULT_LIMIT
 

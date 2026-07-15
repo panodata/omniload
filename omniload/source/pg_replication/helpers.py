@@ -12,20 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import (
-    Optional,
-    Dict,
-    Mapping,
-    Iterator,
-    Union,
-    List,
-    Sequence,
-    Any,
-)
 from dataclasses import dataclass, field
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
+import dlt
 import psycopg2
-from psycopg2.extensions import cursor, connection as ConnectionExt
+from dlt.common import logger
+from dlt.common.configuration.specs.config_section_context import ConfigSectionContext
+from dlt.common.data_writers.escape import escape_postgres_identifier
+from dlt.common.normalizers.naming.snake_case import NamingConvention
+from dlt.common.pendulum import pendulum
+from dlt.common.schema.typing import (
+    DLT_NAME_PREFIX,
+    TColumnNames,
+    TTableSchema,
+    TTableSchemaColumns,
+    TWriteDisposition,
+)
+from dlt.common.schema.utils import merge_column
+from dlt.common.typing import TDataItem
+from dlt.extract import DltResource
+from dlt.extract.items import DataItemWithMeta
+from dlt.sources.config import with_config
+from dlt.sources.credentials import ConnectionStringCredentials
+from dlt.sources.sql_database import (
+    sql_database as core_sql_database,
+)
+from dlt.sources.sql_database import (
+    sql_table as core_sql_table,
+)
+from psycopg2.extensions import connection as ConnectionExt
+from psycopg2.extensions import cursor
 from psycopg2.extras import (
     LogicalReplicationConnection,
     ReplicationCursor,
@@ -33,42 +59,16 @@ from psycopg2.extras import (
     StopReplication,
 )
 
-import dlt
-from dlt.common import logger
-from dlt.common.typing import TDataItem
-from dlt.common.pendulum import pendulum
-from dlt.common.normalizers.naming.snake_case import NamingConvention
-from dlt.common.schema.typing import (
-    TTableSchema,
-    TTableSchemaColumns,
-    TColumnNames,
-    TWriteDisposition,
-    DLT_NAME_PREFIX,
-)
-from dlt.common.schema.utils import merge_column
-from dlt.common.configuration.specs.config_section_context import ConfigSectionContext
-from dlt.common.data_writers.escape import escape_postgres_identifier
-
-from dlt.extract.items import DataItemWithMeta
-from dlt.extract import DltResource
-
-from dlt.sources.config import with_config
-from dlt.sources.credentials import ConnectionStringCredentials
-from dlt.sources.sql_database import (
-    sql_table as core_sql_table,
-    sql_database as core_sql_database,
-)
-
-from .schema_types import _to_dlt_column_schema, _to_dlt_val
-from .exceptions import IncompatiblePostgresVersionException
 from .decoders import (
     Begin,
-    Relation,
-    Insert,
-    Update,
-    Delete,
     ColumnData,
+    Delete,
+    Insert,
+    Relation,
+    Update,
 )
+from .exceptions import IncompatiblePostgresVersionException
+from .schema_types import _to_dlt_column_schema, _to_dlt_val
 
 __source_name__ = "pg_replication"
 
@@ -677,13 +677,13 @@ class MessageConsumer:
 
         self.consumed_all: bool = False
         # data_items attribute maintains all data items
-        self.data_items: Dict[
-            int, List[Union[TDataItem, DataItemWithMeta]]
-        ] = dict()  # maps relation_id to list of data items
+        self.data_items: Dict[int, List[Union[TDataItem, DataItemWithMeta]]] = (
+            dict()
+        )  # maps relation_id to list of data items
         # other attributes only maintain last-seen values
-        self.last_table_schema: Dict[
-            int, TTableSchema
-        ] = dict()  # maps relation_id to table schema
+        self.last_table_schema: Dict[int, TTableSchema] = (
+            dict()
+        )  # maps relation_id to table schema
         self.last_commit_ts: pendulum.DateTime
         self.last_commit_lsn = None
 

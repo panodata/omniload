@@ -22,14 +22,12 @@ from typing import Any, Iterator, Sequence
 import dlt
 import humanize
 import pendulum
-
 from dlt.common import logger
 from dlt.common.configuration.inject import with_config
 from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import DictStrAny, TDataItem, TDataItems
 from dlt.sources.helpers import requests
 from dlt.sources.helpers.requests import Client
-
 from facebook_business import FacebookAdsApi
 from facebook_business.adobjects.adaccount import AdAccount
 from facebook_business.adobjects.user import User

@@ -23,7 +23,7 @@ Api changelog: https://developers.pipedrive.com/changelog
 To get an api key: https://pipedrive.readme.io/docs/how-to-find-the-api-token
 """
 
-from typing import Any, Dict, Iterator, List, Optional, Union, Iterable
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Union
 
 import dlt
 from dlt.common import pendulum
@@ -31,14 +31,14 @@ from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
 
-from .helpers.custom_fields_munger import update_fields_mapping, rename_fields
-from .helpers.pages import get_recent_items_incremental, get_pages
 from .helpers import group_deal_flows
-from .typing import TDataPage
-from .settings import ENTITY_MAPPINGS, RECENTS_ENTITIES
+from .helpers.custom_fields_munger import rename_fields, update_fields_mapping
+from .helpers.pages import get_pages, get_recent_items_incremental
 
 # Export v2 source for easy access
 from .rest_v2 import pipedrive_v2_source
+from .settings import ENTITY_MAPPINGS, RECENTS_ENTITIES
+from .typing import TDataPage
 
 
 @dlt.source(name="pipedrive")
@@ -145,9 +145,9 @@ def create_state(pipedrive_api_key: str) -> Iterator[Dict[str, Any]]:
     def _get_pages_for_rename(
         entity: str, fields_entity: str, pipedrive_api_key: str
     ) -> Dict[str, Any]:
-        existing_fields_mapping: Dict[
-            str, Dict[str, str]
-        ] = custom_fields_mapping.setdefault(entity, {})
+        existing_fields_mapping: Dict[str, Dict[str, str]] = (
+            custom_fields_mapping.setdefault(entity, {})
+        )
         # we need to process all pages before yielding
         for page in get_pages(fields_entity, pipedrive_api_key):
             existing_fields_mapping = update_fields_mapping(
@@ -175,7 +175,7 @@ def create_state(pipedrive_api_key: str) -> Iterator[Dict[str, Any]]:
     columns={"options": {"data_type": "json"}},
 )
 def parsed_mapping(
-    custom_fields_mapping: Dict[str, Any]
+    custom_fields_mapping: Dict[str, Any],
 ) -> Optional[Iterator[List[Dict[str, str]]]]:
     """
     Parses and yields custom fields' mapping in order to be stored in destiny by dlt

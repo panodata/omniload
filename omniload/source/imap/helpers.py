@@ -13,10 +13,10 @@
 # limitations under the License.
 
 import email
-import imaplib
 import hashlib
-from email.message import Message
+import imaplib
 from email.header import decode_header, make_header
+from email.message import Message
 from email.utils import parsedate_to_datetime
 from time import mktime
 from typing import Any, Dict, Iterator, Optional, Sequence, Tuple

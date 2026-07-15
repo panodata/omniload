@@ -14,15 +14,13 @@
 
 """Hubspot source helpers"""
 
-from typing import Union
-
 import urllib.parse
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Union
 
 from dlt.common.schema.typing import TColumnSchema
 from dlt.sources.helpers import requests
 
-from .settings import OBJECT_TYPE_PLURAL, HS_TO_DLT_TYPE
+from .settings import HS_TO_DLT_TYPE, OBJECT_TYPE_PLURAL
 
 BASE_URL = "https://api.hubapi.com/"
 

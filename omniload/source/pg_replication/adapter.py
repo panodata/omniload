@@ -14,17 +14,16 @@
 
 """Replicates postgres tables in batch using logical decoding."""
 
-from typing import Dict, Sequence, Optional, Iterable, Union
+from typing import Dict, Iterable, Optional, Sequence, Union
 
 import dlt
-
 from dlt.common import logger
-from dlt.common.typing import TDataItem
 from dlt.common.schema.typing import TTableSchemaColumns
+from dlt.common.typing import TDataItem
 from dlt.extract.items import DataItemWithMeta
 from dlt.sources.credentials import ConnectionStringCredentials
 
-from .helpers import advance_slot, get_max_lsn, ItemGenerator
+from .helpers import ItemGenerator, advance_slot, get_max_lsn
 
 
 @dlt.resource(

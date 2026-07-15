@@ -16,12 +16,11 @@
 
 Integrates Dlt and Scrapy to facilitate scraping pipelines.
 """
+
 import typing as t
 
 import dlt
-
 from dlt.sources import DltResource
-
 from scrapy import Spider
 
 from .helpers import ScrapingConfig, create_pipeline_runner

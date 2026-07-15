@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This source uses Workable API and dlt to load data such as Candidates, Jobs, Events, etc. to the database."""
+"""This source uses Workable API and dlt to load data such as Candidates, Jobs, Events, etc. to the database."""
 
 import logging
 from typing import Any, Iterable, Optional
@@ -21,8 +21,8 @@ import dlt
 from dlt.sources import DltResource, TDataItem, TDataItems
 from pendulum import DateTime
 
+from .settings import DEFAULT_DETAILS, DEFAULT_ENDPOINTS
 from .workable_client import WorkableClient
-from .settings import DEFAULT_ENDPOINTS, DEFAULT_DETAILS
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
@@ -86,7 +86,7 @@ def workable_source(
     def candidates_resource(
         updated_at: Optional[Any] = dlt.sources.incremental(
             "updated_at", initial_value=workable.start_date_iso
-        )
+        ),
     ) -> Iterable[TDataItem]:
         """
         The 'updated_at' parameter is managed by the dlt.sources.incremental method.

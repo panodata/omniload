@@ -18,11 +18,13 @@ Available resources: [berries, pokemon]
 """
 
 import typing as t
-from typing import Sequence, Iterable, Dict, Any
+from typing import Any, Dict, Iterable, Sequence
+
 import dlt
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 from dlt.sources.helpers import requests
+
 from .settings import BERRY_URL, POKEMON_URL
 
 

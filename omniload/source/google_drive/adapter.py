@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This resource downloads files and collects filepaths from Google Drive folder to destinations"""
+
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Sequence, Union

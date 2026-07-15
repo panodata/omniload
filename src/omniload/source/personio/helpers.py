@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Personio source helpers"""
+
 from typing import Any, Iterable, Optional
 from urllib.parse import urljoin
 

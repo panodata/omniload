@@ -13,16 +13,17 @@
 # limitations under the License.
 
 """Shopify source helpers"""
+
+from typing import Any, Iterable, Literal, Optional
 from urllib.parse import urljoin
 
-from dlt.common.time import ensure_pendulum_datetime
-from dlt.sources.helpers import requests
-from dlt.common.typing import TDataItem, TDataItems, Dict, DictStrAny
 from dlt.common import jsonpath
-from typing import Any, Iterable, Optional, Literal
+from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.typing import Dict, DictStrAny, TDataItem, TDataItems
+from dlt.sources.helpers import requests
 
-from .settings import DEFAULT_API_VERSION, DEFAULT_PARTNER_API_VERSION
 from .exceptions import ShopifyPartnerApiError
+from .settings import DEFAULT_API_VERSION, DEFAULT_PARTNER_API_VERSION
 
 TOrderStatus = Literal["open", "closed", "cancelled", "any"]
 

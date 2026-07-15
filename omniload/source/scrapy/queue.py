@@ -17,7 +17,6 @@ from queue import Empty, Queue
 
 from dlt.common import logger
 
-
 # Please read more at https://mypy.readthedocs.io/en/stable/runtime_troubles.html#not-generic-runtime
 T = t.TypeVar("T")
 

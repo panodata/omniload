@@ -13,20 +13,19 @@
 # limitations under the License.
 
 """This module contains abstractions to facilitate scraping and loading process"""
-import threading
-import typing as t
-import dlt
-
-from dlt.common import logger
-from twisted.internet import reactor as _reactor_module
 
 import logging as _logging
+import threading
+import typing as t
 
-from scrapy import signals, Item, Spider
+import dlt
+from dlt.common import logger
+from scrapy import Item, Spider, signals
 from scrapy.crawler import Crawler, CrawlerRunner
+from twisted.internet import reactor as _reactor_module
 
-from .types import AnyDict, Runnable
 from .queue import ScrapingQueue
+from .types import AnyDict, Runnable
 
 T = t.TypeVar("T", bound=Item)
 

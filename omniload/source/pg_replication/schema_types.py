@@ -12,19 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import lru_cache
 import json
-from typing import Optional, Any, Dict
+from functools import lru_cache
+from typing import Any, Dict, Optional
 
 from dlt.common import Decimal, logger
-from dlt.common.data_types.typing import TDataType
 from dlt.common.data_types.type_helpers import coerce_value
+from dlt.common.data_types.typing import TDataType
 from dlt.common.schema.typing import TColumnSchema, TColumnType
-
 from dlt.destinations.impl.postgres.factory import PostgresTypeMapper
 
 from .decoders import ColumnType
-
 
 _DUMMY_VALS: Dict[TDataType, Any] = {
     "bigint": 0,

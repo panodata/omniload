@@ -66,6 +66,7 @@ from .settings import (
     CRM_OBJECT_ENDPOINTS,
     CRM_PIPELINES_ENDPOINT,
     ENTITY_PROPERTIES,
+    HS_TO_DLT_TYPE,
     MAX_PROPS_LENGTH,
     OBJECT_TYPE_PLURAL,
     OBJECT_TYPE_SINGULAR,
@@ -75,7 +76,6 @@ from .settings import (
     STAGE_PROPERTY_PREFIX,
     STARTDATE,
     WEB_ANALYTICS_EVENTS_ENDPOINT,
-    HS_TO_DLT_TYPE,
 )
 from .utils import chunk_properties
 
@@ -351,7 +351,7 @@ def hubspot(
         """
 
         def get_properties_description(
-            properties_list_inner: List[Dict[str, Any]]
+            properties_list_inner: List[Dict[str, Any]],
         ) -> Iterator[Dict[str, Any]]:
             """Fetch properties."""
             for property_info in properties_list_inner:
