@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterator, List, Optional, Tuple, cast
+from typing import Iterator, List, Optional, Tuple
 
 from dlt.common.typing import DictStrAny, StrAny
 from dlt.common.utils import chunks
 from dlt.sources.helpers import requests
 
-from .queries import COMMENT_REACTIONS_QUERY, ISSUES_QUERY, RATE_LIMIT, STARGAZERS_QUERY
+from .queries import COMMENT_REACTIONS_QUERY, ISSUES_QUERY, STARGAZERS_QUERY, RATE_LIMIT
 from .settings import GRAPHQL_API_BASE_URL, REST_API_BASE_URL
 
 
@@ -117,11 +117,11 @@ def get_reactions_data(
 
 
 def _extract_top_connection(data: StrAny, node_type: str) -> StrAny:
-    assert isinstance(data, dict) and len(data) == 1, (  # noqa: S101
-        f"The data with list of {node_type} must be a dictionary and contain only one element"
-    )
-    data = cast(StrAny, next(iter(data.values())))
-    return data[node_type]
+    assert (
+        isinstance(data, dict) and len(data) == 1
+    ), f"The data with list of {node_type} must be a dictionary and contain only one element"
+    data = next(iter(data.values()))
+    return data[node_type]  # type: ignore
 
 
 def _extract_nested_nodes(item: DictStrAny) -> DictStrAny:
@@ -159,11 +159,7 @@ def _run_graphql_query(
 
 
 def _get_graphql_pages(
-    access_token: str,
-    query: str,
-    variables: DictStrAny,
-    node_type: str,
-    max_items: Optional[int] = None,
+    access_token: str, query: str, variables: DictStrAny, node_type: str, max_items: int
 ) -> Iterator[List[DictStrAny]]:
     items_count = 0
     while True:
@@ -176,7 +172,7 @@ def _get_graphql_pages(
         )
         items_count += len(data_items)
         print(
-            f"Got {len(data_items)}/{items_count} {node_type}s, query cost {rate_limit['cost']}, remaining credits: {rate_limit['remaining']}"
+            f'Got {len(data_items)}/{items_count} {node_type}s, query cost {rate_limit["cost"]}, remaining credits: {rate_limit["remaining"]}'
         )
         if data_items:
             yield data_items
@@ -186,7 +182,7 @@ def _get_graphql_pages(
         variables["page_after"] = _extract_top_connection(data, node_type)["pageInfo"][
             "endCursor"
         ]
-        if max_items is not None and items_count >= max_items:
+        if max_items and items_count >= max_items:
             print(f"Max items limit reached: {items_count} >= {max_items}")
             return
 
@@ -205,7 +201,7 @@ def _get_comment_reaction(comment_ids: List[str], access_token: str) -> StrAny:
         # print(query)
         page, rate_limit = _run_graphql_query(access_token, query, {})
         print(
-            f"Got {len(page)} comments, query cost {rate_limit['cost']}, remaining credits: {rate_limit['remaining']}"
+            f'Got {len(page)} comments, query cost {rate_limit["cost"]}, remaining credits: {rate_limit["remaining"]}'
         )
         data.update(page)
     return data

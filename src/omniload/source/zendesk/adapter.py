@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,38 +16,34 @@
 Defines all the sources and resources needed for ZendeskSupport, ZendeskChat and ZendeskTalk
 """
 
+from typing import Iterator, Optional, Iterable
 from itertools import chain
-from typing import Iterable, Iterator, Optional, Union
 
 import dlt
 from dlt.common import pendulum
-from dlt.common.time import ensure_pendulum_datetime_utc
-from dlt.common.typing import TAnyDateTime, TDataItem, TDataItems
+from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.typing import TDataItem, TDataItems, TAnyDateTime
 from dlt.sources import DltResource
 
-from omniload.error import MissingValueError
-
 from .helpers.api_helpers import process_ticket, process_ticket_field
-from .helpers.credentials import (
-    TZendeskCredentials,
-    ZendeskCredentialsOAuth,
-    ZendeskCredentialsToken,
-)
 from .helpers.talk_api import PaginationType, ZendeskAPIClient
+from .helpers.credentials import TZendeskCredentials, ZendeskCredentialsOAuth
+from .helpers import make_date_ranges
+
 from .settings import (
-    CUSTOM_FIELDS_STATE_KEY,
     DEFAULT_START_DATE,
-    INCREMENTAL_TALK_ENDPOINTS,
+    CUSTOM_FIELDS_STATE_KEY,
     SUPPORT_ENDPOINTS,
-    SUPPORT_EXTRA_ENDPOINTS,
     TALK_ENDPOINTS,
+    INCREMENTAL_TALK_ENDPOINTS,
+    SUPPORT_EXTRA_ENDPOINTS,
 )
 
 
-@dlt.source(max_table_nesting=0)
+@dlt.source(max_table_nesting=2)
 def zendesk_talk(
     credentials: TZendeskCredentials = dlt.secrets.value,
-    start_date: TAnyDateTime = DEFAULT_START_DATE,
+    start_date: Optional[TAnyDateTime] = DEFAULT_START_DATE,
     end_date: Optional[TAnyDateTime] = None,
 ) -> Iterable[DltResource]:
     """
@@ -69,8 +65,8 @@ def zendesk_talk(
 
     # use the credentials to authenticate with the ZendeskClient
     zendesk_client = ZendeskAPIClient(credentials)
-    start_date_obj = ensure_pendulum_datetime_utc(start_date)
-    end_date_obj = ensure_pendulum_datetime_utc(end_date) if end_date else None
+    start_date_obj = ensure_pendulum_datetime(start_date)
+    end_date_obj = ensure_pendulum_datetime(end_date) if end_date else None
 
     # regular endpoints
     for key, talk_endpoint, item_name, cursor_paginated in TALK_ENDPOINTS:
@@ -147,18 +143,13 @@ def talk_incremental_resource(
     Yields:
         TDataItem: Dictionary containing the data from the endpoint.
     """
-    if updated_at is None or updated_at.last_value is None:
-        raise MissingValueError("updated_at.last_value", "Zendesk")
-
     # send the request and process it
     for page in zendesk_client.get_pages(
         talk_endpoint,
         talk_endpoint_name,
         PaginationType.START_TIME,
         params={
-            "start_time": ensure_pendulum_datetime_utc(
-                updated_at.last_value
-            ).int_timestamp
+            "start_time": ensure_pendulum_datetime(updated_at.last_value).int_timestamp
         },
     ):
         yield page
@@ -166,10 +157,10 @@ def talk_incremental_resource(
             return
 
 
-@dlt.source(max_table_nesting=0)
+@dlt.source(max_table_nesting=2)
 def zendesk_chat(
-    credentials: Union[ZendeskCredentialsOAuth, ZendeskCredentialsToken],
-    start_date: TAnyDateTime = DEFAULT_START_DATE,
+    credentials: ZendeskCredentialsOAuth = dlt.secrets.value,
+    start_date: Optional[TAnyDateTime] = DEFAULT_START_DATE,
     end_date: Optional[TAnyDateTime] = None,
 ) -> Iterable[DltResource]:
     """
@@ -192,8 +183,8 @@ def zendesk_chat(
 
     # Authenticate
     zendesk_client = ZendeskAPIClient(credentials, url_prefix="https://www.zopim.com")
-    start_date_obj = ensure_pendulum_datetime_utc(start_date)
-    end_date_obj = ensure_pendulum_datetime_utc(end_date) if end_date else None
+    start_date_obj = ensure_pendulum_datetime(start_date)
+    end_date_obj = ensure_pendulum_datetime(end_date) if end_date else None
 
     yield dlt.resource(chats_table_resource, name="chats", write_disposition="merge")(
         zendesk_client,
@@ -220,15 +211,12 @@ def chats_table_resource(
     Yields:
         dict: A dictionary representing each row of data.
     """
-    if update_timestamp is None or update_timestamp.last_value is None:
-        raise MissingValueError("update_timestamp.last_value", "Zendesk")
-
     chat_pages = zendesk_client.get_pages(
         "/api/v2/incremental/chats",
         "chats",
         PaginationType.START_TIME,
         params={
-            "start_time": ensure_pendulum_datetime_utc(
+            "start_time": ensure_pendulum_datetime(
                 update_timestamp.last_value
             ).int_timestamp,
             "fields": "chats(*)",
@@ -241,12 +229,12 @@ def chats_table_resource(
             return
 
 
-@dlt.source(max_table_nesting=0)
+@dlt.source(max_table_nesting=2)
 def zendesk_support(
-    credentials: TZendeskCredentials,
+    credentials: TZendeskCredentials = dlt.secrets.value,
     load_all: bool = True,
     pivot_ticket_fields: bool = True,
-    start_date: TAnyDateTime = DEFAULT_START_DATE,
+    start_date: Optional[TAnyDateTime] = DEFAULT_START_DATE,
     end_date: Optional[TAnyDateTime] = None,
 ) -> Iterable[DltResource]:
     """
@@ -269,11 +257,8 @@ def zendesk_support(
         Sequence[DltResource]: Multiple dlt resources.
     """
 
-    if start_date is None:
-        raise MissingValueError("start_date", "Zendesk")
-
-    start_date_obj = ensure_pendulum_datetime_utc(start_date)
-    end_date_obj = ensure_pendulum_datetime_utc(end_date) if end_date else None
+    start_date_obj = ensure_pendulum_datetime(start_date)
+    end_date_obj = ensure_pendulum_datetime(end_date) if end_date else None
 
     start_date_ts = start_date_obj.int_timestamp
     start_date_iso_str = start_date_obj.isoformat()
@@ -291,8 +276,6 @@ def zendesk_support(
             initial_value=start_date_ts,
             end_value=end_date_ts,
             allow_external_schedulers=True,
-            range_end="closed",
-            range_start="closed",
         ),
     ) -> Iterator[TDataItem]:
         # URL For ticket events
@@ -327,8 +310,6 @@ def zendesk_support(
             initial_value=start_date_obj,
             end_value=end_date_obj,
             allow_external_schedulers=True,
-            range_end="closed",
-            range_start="closed",
         ),
     ) -> Iterator[TDataItem]:
         """
@@ -345,8 +326,6 @@ def zendesk_support(
         Yields:
             TDataItem: Dictionary containing the ticket data.
         """
-        if updated_at.last_value is None:
-            raise MissingValueError("updated_at.last_value", "Zendesk")
         # grab the custom fields from dlt state if any
         if pivot_fields:
             load_ticket_fields_state(zendesk_client)
@@ -377,8 +356,6 @@ def zendesk_support(
             initial_value=start_date_iso_str,
             end_value=end_date_iso_str,
             allow_external_schedulers=True,
-            range_end="closed",
-            range_start="closed",
         ),
     ) -> Iterator[TDataItem]:
         """
@@ -395,16 +372,12 @@ def zendesk_support(
             TDataItem: Dictionary containing the ticket metric event data.
         """
         # "https://example.zendesk.com/api/v2/incremental/ticket_metric_events?start_time=1332034771"
-        if time.last_value is None:
-            raise MissingValueError("time.last_value", "Zendesk")
         metric_event_pages = zendesk_client.get_pages(
             "/api/v2/incremental/ticket_metric_events",
             "ticket_metric_events",
             PaginationType.CURSOR,
             params={
-                "start_time": ensure_pendulum_datetime_utc(
-                    time.last_value
-                ).int_timestamp,
+                "start_time": ensure_pendulum_datetime(time.last_value).int_timestamp,
             },
         )
         for page in metric_event_pages:

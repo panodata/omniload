@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,94 +14,62 @@
 
 from typing import Any, Dict, List, Optional
 
-import orjson
-from confluent_kafka import Consumer, Message, TopicPartition
-from confluent_kafka.admin import TopicMetadata
-from dlt import config
+from confluent_kafka import Consumer, Message, TopicPartition  # type: ignore
+from confluent_kafka.admin import TopicMetadata  # type: ignore
+
+from dlt import config, secrets
 from dlt.common import pendulum
 from dlt.common.configuration import configspec
 from dlt.common.configuration.specs import CredentialsConfiguration
+from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import DictStrAny, TSecretValue
+from dlt.common.utils import digest128
 
-from omniload.source.kafka.model import KafkaDecodingOptions, KafkaEvent
 
+def default_msg_processor(msg: Message) -> Dict[str, Any]:
+    """Basic Kafka message processor.
 
-class KafkaEventProcessor:
+    Returns the message value and metadata. Timestamp consists of two values:
+    (type of the timestamp, timestamp). Type represents one of the Python
+    Kafka constants:
+        TIMESTAMP_NOT_AVAILABLE - Timestamps not supported by broker.
+        TIMESTAMP_CREATE_TIME - Message creation time (or source / producer time).
+        TIMESTAMP_LOG_APPEND_TIME - Broker receive time.
+
+    Args:
+        msg (confluent_kafka.Message): A single Kafka message.
+
+    Returns:
+        dict: Processed Kafka message.
     """
-    A processor for Kafka events with processing stages and configuration capabilities.
+    ts = msg.timestamp()
+    topic = msg.topic()
+    partition = msg.partition()
+    key = msg.key()
+    if key is not None:
+        key = key.decode("utf-8")
 
-    It cycles through "decode", "deserialize" and "format".
-    """
-
-    def __init__(self, options: Optional[KafkaDecodingOptions] = None):
-        self.options = options or KafkaDecodingOptions()
-
-    def process(self, msg: Message) -> Dict[str, Any]:
-        """
-        Progress Kafka event.
-
-        Returns the message value and metadata. Timestamp consists of two values:
-        (type of the timestamp, timestamp). Type represents one of the Python
-        Kafka constants:
-            TIMESTAMP_NOT_AVAILABLE - Timestamps not supported by broker.
-            TIMESTAMP_CREATE_TIME - Message creation time (or source / producer time).
-            TIMESTAMP_LOG_APPEND_TIME - Broker receive time.
-
-        Args:
-            msg (confluent_kafka.Message): A single Kafka message.
-
-        Returns:
-            dict: Processed Kafka message.
-        """
-
-        # Decode.
-        event = self.decode(msg)
-
-        # Deserialize.
-        self.deserialize(event)
-
-        # Format egress message based on input options.
-        return event.to_dict(self.options)
-
-    def decode(self, msg: Message) -> KafkaEvent:
-        """
-        Translate from Confluent library's `Message` instance to `Event` instance.
-        """
-        return KafkaEvent(
-            ts=msg.timestamp(),
-            topic=msg.topic(),
-            partition=msg.partition(),
-            offset=msg.offset(),
-            key=msg.key(),
-            value=msg.value(),
-        )
-
-    def deserialize(self, event: KafkaEvent) -> KafkaEvent:
-        """
-        Deserialize event key and value according to decoding options.
-        """
-        if self.options.key_type is not None:
-            if self.options.key_type == "json":
-                if event.key is not None:
-                    event.key = orjson.loads(event.key)
-            else:
-                raise NotImplementedError(f"Unknown key type: {self.options.key_type}")
-        if self.options.value_type is not None:
-            if self.options.value_type == "json":
-                if event.value is not None:
-                    event.value = orjson.loads(event.value)
-            else:
-                raise NotImplementedError(
-                    f"Unknown value type: {self.options.value_type}"
-                )
-        return event
+    return {
+        "_kafka": {
+            "partition": partition,
+            "topic": topic,
+            "key": key,
+            "offset": msg.offset(),
+            "ts": {
+                "type": ts[0],
+                "value": ensure_pendulum_datetime(ts[1] / 1e3),
+            },
+            "data": msg.value().decode("utf-8"),
+        },
+        "_kafka_msg_id": digest128(topic + str(partition) + str(key)),
+    }
 
 
-class OffsetTracker(dict):
+class OffsetTracker(dict):  # type: ignore
     """Object to control offsets of the given topics.
 
-    Tracks all the partitions of the given topics with two params:
-    current offset and maximum offset (partition length).
+    Tracks all the partitions of the given topics with three params:
+    current offset, maximum offset (partition length), and an end time.
 
     Args:
         consumer (confluent_kafka.Consumer): Kafka consumer.
@@ -109,6 +77,8 @@ class OffsetTracker(dict):
         pl_state (DictStrAny): Pipeline current state.
         start_from (Optional[pendulum.DateTime]): A timestamp, after which messages
             are read. Older messages are ignored.
+        end_time (Optional[pendulum.DateTime]): A timestamp, before which messages
+            are read. Newer messages are ignored.
     """
 
     def __init__(
@@ -117,6 +87,7 @@ class OffsetTracker(dict):
         topic_names: List[str],
         pl_state: DictStrAny,
         start_from: Optional[pendulum.DateTime] = None,
+        end_time: Optional[pendulum.DateTime] = None,
     ):
         super().__init__()
 
@@ -128,7 +99,7 @@ class OffsetTracker(dict):
             "offsets", {t_name: {} for t_name in topic_names}
         )
 
-        self._init_partition_offsets(start_from)
+        self._init_partition_offsets(start_from, end_time)
 
     def _read_topics(self, topic_names: List[str]) -> Dict[str, TopicMetadata]:
         """Read the given topics metadata from Kafka.
@@ -150,7 +121,11 @@ class OffsetTracker(dict):
 
         return tracked_topics
 
-    def _init_partition_offsets(self, start_from: Optional[pendulum.DateTime]) -> None:
+    def _init_partition_offsets(
+        self,
+        start_from: Optional[pendulum.DateTime] = None,
+        end_time: Optional[pendulum.DateTime] = None,
+    ) -> None:
         """Designate current and maximum offsets for every partition.
 
         Current offsets are read from the state, if present. Set equal
@@ -159,6 +134,8 @@ class OffsetTracker(dict):
         Args:
             start_from (pendulum.DateTime): A timestamp, at which to start
                 reading. Older messages are ignored.
+            end_time (pendulum.DateTime): A timestamp, before which messages
+                are read. Newer messages are ignored.
         """
         all_parts = []
         for t_name, topic in self._topics.items():
@@ -174,27 +151,49 @@ class OffsetTracker(dict):
                 for part in topic.partitions
             ]
 
-            # get offsets for the timestamp, if given
-            if start_from is not None:
+            # get offsets for the timestamp ranges, if given
+            if start_from is not None and end_time is not None:
+                start_ts_offsets = self._consumer.offsets_for_times(parts)
+                end_ts_offsets = self._consumer.offsets_for_times(
+                    [
+                        TopicPartition(t_name, part, end_time.int_timestamp * 1000)
+                        for part in topic.partitions
+                    ]
+                )
+            elif start_from is not None:
                 ts_offsets = self._consumer.offsets_for_times(parts)
 
             # designate current and maximum offsets for every partition
             for i, part in enumerate(parts):
                 max_offset = self._consumer.get_watermark_offsets(part)[1]
 
-                if start_from is not None:
+                if start_from is not None and end_time is not None:
+                    if start_ts_offsets[i].offset != -1:
+                        cur_offset = start_ts_offsets[i].offset
+                    else:
+                        cur_offset = max_offset - 1
+                    if end_ts_offsets[i].offset != -1:
+                        end_offset = end_ts_offsets[i].offset
+                    else:
+                        end_offset = max_offset
+
+                elif start_from is not None:
                     if ts_offsets[i].offset != -1:
                         cur_offset = ts_offsets[i].offset
                     else:
                         cur_offset = max_offset - 1
+
+                    end_offset = max_offset
+
                 else:
                     cur_offset = (
                         self._cur_offsets[t_name].get(str(part.partition), -1) + 1
                     )
+                    end_offset = max_offset
 
                 self[t_name][str(part.partition)] = {
                     "cur": cur_offset,
-                    "max": max_offset,
+                    "max": end_offset,
                 }
 
                 parts[i].offset = cur_offset
@@ -245,10 +244,12 @@ class KafkaCredentials(CredentialsConfiguration):
 
     bootstrap_servers: str = config.value
     group_id: str = config.value
-    security_protocol: Optional[str] = None
-    sasl_mechanisms: Optional[str] = None
-    sasl_username: Optional[str] = None
-    sasl_password: Optional[TSecretValue] = None
+    security_protocol: str = config.value
+
+    # Optional SASL credentials
+    sasl_mechanisms: Optional[str] = config.value
+    sasl_username: Optional[str] = config.value
+    sasl_password: Optional[TSecretValue] = secrets.value
 
     def init_consumer(self) -> Consumer:
         """Init a Kafka consumer from this credentials.
@@ -259,16 +260,17 @@ class KafkaCredentials(CredentialsConfiguration):
         config = {
             "bootstrap.servers": self.bootstrap_servers,
             "group.id": self.group_id,
+            "security.protocol": self.security_protocol,
             "auto.offset.reset": "earliest",
         }
 
-        if self.security_protocol:
-            config["security.protocol"] = self.security_protocol
-        if self.sasl_mechanisms:
-            config["sasl.mechanisms"] = self.sasl_mechanisms
-        if self.sasl_username:
-            config["sasl.username"] = self.sasl_username
-        if self.sasl_password:
-            config["sasl.password"] = self.sasl_password
+        if self.sasl_mechanisms and self.sasl_username and self.sasl_password:
+            config.update(
+                {
+                    "sasl.mechanisms": self.sasl_mechanisms,
+                    "sasl.username": self.sasl_username,
+                    "sasl.password": self.sasl_password,
+                }
+            )
 
         return Consumer(config)

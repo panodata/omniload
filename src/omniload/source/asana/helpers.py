@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,7 @@
 
 """Asana source helpers"""
 
-from asana import ApiClient as AsanaClient
-from asana import Configuration
+from asana import Client as AsanaClient
 
 
 def get_client(
@@ -28,6 +27,5 @@ def get_client(
     Returns:
         AsanaClient: The Asana API client.
     """
-    configuration = Configuration()
-    configuration.access_token = access_token
-    return AsanaClient(configuration=configuration)
+    asana = AsanaClient.access_token(access_token)
+    return asana

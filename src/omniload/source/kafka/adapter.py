@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 """A source to extract Kafka messages.
 
-When extraction starts, partition length is checked -
+When extraction starts, partitions length is checked -
 data is read only up to it, overriding the default Kafka's
 behavior of waiting for new messages in endless loop.
 """
@@ -22,15 +22,15 @@ behavior of waiting for new messages in endless loop.
 from contextlib import closing
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union
 
-import dlt
-from confluent_kafka import Consumer, Message
-from dlt.common import logger
-from dlt.common.time import ensure_pendulum_datetime_utc
-from dlt.common.typing import TAnyDateTime, TDataItem
+from confluent_kafka import Consumer, Message  # type: ignore
 
+import dlt
+from dlt.common import logger
+from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.typing import TDataItem, TAnyDateTime
 from .helpers import (
+    default_msg_processor,
     KafkaCredentials,
-    KafkaEventProcessor,
     OffsetTracker,
 )
 
@@ -43,10 +43,13 @@ from .helpers import (
 def kafka_consumer(
     topics: Union[str, List[str]],
     credentials: Union[KafkaCredentials, Consumer] = dlt.secrets.value,
-    msg_processor: Optional[Callable[[Message], Dict[str, Any]]] = None,
+    msg_processor: Optional[
+        Callable[[Message], Dict[str, Any]]
+    ] = default_msg_processor,
     batch_size: Optional[int] = 3000,
-    batch_timeout: Optional[float] = 3.0,
+    batch_timeout: Optional[int] = 3,
     start_from: Optional[TAnyDateTime] = None,
+    end_time: Optional[TAnyDateTime] = None,
 ) -> Iterable[TDataItem]:
     """Extract recent messages from the given Kafka topics.
 
@@ -61,23 +64,21 @@ def kafka_consumer(
             Auth credentials or an initiated Kafka consumer. By default,
             is taken from secrets.
         msg_processor(Optional[Callable]): A function-converter,
-            which will process every Kafka message after it is read and
-            before it is transferred to the destination.
+            which'll process every Kafka message after it's read and
+            before it's transferred to the destination.
         batch_size (Optional[int]): Messages batch size to read at once.
         batch_timeout (Optional[int]): Maximum time to wait for a batch
-            to be consumed in seconds.
+            consume, in seconds.
         start_from (Optional[TAnyDateTime]): A timestamp, at which to start
             reading. Older messages are ignored.
+        end_time (Optional[TAnyDateTime]): A timestamp, at which to stop
+            reading. Newer messages are ignored.
 
     Yields:
         Iterable[TDataItem]: Kafka messages.
     """
-    msg_processor = msg_processor or KafkaEventProcessor().process
-
     if not isinstance(topics, list):
         topics = [topics]
-    batch_size = batch_size or 3000
-    batch_timeout = batch_timeout or 3.0
 
     if isinstance(credentials, Consumer):
         consumer = credentials
@@ -92,33 +93,56 @@ def kafka_consumer(
         )
 
     if start_from is not None:
-        start_from = ensure_pendulum_datetime_utc(start_from)
+        start_from = ensure_pendulum_datetime(start_from)
 
-    tracker = OffsetTracker(consumer, topics, dlt.current.resource_state(), start_from)
+    if end_time is not None:
+        end_time = ensure_pendulum_datetime(end_time)
+
+        if start_from is None:
+            raise ValueError("`start_from` must be provided if `end_time` is provided")
+
+        if start_from > end_time:
+            raise ValueError("`start_from` must be before `end_time`")
+
+        tracker = OffsetTracker(
+            consumer, topics, dlt.current.resource_state(), start_from, end_time
+        )
+
+    else:
+        tracker = OffsetTracker(
+            consumer, topics, dlt.current.resource_state(), start_from
+        )
 
     # read messages up to the maximum offsets,
     # not waiting for new messages
     with closing(consumer):
-        while True:
+        while tracker.has_unread:
             messages = consumer.consume(batch_size, timeout=batch_timeout)
             if not messages:
                 break
 
             batch = []
             for msg in messages:
-                err = msg.error()
-                if err is not None:
+                if msg.error():
+                    err = msg.error()
                     if err.retriable() or not err.fatal():
                         logger.warning(f"ERROR: {err} - RETRYING")
-                    elif isinstance(err, BaseException):
-                        raise err
                     else:
-                        raise RuntimeError(f"Unknown error: {err}")
+                        raise err
                 else:
-                    batch.append(msg_processor(msg))
-                    tracker.renew(msg)
+                    topic = msg.topic()
+                    partition = str(msg.partition())
+                    current_offset = msg.offset()
+                    max_offset = tracker[topic][partition]["max"]
+
+                    # Only process the message if it's within the partition's max offset
+                    if current_offset < max_offset:
+                        batch.append(msg_processor(msg))
+                        tracker.renew(msg)
+                    else:
+                        logger.info(
+                            f"Skipping message on {topic} partition {partition} at offset {current_offset} "
+                            f"- beyond max offset {max_offset}"
+                        )
 
             yield batch
-
-            if tracker.has_unread is False:
-                return
