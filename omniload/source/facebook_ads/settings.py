@@ -15,6 +15,7 @@
 """Facebook ads source settings and constants"""
 
 from typing import Any, Callable, Dict, Iterator, Literal
+
 from dlt.common.schema.typing import TTableSchemaColumns
 from facebook_business.adobjects.abstractobject import AbstractObject
 

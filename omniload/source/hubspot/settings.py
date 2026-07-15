@@ -13,7 +13,9 @@
 # limitations under the License.
 
 """Hubspot source settings and constants"""
+
 from typing import Dict
+
 from dlt.common import pendulum
 from dlt.common.data_types import TDataType
 

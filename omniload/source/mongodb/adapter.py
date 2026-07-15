@@ -14,12 +14,12 @@
 
 """Source that loads collections form any a mongo database, supports incremental loads."""
 
-from typing import Any, Dict, Iterable, List, Optional, Union, Mapping
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Union
 
 import dlt
+from dlt.common.configuration.specs.config_section_context import ConfigSectionContext
 from dlt.common.data_writers import TDataItemFormat
 from dlt.sources import DltResource
-from dlt.common.configuration.specs.config_section_context import ConfigSectionContext
 
 from .helpers import (
     MongoDbCollectionConfiguration,

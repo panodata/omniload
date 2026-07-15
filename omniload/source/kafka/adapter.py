@@ -22,16 +22,16 @@ behavior of waiting for new messages in endless loop.
 from contextlib import closing
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union
 
-from confluent_kafka import Consumer, Message  # type: ignore
-
 import dlt
+from confluent_kafka import Consumer, Message  # type: ignore
 from dlt.common import logger
 from dlt.common.time import ensure_pendulum_datetime
-from dlt.common.typing import TDataItem, TAnyDateTime
+from dlt.common.typing import TAnyDateTime, TDataItem
+
 from .helpers import (
-    default_msg_processor,
     KafkaCredentials,
     OffsetTracker,
+    default_msg_processor,
 )
 
 

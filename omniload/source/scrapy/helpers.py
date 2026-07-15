@@ -19,15 +19,14 @@ import dlt
 from dlt.common import logger
 from dlt.common.configuration.inject import with_config
 from dlt.common.configuration.specs.base_configuration import (
-    configspec,
     BaseConfiguration,
+    configspec,
 )
-
 from scrapy import Spider
 
 from .queue import ScrapingQueue
+from .runner import PipelineRunner, ScrapingHost, ScrapyRunner, Signals
 from .settings import SOURCE_SCRAPY_QUEUE_SIZE, SOURCE_SCRAPY_SETTINGS
-from .runner import ScrapingHost, PipelineRunner, ScrapyRunner, Signals
 from .types import AnyDict
 
 

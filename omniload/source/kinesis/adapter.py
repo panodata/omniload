@@ -13,13 +13,14 @@
 # limitations under the License.
 
 """Reads messages from Kinesis queue."""
+
 from typing import Any, Dict, Iterable, List, Optional
 
 import dlt
 from dlt.common import json, pendulum
 from dlt.common.configuration.specs import AwsCredentials
 from dlt.common.time import ensure_pendulum_datetime
-from dlt.common.typing import TDataItem, StrStr, TAnyDateTime
+from dlt.common.typing import StrStr, TAnyDateTime, TDataItem
 from dlt.common.utils import digest128
 
 from .helpers import get_shard_iterator, max_sequence_by_shard

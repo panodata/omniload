@@ -13,21 +13,22 @@
 # limitations under the License.
 
 """Reads messages and attachments from e-mail inbox via IMAP protocol"""
+
 import imaplib
 from copy import deepcopy
 from typing import Iterable, List, Optional, Sequence
 
 import dlt
 from dlt.common import logger, pendulum
-from dlt.sources import TDataItem, TDataItems, DltResource
+from dlt.sources import DltResource, TDataItem, TDataItems
 from dlt.sources.filesystem import FileItem, FileItemDict
 
 from .helpers import (
     ImapFileItem,
     extract_attachments,
     extract_email_info,
-    get_message_with_internal_date,
     get_message_uids,
+    get_message_with_internal_date,
 )
 from .settings import DEFAULT_CHUNK_SIZE, DEFAULT_START_DATE, GMAIL_GROUP
 
@@ -169,9 +170,9 @@ def inbox_source(
 
                 for attachment in attachments:
                     attachment["modification_date"] = internal_date
-                    attachment[
-                        "file_url"
-                    ] = f"imap://{email_account}/{message_uid}/{attachment['file_name']}"
+                    attachment["file_url"] = (
+                        f"imap://{email_account}/{message_uid}/{attachment['file_name']}"
+                    )
 
                     file_dict = FileItemDict(attachment)
                     file_dict["message"] = dict(email_info)

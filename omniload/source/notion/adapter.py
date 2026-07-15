@@ -14,7 +14,7 @@
 
 """A source that extracts data from Notion API"""
 
-from typing import List, Dict, Optional, Iterator
+from typing import Dict, Iterator, List, Optional
 
 import dlt
 from dlt.common.typing import TDataItems

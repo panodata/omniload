@@ -13,17 +13,20 @@
 # limitations under the License.
 
 """Loads reports and raw visits data from Matomo"""
-from typing import Iterator, List, Iterable
+
+from typing import Iterable, Iterator, List
+
 import dlt
 import pendulum
 from dlt.common.typing import DictStrAny, TDataItem
 from dlt.sources import DltResource
-from .helpers.matomo_client import MatomoAPIClient
+
 from .helpers.data_processing import (
     get_matomo_date_range,
     process_report,
     remove_active_visits,
 )
+from .helpers.matomo_client import MatomoAPIClient
 
 
 @dlt.source(max_table_nesting=2)

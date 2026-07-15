@@ -16,17 +16,18 @@
 Preliminary implementation of Google Ads pipeline.
 """
 
-from typing import Iterator, List, Union
-import dlt
+import json
 import tempfile
+from typing import Iterator, List, Union
+
+import dlt
+from apiclient.discovery import Resource
 from dlt.common.exceptions import MissingDependencyException
 from dlt.common.typing import TDataItem
 from dlt.sources import DltResource
 from dlt.sources.credentials import GcpOAuthCredentials, GcpServiceAccountCredentials
-import json
-from .helpers.data_processing import to_dict
 
-from apiclient.discovery import Resource
+from .helpers.data_processing import to_dict
 
 try:
     from google.ads.googleads.client import GoogleAdsClient  # type: ignore

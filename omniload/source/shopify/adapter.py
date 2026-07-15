@@ -14,23 +14,22 @@
 
 """Fetches Shopify Orders and Products."""
 
-from typing import Any, Dict, Iterator, Iterator, Optional, Iterable
+from typing import Any, Dict, Iterable, Iterator, Optional
 
 import dlt
-
-from dlt.sources import DltResource
-from dlt.common.typing import TDataItem, TAnyDateTime
-from dlt.common.time import ensure_pendulum_datetime
-from dlt.common import pendulum
 from dlt.common import jsonpath as jp
+from dlt.common import pendulum
+from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.typing import TAnyDateTime, TDataItem
+from dlt.sources import DltResource
 
+from .helpers import ShopifyApi, ShopifyPartnerApi, TOrderStatus
 from .settings import (
     DEFAULT_API_VERSION,
-    FIRST_DAY_OF_MILLENNIUM,
     DEFAULT_ITEMS_PER_PAGE,
     DEFAULT_PARTNER_API_VERSION,
+    FIRST_DAY_OF_MILLENNIUM,
 )
-from .helpers import ShopifyApi, TOrderStatus, ShopifyPartnerApi
 
 
 @dlt.source(name="shopify")

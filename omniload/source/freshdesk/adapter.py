@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This source uses Freshdesk API and dlt to load data such as Agents, Companies, Tickets
-    etc. to the database"""
+"""This source uses Freshdesk API and dlt to load data such as Agents, Companies, Tickets
+etc. to the database"""
 
 from typing import Any, Dict, Generator, Iterable, List, Optional
 

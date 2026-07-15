@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Optional
 
 from confluent_kafka import Consumer, Message, TopicPartition  # type: ignore
 from confluent_kafka.admin import TopicMetadata  # type: ignore
-
 from dlt import config, secrets
 from dlt.common import pendulum
 from dlt.common.configuration import configspec

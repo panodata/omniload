@@ -19,13 +19,13 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    Iterable,
     Iterator,
     List,
+    Mapping,
     Optional,
     Tuple,
     Union,
-    Iterable,
-    Mapping,
 )
 
 import dlt
@@ -44,7 +44,6 @@ from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.collection import Collection
 from pymongo.cursor import Cursor
 from pymongo.helpers_shared import _fields_list_to_dict
-
 
 if TYPE_CHECKING:
     TMongoClient = MongoClient[Any]
@@ -604,8 +603,13 @@ def convert_arrow_columns(table: Any) -> Any:
     Returns:
         pyarrow.lib.Table: The table with the columns converted.
     """
-    from pymongoarrow.types import _is_binary, _is_code, _is_decimal128, _is_objectid  # type: ignore
     from dlt.common.libs.pyarrow import pyarrow
+    from pymongoarrow.types import (  # type: ignore
+        _is_binary,
+        _is_code,
+        _is_decimal128,
+        _is_objectid,
+    )
 
     for i, field in enumerate(table.schema):
         if _is_objectid(field.type) or _is_decimal128(field.type):

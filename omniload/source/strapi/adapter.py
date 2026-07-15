@@ -15,8 +15,10 @@
 """
 Basic strapi source
 """
+
+from typing import Iterable, List
+
 import dlt
-from typing import List, Iterable
 from dlt.sources import DltResource
 
 from .helpers import get_endpoint
