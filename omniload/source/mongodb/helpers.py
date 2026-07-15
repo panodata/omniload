@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,21 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Mongo database source helpers and destination utilities"""
+"""Mongo database source helpers"""
 
-import re
 from itertools import islice
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Iterable,
     Iterator,
     List,
-    Mapping,
     Optional,
     Tuple,
     Union,
+    Iterable,
+    Mapping,
 )
 
 import dlt
@@ -37,7 +36,7 @@ from bson.timestamp import Timestamp
 from dlt.common import logger
 from dlt.common.configuration.specs import BaseConfiguration, configspec
 from dlt.common.data_writers import TDataItemFormat
-from dlt.common.time import ensure_pendulum_datetime_utc
+from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import TDataItem
 from dlt.common.utils import map_nested_in_place
 from pendulum import _datetime
@@ -45,6 +44,7 @@ from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.collection import Collection
 from pymongo.cursor import Cursor
 from pymongo.helpers_shared import _fields_list_to_dict
+
 
 if TYPE_CHECKING:
     TMongoClient = MongoClient[Any]
@@ -56,8 +56,7 @@ else:
     TCursor = Any
 
 try:
-    import pymongoarrow
-    import pymongoarrow.schema
+    import pymongoarrow  # type: ignore
 
     PYMONGOARROW_AVAILABLE = True
 except ImportError:
@@ -69,11 +68,9 @@ class CollectionLoader:
         self,
         client: TMongoClient,
         collection: TCollection,
-        chunk_size: Optional[int],
+        chunk_size: int,
         incremental: Optional[dlt.sources.incremental[Any]] = None,
     ) -> None:
-        chunk_size = chunk_size if chunk_size is not None else 10000
-
         self.client = client
         self.collection = collection
         self.incremental = incremental
@@ -163,7 +160,7 @@ class CollectionLoader:
             else:
                 try:
                     # ensure primary_key isn't excluded
-                    projection_dict.pop(self.incremental.primary_key)  # ty: ignore[invalid-argument-type]
+                    projection_dict.pop(self.incremental.primary_key)  # type: ignore
                 except KeyError:
                     pass  # primary_key was properly not included in exclusion projection
                 else:
@@ -173,7 +170,7 @@ class CollectionLoader:
 
         return projection_dict
 
-    def _limit(self, cursor: Cursor, limit: Optional[int] = None) -> TCursor:
+    def _limit(self, cursor: Cursor, limit: Optional[int] = None) -> TCursor:  # type: ignore
         """Apply a limit to the cursor, if needed.
 
         Args:
@@ -217,19 +214,12 @@ class CollectionLoader:
 
         cursor = self.collection.find(filter=filter_op, projection=projection_op)
         if self._sort_op:
-            cursor = cursor.sort(self._sort_op)  # ty: ignore[invalid-argument-type]
+            cursor = cursor.sort(self._sort_op)
 
         cursor = self._limit(cursor, limit)
 
         while docs_slice := list(islice(cursor, self.chunk_size)):
-            res = map_nested_in_place(convert_mongo_objs, docs_slice)
-            if len(res) > 0 and "_id" in res[0] and isinstance(res[0]["_id"], dict):
-                yield dlt.mark.with_hints(
-                    res,
-                    dlt.mark.make_hints(columns={"_id": {"data_type": "json"}}),
-                )
-            else:
-                yield res
+            yield map_nested_in_place(convert_mongo_objs, docs_slice)
 
 
 class CollectionLoaderParallel(CollectionLoader):
@@ -272,7 +262,7 @@ class CollectionLoaderParallel(CollectionLoader):
 
         cursor = self.collection.find(filter=filter_op, projection=projection_op)
         if self._sort_op:
-            cursor = cursor.sort(self._sort_op)  # ty: ignore[invalid-argument-type]
+            cursor = cursor.sort(self._sort_op)
 
         return cursor
 
@@ -355,7 +345,8 @@ class CollectionArrowLoader(CollectionLoader):
         Yields:
             Iterator[Any]: An iterator of the loaded documents.
         """
-        from pymongoarrow.context import PyMongoArrowContext
+        from pymongoarrow.context import PyMongoArrowContext  # type: ignore
+        from pymongoarrow.lib import process_bson_stream  # type: ignore
 
         filter_op = self._filter_op
         _raise_if_intersection(filter_op, filter_)
@@ -368,15 +359,15 @@ class CollectionArrowLoader(CollectionLoader):
             filter_, batch_size=self.chunk_size, projection=projection_op
         )
         if self._sort_op:
-            cursor = cursor.sort(self._sort_op)  # ty: ignore[invalid-argument-type]
+            cursor = cursor.sort(self._sort_op)  # type: ignore
 
-        cursor = self._limit(cursor, limit)
+        cursor = self._limit(cursor, limit)  # type: ignore
 
-        context = PyMongoArrowContext(
+        context = PyMongoArrowContext.from_schema(
             schema=pymongoarrow_schema, codec_options=self.collection.codec_options
         )
         for batch in cursor:
-            context.process_bson_stream(batch)
+            process_bson_stream(batch, context)
             table = context.finish()
             yield convert_arrow_columns(table)
 
@@ -463,7 +454,7 @@ class CollectionArrowLoaderParallel(CollectionLoaderParallel):
             filter=filter_op, batch_size=self.chunk_size, projection=projection_op
         )
         if self._sort_op:
-            cursor = cursor.sort(self._sort_op)  # ty: ignore[invalid-argument-type]
+            cursor = cursor.sort(self._sort_op)  # type: ignore
 
         return cursor
 
@@ -475,181 +466,17 @@ class CollectionArrowLoaderParallel(CollectionLoaderParallel):
         pymongoarrow_schema: Any = None,
     ) -> TDataItem:
         from pymongoarrow.context import PyMongoArrowContext
+        from pymongoarrow.lib import process_bson_stream
 
         cursor = cursor.clone()
 
-        context = PyMongoArrowContext(
+        context = PyMongoArrowContext.from_schema(
             schema=pymongoarrow_schema, codec_options=self.collection.codec_options
         )
         for chunk in cursor.skip(batch["skip"]).limit(batch["limit"]):
-            context.process_bson_stream(chunk)
+            process_bson_stream(chunk, context)
             table = context.finish()
             yield convert_arrow_columns(table)
-
-
-class CollectionAggregationLoader(CollectionLoader):
-    """
-    MongoDB collection loader that uses aggregation pipelines instead of find queries.
-    """
-
-    def __init__(
-        self,
-        client: TMongoClient,
-        collection: TCollection,
-        chunk_size: Optional[int] = None,
-        incremental: Optional[dlt.sources.incremental[Any]] = None,
-    ) -> None:
-        chunk_size = chunk_size if chunk_size is not None else 10000
-        super().__init__(client, collection, chunk_size, incremental)
-        self.custom_query: Optional[List[Dict[str, Any]]] = None
-
-    def set_custom_query(self, query: List[Dict[str, Any]]):
-        """Set the custom aggregation pipeline query"""
-        self.custom_query = query
-
-    def load_documents(
-        self,
-        filter_: Dict[str, Any],
-        limit: Optional[int] = None,
-        projection: Optional[Union[Mapping[str, Any], Iterable[str]]] = None,
-    ) -> Iterator[TDataItem]:
-        """Load documents using aggregation pipeline"""
-        if not self.custom_query:
-            # Fallback to parent method if no custom query
-            yield from super().load_documents(filter_, limit, projection)
-            return
-
-        # Build aggregation pipeline
-        pipeline = list(self.custom_query)  # Copy the query
-
-        # For custom queries, we assume incremental filtering is already handled
-        # via interval placeholders (:interval_start, :interval_end) in the query itself.
-        # We don't add additional incremental filtering to avoid conflicts.
-
-        # Add additional filter if provided
-        if filter_:
-            filter_match = {"$match": filter_}
-            pipeline.insert(0, filter_match)
-
-        # Add limit if specified
-        if limit and limit > 0:
-            pipeline.append({"$limit": limit})
-
-        # Add maxTimeMS to prevent hanging
-        cursor = self.collection.aggregate(
-            pipeline,
-            allowDiskUse=True,
-            batchSize=min(self.chunk_size, 101),
-            maxTimeMS=30000,  # 30 second timeout
-        )
-
-        docs_buffer = []
-        try:
-            for doc in cursor:
-                docs_buffer.append(doc)
-
-                if len(docs_buffer) >= self.chunk_size:
-                    res = map_nested_in_place(convert_mongo_objs, docs_buffer)
-                    if (
-                        len(res) > 0
-                        and "_id" in res[0]
-                        and isinstance(res[0]["_id"], dict)
-                    ):
-                        yield dlt.mark.with_hints(
-                            res,
-                            dlt.mark.make_hints(columns={"_id": {"data_type": "json"}}),
-                        )
-                    else:
-                        yield res
-                    docs_buffer = []
-
-            # Yield any remaining documents
-            if docs_buffer:
-                res = map_nested_in_place(convert_mongo_objs, docs_buffer)
-                if len(res) > 0 and "_id" in res[0] and isinstance(res[0]["_id"], dict):
-                    yield dlt.mark.with_hints(
-                        res,
-                        dlt.mark.make_hints(columns={"_id": {"data_type": "json"}}),
-                    )
-                else:
-                    yield res
-        finally:
-            cursor.close()
-
-
-class CollectionAggregationLoaderParallel(CollectionAggregationLoader):
-    """
-    MongoDB collection parallel loader that uses aggregation pipelines.
-    Note: Parallel loading is not supported for aggregation pipelines due to cursor limitations.
-    Falls back to sequential loading.
-    """
-
-    def load_documents(
-        self,
-        filter_: Dict[str, Any],
-        limit: Optional[int] = None,
-        projection: Optional[Union[Mapping[str, Any], Iterable[str]]] = None,
-    ) -> Iterator[TDataItem]:
-        """Load documents using aggregation pipeline (sequential only)"""
-        logger.warning(
-            "Parallel loading is not supported for MongoDB aggregation pipelines. Using sequential loading."
-        )
-        yield from super().load_documents(filter_, limit, projection)
-
-
-class CollectionAggregationArrowLoader(CollectionAggregationLoader):
-    """
-    MongoDB collection aggregation loader that uses Apache Arrow for data processing.
-    """
-
-    def load_documents(
-        self,
-        filter_: Dict[str, Any],
-        limit: Optional[int] = None,
-        projection: Optional[Union[Mapping[str, Any], Iterable[str]]] = None,
-        pymongoarrow_schema: Any = None,
-    ) -> Iterator[Any]:
-        """Load documents using aggregation pipeline with Arrow format"""
-        logger.warning(
-            "Arrow format is not directly supported for MongoDB aggregation pipelines. Converting to Arrow after loading."
-        )
-
-        # Load documents normally and convert to arrow format
-        for batch in super().load_documents(filter_, limit, projection):
-            if batch:  # Only process non-empty batches
-                try:
-                    from dlt.common.libs.pyarrow import pyarrow
-
-                    # Convert dict batch to arrow table
-                    table = pyarrow.Table.from_pylist(batch)
-                    yield convert_arrow_columns(table)
-                except ImportError:
-                    logger.warning(
-                        "PyArrow not available, falling back to object format"
-                    )
-                    yield batch
-
-
-class CollectionAggregationArrowLoaderParallel(CollectionAggregationArrowLoader):
-    """
-    MongoDB collection parallel aggregation loader with Arrow support.
-    Falls back to sequential loading.
-    """
-
-    def load_documents(
-        self,
-        filter_: Dict[str, Any],
-        limit: Optional[int] = None,
-        projection: Optional[Union[Mapping[str, Any], Iterable[str]]] = None,
-        pymongoarrow_schema: Any = None,
-    ) -> Iterator[TDataItem]:
-        """Load documents using aggregation pipeline with Arrow format (sequential only)"""
-        logger.warning(
-            "Parallel loading is not supported for MongoDB aggregation pipelines. Using sequential loading."
-        )
-        yield from super().load_documents(
-            filter_, limit, projection, pymongoarrow_schema
-        )
 
 
 def collection_documents(
@@ -661,9 +488,8 @@ def collection_documents(
     incremental: Optional[dlt.sources.incremental[Any]] = None,
     parallel: bool = False,
     limit: Optional[int] = None,
-    chunk_size: Optional[int] = None,
+    chunk_size: Optional[int] = 10000,
     data_item_format: Optional[TDataItemFormat] = "object",
-    custom_query: Optional[List[Dict[str, Any]]] = None,
 ) -> Iterator[TDataItem]:
     """
     A DLT source which loads data from a Mongo database using PyMongo.
@@ -688,14 +514,10 @@ def collection_documents(
             Supported formats:
                 object - Python objects (dicts, lists).
                 arrow - Apache Arrow tables.
-        custom_query (Optional[List[Dict[str, Any]]]): Custom MongoDB aggregation pipeline to execute instead of find()
 
     Returns:
         Iterable[DltResource]: A list of DLT resources for each collection to be loaded.
     """
-
-    chunk_size = chunk_size if chunk_size is not None else 10000
-
     if data_item_format == "arrow" and not PYMONGOARROW_AVAILABLE:
         dlt.common.logger.warn(
             "'pymongoarrow' is not installed; falling back to standard MongoDB CollectionLoader."
@@ -714,48 +536,21 @@ def collection_documents(
             "create a projection to select fields, `projection` will be ignored."
         )
 
-    # If custom query is provided, use aggregation loaders
-    if custom_query:
-        if parallel:
-            if data_item_format == "arrow":
-                LoaderClass = CollectionAggregationArrowLoaderParallel
-            else:
-                LoaderClass = CollectionAggregationLoaderParallel
+    if parallel:
+        if data_item_format == "arrow":
+            LoaderClass = CollectionArrowLoaderParallel
         else:
-            if data_item_format == "arrow":
-                LoaderClass = CollectionAggregationArrowLoader
-            else:
-                LoaderClass = CollectionAggregationLoader
+            LoaderClass = CollectionLoaderParallel  # type: ignore
     else:
-        if parallel:
-            if data_item_format == "arrow":
-                LoaderClass = CollectionArrowLoaderParallel
-            else:
-                LoaderClass = CollectionLoaderParallel
+        if data_item_format == "arrow":
+            LoaderClass = CollectionArrowLoader  # type: ignore
         else:
-            if data_item_format == "arrow":
-                LoaderClass = CollectionArrowLoader
-            else:
-                LoaderClass = CollectionLoader
+            LoaderClass = CollectionLoader  # type: ignore
 
     loader = LoaderClass(
         client, collection, incremental=incremental, chunk_size=chunk_size
     )
-
-    # Set custom query if provided
-    if custom_query and hasattr(loader, "set_custom_query"):
-        loader.set_custom_query(custom_query)  # ty: ignore[call-non-callable]
-
-    # Load documents based on loader type
-    if isinstance(
-        loader,
-        (
-            CollectionArrowLoader,
-            CollectionArrowLoaderParallel,
-            CollectionAggregationArrowLoader,
-            CollectionAggregationArrowLoaderParallel,
-        ),
-    ):
+    if isinstance(loader, (CollectionArrowLoader, CollectionArrowLoaderParallel)):
         yield from loader.load_documents(
             limit=limit,
             filter_=filter_,
@@ -778,12 +573,12 @@ def convert_mongo_objs(value: Any) -> Any:
     if isinstance(value, (ObjectId, Decimal128)):
         return str(value)
     if isinstance(value, _datetime.datetime):
-        return ensure_pendulum_datetime_utc(value)
+        return ensure_pendulum_datetime(value)
     if isinstance(value, Regex):
         return value.try_compile().pattern
     if isinstance(value, Timestamp):
         date = value.as_datetime()
-        return ensure_pendulum_datetime_utc(date)
+        return ensure_pendulum_datetime(date)
 
     return value
 
@@ -809,13 +604,8 @@ def convert_arrow_columns(table: Any) -> Any:
     Returns:
         pyarrow.lib.Table: The table with the columns converted.
     """
+    from pymongoarrow.types import _is_binary, _is_code, _is_decimal128, _is_objectid  # type: ignore
     from dlt.common.libs.pyarrow import pyarrow
-    from pymongoarrow.types import (
-        _is_binary,
-        _is_code,
-        _is_decimal128,
-        _is_objectid,
-    )
 
     for i, field in enumerate(table.schema):
         if _is_objectid(field.type) or _is_decimal128(field.type):
@@ -872,7 +662,7 @@ def _raise_if_intersection(filter1: Dict[str, Any], filter2: Dict[str, Any]) -> 
 
 @configspec
 class MongoDbCollectionConfiguration(BaseConfiguration):
-    incremental: Optional[dlt.sources.incremental] = None
+    incremental: Optional[dlt.sources.incremental] = None  # type: ignore[type-arg]
 
 
 @configspec
@@ -880,101 +670,10 @@ class MongoDbCollectionResourceConfiguration(BaseConfiguration):
     connection_url: dlt.TSecretValue = dlt.secrets.value
     database: Optional[str] = dlt.config.value
     collection: str = dlt.config.value
-    incremental: Optional[dlt.sources.incremental] = None
+    incremental: Optional[dlt.sources.incremental] = None  # type: ignore[type-arg]
     write_disposition: Optional[str] = dlt.config.value
     parallel: Optional[bool] = False
     projection: Optional[Union[Mapping[str, Any], Iterable[str]]] = dlt.config.value
 
 
-def convert_mongo_shell_to_extended_json(query_string: str) -> str:
-    """
-    Convert MongoDB shell syntax to MongoDB Extended JSON v2 format.
-
-    This function handles common MongoDB shell constructs like ISODate, ObjectId,
-    NumberLong, NumberDecimal, etc. and converts them to their Extended JSON equivalents
-    that can be parsed by bson.json_util.
-
-    Args:
-        query_string: A string containing MongoDB shell syntax
-
-    Returns:
-        A string with MongoDB Extended JSON v2 format
-
-    Examples:
-        >>> convert_mongo_shell_to_extended_json('ISODate("2010-01-01T00:00:00.000Z")')
-        '{"$date": "2010-01-01T00:00:00.000Z"}'
-
-        >>> convert_mongo_shell_to_extended_json('ObjectId("507f1f77bcf86cd799439011")')
-        '{"$oid": "507f1f77bcf86cd799439011"}'
-    """
-    converted = query_string
-
-    # Convert ISODate("...") to {"$date": "..."}
-    # Pattern matches ISODate("2010-01-01T00:00:00.000+0000") or similar
-    converted = re.sub(r'ISODate\("([^"]+)"\)', r'{"$date": "\1"}', converted)
-
-    # Convert ObjectId("...") to {"$oid": "..."}
-    converted = re.sub(r'ObjectId\("([^"]+)"\)', r'{"$oid": "\1"}', converted)
-
-    # Convert NumberLong(...) to {"$numberLong": "..."}
-    # Note: NumberLong can have quotes or not: NumberLong(123) or NumberLong("123")
-    converted = re.sub(r'NumberLong\("([^"]+)"\)', r'{"$numberLong": "\1"}', converted)
-    converted = re.sub(r"NumberLong\(([^)]+)\)", r'{"$numberLong": "\1"}', converted)
-
-    # Convert NumberInt(...) to {"$numberInt": "..."}
-    converted = re.sub(r'NumberInt\("([^"]+)"\)', r'{"$numberInt": "\1"}', converted)
-    converted = re.sub(r"NumberInt\(([^)]+)\)", r'{"$numberInt": "\1"}', converted)
-
-    # Convert NumberDecimal("...") to {"$numberDecimal": "..."}
-    converted = re.sub(
-        r'NumberDecimal\("([^"]+)"\)', r'{"$numberDecimal": "\1"}', converted
-    )
-
-    # Convert Timestamp(..., ...) to {"$timestamp": {"t": ..., "i": ...}}
-    # Timestamp(1234567890, 1) -> {"$timestamp": {"t": 1234567890, "i": 1}}
-    converted = re.sub(
-        r"Timestamp\((\d+),\s*(\d+)\)", r'{"$timestamp": {"t": \1, "i": \2}}', converted
-    )
-
-    # Convert BinData(..., "...") to {"$binary": {"base64": "...", "subType": "..."}}
-    converted = re.sub(
-        r'BinData\((\d+),\s*"([^"]+)"\)',
-        r'{"$binary": {"base64": "\2", "subType": "\1"}}',
-        converted,
-    )
-
-    # Convert MinKey() to {"$minKey": 1}
-    converted = re.sub(r"MinKey\(\)", r'{"$minKey": 1}', converted)
-
-    # Convert MaxKey() to {"$maxKey": 1}
-    converted = re.sub(r"MaxKey\(\)", r'{"$maxKey": 1}', converted)
-
-    # Convert UUID("...") to {"$uuid": "..."}
-    converted = re.sub(r'UUID\("([^"]+)"\)', r'{"$uuid": "\1"}', converted)
-
-    # Convert DBRef("collection", "id") to {"$ref": "collection", "$id": "id"}
-    converted = re.sub(
-        r'DBRef\("([^"]+)",\s*"([^"]+)"\)', r'{"$ref": "\1", "$id": "\2"}', converted
-    )
-
-    # Convert Code("...") to {"$code": "..."}
-    converted = re.sub(r'Code\("([^"]+)"\)', r'{"$code": "\1"}', converted)
-
-    return converted
-
-
 __source_name__ = "mongodb"
-
-
-# MongoDB destination helper functions
-def process_file_items(file_path: str) -> list[dict]:
-    """Process items from a file path (JSONL format)."""
-    from dlt.common import json
-
-    documents = []
-    with open(file_path, "r") as f:
-        for line in f:
-            if line.strip():
-                doc = json.loads(line.strip())
-                documents.append(doc)  # Include all fields including DLT metadata
-    return documents

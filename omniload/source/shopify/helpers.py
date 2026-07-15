@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,66 +13,18 @@
 # limitations under the License.
 
 """Shopify source helpers"""
-
-from typing import Any, Iterable, Literal, Optional
 from urllib.parse import urljoin
 
-from dlt.common import jsonpath
-from dlt.common.time import ensure_pendulum_datetime_utc
-from dlt.common.typing import Dict, DictStrAny, TDataItems
+from dlt.common.time import ensure_pendulum_datetime
 from dlt.sources.helpers import requests
+from dlt.common.typing import TDataItem, TDataItems, Dict, DictStrAny
+from dlt.common import jsonpath
+from typing import Any, Iterable, Optional, Literal
 
-from .exceptions import ShopifyPartnerApiError
 from .settings import DEFAULT_API_VERSION, DEFAULT_PARTNER_API_VERSION
+from .exceptions import ShopifyPartnerApiError
 
 TOrderStatus = Literal["open", "closed", "cancelled", "any"]
-
-
-def convert_datetime_fields(item: Dict[str, Any]) -> Dict[str, Any]:
-    """Convert timestamp fields in the item to pendulum datetime objects
-
-    The item is modified in place, including nested items.
-
-    Args:
-        item: The item to convert
-
-    Returns:
-        The same data item (for convenience)
-    """
-    fields = ["created_at", "updated_at", "createdAt", "updatedAt"]
-
-    def convert_nested(obj: Any) -> Any:
-        if isinstance(obj, dict):
-            for key, value in obj.items():
-                if key in fields and isinstance(value, str):
-                    obj[key] = ensure_pendulum_datetime_utc(value)
-                else:
-                    obj[key] = convert_nested(value)
-        elif isinstance(obj, list):
-            return [convert_nested(elem) for elem in obj]
-        return obj
-
-    return convert_nested(item)
-
-
-def remove_nodes_key(item: Any) -> Any:
-    """
-    Recursively remove the 'nodes' key from dictionaries if it's the only key and its value is an array.
-
-    Args:
-        item: The item to process (can be a dict, list, or any other type)
-
-    Returns:
-        The processed item
-    """
-    if isinstance(item, dict):
-        if len(item) == 1 and "nodes" in item and isinstance(item["nodes"], list):
-            return [remove_nodes_key(node) for node in item["nodes"]]
-        return {k: remove_nodes_key(v) for k, v in item.items()}
-    elif isinstance(item, list):
-        return [remove_nodes_key(element) for element in item]
-    else:
-        return item
 
 
 class ShopifyApi:
@@ -111,38 +63,57 @@ class ShopifyApi:
         """
         url = urljoin(self.shop_url, f"/admin/api/{self.api_version}/{resource}.json")
 
-        resource_last = resource.split("/")[-1]
-
         headers = {"X-Shopify-Access-Token": self.private_app_password}
         while url:
             response = requests.get(url, params=params, headers=headers)
             response.raise_for_status()
             json = response.json()
-            yield [convert_datetime_fields(item) for item in json[resource_last]]
+            # Get item list from the page
+            yield [self._convert_datetime_fields(item) for item in json[resource]]
             url = response.links.get("next", {}).get("url")
             # Query params are included in subsequent page URLs
             params = None
 
+    def _convert_datetime_fields(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert timestamp fields in the item to pendulum datetime objects
 
-class ShopifyGraphQLApi:
-    """Client for Shopify GraphQL API"""
+        The item is modified in place.
+
+        Args:
+            item: The item to convert
+
+        Returns:
+            The same data item (for convenience)
+        """
+        fields = ["created_at", "updated_at"]
+        for field in fields:
+            if field in item:
+                item[field] = ensure_pendulum_datetime(item[field])
+        return item
+
+
+class ShopifyPartnerApi:
+    """Client for Shopify Partner grapql API"""
 
     def __init__(
         self,
         access_token: str,
+        organization_id: str,
         api_version: str = DEFAULT_PARTNER_API_VERSION,
-        base_url: str = "partners.shopify.com",
     ) -> None:
+        """
+        Args:
+            access_token: The access token to use
+            organization_id: The organization id to query
+            api_version: The API version to use (e.g. 2023-01)
+        """
         self.access_token = access_token
+        self.organization_id = organization_id
         self.api_version = api_version
-        self.base_url = base_url
 
     @property
     def graphql_url(self) -> str:
-        if self.base_url.startswith("https://"):
-            return f"{self.base_url}/admin/api/{self.api_version}/graphql.json"
-
-        return f"https://{self.base_url}/admin/api/{self.api_version}/graphql.json"
+        return f"https://partners.shopify.com/{self.organization_id}/api/{self.api_version}/graphql.json"
 
     def run_graphql_query(
         self, query: str, variables: Optional[DictStrAny] = None
@@ -173,30 +144,16 @@ class ShopifyGraphQLApi:
         data_items_path: jsonpath.TJsonPath,
         pagination_cursor_path: jsonpath.TJsonPath,
         pagination_variable_name: str,
-        pagination_cursor_has_next_page_path: Optional[jsonpath.TJsonPath] = None,
         variables: Optional[DictStrAny] = None,
     ) -> Iterable[TDataItems]:
         variables = dict(variables or {})
         while True:
             data = self.run_graphql_query(query, variables)
             data_items = jsonpath.find_values(data_items_path, data)
-
             if not data_items:
                 break
-
-            yield [
-                remove_nodes_key(convert_datetime_fields(item)) for item in data_items
-            ]
-
+            yield data_items
             cursors = jsonpath.find_values(pagination_cursor_path, data)
             if not cursors:
                 break
-
-            if pagination_cursor_has_next_page_path:
-                has_next_page = jsonpath.find_values(
-                    pagination_cursor_has_next_page_path, data
-                )
-                if not has_next_page or not has_next_page[0]:
-                    break
-
             variables[pagination_variable_name] = cursors[-1]

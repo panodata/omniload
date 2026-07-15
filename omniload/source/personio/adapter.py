@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,20 +18,19 @@ from typing import Iterable, Optional
 
 import dlt
 from dlt.common import pendulum
-from dlt.common.time import ensure_pendulum_datetime_utc
+from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import TAnyDateTime, TDataItem
 from dlt.sources import DltResource
 
 from .helpers import PersonioAPI
+from .settings import DEFAULT_ITEMS_PER_PAGE, FIRST_DAY_OF_MILLENNIUM
 
 
-@dlt.source(name="personio", max_table_nesting=0)
+@dlt.source(name="personio")
 def personio_source(
-    start_date: TAnyDateTime,
-    end_date: Optional[TAnyDateTime] = None,
     client_id: str = dlt.secrets.value,
     client_secret: str = dlt.secrets.value,
-    items_per_page: int = 200,
+    items_per_page: int = DEFAULT_ITEMS_PER_PAGE,
 ) -> Iterable[DltResource]:
     """
     The source for the Personio pipeline. Available resources are employees, absences, and attendances.
@@ -46,7 +45,7 @@ def personio_source(
 
     client = PersonioAPI(client_id, client_secret)
 
-    @dlt.resource(primary_key="id", write_disposition="merge", max_table_nesting=0)
+    @dlt.resource(primary_key="id", write_disposition="merge")
     def employees(
         updated_at: dlt.sources.incremental[
             pendulum.DateTime
@@ -77,7 +76,7 @@ def personio_source(
                     name = label.lower()
 
                 if value["type"] == "date" and value["value"]:
-                    output[name] = ensure_pendulum_datetime_utc(value["value"])
+                    output[name] = ensure_pendulum_datetime(value["value"])
                 else:
                     output[name] = value["value"]
             return output
@@ -93,7 +92,7 @@ def personio_source(
         for page in pages:
             yield [convert_item(item) for item in page]
 
-    @dlt.resource(primary_key="id", write_disposition="replace", max_table_nesting=0)
+    @dlt.resource(primary_key="id", write_disposition="replace")
     def absence_types(items_per_page: int = items_per_page) -> Iterable[TDataItem]:
         """
         The resource for absence types (time-off-types), supports pagination.
@@ -112,7 +111,7 @@ def personio_source(
         for page in pages:
             yield [item.get("attributes", {}) for item in page]
 
-    @dlt.resource(primary_key="id", write_disposition="merge", max_table_nesting=0)
+    @dlt.resource(primary_key="id", write_disposition="merge")
     def absences(
         updated_at: dlt.sources.incremental[
             pendulum.DateTime
@@ -143,8 +142,8 @@ def personio_source(
 
         def convert_item(item: TDataItem) -> TDataItem:
             output = item.get("attributes", {})
-            output["created_at"] = ensure_pendulum_datetime_utc(output["created_at"])
-            output["updated_at"] = ensure_pendulum_datetime_utc(output["updated_at"])
+            output["created_at"] = ensure_pendulum_datetime(output["created_at"])
+            output["updated_at"] = ensure_pendulum_datetime(output["updated_at"])
             return output
 
         pages = client.get_pages(
@@ -156,10 +155,10 @@ def personio_source(
         for page in pages:
             yield [convert_item(item) for item in page]
 
-    @dlt.resource(primary_key="id", write_disposition="merge", max_table_nesting=0)
+    @dlt.resource(primary_key="id", write_disposition="merge")
     def attendances(
-        start_date: TAnyDateTime = start_date,
-        end_date: Optional[TAnyDateTime] = end_date,
+        start_date: TAnyDateTime = FIRST_DAY_OF_MILLENNIUM,
+        end_date: Optional[TAnyDateTime] = None,
         updated_at: dlt.sources.incremental[
             pendulum.DateTime
         ] = dlt.sources.incremental(
@@ -188,8 +187,8 @@ def personio_source(
 
         params = {
             "limit": items_per_page,
-            "start_date": ensure_pendulum_datetime_utc(start_date).to_date_string(),
-            "end_date": ensure_pendulum_datetime_utc(end_date).to_date_string(),
+            "start_date": ensure_pendulum_datetime(start_date).to_date_string(),
+            "end_date": ensure_pendulum_datetime(end_date).to_date_string(),
             "updated_from": updated_iso,
             "includePending": True,
         }
@@ -201,14 +200,14 @@ def personio_source(
         def convert_item(item: TDataItem) -> TDataItem:
             """Converts an attendance item."""
             output = dict(id=item["id"], **item.get("attributes"))
-            output["date"] = ensure_pendulum_datetime_utc(output["date"]).date()
-            output["updated_at"] = ensure_pendulum_datetime_utc(output["updated_at"])
+            output["date"] = ensure_pendulum_datetime(output["date"]).date()
+            output["updated_at"] = ensure_pendulum_datetime(output["updated_at"])
             return output
 
         for page in pages:
             yield [convert_item(item) for item in page]
 
-    @dlt.resource(primary_key="id", write_disposition="replace", max_table_nesting=0)
+    @dlt.resource(primary_key="id", write_disposition="replace")
     def projects() -> Iterable[TDataItem]:
         """
         The resource for projects.
@@ -222,14 +221,14 @@ def personio_source(
         def convert_item(item: TDataItem) -> TDataItem:
             """Converts an attendance item."""
             output = dict(id=item["id"], **item.get("attributes"))
-            output["created_at"] = ensure_pendulum_datetime_utc(output["created_at"])
-            output["updated_at"] = ensure_pendulum_datetime_utc(output["updated_at"])
+            output["created_at"] = ensure_pendulum_datetime(output["created_at"])
+            output["updated_at"] = ensure_pendulum_datetime(output["updated_at"])
             return output
 
         for page in pages:
             yield [convert_item(item) for item in page]
 
-    @dlt.resource(primary_key="id", write_disposition="replace", max_table_nesting=0)
+    @dlt.resource(primary_key="id", write_disposition="replace")
     def document_categories() -> Iterable[TDataItem]:
         """
         The resource for document_categories.
@@ -248,7 +247,7 @@ def personio_source(
         for page in pages:
             yield [convert_item(item) for item in page]
 
-    @dlt.resource(primary_key="id", write_disposition="replace", max_table_nesting=0)
+    @dlt.resource(primary_key="id", write_disposition="replace")
     def custom_reports_list() -> Iterable[TDataItem]:
         """
         The resource for custom_reports.
@@ -314,7 +313,7 @@ def personio_source(
             for value in attributes:
                 name = value["attribute_id"]
                 if value["data_type"] == "date" and value["value"]:
-                    output[name] = ensure_pendulum_datetime_utc(value["value"])
+                    output[name] = ensure_pendulum_datetime(value["value"])
                 else:
                     output[name] = value["value"]
             return output

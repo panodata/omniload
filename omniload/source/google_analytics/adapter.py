@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,51 +15,70 @@
 """
 Defines all the sources and resources needed for Google Analytics V4
 """
-
 from typing import Iterator, List, Optional, Union
 
 import dlt
-from dlt.common import pendulum
 from dlt.common.typing import DictStrAny, TDataItem
 from dlt.sources import DltResource
 from dlt.sources.credentials import GcpOAuthCredentials, GcpServiceAccountCredentials
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
-from google.analytics.data_v1beta.types import (
-    Dimension,
-    Metric,
-    MinuteRange,
-)
+from google.analytics.data_v1beta.types import GetMetadataRequest, Metadata
 
-from .helpers import get_realtime_report, get_report
+from .helpers import basic_report
+from .helpers.data_processing import to_dict
+from .settings import START_DATE
+
+TIME_DIMENSIONS = {
+    "date",
+    "isoYearIsoWeek",
+    "year",
+    "yearMonth",
+    "dateHour",
+    "dateHourMinute",
+}
 
 
-@dlt.source(max_table_nesting=0)
+@dlt.source(max_table_nesting=2)
 def google_analytics(
-    datetime_dimension: str,
     credentials: Union[
         GcpOAuthCredentials, GcpServiceAccountCredentials
     ] = dlt.secrets.value,
-    property_ids: List[str] = dlt.config.value,
+    property_id: int = dlt.config.value,
     queries: List[DictStrAny] = dlt.config.value,
-    start_date: Optional[pendulum.DateTime] = pendulum.datetime(2024, 1, 1),
-    end_date: Optional[pendulum.DateTime] = None,
-    rows_per_page: int = 10000,
-    minute_range_objects: List[MinuteRange] | None = None,
+    start_date: Optional[str] = START_DATE,
+    rows_per_page: int = 1000,
 ) -> List[DltResource]:
-    validated_property_ids = []
-    for pid in property_ids:
-        try:
-            int_pid = int(pid)
-        except ValueError:
-            raise ValueError(
-                f"{pid} is an invalid google property id. Please use a numeric id, and not your Measurement ID like G-7F1AE12JLR"
-            )
-        if int_pid == 0:
-            raise ValueError(
-                "Google Analytics property id is 0. Did you forget to configure it?"
-            )
-        validated_property_ids.append(int_pid)
+    """
+    The DLT source for Google Analytics. Loads basic Analytics info to the pipeline.
 
+    Args:
+        credentials: Credentials to the Google Analytics Account.
+        property_id: A numeric Google Analytics property id.
+            More info: https://developers.google.com/analytics/devguides/reporting/data/v1/property-id.
+        queries: List containing info on all the reports being requested with all the dimensions and metrics per report.
+            Each query can specify its own time granularity by including the appropriate time dimension
+            (e.g. "date", "isoYearIsoWeek", "yearMonth", etc.). If no time dimension is specified,
+            "date" will be used for incremental loading.
+        start_date: The string version of the date in the format yyyy-mm-dd and some other values.
+            More info: https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/DateRange.
+            Can be left empty for default incremental load behavior.
+        rows_per_page: Controls how many rows are retrieved per page in the reports.
+            Default is 10000, maximum possible is 100000.
+
+    Returns:
+        resource_list: List containing all the resources in the Google Analytics Pipeline.
+    """
+    # validate input params for the most common mistakes
+    try:
+        property_id = int(property_id)
+    except ValueError:
+        raise ValueError(
+            f"{property_id} is an invalid google property id. Please use a numeric id, and not your Measurement ID like G-7F1AE12JLR"
+        )
+    if property_id == 0:
+        raise ValueError(
+            "Google Analytics property id is 0. Did you forget to configure it?"
+        )
     if not rows_per_page:
         raise ValueError("Rows per page cannot be 0")
     # generate access token for credentials if we are using OAuth2.0
@@ -68,77 +87,81 @@ def google_analytics(
 
     # Build the service object for Google Analytics api.
     client = BetaAnalyticsDataClient(credentials=credentials.to_native_credentials())
-    if len(queries) > 1:
-        raise ValueError(
-            "Google Analytics supports a single query ingestion at a time, please give only one query"
+    # get metadata needed for some resources
+    metadata = get_metadata(client=client, property_id=property_id)
+    resource_list = [metadata | metrics_table, metadata | dimensions_table]
+    for query in queries:
+        # always add "date" to dimensions so we are able to track the last day of a report
+        dimensions = query["dimensions"]
+        time_dimension = next(
+            (dim for dim in dimensions if dim in TIME_DIMENSIONS),
+            "date",  # Default to "date" if no time dimension found
         )
-    query = queries[0]
-
-    # always add "date" to dimensions so we are able to track the last day of a report
-    dimensions = query["dimensions"]
-
-    @dlt.resource(
-        name="custom",
-        merge_key=datetime_dimension,
-        write_disposition="merge",
-    )
-    def basic_report(
-        incremental=dlt.sources.incremental(
-            datetime_dimension,
-            initial_value=start_date,
-            end_value=end_date,
-            range_end="closed",
-            range_start="closed",
-        ),
-    ) -> Iterator[TDataItem]:
-        start_date = incremental.last_value
-        end_date = incremental.end_value
-        if start_date is None:
-            start_date = pendulum.datetime(2024, 1, 1)
-        if end_date is None:
-            end_date = pendulum.yesterday()
-        for property_id in validated_property_ids:
-            yield from get_report(
+        if time_dimension not in dimensions:
+            dimensions += [time_dimension]
+        resource_name = query["resource_name"]
+        resource_list.append(
+            dlt.resource(basic_report, name=resource_name, write_disposition="append")(
                 client=client,
+                rows_per_page=rows_per_page,
                 property_id=property_id,
-                dimension_list=[Dimension(name=dimension) for dimension in dimensions],
-                metric_list=[Metric(name=metric) for metric in query["metrics"]],
-                per_page=rows_per_page,
+                dimensions=dimensions,
+                metrics=query["metrics"],
+                resource_name=resource_name,
                 start_date=start_date,
-                end_date=end_date,
+                last_date=dlt.sources.incremental(
+                    time_dimension, primary_key=()
+                ),  # pass empty primary key to avoid unique checks, a primary key defined by the resource will be used
             )
+        )
+    return resource_list
 
-    # real time report
-    @dlt.resource(
-        name="realtime",
-        merge_key="ingested_at",
-        write_disposition="merge",
-    )
-    def real_time_report() -> Iterator[TDataItem]:
-        for property_id in validated_property_ids:
-            yield from get_realtime_report(
-                client=client,
-                property_id=property_id,
-                dimension_list=[Dimension(name=dimension) for dimension in dimensions],
-                metric_list=[Metric(name=metric) for metric in query["metrics"]],
-                per_page=rows_per_page,
-                minute_range_objects=minute_range_objects,
-            )
 
-    # res = dlt.resource(
-    #     basic_report, name="basic_report", merge_key=datetime_dimension, write_disposition="merge"
-    # )(
-    #     client=client,
-    #     rows_per_page=rows_per_page,
-    #     property_id=property_id,
-    #     dimensions=dimensions,
-    #     metrics=query["metrics"],
-    #     resource_name=resource_name,
-    #     last_date=dlt.sources.incremental(
-    #         datetime_dimension,
-    #         initial_value=start_date,
-    #         end_value=end_date,
-    #     ),
-    # )
+@dlt.resource(selected=False)
+def get_metadata(
+    client: BetaAnalyticsDataClient, property_id: int
+) -> Iterator[Metadata]:
+    """
+    Get all the metrics and dimensions for a report.
 
-    return [basic_report, real_time_report]
+    Args:
+        client: The Google Analytics client used to make requests.
+        property_id: A reference to the Google Analytics project.
+            More info: https://developers.google.com/analytics/devguides/reporting/data/v1/property-id
+
+    Yields:
+        Metadata objects. Only 1 is expected but yield is used as dlt resources require yield to be used.
+    """
+    request = GetMetadataRequest(name=f"properties/{property_id}/metadata")
+    metadata: Metadata = client.get_metadata(request)
+    yield metadata
+
+
+@dlt.transformer(data_from=get_metadata, write_disposition="replace", name="metrics")
+def metrics_table(metadata: Metadata) -> Iterator[TDataItem]:
+    """
+    Loads data for metrics.
+
+    Args:
+        metadata: Metadata class object which contains all the information stored in the GA4 metadata.
+
+    Yields:
+        Generator of dicts, 1 metric at a time.
+    """
+    for metric in metadata.metrics:
+        yield to_dict(metric)
+
+
+@dlt.transformer(data_from=get_metadata, write_disposition="replace", name="dimensions")
+def dimensions_table(metadata: Metadata) -> Iterator[TDataItem]:
+    """
+    Loads data for dimensions.
+
+    Args:
+        metadata: Metadata class object which contains all the information stored in the GA4 metadata.
+
+    Yields:
+        Generator of dicts, 1 dimension at a time.
+    """
+    for dimension in metadata.dimensions:
+        yield to_dict(dimension)

@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 """Source that loads tables form Airtable.
 Supports whitelisting of tables or loading of all tables from a specified base.
 """
-
 from typing import Any, Dict, Iterable, Iterator, List, Optional
 
 import dlt
@@ -23,7 +22,7 @@ import pyairtable
 from dlt.sources import DltResource
 
 
-@dlt.source(max_table_nesting=1)
+@dlt.source
 def airtable_source(
     base_id: str = dlt.config.value,
     table_names: Optional[List[str]] = dlt.config.value,
@@ -64,13 +63,12 @@ def airtable_resource(
             It starts with "app". See https://support.airtable.com/docs/finding-airtable-ids
         table (Dict[str, Any]): Metadata about an airtable, does not contain the actual records
     """
-
     primary_key_id = table["primaryFieldId"]
     primary_key_field = [
         field for field in table["fields"] if field["id"] == primary_key_id
     ][0]
     table_name: str = table["name"]
-    primary_key: List[str] = [f"fields__{primary_key_field['name']}".lower()]
+    primary_key: List[str] = [primary_key_field["name"]]
     air_table = api.table(base_id, table["id"])
 
     # Table.iterate() supports rich customization options, such as chunk size, fields, cell format, timezone, locale, and view
