@@ -11,7 +11,10 @@ from sqlalchemy.util import asbool
 def setup_logging(
     level=logging.INFO, verbose: bool = False, debug: bool = False, width: int = 36
 ):
-    if os.environ.get("DEBUG"):
+
+    debug = debug or os.environ.get("DEBUG", False)
+
+    if debug:
         level = logging.DEBUG
 
     reset = escape_codes["reset"]
