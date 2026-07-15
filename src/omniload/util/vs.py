@@ -144,6 +144,11 @@ class VerifiedSourcesSync:
     @property
     def skipped_modules(self):
         return [
+            "airtable",
+            "asana",
+            "chess",
+            "kafka",
+            "stripe",
         ]
 
     @property
