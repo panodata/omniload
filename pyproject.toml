@@ -134,7 +134,7 @@ dependencies = [
   "toolz<2",
   "tqdm<5",
   "trino[sqlalchemy]==0.338.0",
-  "typer<0.27",
+  "typer<0.28",
   "urllib3<2.8",
   "xlsxwriter<4",
 ]
