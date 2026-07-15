@@ -35,6 +35,8 @@ FILE_HEADER = b"""
 class Rule:
     source: str
     target: Optional[str]
+    category: Optional[str] = None
+    use_tests: Optional[bool] = True
 
 
 class VerifiedSourcesRecipe(list):
@@ -44,48 +46,64 @@ class VerifiedSourcesRecipe(list):
 
     def __init__(self):
         super().__init__()
-        self.append(Rule(source="airtable", target="airtable"))
-        self.append(Rule(source="asana_dlt", target="asana"))
-        self.append(Rule(source="bing_webmaster", target="bing_webmaster"))
-        self.append(Rule(source="chess", target="chess"))
-        self.append(Rule(source="facebook_ads", target="facebook_ads"))
-        self.append(Rule(source="filesystem", target=None))
-        self.append(Rule(source="freshdesk", target="freshdesk"))
-        self.append(Rule(source="github", target="github"))
-        self.append(Rule(source="google_ads", target="google_ads"))
-        self.append(Rule(source="google_analytics", target="google_analytics"))
-        self.append(Rule(source="google_sheets", target="google_sheets"))
-        self.append(Rule(source="hubspot", target="hubspot"))
-        self.append(Rule(source="inbox", target="imap"))
-        self.append(Rule(source="jira", target="jira"))
-        self.append(Rule(source="kafka", target="kafka"))
-        self.append(Rule(source="kinesis", target="kinesis"))
-        self.append(Rule(source="matomo", target="matomo"))
-        self.append(Rule(source="mongodb", target="mongodb"))
-        self.append(Rule(source="mux", target="mux"))
-        self.append(Rule(source="notion", target="notion"))
-        self.append(Rule(source="personio", target="personio"))
-        self.append(Rule(source="pg_replication", target="pg_replication"))
-        self.append(Rule(source="pipedrive", target="pipedrive"))
-        self.append(Rule(source="pokemon", target="pokemon"))
-        self.append(Rule(source="rest_api", target=None))
-        self.append(Rule(source="salesforce", target="salesforce"))
-        self.append(Rule(source="scraping", target="scrapy"))
-        self.append(Rule(source="shopify_dlt", target="shopify"))
-        self.append(Rule(source="slack", target="slack"))
-        self.append(Rule(source="sql_database", target=None))
-        self.append(Rule(source="strapi", target="strapi"))
-        self.append(Rule(source="stripe_analytics", target="stripe"))
-        self.append(Rule(source="unstructured_data", target="unstructured"))
+        self.append(Rule(source="airtable", target="airtable", category="saas"))
+        self.append(Rule(source="asana_dlt", target="asana", category="saas"))
         self.append(
-            Rule(source="unstructured_data/google_drive", target="google_drive")
+            Rule(source="bing_webmaster", target="bing_webmaster", category="saas")
         )
-        self.append(Rule(source="workable", target="workable"))
-        self.append(Rule(source="zendesk", target="zendesk"))
+        self.append(Rule(source="chess", target="chess", category="saas"))
+        self.append(Rule(source="facebook_ads", target="facebook_ads", category="saas"))
+        self.append(Rule(source="filesystem", target=None))
+        self.append(Rule(source="freshdesk", target="freshdesk", category="saas"))
+        self.append(Rule(source="github", target="github", category="saas"))
+        self.append(Rule(source="google_ads", target="google_ads", category="saas"))
+        self.append(
+            Rule(source="google_analytics", target="google_analytics", category="saas")
+        )
+        self.append(
+            Rule(source="google_sheets", target="google_sheets", category="saas")
+        )
+        self.append(Rule(source="hubspot", target="hubspot", category="saas"))
+        self.append(Rule(source="inbox", target="imap", category="protocol"))
+        self.append(Rule(source="jira", target="jira", category="saas"))
+        self.append(Rule(source="kafka", target="kafka", category="stream"))
+        self.append(Rule(source="kinesis", target="kinesis", category="stream"))
+        self.append(Rule(source="matomo", target="matomo", category="saas"))
+        self.append(Rule(source="mongodb", target="mongodb", category="database"))
+        self.append(Rule(source="mux", target="mux", category="saas"))
+        self.append(Rule(source="notion", target="notion", category="saas"))
+        self.append(Rule(source="personio", target="personio", category="saas"))
+        self.append(
+            Rule(source="pg_replication", target="pg_replication", category="database")
+        )
+        self.append(Rule(source="pipedrive", target="pipedrive", category="saas"))
+        self.append(Rule(source="pokemon", target="pokemon", category="saas"))
+        self.append(Rule(source="rest_api", target=None))
+        self.append(Rule(source="salesforce", target="salesforce", category="saas"))
+        self.append(Rule(source="scraping", target="scrapy", category="tool"))
+        self.append(Rule(source="shopify_dlt", target="shopify", category="saas"))
+        self.append(Rule(source="slack", target="slack", category="saas"))
+        self.append(Rule(source="sql_database", target=None))
+        self.append(Rule(source="strapi", target="strapi", category="saas"))
+        self.append(Rule(source="stripe_analytics", target="stripe", category="saas"))
+        self.append(
+            Rule(source="unstructured_data", target="unstructured", category="tool")
+        )
+        self.append(
+            Rule(
+                source="unstructured_data/google_drive",
+                target="google_drive",
+                category="storage",
+                use_tests=False,
+            )
+        )
+        self.append(Rule(source="workable", target="workable", category="saas"))
+        self.append(Rule(source="zendesk", target="zendesk", category="saas"))
 
 
 class VerifiedSourcesSync:
-    def __init__(self):
+    def __init__(self, target_path):
+        self.target_path = target_path
         self.workdir = platformdirs.user_cache_path("omniload") / "dlt-verified-sources"
         self.workdir.mkdir(parents=True, exist_ok=True)
         logger.info("Working directory: {}".format(self.workdir))
@@ -100,8 +118,15 @@ class VerifiedSourcesSync:
 
     def process(self):
         """Process and apply recipe rules, copying and rewriting the whole tree"""
-        cwd = Path.cwd()
-        omniload_source_path = cwd / "omniload" / "source"
+        self.copy_code()
+        # self.copy_tests()
+
+    def copy_code(self):
+        """Copy code from `verified-sources` into omniload"""
+
+        omniload_source_path = self.target_path / "omniload" / "source"
+        logger.info(f"Copy code to {omniload_source_path}")
+
         for rule in self.effective_rules:
             module_path = self.tree / self.recipe.code_path / rule.source
 
@@ -137,7 +162,55 @@ class VerifiedSourcesSync:
                     continue
 
                 target_path = omniload_source_path / rule.target / target_file_name
-                logger.debug("Copy from/to: %s -> %s", source_path, target_path)
+                # logger.debug("%s -> %s", source_path, target_path)
+                Path(target_path).parent.mkdir(parents=True, exist_ok=True)
+                Path(target_path).write_bytes(FILE_HEADER + payload)
+
+    def copy_tests(self):
+        """Copy tests from `verified-sources` into omniload"""
+
+        omniload_tests_path = self.target_path / "tests" / "dlt"
+        logger.info(f"Copy tests to {omniload_tests_path}")
+
+        for rule in self.effective_rules:
+            if not rule.use_tests:
+                continue
+
+            module_path = self.tree / self.recipe.test_path / rule.source
+
+            def tree_filter(item, _):
+                if item.name == "__init__.py":
+                    return False
+                if item.name.endswith(".py"):
+                    return True
+                return False
+
+            selected_files = list(module_path.traverse(depth=1, predicate=tree_filter))
+            selected_file_names = [item.name for item in selected_files]
+            logger.debug(
+                'Upstream files in module "%s": %s',
+                module_path.name,
+                selected_file_names,
+            )
+
+            use_directory = False
+            if len(selected_files) > 1:
+                use_directory = True
+
+            for blob in selected_files:
+                payload = blob.data_stream.read()
+                file_name = blob.name
+                source_path = blob.path
+
+                if use_directory:
+                    target_path = omniload_tests_path / rule.target / file_name
+                else:
+                    # Rule: For single-file tests, rename `test_*_{source}.py` to `test_{source}.py`.
+                    if file_name.startswith("test_"):
+                        file_name = f"test_{rule.target}.py"
+                    target_path = omniload_tests_path / file_name
+
+                # logger.debug("%s -> %s", source_path, target_path)
                 Path(target_path).parent.mkdir(parents=True, exist_ok=True)
                 Path(target_path).write_bytes(FILE_HEADER + payload)
 
@@ -207,5 +280,6 @@ if __name__ == "__main__":
     python -m omniload.util.vs
     """
     setup_logging(debug=True)
-    engine = VerifiedSourcesSync()
+    target_path = Path.cwd()
+    engine = VerifiedSourcesSync(target_path=target_path)
     engine.run()
