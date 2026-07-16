@@ -36,7 +36,7 @@ def capture_reader_args(uri: str, table: str = "", **kwargs) -> dict:
 
 def test_factory_dispatches_file_scheme_to_local_source():
     factory = SourceDestinationFactory(
-        "file://omniload/testdata/create_replace.csv", "duckdb:///tmp/x.duckdb"
+        "file://tests/assets/create_replace.csv", "duckdb:///tmp/x.duckdb"
     )
     assert isinstance(factory.get_source(), LocalFilesystemSource)
 
@@ -76,9 +76,9 @@ absolute_cases = [
 # refactor that drops "omniload" as a host would fail these.
 relative_cases = [
     (
-        "file://omniload/testdata/create_replace.csv",
+        "file://tests/assets/create_replace.csv",
         "create_replace",
-        f"{CWD}/omniload/testdata",
+        f"{CWD}/tests/assets",
         "create_replace.csv",
         "read_csv",
     ),
@@ -141,8 +141,8 @@ def test_is_absolute_local(path, expected):
 
 def test_split_form_matches_path_in_uri():
     """--source-uri file:// + --source-table x.csv == file://x.csv."""
-    via_split = capture_reader_args("file://", "omniload/testdata/create_replace.csv")
-    via_uri = capture_reader_args("file://omniload/testdata/create_replace.csv", "")
+    via_split = capture_reader_args("file://", "tests/assets/create_replace.csv")
+    via_uri = capture_reader_args("file://tests/assets/create_replace.csv", "")
     assert via_split["bucket_url"] == via_uri["bucket_url"]
     assert via_split["file_glob"] == via_uri["file_glob"]
 
@@ -169,7 +169,7 @@ def test_requested_incremental_key_is_rejected():
     # so the rejection must key off requested_incremental_key, not incremental_key.
     with pytest.raises(ValueError, match="incrementality on its own"):
         LocalFilesystemSource().dlt_source(
-            "file://omniload/testdata/create_replace.csv",
+            "file://tests/assets/create_replace.csv",
             "",
             incremental_key=None,
             requested_incremental_key="date",

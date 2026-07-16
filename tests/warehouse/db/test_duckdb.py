@@ -17,7 +17,7 @@ def test_create_replace_csv_to_duckdb(testdata_path, tmp_path):
     abs_db_path = tmp_path / "test_create_replace_csv.db"
 
     result = invoke_ingest_command(
-        "csv://omniload/testdata/create_replace.csv",
+        "csv://tests/assets/create_replace.csv",
         "testschema.input",
         f"duckdb:///{abs_db_path}",
         "testschema.output",
@@ -77,7 +77,7 @@ def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):
         conn.close()
         return results
 
-    run("csv://omniload/testdata/merge_part1.csv")
+    run("csv://tests/assets/merge_part1.csv")
     assert_output_equals_to_csv(get_output_rows(), testdata_path / "merge_part1.csv")
 
     conn = duckdb.connect(abs_db_path)
@@ -88,7 +88,7 @@ def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):
 
     ##############################
     # we'll run again, we don't expect any changes since the data hasn't changed
-    run("csv://omniload/testdata/merge_part1.csv")
+    run("csv://tests/assets/merge_part1.csv")
     assert_output_equals_to_csv(get_output_rows(), testdata_path / "merge_part1.csv")
 
     # we also ensure that the other rows were not touched
@@ -105,7 +105,7 @@ def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):
     ##############################
     # now we'll run the same ingestion but with a different file this time
 
-    run("csv://omniload/testdata/merge_part2.csv")
+    run("csv://tests/assets/merge_part2.csv")
     assert_output_equals_to_csv(get_output_rows(), testdata_path / "merge_expected.csv")
 
     # let's check the runs
@@ -151,7 +151,7 @@ def test_delete_insert_without_primary_key_csv_to_duckdb(testdata_path, tmp_path
             "select symbol, date, is_enabled, name from testschema.output order by symbol asc"
         ).fetchall()
 
-    run("csv://omniload/testdata/delete_insert_part1.csv")
+    run("csv://tests/assets/delete_insert_part1.csv")
     assert_output_equals_to_csv(
         get_output_rows(), testdata_path / "delete_insert_part1.csv"
     )
@@ -164,7 +164,7 @@ def test_delete_insert_without_primary_key_csv_to_duckdb(testdata_path, tmp_path
     # we'll run again, we expect the data to be the same, but a new load_id to exist
     # this is due to the fact that the old data won't be touched, but the ones with the
     # latest value will be rewritten
-    run("csv://omniload/testdata/delete_insert_part1.csv")
+    run("csv://tests/assets/delete_insert_part1.csv")
     assert_output_equals_to_csv(
         get_output_rows(), testdata_path / "delete_insert_part1.csv"
     )
@@ -183,7 +183,7 @@ def test_delete_insert_without_primary_key_csv_to_duckdb(testdata_path, tmp_path
     ##############################
     # now we'll run the same ingestion but with a different file this time
 
-    run("csv://omniload/testdata/delete_insert_part2.csv")
+    run("csv://tests/assets/delete_insert_part2.csv")
     assert_output_equals_to_csv(
         get_output_rows(), testdata_path / "delete_insert_expected.csv"
     )

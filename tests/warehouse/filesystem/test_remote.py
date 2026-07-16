@@ -673,7 +673,7 @@ def _write_to_azure(auth: str, scheme: str = "az"):
     try:
         with patch("adlfs.AzureBlobFileSystem", _CapturingAzureBlobFileSystem):
             result = invoke_ingest_command(
-                "csv://omniload/testdata/create_replace.csv",
+                "csv://tests/assets/create_replace.csv",
                 "testschema.input",
                 f"{scheme}://?{auth}",
                 f"{container}/output",
