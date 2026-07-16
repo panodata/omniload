@@ -6,13 +6,17 @@
   Gen2 (`adls://`, `abfss://`) source and destination adapters, backed by
   `adlfs`. Supports account-key, SAS-token, and service-principal auth.
   Thanks, @hampsterx.
-- Filesystem destinations: Fixed blob-storage destinations (S3, GCS, Azure)
+- Connectors: Fixed remote filesystem destinations (Azure Blob, GCS, S3)
   aborting at the end of a load because the required `post_load` hook was
   missing from the shared base class. Thanks, @hampsterx.
 - Filesystem: Added `#key=value` reader hint channel to source URIs
+  to propagate options to source implementations. Thanks, @hampsterx.
+- Filesystem: Added readers for CBOR, MessagePack, XML and YAML formats.
+  Thanks, @hampsterx.
 - Filesystem: Added readers for Excel workbook (XLSX) and OpenDocument
-  spreadsheet (ODS) files.
-- Filesystem: Added readers for XML and YAML file formats. Thanks, @hampsterx.
+  spreadsheet (ODS) formats.
+- Filesystem: Fixed and documented semantics of append/replace strategy
+  and append/full-refresh behaviour. Thanks, @hampsterx.
 
 ## 2026/07/06 v0.6.0
 
