@@ -16,7 +16,6 @@ import json
 
 import pytest
 
-from dlt_filesystem.source.api import LocalFilesystemSource
 from dlt_filesystem.source.error import (
     MissingDecoderError,
     MissingReaderOptionError,
@@ -26,6 +25,7 @@ from dlt_filesystem.source.format.iterable_codec import (
     read_via_iterable,
 )
 from dlt_filesystem.source.format.readers import read_xml
+from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
 from dlt_filesystem.testing.stub import (
     FileItemStub,
     NonSeekableItem,

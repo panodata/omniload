@@ -73,13 +73,7 @@ html_show_sourcelink = True
 
 # -- Intersphinx ----------------------------------------------------------
 
-intersphinx_mapping = {
-    "crash": ("https://cratedb.com/docs/crate/crash/en/latest/", None),
-    "cloud": ("https://cratedb.com/docs/cloud/en/latest/", None),
-    "croud": ("https://cratedb.com/docs/cloud/cli/en/latest/", None),
-    "guide": ("https://cratedb.com/docs/guide/", None),
-    "influxio": ("https://influxio.readthedocs.io/", None),
-}
+intersphinx_mapping = {}
 linkcheck_ignore = [
     r"https://pulse.internetsociety.org/",
     r"https://www.g2.com/",
@@ -101,6 +95,7 @@ linkcheck_ignore = [
     r"https://github.com/",
     r"https://web.archive.org/",
     r"https://images.minimus.io/",
+    r"https://medium.com/",
 ]
 linkcheck_anchors_ignore_for_url = [
     r"https://developers.zoom.us/",

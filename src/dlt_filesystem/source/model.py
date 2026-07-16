@@ -1,13 +1,19 @@
 import hashlib
 import json
+from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Any, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union
+from urllib.parse import parse_qs
 
 from dlt.common.configuration import configspec, resolve_type
 from dlt.common.configuration.specs import CredentialsConfiguration
 from dlt.common.storages import FilesystemConfiguration
 from dlt.common.storages.configuration import FileSystemCredentials
 from fsspec import AbstractFileSystem
+
+from dlt_filesystem.error import InvalidBlobTableError
+from dlt_filesystem.util.fsspec import infer_storage_options
+from dlt_filesystem.util.web import shrink_qs_dict
 
 
 @configspec
@@ -28,8 +34,140 @@ class FilesystemConfigurationResource(FilesystemConfiguration):
 
 
 @dataclass
+class FilesystemOptions:
+    """Bundle filesystem options from URL."""
+
+    address: Dict[str, Any] = field(default_factory=dict)
+    params: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def fs_kwargs(self) -> Dict[str, Any]:
+        """Return inferred storage options modulo `protocol` and `path` fields."""
+        # FIXME: Review using URL options as a baseline.
+        response = deepcopy(self.address)
+        # Remove certain options like `_get_kwargs_from_urls` is doing it.
+        response.pop("path", None)
+        response.pop("protocol", None)
+        response.update(self.params)
+        return response
+
+
+@dataclass
+class FilesystemLocator:
+    """A full filesystem information locator."""
+
+    # FIXME: Get rid of inline imports by applying another round of refactoring.
+
+    name: str
+    fs_class: Type[AbstractFileSystem]
+    uri: str
+    path: str
+    default_port: Optional[int] = None
+    address: Dict[str, str] = field(default_factory=dict)
+    options: FilesystemOptions = field(default_factory=FilesystemOptions)
+    accept_no_bucket_name: Optional[bool] = False
+    accept_no_host_name: Optional[bool] = False
+
+    def __post_init__(self):
+        """Decode fundamental options right away."""
+        self.read_options()
+
+    def read_options(self) -> "FilesystemLocator":
+        """
+        Destructure input URL as a baseline for fsspec kwargs.
+
+        Let's use the fsspec approach of decoding
+        URIs, based on `fsspec.utils.infer_storage_options`.
+        """
+
+        self.address = infer_storage_options(self.uri)
+
+        # URL query parameters.
+        params = shrink_qs_dict(parse_qs(self.address.pop("url_query", "")))
+        # TODO: Why not compute hints right here instead of doing it at runtime?
+        self.address.pop("url_fragment", None)
+
+        # Reader or writer hints.
+        self.options = FilesystemOptions(
+            address=self.address,
+            params=params,
+        )
+        return self
+
+    def validate(self):
+        """Decode into base url and url path / file glob, and apply sanity checks."""
+        if not self.bucket_name or not self.file_glob:
+            if self.accept_no_bucket_name:
+                return
+            # TODO: Rename exception.
+            raise InvalidBlobTableError(self.name)
+
+    @property
+    def bucket_url(self) -> str:
+        """URL without credentials and path."""
+
+        if self.accept_no_host_name:
+            return self.uri
+
+        address = self.options.address
+        if "host" in address and ("port" in address or self.default_port is not None):
+            return f"{address['protocol']}://{address['host']}:{address.get('port', self.default_port)}"
+        elif "host" in address:
+            return f"{address['protocol']}://{address['host']}"
+
+        # dlt will fail per `verify_bucket_url()` when no netloc or path is given:
+        #   dlt.common.configuration.exceptions.ConfigurationValueError: File `path`
+        #   and `netloc` are missing. Field `bucket_url` of `FilesystemClientConfiguration`
+        #   must contain valid url with a path or host:password component.
+        # When that happens, try to borrow a hostname from other suitable parameters
+        # like `endpoint`.
+        else:
+            surrogate_host_port = self.options.params.get("endpoint")
+            if not surrogate_host_port:
+                raise ValueError("dlt needs bucket_url to include netloc and path")
+            return f"{address['protocol']}://{surrogate_host_port}"
+
+    @property
+    def bucket_name(self) -> str:
+        """URL component that describes the bucket name."""
+        # FIXME: Inline imports!
+        from dlt_filesystem.source.router import parse_uri
+
+        bucket_name, _ = parse_uri(self.uri, self.path)
+        return bucket_name
+
+    @property
+    def file_glob(self) -> str:
+        """URL path component that describes the file glob."""
+        # FIXME: Inline imports!
+        from dlt_filesystem.source.router import parse_uri
+
+        _, file_glob = parse_uri(self.uri, self.path)
+        return file_glob
+
+    @property
+    def hints(self) -> Dict[str, Any]:
+        """
+        Destructure reader or writer hints from URL fragment.
+
+        Let's use the omniload approach of decoding
+        URL fragments, because it handles a few edge cases, also taking
+        the URL path into consideration.
+
+        TODO: Refactor inline imports!
+        """
+        from urllib.parse import urlparse
+
+        from dlt_filesystem.source.router import blob_hints
+
+        parsed_uri = urlparse(self.uri)
+        return blob_hints(parsed_uri, self.path)
+
+
+@dataclass
 class FilesystemReference:
-    """Bundle the arguments needed by `resource_for_reader` to build a resource.
+    """
+    Bundle the arguments needed by `resource_for_reader` to build a resource.
 
     Args:
         fs (AbstractFilesystem): fsspec filesystem instance.
@@ -47,6 +185,8 @@ class FilesystemReference:
             key a reader looks up is that reader's contract; no reader consumes
             hints yet, so this is currently populated but unread.
         column_types (dict[str, Any], optional): Column name to type mapping, e.g. used by `read_csv_headless`.
+
+    TODO: Zap into / synchronize with the new `FilesystemLocator`?
     """
 
     fs: AbstractFileSystem

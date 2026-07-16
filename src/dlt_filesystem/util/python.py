@@ -3,7 +3,7 @@ import json
 import logging
 import types
 import typing
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 _TRUE_VALUES = {"true", "1", "yes", "on"}
 _FALSE_VALUES = {"false", "0", "no", "off"}
@@ -86,3 +86,64 @@ def _cast_value(value: str, target_type: Any) -> Any:
         return json.loads(value)
     except (json.JSONDecodeError, TypeError):
         return value
+
+
+# from paste.deploy.converters
+def asbool(obj: Any) -> bool:
+    """From `sqlalchemy.util.langhelpers`"""
+    if isinstance(obj, str):
+        obj = obj.strip().lower()
+        if obj in ["true", "yes", "on", "y", "t", "1"]:
+            return True
+        elif obj in ["false", "no", "off", "n", "f", "0"]:
+            return False
+        else:
+            raise ValueError("String is not true/false: %r" % obj)
+    return bool(obj)
+
+
+def cast_to_int(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
+    """Cast dictionary values to integers."""
+    for field_name in names:
+        if field_name in data:
+            data[field_name] = int(data[field_name])
+    return data
+
+
+def cast_to_float(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
+    """Cast dictionary values to floats."""
+    for field_name in names:
+        if field_name in data:
+            data[field_name] = float(data[field_name])
+    return data
+
+
+def cast_to_bool(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
+    """Cast dictionary values to booleans."""
+    for field_name in names:
+        if field_name in data:
+            data[field_name] = asbool(data[field_name])
+    return data
+
+
+def cast_to_dict(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
+    """Cast dictionary values from JSON."""
+    for field_name in names:
+        if field_name in data:
+            data[field_name] = json.loads(data[field_name])
+    return data
+
+
+def cast_to_list(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
+    """Cast list values from JSON."""
+    for field_name in names:
+        if field_name in data:
+            data[field_name] = json.loads(data[field_name])
+    return data
+
+
+def apply_alias(data: Dict[str, Any], name: str, effective_name: str) -> Dict[str, Any]:
+    """Apply aliasing to dictionary keys."""
+    if name in data:
+        data[effective_name] = data.pop(name)
+    return data

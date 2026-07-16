@@ -9,8 +9,8 @@ from dlt.sources.filesystem import FileItemDict
 from fsspec.implementations.arrow import ArrowFSWrapper
 from pyarrow.fs import LocalFileSystem
 
-from dlt_filesystem.source.adapter import resource_for_reader
 from dlt_filesystem.source.base import FilesystemSource
+from dlt_filesystem.source.core import resource_for_reader
 from dlt_filesystem.source.model import FilesystemReference
 from omniload import ValidationError, run_ingest
 from omniload.core.factory import SourceDestinationFactory

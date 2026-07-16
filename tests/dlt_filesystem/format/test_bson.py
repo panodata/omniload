@@ -13,9 +13,9 @@ from bson.max_key import MaxKey
 from bson.min_key import MinKey
 from dlt.common.utils import map_nested_values_in_place
 
-from dlt_filesystem.source.api import LocalFilesystemSource
 from dlt_filesystem.source.format.bson_codec import convert_bson_objs
 from dlt_filesystem.source.format.readers import read_bson
+from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
 from dlt_filesystem.testing.writer import write_bson
 
 OID = "507f1f77bcf86cd799439011"

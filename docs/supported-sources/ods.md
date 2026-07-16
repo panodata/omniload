@@ -10,9 +10,8 @@ used by [OpenOffice], [LibreOffice], and other spreadsheet applications.
 OpenOffice and LibreOffice ODS files can be accessed on every source that
 goes through the shared file readers:
 
-- Local files: [`file://`](file.md)
-- [`s3://`](s3.md), [`gs://`](google-cloud-storage.md), [Azure blob storage](azure-blob-storage.md)
-- [`sftp://`](sftp.md)
+- Local files: {ref}`file`
+- Remote files: {ref}`s3`, {ref}`gcs`, {ref}`azure-storage`, {ref}`sftp`, ...
 
 A file is read as ODS when its extension is `.ods` (optionally `.ods.gz`),
 or when an explicit `#ods` {ref}`format hint <format-hint>` is appended.

@@ -1,7 +1,9 @@
-# Databricks
-Databricks is a platform for big data analytics and artificial intelligence.
+(databricks-warehouse)=
 
-omniload supports Databricks as both a source and destination.
+# Databricks warehouse
+
+[Databricks] is a platform for big data analytics and artificial intelligence.
+`omniload` supports the Databricks SQL warehouse as both a source and destination.
 
 ## URI format
 
@@ -42,3 +44,6 @@ To set up OAuth M2M authentication:
 You can read more about Databricks OAuth M2M authentication [here](https://docs.databricks.com/en/dev-tools/auth/oauth-m2m.html).
 
 The same URI structure can be used both for sources and destinations. You can read more about SQLAlchemy's Databricks dialect [here](https://docs.databricks.com/en/dev-tools/sqlalchemy.html).
+
+
+[Databricks]: https://www.databricks.com/

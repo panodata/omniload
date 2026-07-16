@@ -10,9 +10,8 @@ XLSX is currently supported for read operations only.
 
 Excel XLSX files can be accessed on every source that goes through the shared file readers:
 
-- Local files: [`file://`](file.md)
-- [`s3://`](s3.md), [`gs://`](google-cloud-storage.md), [Azure blob storage](azure-blob-storage.md)
-- [`sftp://`](sftp.md)
+- Local files: {ref}`file`
+- Remote files: {ref}`s3`, {ref}`gcs`, {ref}`azure-storage`, {ref}`sftp`, ...
 
 A file is read as XLSX when its extension is `.xlsx` (optionally `.xlsx.gz`),
 or when an explicit `#xlsx` {ref}`format hint <format-hint>` is appended.
