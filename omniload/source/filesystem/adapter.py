@@ -14,10 +14,9 @@
 
 """Reads files in s3, gs or azure buckets using fsspec and provides convenience resources for chunked reading of various file formats"""
 
-from typing import Callable, Iterator, List, Optional, Tuple, Union
+from typing import Iterator, List, Optional, Tuple, Union
 
 import dlt
-from dlt.common.typing import TDataItems
 from dlt.extract import DltSource
 from dlt.sources import DltResource
 from dlt.sources.credentials import FileSystemCredentials
@@ -141,30 +140,6 @@ def filesystem(
             files_chunk = []
     if files_chunk:
         yield files_chunk
-
-
-# Readers that consume per-URI `#key=value` reader hints, mapped to (reader function, the hint
-# keys each accepts). Only a listed key is forwarded to the reader, so an unrelated or typo'd
-# hint never reaches a decoder as a surprise kwarg. Values arrive as strings (#183); a decoder
-# that wants a non-str option coerces it itself. XML is the first consumer (`tagname`, the
-# mandatory row-element name).
-_HINT_READERS: dict[str, tuple[Callable[..., Iterator[TDataItems]], frozenset[str]]] = {
-    "read_xml": (read_xml, frozenset({"tagname"})),
-}
-
-
-def _reader_hint_options(ref: FilesystemReference) -> dict[str, str]:
-    """Filter ``ref.hints`` to the keys the selected reader actually accepts.
-
-    A reader not in ``_HINT_READERS`` consumes no hints (returns ``{}``); for one that does,
-    only its declared keys pass through. A required-but-missing option is left for the decoder
-    to report with its own clear error (e.g. XML's ``MissingReaderOptionError``).
-    """
-    entry = _HINT_READERS.get(ref.reader_name)
-    if entry is None:
-        return {}
-    _, accepted = entry
-    return {key: value for key, value in ref.hints.items() if key in accepted}
 
 
 def resource_for_reader(ref: FilesystemReference) -> DltSource | DltResource:
