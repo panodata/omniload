@@ -1,6 +1,9 @@
+(xlsx)=
+
 # XLSX
 
 `omniload` reads [Excel Workbook] XLSX spreadsheet files.
+XLSX is currently supported for read operations only.
 
 ## Where it works
 
@@ -11,7 +14,7 @@ Excel XLSX files can be accessed on every source that goes through the shared fi
 - [`sftp://`](sftp.md)
 
 A file is read as XLSX when its extension is `.xlsx` (optionally `.xlsx.gz`),
-or when an explicit `#xlsx` [format hint](file.md#file-type-hinting) is appended.
+or when an explicit `#xlsx` {ref}`format hint <format-hint>` is appended.
 Gzipped files are decompressed automatically.
 
 ## How it works
