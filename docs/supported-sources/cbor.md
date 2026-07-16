@@ -21,8 +21,7 @@ naming the exact `pip install` to run, rather than a bare `ImportError`.
 
 CBOR is decoded directly with `cbor2` rather than through the `iterabledata` bridge, so a
 corrupt file raises instead of silently loading zero rows; see
-[File-format routing](../getting-started/file-format-routing.md) for how omniload chooses a
-reader per format.
+{ref}`file-format-routing` about how omniload chooses a reader per format.
 
 ## File shape: a single top-level value
 

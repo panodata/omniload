@@ -351,7 +351,7 @@ def _xml_eager_decode(data: bytes, options: dict) -> Iterator[Any]:
 # (never an iterabledata class): iterabledata's XML parser resolves entities and can't be locked
 # down through its API, and its YAML wrapper is eager and swallows parse errors, so
 # `dlt-filesystem` owns both decodes -- a safe lxml parse for XML, `yaml.safe_load_all` for YAML.
-# See `docs/getting-started/file-format-routing.md`.
+# See `docs/supported-sources/filesystem.md`.
 # TODO: Adjust `pip_hint` values after breaking out into dedicated package.
 FORMAT_TO_ITERABLE: dict[str, IterableFormat] = {
     "cbor": IterableFormat(

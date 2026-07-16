@@ -21,8 +21,7 @@ error naming the exact `pip install` to run, rather than a bare `ImportError`.
 
 YAML is parsed with `yaml.safe_load_all` directly, not through the `iterabledata` bridge, so a
 malformed file raises instead of silently loading zero rows and an unsafe tag is rejected rather
-than executed; see [File-format routing](../getting-started/file-format-routing.md) for how
-omniload chooses a reader per format.
+than executed; see {ref}`file-format-routing` about how omniload chooses a reader per format.
 
 ## File shape: documents become rows
 

@@ -124,14 +124,123 @@ to the underlying pipeline element implementation.
 For example, CSV and {ref}`xlsx` readers forward corresponding parameters to
 the [polars.read_csv] and [polars.read_excel] functions, and the {ref}`xml`
 reader requires a `#tagname=<row-tag>` hint to define the repeated element
-that is one row.
+that represents one record / row.
 :::
+
+(file-format-routing)=
+
+## File format routing
+
+omniload reads each file format through the best available path rather than
+one generic reader. This section explains how that routing works, so the
+individual per-format pages (BSON, CBOR, MessagePack, XML, YAML) can stay
+focused on how to use each format.
+
+In general, omniload builds mostly upon the excellent fsspec, polars and
+iterabledata packages for local and remote filesystem access and format
+decoding.
+
+| Format              | Library                 | Description                        |
+|:--------------------|:------------------------|:-----------------------------------|
+| CSV, JSONL, Parquet | `polars` / `pyarrow`    | Built-ins.                         |
+| BSON                | Dedicated in-tree codec | Needs extended-type normalization. |
+| CBOR                | `cbor`                  | Whole-file format.                 |
+| MessagePack         | `iterabledata`          | Streamed record-by-record.         |
+| ODS                 | `polars`                | Whole-file format.                 |
+| XML                 | `lxml`                  | Whole-file parse, hardened.        |
+| XLSX                | `polars`                | Whole-file format.                 |
+| YAML                | `yaml`                  | Whole-file decode, safe.           |
+
+omniload uses the [iterabledata] package for reading or decoding a few formats
+not covered by native reader implementations. Install the `iterable` extra to
+make them available to your environment.
+
+```sh
+pip install 'omniload[iterable]'
+```
+
+iterabledata exposes a uniform per-format class that yields record dicts from a
+file object. When routing to iterabledata, omniload feeds it the source's fsspec
+filesystem handle that is already authenticated, so remote filesystem access to
+Amazon S3, Azure Blob Storage, Google Cloud Storage, or SFTP works transparently.
+
+Where using iterabledata is not applicable, for example to enhance error handling,
+or applying stronger security policies, omniload directly uses relevant low-level
+decoder libraries.
+
+## File format notes
+
+### Performance
+
+Where available, omniload uses Polars to read and decode files from local and
+remote filesystems. Polars builds upon Apache Arrow and is written in Rust.
+This guarantees robustness and speed.
+
+### Whole-file decode
+
+Some formats are whole-file rather than streaming. For those, omniload decodes
+the bytes with the format's own library directly.
+
+### Streaming
+
+Records are pulled in batches until the reader signals end-of-file, and flushed
+per file so a multi-file glob never drops a partial final chunk. iterabledata
+rewinds the handle on construction, which fails on a non-seekable stream (a pipe,
+some compressed or SFTP handles); such a stream is spooled into memory first,
+while a seekable handle streams straight through.
+
+### Type normalization
+
+Binary formats carry types JSON does not implement, for example raw `bytes`,
+timestamps, tagged values. The decoders hand some of those back as native
+Python objects that a text or Parquet loader can not serialize. omniload
+normalizes rows to portable values before handing data to the loader.
+
+- `bytes` becomes a base64-encoded string, which is portable across text
+  loaders and Parquet alike. This covers CBOR / MessagePack binary value
+  types and YAML `!!binary` values.
+
+- An unknown CBOR tag becomes a plain `{"tag": ..., "value": ...}` object
+  rather than crashing the load.
+
+- A MessagePack `Timestamp` extension becomes a UTC datetime.
+
+- XML doesn't need any normalization: Its values are all strings or
+  nested objects/lists, which every loader handles equally well.
+
+- A YAML `!!set` type becomes a list.
+
+Some values are made portable by the decoder itself rather than by omniload:
+`cbor2` decodes the standard CBOR tags (datetime, big integers, decimals)
+into native Python types directly.
+
+Those load into Parquet and SQL destinations, but a native decimal cannot
+be serialized to a JSONL *file* destination, so use a Parquet or SQL
+destination for data that carries decimals. Nested maps and arrays are
+handled recursively. The exact per-format mapping is on each format's own
+documentation page under "Extended-type handling".
+
+### Integrity and truncation
+
+The read mechanism determines how a damaged file behaves, and it is worth knowing which
+guarantee you get.
+
+- **Whole-file decode (CBOR, XML, YAML)** raises on a corrupt or malformed file rather than
+  loading partial data. CBOR additionally must be a *single* top-level value; files that
+  concatenate several top-level objects are read only up to the first, a decoder limitation that
+  cannot be detected at read time. XML additionally rejects an entity-expansion bomb and a
+  mismatched encoding declaration.
+
+- **Streaming formats (MessagePack)** carry no length prefix, so a truncated tail reads as a
+  clean end-of-file: the partial trailing record, and anything after a mid-stream corruption,
+  are dropped silently. Validate file integrity upstream if partial loads would be a problem.
 
 
 [Amazon S3]: https://aws.amazon.com/
 [Azure Blob Storage]: https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction
 [CSV]: https://en.wikipedia.org/wiki/Comma-separated_values
 [Google GCS]: https://cloud.google.com/storage
+[iterabledata]: https://pypi.org/project/iterabledata/
 [JSONL]: https://en.wikipedia.org/wiki/JSON_streaming#JSONL
 [Parquet]: https://en.wikipedia.org/wiki/Apache_Parquet
 [polars.read_csv]: https://docs.pola.rs/api/python/stable/reference/api/polars.read_csv.html

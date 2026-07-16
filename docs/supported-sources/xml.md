@@ -21,15 +21,15 @@ naming the exact `pip install` to run, rather than a bare `ImportError`.
 
 XML is parsed with a hardened `lxml` configuration directly, not through the `iterabledata`
 bridge, so it can be locked down against XXE / entity-expansion attacks and so a corrupt file
-raises instead of loading partial data; see
-[File-format routing](../getting-started/file-format-routing.md) for how omniload chooses a
-reader per format.
+raises instead of loading partial data; see {ref}`file-format-routing` about how omniload
+chooses a reader per format.
 
-## The `#tagname` hint is required
+## The `#tagname` hint
 
-XML has no single natural "row" like a JSON array does, so you must tell omniload which repeated
-element is one row. Append a `#tagname=<row-tag>` {ref}`reader hint <reader-hint>` to the
-source:
+The reader requires a `#tagname=` reader hint: XML has no single natural "row"
+like a JSON array does, so you must tell omniload which repeated element defines
+a record / row. To do so, append a `#tagname=<row-tag>` {ref}`reader hint <reader-hint>`
+to the source.
 
 ```sh
 omniload ingest \

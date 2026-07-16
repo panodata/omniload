@@ -24,8 +24,7 @@ If a `.msgpack` file is loaded without the extra installed, `omniload` fails wit
 error naming the exact `pip install` to run, rather than a bare `ImportError`.
 
 MessagePack is read through the generic `iterabledata` bridge because it has no faster native
-reader; see [File-format routing](../getting-started/file-format-routing.md) for how omniload
-chooses a reader per format.
+reader; see {ref}`file-format-routing` about how omniload chooses a reader per format.
 
 ## Where it works
 
