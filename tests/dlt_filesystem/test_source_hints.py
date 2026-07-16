@@ -79,12 +79,11 @@ def test_s3_threads_hints(table: str, expected_hints: dict[str, str]):
 
 
 def test_s3_threads_hints_from_uri_path_form():
-    """The deprecated `s3://bucket/path#frag` URI-path form carries the fragment in
-    parsed_uri.fragment; blob_hints reconstructs it so hints still thread."""
+    """The `s3://bucket/path#frag` form carries the fragment in
+    URI-path's `fragment`; blob_hints reconstructs it so hints still thread."""
     with (
         patch(RESOURCE_FOR_READER) as rfr,
         patch("s3fs.S3FileSystem"),
-        pytest.warns(DeprecationWarning),
     ):
         S3Source().dlt_source(
             "s3://bucket/book.xlsx?access_key_id=KEY&secret_access_key=SECRET#sheet_name=foo",
@@ -100,7 +99,6 @@ def test_s3_blob_hints_track_the_loaded_file_when_both_forms_given():
     with (
         patch(RESOURCE_FOR_READER) as rfr,
         patch("s3fs.S3FileSystem"),
-        pytest.warns(DeprecationWarning),
     ):
         S3Source().dlt_source(
             "s3://bucket/loaded.xlsx?access_key_id=KEY&secret_access_key=SECRET#sheet_name=uri",
