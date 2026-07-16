@@ -1,10 +1,12 @@
+(cbor)=
+
 # CBOR
 
 `omniload` reads [CBOR](https://cbor.io/) (Concise Binary Object Representation, RFC 8949)
-files. Like BSON and MessagePack it is a **read format**: it is decoded through the same
-filesystem readers as CSV, JSONL and Parquet, so any source that reads files can read CBOR.
+files. Like BSON and MessagePack it is a **read format**: it is decoded through the shared
+filesystem readers, so any source that reads files can read CBOR.
 
-There is no CBOR *destination*; `file://` writes `csv`, `jsonl` and `parquet` only.
+CBOR is currently supported for read operations only.
 
 ## Installation
 
@@ -44,7 +46,7 @@ CBOR is available on every source that goes through the shared file readers:
 Remote reads go through the source's own fsspec handle, so they reuse its existing
 authentication (no separate CBOR storage configuration). A file is read as CBOR when its
 extension is `.cbor` (optionally `.cbor.gz`) or when an explicit `#cbor`
-[format hint](file.md#file-type-hinting) is appended. Gzipped files are decompressed
+{ref}`format hint <format-hint>` is appended. Gzipped files are decompressed
 automatically. The whole file is read into memory and decoded at once (CBOR is not a
 streaming format); a corrupt or truncated file raises rather than loading partial data. Map
 keys are expected to be strings.

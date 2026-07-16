@@ -1,11 +1,14 @@
+(messagepack)=
+(msgpack)=
+
 # MessagePack
 
 `omniload` reads [MessagePack](https://msgpack.org/) files, a compact binary
 serialization of JSON-shaped records. Like BSON it is a **read format**: it is decoded
-through the same filesystem readers as CSV, JSONL and Parquet, so any source that reads
+through the shared filesystem readers, so any source that reads
 files can read MessagePack.
 
-There is no MessagePack *destination*; `file://` writes `csv`, `jsonl` and `parquet` only.
+MessagePack is currently supported for read operations only.
 
 ## Installation
 
@@ -35,7 +38,7 @@ MessagePack is available on every source that goes through the shared file reade
 Remote reads go through the source's own fsspec handle, so they reuse its existing
 authentication (no separate MessagePack storage configuration). A file is read as
 MessagePack when its extension is `.msgpack` (optionally `.msgpack.gz`) or when an explicit
-`#msgpack` [format hint](file.md#file-type-hinting) is appended. Gzipped files are
+{ref}`format hint <format-hint>` is appended. Gzipped files are
 decompressed automatically.
 
 The file is expected to be a stream of MessagePack records (maps) written back to back,

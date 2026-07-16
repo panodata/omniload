@@ -1,14 +1,12 @@
-# Filesystem
+(file)=
 
-The `file://` source reads local files (BSON, CSV, JSONL, Parquet, XLSX) through the same
-readers used by the S3, GCS and SFTP sources. Any file format those sources
-support is supported here too, along with globbing, gzip decompression and
-`#format` hints.
+# File
 
-`omniload` supports local files as both a data source and a destination. See
-[Using `file://` as a destination](#using-file-as-a-destination) below for writing.
+The `file://` source reads local files in various
+{ref}`file formats <file-formats>` through the same
+readers used by the local and remote filesystem sources.
 
-## URI Format
+## URI format
 
 Everything after `file://` is treated as a filesystem path. Relative paths
 resolve against the current working directory; an extra leading slash gives an
@@ -28,9 +26,6 @@ file://<path>
 | Glob | `file://data/*.csv` | all matching files in `<cwd>/data` |
 | Format hint | `file://feed.dat#csv` | `feed.dat` read as CSV |
 
-The file format is inferred from the extension (`.bson`, `.csv`, `.jsonl`,
-`.parquet`, `.xlsx`, optionally `.gz`) or from an explicit [format hint](#file-type-hinting).
-
 :::{tip}
 `file://` intentionally treats the first path segment as part of the path, not
 as an RFC-8089 host. This is what makes the two-slash form `file://data/x.csv`
@@ -45,48 +40,7 @@ UNC path `\\server\share\x.csv`. Backslash input (`file://\\server\share\x.csv`)
 is accepted as well.
 :::
 
-## Example: Load CSV file into DuckDB
-
-```sh
-omniload ingest \
-    --source-uri 'file://data/users.csv' \
-    --source-table 'users' \
-    --dest-uri 'duckdb:///local.duckdb' \
-    --dest-table 'public.users'
-```
-
-The `--source-table` value is only used as the path when the URI path is empty
-(the split form above); otherwise it is ignored, and the destination table is
-controlled by `--dest-table`.
-
-## Example: Load XLSX spreadsheet file into DuckDB
-
-```sh
-omniload ingest \
-    --source-uri 'file://users.xlsx#sheet_name=staff' \
-    --dest-uri 'duckdb:///local.duckdb' \
-    --dest-table 'public.staff'
-```
-
-Here, `sheet_name` is a reader hint to address the worksheet within the workbook
-by name. If the parameter is omitted, the reader will read the first sheet of the
-workbook. The loader is using [polars.read_excel], please consult its documentation
-about all available parameters and their descriptions.
-
-## Supported formats
-
-The same set the blob sources support:
-
-- `#bson` - BSON (MongoDB dump format), read-only. See [BSON](bson.md).
-- `#csv` - comma-separated values with a header row
-- `#csv_headless` - CSV without a header row (see below)
-- `#jsonl` - line-delimited JSON
-- `#parquet` - Parquet
-- `#xlsx` - XLSX Spreadsheet format
-
-BSON is a read format only; the write side below supports `csv`, `jsonl` and `parquet`.
-
-## File glob patterns
+## Glob patterns
 
 The path may contain a glob pattern to load multiple files at once. The split
 into directory and pattern happens at the first segment containing a glob
@@ -103,81 +57,15 @@ character (`*`, `?`, `[`), so recursive patterns work:
 Gzipped files (`.gz`) are detected and decompressed automatically, so
 `file://data/events.csv.gz` loads without any extra configuration.
 
-## File type hinting
+(file-destination)=
 
-If a file is correctly encoded but has a non-standard extension, append a
-`#format` fragment to tell `omniload` how to read it:
+## Destination connector
 
-```sh
-omniload ingest \
-    --source-uri 'file://data/event-data#jsonl' \
-    --source-table 'events' \
-    --dest-uri duckdb:///local.duckdb \
-    --dest-table 'public.events'
-```
-
-A literal `#` in a path is preserved when the trailing segment is not one of the
-known formats, so `file://data/vendor#1/report.csv` reads the file at
-`data/vendor#1/report.csv` as CSV.
-
-### CSV files without headers
-
-For CSV files without a header row, use the `#csv_headless` hint and optionally
-supply column names with `--columns`:
-
-```sh
-omniload ingest \
-    --source-uri 'file://data/raw-data.csv#csv_headless' \
-    --source-table 'raw' \
-    --columns "id:bigint,name:text,value:double" \
-    --dest-uri duckdb:///local.duckdb \
-    --dest-table 'public.raw_data'
-```
-
-Without column names, columns are auto-named `unknown_col_0`, `unknown_col_1`,
-and so on.
-
-## Reader hints
-
-The URI fragment is also a general **reader-hint channel**: besides a `#format`
-token it can carry `#key=value` pairs that a reader may use to parametrize how a
-file is read (for example, a future spreadsheet reader could take a sheet name).
-A format hint and named hints coexist in one fragment, `&`-separated:
-
-```text
-file://quotes.dat#xlsx&sheet_name=daily&header=0
-```
-
-The named-hint grammar:
-
-- Values are percent-decoded, so `#sheet_name=My%20Sheet` gives the value `My Sheet`
-  and `#sheet_name=R%26D` gives `R&D`.
-- Only the first `=` splits key from value, so a value may itself contain `=`
-  (`#range=A1=B2` gives `range` = `A1=B2`).
-- An empty value is preserved (`#sheet_name=` gives `sheet` = `""`); a reader decides
-  whether that means "unset".
-- Duplicate keys take the last value (`#sheet_name=a&sheet_name=b` gives `b`).
-- If any segment of the fragment is neither a `key=value` pair nor a single
-  known format, the whole `#...` is treated as a literal part of the path, so a
-  real `#` in a filename keeps working. Percent-encode a literal `#` as `%23`
-  when a trailing `path#key=value` would otherwise be read as a fragment.
-
-:::{note}
-Reader hints are a forward-looking channel. The built-in BSON, JSONL and
-Parquet readers take no hints today, so a `#key=value` pair is parsed and
-carried but has no effect on them yet. `csv`, `csv_headless` and `xlsx` accept
-hints matching their respective [polars.read_csv] and [polars.read_excel]
-parameters. Only the `#format` token changes current read behavior for the
-readers that take no hints. The same channel is available on the [S3](s3.md),
-[Google Cloud Storage](google-cloud-storage.md) and [SFTP](sftp.md) sources.
-:::
-
-## Using `file://` as a destination
-
-`file://` also writes local files. The output format is taken from the
+When addressing filesystems for writing, the output format is taken from the
 destination file extension (`.csv`, `.jsonl`, `.parquet`) or from an explicit
-`#format` hint, exactly like the source side. The written file drops dlt's
-internal bookkeeping columns, so it round-trips cleanly.
+{ref}`format hint <format-hint>` (`#format`), exactly like the source side is
+doing it. The written file drops dlt's internal bookkeeping columns, so it
+round-trips cleanly.
 
 ```sh
 omniload ingest \
@@ -212,6 +100,35 @@ Parquet as well as CSV, plus (on read) globbing and gzip decompression. Prefer
 `file://` for local files; use `csv://` only when you specifically want the
 standalone CSV reader.
 
+## Examples
 
-[polars.read_csv]: https://docs.pola.rs/api/python/stable/reference/api/polars.read_csv.html
+### Load CSV into DuckDB
+
+```sh
+omniload ingest \
+    --source-uri 'file://data/users.csv' \
+    --source-table 'users' \
+    --dest-uri 'duckdb:///local.duckdb' \
+    --dest-table 'public.users'
+```
+
+The `--source-table` value is only used as the path when the URI path is empty
+(the split form above); otherwise it is ignored, and the destination table is
+controlled by `--dest-table`.
+
+### Load spreadsheet into DuckDB
+
+```sh
+omniload ingest \
+    --source-uri 'file://users.xlsx#sheet_name=staff' \
+    --dest-uri 'duckdb:///local.duckdb' \
+    --dest-table 'public.staff'
+```
+
+Here, `sheet_name` is a reader hint to address the worksheet within the workbook
+by name. If the parameter is omitted, the reader will read the first sheet of the
+workbook. The loader is using [polars.read_excel], please consult its documentation
+about all available parameters and their descriptions.
+
+
 [polars.read_excel]: https://docs.pola.rs/api/python/stable/reference/api/polars.read_excel.html

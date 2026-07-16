@@ -1,11 +1,13 @@
+(bson)=
+
 # BSON
 
 `omniload` reads [BSON](https://bsonspec.org/) files, the binary format `mongodump`
 writes (one file per collection, documents concatenated back to back). BSON is a **read
-format**: it is decoded through the same filesystem readers as CSV, JSONL and Parquet,
+format**: it is decoded through the shared filesystem readers,
 so any source that reads files can read BSON.
 
-There is no BSON *destination*; `file://` writes `csv`, `jsonl` and `parquet` only.
+BSON is currently supported for read operations only.
 
 ## Where it works
 
@@ -16,7 +18,7 @@ BSON is available on every source that goes through the shared file readers:
 - [`sftp://`](sftp.md)
 
 A file is read as BSON when its extension is `.bson` (optionally `.bson.gz`) or when an
-explicit `#bson` [format hint](file.md#file-type-hinting) is appended. Gzipped files are
+explicit `#bson` {ref}`format hint <format-hint>` is appended. Gzipped files are
 decompressed automatically.
 
 ## Example: loading a BSON dump into DuckDB
