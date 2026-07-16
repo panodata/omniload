@@ -1,5 +1,5 @@
-from omniload.source.filesystem.impl.local import LocalFilesystemSource
-from omniload.source.filesystem.impl.remote import (
+from dlt_filesystem.source.impl.local import LocalFilesystemSource
+from dlt_filesystem.source.impl.remote import (
     AzureSource,
     GCSSource,
     S3Source,

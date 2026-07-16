@@ -14,8 +14,8 @@ from fsspec.implementations.memory import MemoryFileSystem
 from fsspec.registry import _registry as _fsspec_registry
 from pyarrow import parquet as pya_parquet
 
-from omniload.error import InvalidBlobTableError, MissingValueError
-from omniload.target.filesystem.api import AzureDestination, S3Destination
+from dlt_filesystem.error import InvalidBlobTableError, MissingConnectorOption
+from dlt_filesystem.target.api import AzureDestination, S3Destination
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string, has_exception
 from tests.util.db import get_query_result
@@ -171,7 +171,7 @@ def fs_test_cases(
         with (
             patch(target_fs),
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -209,7 +209,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -230,7 +230,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -253,7 +253,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -274,7 +274,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -297,7 +297,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -318,7 +318,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -340,7 +340,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -362,7 +362,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -384,7 +384,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -406,7 +406,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -429,7 +429,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -453,7 +453,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -478,7 +478,7 @@ def fs_test_cases(
         with (
             patch(target_fs) as target_fs_mock,
             patch(
-                "omniload.source.filesystem.adapter.glob_files",
+                "dlt_filesystem.source.adapter.glob_files",
                 wraps=glob_files_override,
             ),
         ):
@@ -768,7 +768,7 @@ def test_azure_destination_account_host():
 
 
 def test_azure_destination_missing_credentials():
-    with pytest.raises(MissingValueError):
+    with pytest.raises(MissingConnectorOption):
         AzureDestination().dlt_dest(
             uri="az://?account_name=acct",
             dest_table="container/test_table",
@@ -776,7 +776,7 @@ def test_azure_destination_missing_credentials():
 
 
 def test_azure_destination_missing_account_name():
-    with pytest.raises(MissingValueError, match="account_name"):
+    with pytest.raises(MissingConnectorOption, match="account_name"):
         AzureDestination().dlt_dest(
             uri="az://?account_key=a2V5",
             dest_table="container/test_table",
@@ -786,7 +786,7 @@ def test_azure_destination_missing_account_name():
 def test_azure_destination_partial_service_principal():
     # a partial SP triplet names the missing field instead of falling through to
     # an opaque adlfs/Azure-SDK error
-    with pytest.raises(MissingValueError, match="client_secret"):
+    with pytest.raises(MissingConnectorOption, match="client_secret"):
         AzureDestination().dlt_dest(
             uri="az://?account_name=acct&tenant_id=t&client_id=c",
             dest_table="container/test_table",
@@ -830,7 +830,7 @@ def test_azure_source_encoded_credentials(tmp_path):
     with (
         patch("adlfs.AzureBlobFileSystem") as fs_mock,
         patch(
-            "omniload.source.filesystem.adapter.glob_files",
+            "dlt_filesystem.source.adapter.glob_files",
             wraps=glob_files_override,
         ),
     ):

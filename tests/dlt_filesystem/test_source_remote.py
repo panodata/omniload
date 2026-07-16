@@ -3,9 +3,9 @@ from urllib.parse import urlparse
 
 import pytest
 
-from omniload.source.filesystem.error import UnsupportedEndpointError
-from omniload.source.filesystem.format.registry import supported_file_format_message
-from omniload.source.filesystem.router import (
+from dlt_filesystem.source.error import UnsupportedEndpointError
+from dlt_filesystem.source.format.registry import supported_file_format_message
+from dlt_filesystem.source.router import (
     determine_endpoint,
     parse_endpoint,
     parse_fragment,

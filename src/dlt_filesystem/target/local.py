@@ -1,6 +1,6 @@
 """Write CSV / JSONL / Parquet files to the local filesystem via ``file://``.
 
-This is the write-side twin of ``omniload.source.filesystem`` ``LocalFilesystemSource``
+This is the write-side twin of ``dlt_filesystem.source`` ``LocalFilesystemSource``
 (the ``file://`` source). It mirrors that URI grammar exactly: everything after
 ``file://`` is a filesystem path (never an RFC-8089 host), relative paths resolve
 against the working directory, and the output format is taken from the file
@@ -21,10 +21,10 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from omniload.target.filesystem.registry import writer_for_format
-from omniload.target.filesystem.util import _resolve_output_target, _strip_dlt_columns
-from omniload.target.model import DEFAULT_DATASET_NAME
-from omniload.util.loader import load_dlt_file
+from dlt_filesystem.target.model import DEFAULT_DATASET_NAME
+from dlt_filesystem.target.registry import writer_for_format
+from dlt_filesystem.target.util import _resolve_output_target, _strip_dlt_columns
+from dlt_filesystem.util.loader import load_dlt_file
 
 
 class LocalFilesystemDestination:

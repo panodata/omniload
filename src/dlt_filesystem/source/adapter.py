@@ -23,7 +23,7 @@ from dlt.sources.credentials import FileSystemCredentials
 from dlt.sources.filesystem import FileItem, FileItemDict, fsspec_filesystem, glob_files
 from fsspec import AbstractFileSystem
 
-from omniload.source.filesystem.format.readers import (
+from dlt_filesystem.source.format.readers import (
     ReadersSource,
     read_bson,
     read_cbor,

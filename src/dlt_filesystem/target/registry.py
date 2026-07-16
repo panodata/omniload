@@ -1,8 +1,9 @@
-# csv_headless is a read-only concept (parsing a header-less CSV); writing always emits a
-# header, so the write side supports the plain-format subset of FORMAT_TO_READER.
+# csv_headless is a read-only concept (parsing a header-less CSV);
+# writing always emits a header, so the write side supports the
+# plain-format subset of FORMAT_TO_READER.
 from typing import Callable
 
-from omniload.target.filesystem.writer import write_csv, write_jsonl, write_parquet
+from dlt_filesystem.target.writer import write_csv, write_jsonl, write_parquet
 
 FORMAT_TO_WRITER: dict[str, Callable[[str, list[dict]], None]] = {
     "csv": write_csv,

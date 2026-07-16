@@ -19,10 +19,10 @@ from dlt.common.typing import copy_sig
 from dlt.sources import DltResource, DltSource, TDataItems
 from dlt.sources.filesystem import FileItemDict
 
-from omniload.codec.python import cast_kwargs_to_signature
-from omniload.source.filesystem.format.helpers import fetch_arrow, fetch_json
-from omniload.source.filesystem.format.iterable_codec import read_via_iterable
-from omniload.source.filesystem.format.settings import DEFAULT_CHUNK_SIZE
+from dlt_filesystem.source.format.helpers import fetch_arrow, fetch_json
+from dlt_filesystem.source.format.iterable_codec import read_via_iterable
+from dlt_filesystem.source.format.settings import DEFAULT_CHUNK_SIZE
+from dlt_filesystem.util.python import cast_kwargs_to_signature
 
 
 def _polars_csv_symbols() -> Dict[str, Any]:
@@ -346,7 +346,7 @@ def read_bson(
     import bson
     from dlt.common.utils import map_nested_values_in_place
 
-    from omniload.source.filesystem.format.bson_codec import convert_bson_objs
+    from dlt_filesystem.source.format.bson_codec import convert_bson_objs
 
     for file_obj in items:
         with file_obj.open() as f:

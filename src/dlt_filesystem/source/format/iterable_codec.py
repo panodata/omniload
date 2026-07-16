@@ -9,7 +9,7 @@ A format is read one of two ways (chosen per format, see ``FORMAT_TO_ITERABLE``)
 
 - **Streaming via `iterabledata`** (e.g. MessagePack). `iterabledata` (PyPI ``iterabledata``,
   import package ``iterable``) exposes a uniform per-format class that takes a ``stream=`` file
-  object and yields record dicts via ``read_bulk(n)``. omniload feeds it the already-
+  object and yields record dicts via ``read_bulk(n)``. `dlt-filesystem` feeds it the already-
   authenticated ``file_obj.open()`` handle, so remote sources keep flowing through dlt's fsspec
   layer and iterabledata's own cloud-storage / credential path is never touched. Note a
   streaming wire format like MessagePack carries no length prefix, so a truncated tail reads as
@@ -18,7 +18,7 @@ A format is read one of two ways (chosen per format, see ``FORMAT_TO_ITERABLE``)
 - **Whole-file direct decode** (e.g. CBOR). Some formats are whole-file rather than streaming,
   and iterabledata's wrapper for them wraps its decode in a bare ``except Exception`` that
   yields nothing, so a truncated / corrupt file would load as zero rows with **no error**
-  (silent data loss). For those, omniload decodes the bytes with the format's own library
+  (silent data loss). For those, `dlt-filesystem` decodes the bytes with the format's own library
   directly (``eager_decoder``) so decode errors propagate. This also matches the project's
   per-format routing policy: route to iterabledata only where it is the better path.
 
@@ -53,7 +53,7 @@ from dlt.common.typing import TDataItems
 from dlt.common.utils import map_nested_values_in_place
 from dlt.sources.filesystem import FileItemDict
 
-from omniload.source.filesystem.error import (
+from dlt_filesystem.source.error import (
     MissingDecoderError,
     MissingReaderOptionError,
 )
@@ -349,9 +349,10 @@ def _xml_eager_decode(data: bytes, options: dict) -> Iterator[Any]:
 
 # Lexically sorted by format name. XML and YAML both use the whole-file `eager_decoder` seam
 # (never an iterabledata class): iterabledata's XML parser resolves entities and can't be locked
-# down through its API, and its YAML wrapper is eager and swallows parse errors, so omniload owns
-# both decodes -- a safe lxml parse for XML, `yaml.safe_load_all` for YAML. See
-# `docs/getting-started/file-format-routing.md`.
+# down through its API, and its YAML wrapper is eager and swallows parse errors, so
+# `dlt-filesystem` owns both decodes -- a safe lxml parse for XML, `yaml.safe_load_all` for YAML.
+# See `docs/getting-started/file-format-routing.md`.
+# TODO: Adjust `pip_hint` values after breaking out into dedicated package.
 FORMAT_TO_ITERABLE: dict[str, IterableFormat] = {
     "cbor": IterableFormat(
         decoder_dist="cbor2",

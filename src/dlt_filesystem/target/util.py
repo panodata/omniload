@@ -1,9 +1,9 @@
 import os
 
-from omniload.error import MissingValueError
-from omniload.source.filesystem.format.registry import FORMAT_TO_READER
-from omniload.source.filesystem.impl.util import _is_absolute_local, _url_path_to_local
-from omniload.target.filesystem.registry import (
+from dlt_filesystem.error import MissingConnectorOption
+from dlt_filesystem.source.format.registry import FORMAT_TO_READER
+from dlt_filesystem.source.impl.util import _is_absolute_local, _url_path_to_local
+from dlt_filesystem.target.registry import (
     WRITE_FORMATS,
     supported_write_format_message,
 )
@@ -37,12 +37,12 @@ def _resolve_output_target(dest_uri: str) -> tuple[str, str]:
     spec = dest_uri.split("://", 1)[1] if "://" in dest_uri else dest_uri
     spec = spec.strip()
     if not spec:
-        raise MissingValueError("path", "file URI")
+        raise MissingConnectorOption("path", "file URI")
 
     path, hint = _split_format_hint(spec)
     if not path:
         # e.g. file://#csv, where the whole spec was consumed by the format hint.
-        raise MissingValueError("path", "file URI")
+        raise MissingConnectorOption("path", "file URI")
     if any(char in path for char in _GLOB_CHARS):
         raise ValueError(
             "file:// destinations must name a single output file; "

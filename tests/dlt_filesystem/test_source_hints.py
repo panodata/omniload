@@ -10,10 +10,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from omniload.source.filesystem.impl.local import LocalFilesystemSource
-from omniload.source.filesystem.impl.remote import GCSSource, S3Source, SFTPSource
+from dlt_filesystem.source.impl.local import LocalFilesystemSource
+from dlt_filesystem.source.impl.remote import GCSSource, S3Source, SFTPSource
 
-RESOURCE_FOR_READER = "omniload.source.filesystem.adapter.resource_for_reader"
+RESOURCE_FOR_READER = "dlt_filesystem.source.adapter.resource_for_reader"
 
 GCS_URI = "gs://?credentials_base64=e30K"  # base64 for "{}"
 S3_URI = "s3://?access_key_id=KEY&secret_access_key=SECRET"

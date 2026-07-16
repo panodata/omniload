@@ -9,7 +9,7 @@ from dlt.common.storages.configuration import FileSystemCredentials
 from dlt.extract import DltResource
 from fsspec import AbstractFileSystem
 
-from omniload.source.filesystem.format.registry import (
+from dlt_filesystem.source.format.registry import (
     FORMAT_TO_READER,
     reader_for_format,
 )

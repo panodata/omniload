@@ -11,8 +11,8 @@ from dlt.common.configuration.specs import (
 )
 from dlt.common.storages.configuration import FileSystemCredentials
 
-from omniload.error import MissingValueError
-from omniload.util.auth import parse_azure_blob_auth
+from dlt_filesystem.error import MissingConnectorOption
+from dlt_filesystem.util.auth import parse_azure_blob_auth
 
 
 class BlobStorageDestination(abc.ABC):
@@ -91,11 +91,11 @@ class S3Destination(BlobStorageDestination):
     def credentials(self, params: dict) -> FileSystemCredentials:
         access_key_id = params.get("access_key_id", [None])[0]
         if access_key_id is None:
-            raise MissingValueError("access_key_id", "S3")
+            raise MissingConnectorOption("access_key_id", "S3")
 
         secret_access_key = params.get("secret_access_key", [None])[0]
         if secret_access_key is None:
-            raise MissingValueError("secret_access_key", "S3")
+            raise MissingConnectorOption("secret_access_key", "S3")
 
         endpoint_url = params.get("endpoint_url", [None])[0]
         if endpoint_url is not None:
@@ -120,13 +120,15 @@ class GCSDestination(BlobStorageDestination):
         credentials_path = params.get("credentials_path")
         credentials_base64 = params.get("credentials_base64")
         credentials_available = any(
-            map(
+            map(  # noqa: C417
                 lambda x: x is not None,
                 [credentials_path, credentials_base64],
             )
         )
         if credentials_available is False:
-            raise MissingValueError("credentials_path or credentials_base64", "GCS")
+            raise MissingConnectorOption(
+                "credentials_path or credentials_base64", "GCS"
+            )
 
         credentials = None
         if credentials_path:

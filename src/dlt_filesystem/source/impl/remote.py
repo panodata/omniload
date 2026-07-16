@@ -3,17 +3,17 @@ import json
 from typing import Any, Dict
 from urllib.parse import parse_qs, urlparse
 
-from omniload.error import InvalidBlobTableError, MissingValueError
-from omniload.source.filesystem.base import FilesystemSource
-from omniload.source.filesystem.error import UnsupportedEndpointError
-from omniload.source.filesystem.format.registry import supported_file_format_message
-from omniload.source.filesystem.router import (
+from dlt_filesystem.error import InvalidBlobTableError, MissingConnectorOption
+from dlt_filesystem.source.base import FilesystemSource
+from dlt_filesystem.source.error import UnsupportedEndpointError
+from dlt_filesystem.source.format.registry import supported_file_format_message
+from dlt_filesystem.source.router import (
     blob_hints,
     determine_endpoint,
     parse_fragment,
     parse_uri,
 )
-from omniload.util.auth import AzureBlobAuth, parse_azure_blob_auth
+from dlt_filesystem.util.auth import AzureBlobAuth, parse_azure_blob_auth
 
 
 class GCSSource(FilesystemSource):
@@ -35,13 +35,15 @@ class GCSSource(FilesystemSource):
         credentials_path = params.get("credentials_path")
         credentials_base64 = params.get("credentials_base64")
         credentials_available = any(
-            map(
+            map(  # noqa: C417
                 lambda x: x is not None,
                 [credentials_path, credentials_base64],
             )
         )
         if credentials_available is False:
-            raise MissingValueError("credentials_path or credentials_base64", "GCS")
+            raise MissingConnectorOption(
+                "credentials_path or credentials_base64", "GCS"
+            )
 
         credentials = None
         if credentials_path:
@@ -49,7 +51,7 @@ class GCSSource(FilesystemSource):
         else:
             credentials = json.loads(base64.b64decode(credentials_base64[0]).decode())  # type: ignore
 
-        # There's a compatiblity issue between google-auth, dlt and gcsfs
+        # There's a compatibility issue between google-auth, dlt and gcsfs
         # that makes it difficult to use google.oauth2.service_account.Credentials
         # (The RECOMMENDED way of passing service account credentials)
         # directly with gcsfs. As a workaround, we construct the GCSFileSystem
@@ -69,8 +71,8 @@ class GCSSource(FilesystemSource):
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from omniload.source.filesystem.adapter import resource_for_reader
-        from omniload.source.filesystem.model import FilesystemReference
+        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
             FilesystemReference(
@@ -128,8 +130,8 @@ class S3Source(FilesystemSource):
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from omniload.source.filesystem.adapter import resource_for_reader
-        from omniload.source.filesystem.model import FilesystemReference
+        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
             FilesystemReference(
@@ -211,8 +213,8 @@ class AzureSource(FilesystemSource):
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from omniload.source.filesystem.adapter import resource_for_reader
-        from omniload.source.filesystem.model import FilesystemReference
+        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
             FilesystemReference(
@@ -231,7 +233,7 @@ class SFTPSource(FilesystemSource):
         parsed_uri = urlparse(uri)
         host = parsed_uri.hostname
         if not host:
-            raise MissingValueError("host", "SFTP URI")
+            raise MissingConnectorOption("host", "SFTP URI")
         port = parsed_uri.port or 22
         username = parsed_uri.username
         password = parsed_uri.password
@@ -268,8 +270,8 @@ class SFTPSource(FilesystemSource):
         except Exception as e:
             raise ValueError(f"Failed to parse endpoint from path: {table}") from e
 
-        from omniload.source.filesystem.adapter import resource_for_reader
-        from omniload.source.filesystem.model import FilesystemReference
+        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
             FilesystemReference(

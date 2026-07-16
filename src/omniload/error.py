@@ -19,14 +19,6 @@ class UnsupportedResourceError(Exception):
         )
 
 
-class InvalidBlobTableError(Exception):
-    def __init__(self, source):
-        super().__init__(
-            f"Invalid source table for {source} "
-            "Ensure that the table is in the format {bucket-name}/{file glob}"
-        )
-
-
 class HTTPError(Exception):
     def __init__(self, source: requests.HTTPError):
         super().__init__(f"HTTP {source.response.status_code}: {source.response.text}")

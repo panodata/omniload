@@ -155,7 +155,7 @@ optional-dependencies.ibm-db = [
 # explicitly here (msgpack, cbor2, lxml, pyyaml). lxml and pyyaml are commonly present
 # transitively but are declared so the extra is self-contained. Note: iterabledata's import
 # package name is the generic `iterable`, which can shadow a same-named local package.
-# See omniload/source/filesystem/format/iterable_codec.py.
+# See dlt_filesystem/source/format/iterable_codec.py.
 optional-dependencies.iterable = [
   "cbor2<7",
   "iterabledata>=1.0.15,<2",
@@ -247,6 +247,18 @@ lint.extend-ignore = [
   "RET508",
   # Probable insecure usage of temporary file or directory
   "S108",
+]
+lint.per-file-ignores."src/dlt_filesystem/source/*" = [
+  # line-too-long
+  "E501",
+]
+lint.per-file-ignores."src/dlt_filesystem/target/{local.py,util.py}" = [
+  # line-too-long
+  "E501",
+]
+lint.per-file-ignores."src/dlt_filesystem/testing/{stub.py}" = [
+  # line-too-long
+  "E501",
 ]
 lint.per-file-ignores."src/omniload/api.py" = [
   # line-too-long

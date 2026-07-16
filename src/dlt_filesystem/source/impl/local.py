@@ -1,15 +1,15 @@
 import os
 
-from omniload.error import MissingValueError
-from omniload.source.filesystem.base import FilesystemSource
-from omniload.source.filesystem.error import UnsupportedEndpointError
-from omniload.source.filesystem.format.registry import supported_file_format_message
-from omniload.source.filesystem.impl.util import (
+from dlt_filesystem.error import MissingConnectorOption
+from dlt_filesystem.source.base import FilesystemSource
+from dlt_filesystem.source.error import UnsupportedEndpointError
+from dlt_filesystem.source.format.registry import supported_file_format_message
+from dlt_filesystem.source.impl.util import (
     _is_absolute_local,
     _split_dir_glob,
     _url_path_to_local,
 )
-from omniload.source.filesystem.router import (
+from dlt_filesystem.source.router import (
     determine_endpoint,
     parse_fragment,
 )
@@ -50,7 +50,7 @@ class LocalFilesystemSource(FilesystemSource):
         if not spec:
             spec = table.strip()
         if not spec:
-            raise MissingValueError("path", "file URI")
+            raise MissingConnectorOption("path", "file URI")
 
         # Strip the trailing #fragment (format hint and/or #key=value reader
         # hints) before splitting into dir/glob, so file://feed.dat#csv and
@@ -79,8 +79,8 @@ class LocalFilesystemSource(FilesystemSource):
 
         fs = fsspec.filesystem("file")
 
-        from omniload.source.filesystem.adapter import resource_for_reader
-        from omniload.source.filesystem.model import FilesystemReference
+        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.model import FilesystemReference
 
         # Pass the plain absolute directory (not a hand-built file:// URL). dlt's
         # glob_files routes a local path through make_file_url/make_local_path, which is

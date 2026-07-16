@@ -1,5 +1,5 @@
-from omniload.target.filesystem.local import LocalFilesystemDestination
-from omniload.target.filesystem.remote import (
+from dlt_filesystem.target.local import LocalFilesystemDestination
+from dlt_filesystem.target.remote import (
     AzureDestination,
     GCSDestination,
     S3Destination,

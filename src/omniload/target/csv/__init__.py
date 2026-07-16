@@ -5,8 +5,8 @@ import tempfile
 
 import dlt.destinations
 
+from dlt_filesystem.util.loader import load_dlt_file
 from omniload.target.model import GenericSqlDestination
-from omniload.util.loader import load_dlt_file
 
 
 class CustomCsvDestination(dlt.destinations.filesystem):

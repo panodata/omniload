@@ -9,7 +9,7 @@ from typing import List
 import pyarrow.parquet
 import pytest
 
-from omniload.util.loader import factory, load_dlt_file
+from dlt_filesystem.util.loader import factory, load_dlt_file
 
 logger = logging.getLogger(__name__)
 

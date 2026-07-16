@@ -1,4 +1,4 @@
-from omniload.source.filesystem.error import UnsupportedEndpointError
+from dlt_filesystem.source.error import UnsupportedEndpointError
 
 # Formats whose reader ships with the base install (core dependencies).
 BASE_FILE_FORMATS: dict[str, str] = {
@@ -48,7 +48,7 @@ def advertised_file_formats() -> tuple[str, ...]:
     importable, so a base install doesn't advertise a format that would fail with an install
     hint (the reader still routes such a format and raises that hint if it is used).
     """
-    from omniload.source.filesystem.format.iterable_codec import (
+    from dlt_filesystem.source.format.iterable_codec import (
         installed_iterable_formats,
     )
 

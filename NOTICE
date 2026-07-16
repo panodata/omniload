@@ -8,11 +8,11 @@ Copyright 2022-2025 ScaleVector
 Licensed under the Apache License, Version 2.0
 
 The following directories contain code from dlt-hub:
+- dlt_filesystem
 - omniload/source/airtable/
 - omniload/source/asana/
 - omniload/source/chess/
 - omniload/source/facebook_ads/
-- omniload/source/filesystem/
 - omniload/source/freshdesk/
 - omniload/source/github/
 - omniload/source/google_ads/

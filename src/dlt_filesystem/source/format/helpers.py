@@ -18,7 +18,7 @@ from typing import Any, Dict, Generator, Iterable, List, Optional
 
 from dlt.common.typing import TDataItem
 
-from omniload.source.filesystem.format.settings import DEFAULT_CHUNK_SIZE
+from dlt_filesystem.source.format.settings import DEFAULT_CHUNK_SIZE
 
 
 def add_columns(columns: List[str], rows: List[List[Any]]) -> List[Dict[str, Any]]:
