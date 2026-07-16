@@ -2,7 +2,7 @@
 
 # omniload
 <p>Copy data between any source and any destination.</p>
-<img src="https://github.com/panodata/omniload/blob/main/resources/demo.gif?raw=true" width="750" />
+<img src="https://github.com/panodata/omniload/blob/main/docs/_static/splash/demo.gif?raw=true" width="750" />
 
 [![License](https://img.shields.io/github/license/panodata/omniload.svg)](https://github.com/panodata/omniload/blob/main/LICENSE)
 [![Downloads / month](https://pepy.tech/badge/omniload/month)](https://pepy.tech/project/omniload/)
