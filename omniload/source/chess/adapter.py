@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 """A source loading player profiles and games from chess.com api"""
 
-from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
+from typing import Any, Callable, Dict, Iterator, List, Sequence
 
 import dlt
 from dlt.common import pendulum
@@ -26,11 +26,9 @@ from .helpers import get_path_with_retry, get_url_with_retry, validate_month_str
 from .settings import UNOFFICIAL_CHESS_API_URL
 
 
-@dlt.source(name="chess", max_table_nesting=0)
+@dlt.source(name="chess")
 def source(
-    players: List[str],
-    start_month: Optional[str] = None,
-    end_month: Optional[str] = None,
+    players: List[str], start_month: str = None, end_month: str = None
 ) -> Sequence[DltResource]:
     """
     A dlt source for the chess.com api. It groups several resources (in this case chess.com API endpoints) containing
@@ -91,12 +89,10 @@ def players_archives(players: List[str]) -> Iterator[List[TDataItem]]:
 
 
 @dlt.resource(
-    write_disposition="replace", columns={"end_time": {"data_type": "timestamp"}}
+    write_disposition="append", columns={"end_time": {"data_type": "timestamp"}}
 )
 def players_games(
-    players: List[str],
-    start_month: Optional[str] = None,
-    end_month: Optional[str] = None,
+    players: List[str], start_month: str = None, end_month: str = None
 ) -> Iterator[Callable[[], List[TDataItem]]]:
     """
     Yields `players` games that happened between `start_month` and `end_month`.
@@ -119,9 +115,10 @@ def players_games(
     # get archives in parallel by decorating the http request with defer
     @dlt.defer
     def _get_archive(url: str) -> List[TDataItem]:
+        print(f"Getting archive from {url}")
         try:
             games = get_url_with_retry(url).get("games", [])
-            return games
+            return games  # type: ignore
         except requests.HTTPError as http_err:
             # sometimes archives are not available and the error seems to be permanent
             if http_err.response.status_code == 404:

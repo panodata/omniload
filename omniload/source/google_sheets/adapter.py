@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ def google_spreadsheet(
         spreadsheet_id=spreadsheet_id,
         range_names=list(all_range_names),
     )
-    assert len(all_range_names) == len(all_range_data), (  # noqa: S101
+    assert len(all_range_names) == len(all_range_data), (
         "Google Sheets API must return values for all requested ranges"
     )
 
@@ -97,17 +97,17 @@ def google_spreadsheet(
     range_data = []
     metadata_table = []
     for name, parsed_range, meta_range, values in all_range_data:
-        # # pass all ranges to spreadsheet info - including empty
-        # metadata_table.append(
-        #     {
-        #         "spreadsheet_id": spreadsheet_id,
-        #         "title": spreadsheet_title,
-        #         "range_name": name,
-        #         "range": str(parsed_range),
-        #         "range_parsed": parsed_range._asdict(),
-        #         "skipped": True,
-        #     }
-        # )
+        # pass all ranges to spreadsheet info - including empty
+        metadata_table.append(
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "title": spreadsheet_title,
+                "range_name": name,
+                "range": str(parsed_range),
+                "range_parsed": parsed_range._asdict(),
+                "skipped": True,
+            }
+        )
         if values is None or len(values) == 0:
             logger.warning(f"Range {name} does not contain any data. Skipping.")
             continue
@@ -119,7 +119,7 @@ def google_spreadsheet(
                 f"First row of range {name} does not contain data. Skipping."
             )
             continue
-        # metadata_table[-1]["skipped"] = False
+        metadata_table[-1]["skipped"] = False
         range_data.append((name, parsed_range, meta_range, values))
 
     meta_values = api_calls.get_meta_for_ranges(

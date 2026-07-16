@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,15 +15,12 @@
 """Hubspot source helpers"""
 
 import urllib.parse
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Union
 
+from dlt.common.schema.typing import TColumnSchema
 from dlt.sources.helpers import requests
 
-from .settings import (
-    DEFAULT_LAST_MODIFIED_PROPERTY,
-    LAST_MODIFIED_PROPERTY,
-    OBJECT_TYPE_PLURAL,
-)
+from .settings import HS_TO_DLT_TYPE, OBJECT_TYPE_PLURAL
 
 BASE_URL = "https://api.hubapi.com/"
 
@@ -49,11 +46,45 @@ def _get_headers(api_key: str) -> Dict[str, str]:
     return dict(authorization=f"Bearer {api_key}")
 
 
+def pagination(
+    _data: Dict[str, Any], headers: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    _next = _data.get("paging", {}).get("next", None)
+    # _next = False
+    if _next:
+        next_url = _next["link"]
+        # Get the next page response
+        r = requests.get(next_url, headers=headers)
+        return r.json()  # type: ignore
+    else:
+        return None
+
+
+def extract_association_data(
+    _obj: Dict[str, Any],
+    data: Dict[str, Any],
+    association: str,
+    headers: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    values = []
+
+    while data is not None:
+        for r in data["results"]:
+            values.append(
+                {
+                    "value": _obj["hs_object_id"],
+                    f"{association}_id": r["id"],
+                }
+            )
+        data = pagination(data, headers)
+    return values
+
+
 def extract_property_history(objects: List[Dict[str, Any]]) -> Iterator[Dict[str, Any]]:
     for item in objects:
         history = item.get("propertiesWithHistory")
         if not history:
-            continue
+            return
         # Yield a flat list of property history entries
         for key, changes in history.items():
             if not changes:
@@ -111,7 +142,7 @@ def fetch_data(
     endpoint: str,
     api_key: str,
     params: Optional[Dict[str, Any]] = None,
-    resource_name: Optional[str] = None,
+    context: Optional[Dict[str, Any]] = None,
 ) -> Iterator[List[Dict[str, Any]]]:
     """
     Fetch data from HUBSPOT endpoint using a specified API key and yield the properties of each result.
@@ -120,7 +151,8 @@ def fetch_data(
     Args:
         endpoint (str): The endpoint to fetch data from, as a string.
         api_key (str): The API key to use for authentication, as a string.
-        params: Optional dict of query params to include in the request
+        params: Optional dict of query params to include in the request.
+        context (Optional[Dict[str, Any]]): Additional data which need to be added in the resulting page.
 
     Yields:
         A List of CRM object dicts
@@ -134,7 +166,7 @@ def fetch_data(
         404 Not Found), a `requests.exceptions.HTTPError` exception will be raised.
 
         The `endpoint` argument should be a relative URL, which will be appended to the base URL for the
-        API. The `params` argument is used to pass additional query parameters to the request
+        API. The `params` argument is used to pass additional query parameters to the request.
 
         This function also includes a retry decorator that will automatically retry the API call up to
         3 times with a 5-second delay between retries, using an exponential backoff strategy.
@@ -148,270 +180,84 @@ def fetch_data(
     # Parse the API response and yield the properties of each result
     # Parse the response JSON data
     _data = r.json()
-
     # Yield the properties of each result in the API response
     while _data is not None:
         if "results" in _data:
             _objects: List[Dict[str, Any]] = []
             for _result in _data["results"]:
-                if resource_name == "schemas":
-                    _objects.append(
-                        {
-                            "name": _result["labels"].get("singular", ""),
-                            "objectTypeId": _result.get("objectTypeId", ""),
-                            "id": _result.get("id", ""),
-                            "fullyQualifiedName": _result.get("fullyQualifiedName", ""),
-                            "properties": _result.get("properties", ""),
-                            "createdAt": _result.get("createdAt", ""),
-                            "updatedAt": _result.get("updatedAt", ""),
-                        }
-                    )
-                elif resource_name == "owners":
-                    _objects.append(
-                        {
-                            "id": _result.get("id", ""),
-                            "email": _result.get("email", ""),
-                            "type": _result.get("type", ""),
-                            "firstName": _result.get("firstName", ""),
-                            "lastName": _result.get("lastName", ""),
-                            "createdAt": _result.get("createdAt", ""),
-                            "updatedAt": _result.get("updatedAt", ""),
-                            "userId": _result.get("userId", ""),
-                            "teams": _result.get("teams", []),
-                        }
-                    )
-                else:
-                    _obj = _result.get("properties", _result)
-                    if "id" not in _obj and "id" in _result:
-                        # Move id from properties to top level
-                        _obj["id"] = _result["id"]
+                _obj = _result.get("properties", _result)
+                if "id" not in _obj and "id" in _result:
+                    # Move id from properties to top level
+                    _obj["id"] = _result["id"]
+                if "associations" in _result:
+                    for association in _result["associations"]:
+                        __data = _result["associations"][association]
 
-                    if "associations" in _result:
-                        for association in _result["associations"]:
-                            __values = [
-                                {
-                                    "value": _obj["hs_object_id"],
-                                    f"{association}_id": __r["id"],
-                                }
-                                for __r in _result["associations"][association][
-                                    "results"
-                                ]
-                            ]
+                        __values = extract_association_data(
+                            _obj, __data, association, headers
+                        )
 
-                            # remove duplicates from list of dicts
-                            __values = [
-                                dict(t) for t in {tuple(d.items()) for d in __values}
-                            ]
+                        # remove duplicates from list of dicts
+                        __values = [
+                            dict(t) for t in {tuple(d.items()) for d in __values}
+                        ]
 
-                            _obj[association] = __values
-
-                    _objects.append(_obj)
+                        _obj[association] = __values
+                if context:
+                    _obj.update(context)
+                _objects.append(_obj)
             yield _objects
 
         # Follow pagination links if they exist
-        _next = _data.get("paging", {}).get("next", None)
-        if _next:
-            next_url = _next["link"]
-            # Get the next page response
-            r = requests.get(next_url, headers=headers)
-            _data = r.json()
-        else:
-            _data = None
+        _data = pagination(_data, headers)
 
 
-def _get_property_names(api_key: str, object_type: str) -> List[str]:
+def _get_property_names_types(
+    api_key: str, object_type: str
+) -> Dict[str, Union[str, None]]:
     """
-    Retrieve property names for a given entity from the HubSpot API.
+    Retrieve property names and their types if present for a given entity from the HubSpot API.
 
     Args:
         entity: The entity name for which to retrieve property names.
 
     Returns:
-        A list of property names.
+        A dict of propery names and their types if present.
 
     Raises:
         Exception: If an error occurs during the API request.
     """
-    properties = []
+    props_to_type: Dict[str, str] = {}
     endpoint = f"/crm/v3/properties/{OBJECT_TYPE_PLURAL[object_type]}"
 
     for page in fetch_data(endpoint, api_key):
-        properties.extend([prop["name"] for prop in page])
+        for prop in page:
+            props_to_type[prop["name"]] = prop.get("type", None)
 
-    return properties
-
-
-def _fetch_associations_batch(
-    from_object_type: str,
-    to_object_type: str,
-    object_ids: List[str],
-    api_key: str,
-) -> Dict[str, List[str]]:
-    """Fetch associations for a batch of objects via the HubSpot v4 batch associations API.
-
-    Returns a dict mapping from_id -> list of to_ids.
-    Returns an empty dict if the association type is unsupported.
-    """
-    if not object_ids:
-        return {}
-
-    url = get_url(
-        f"/crm/v4/associations/{from_object_type}/{to_object_type}/batch/read"
-    )
-    headers = _get_headers(api_key)
-    r = requests.post(
-        url, headers=headers, json={"inputs": [{"id": oid} for oid in object_ids]}
-    )
-
-    if r.status_code in (400, 404):
-        return {}
-    r.raise_for_status()
-
-    result: Dict[str, List[str]] = {}
-    for item in r.json().get("results", []):
-        from_id = str(item.get("from", {}).get("id", ""))
-        to_ids = [
-            str(a["toObjectId"]) for a in item.get("to", []) if a.get("toObjectId")
-        ]
-        if from_id and to_ids:
-            result[from_id] = to_ids
-    return result
+    return props_to_type
 
 
-def fetch_data_search(
-    object_type: str,
-    api_key: str,
-    properties: str,
-    start_date_ms: str,
-    end_date_ms: Optional[str] = None,
-    association_types: Optional[List[str]] = None,
-) -> Iterator[List[Dict[str, Any]]]:
-    import logging
-
-    logger = logging.getLogger("hubspot.search")
-
-    url = get_url(f"/crm/v3/objects/{OBJECT_TYPE_PLURAL[object_type]}/search")
-    headers = _get_headers(api_key)
-    from_type = OBJECT_TYPE_PLURAL[object_type]
-    modified_prop = LAST_MODIFIED_PROPERTY.get(
-        object_type, DEFAULT_LAST_MODIFIED_PROPERTY
-    )
-
-    props_list = [p for p in properties.split(",") if p]
-    last_id: Optional[str] = None
-
-    while True:
-        filters = [
-            {
-                "propertyName": modified_prop,
-                "operator": "GTE",
-                "value": start_date_ms,
-            }
-        ]
-        if end_date_ms is not None:
-            filters.append(
-                {
-                    "propertyName": modified_prop,
-                    "operator": "LTE",
-                    "value": end_date_ms,
-                }
-            )
-        if last_id is not None:
-            filters.append(
-                {
-                    "propertyName": "hs_object_id",
-                    "operator": "GT",
-                    "value": last_id,
-                }
-            )
-
-        logger.info(
-            f"[hubspot] search {object_type}: "
-            f"GTE={start_date_ms} LTE={end_date_ms} after_id={last_id}"
-        )
-
-        body: Dict[str, Any] = {
-            "filterGroups": [{"filters": filters}],
-            "properties": props_list,
-            "sorts": [{"propertyName": "hs_object_id", "direction": "ASCENDING"}],
-            "limit": 100,
-        }
-
-        total_yielded = 0
-
-        while True:
-            r = requests.post(url, headers=headers, json=body)
-            r.raise_for_status()
-            _data = r.json()
-
-            if _data.get("status") == "error":
-                raise ValueError(
-                    f"HubSpot search error: {_data.get('message')} (correlationId: {_data.get('correlationId')})"
-                )
-
-            if "results" in _data:
-                _objects: List[Dict[str, Any]] = []
-                for _result in _data["results"]:
-                    _obj = _result.get("properties", _result)
-                    if "id" not in _obj and "id" in _result:
-                        _obj["id"] = _result["id"]
-                    _objects.append(_obj)
-
-                    obj_id = str(_obj.get("hs_object_id") or _obj.get("id") or "")
-                    if last_id is None or int(obj_id) > int(last_id):
-                        last_id = obj_id
-
-                if association_types and _objects:
-                    obj_ids = [
-                        str(obj.get("hs_object_id") or obj.get("id") or "")
-                        for obj in _objects
-                    ]
-                    for assoc_type in association_types:
-                        if not assoc_type:
-                            continue
-                        assoc_map = _fetch_associations_batch(
-                            from_type, assoc_type, obj_ids, api_key
-                        )
-                        for obj in _objects:
-                            obj_id = str(obj.get("hs_object_id") or obj.get("id") or "")
-                            values = [
-                                {"value": obj_id, f"{assoc_type}_id": aid}
-                                for aid in assoc_map.get(obj_id, [])
-                            ]
-                            obj[assoc_type] = [
-                                dict(t) for t in {tuple(d.items()) for d in values}
-                            ]
-
-                total_yielded += len(_objects)
-                yield _objects
-
-            # Break BEFORE trying to fetch beyond the 10k limit — HubSpot's
-            # search API hangs when paging past 10,000 results.
-            if total_yielded >= 10000:
-                break
-
-            _next = _data.get("paging", {}).get("next", None)
-            if _next:
-                body["after"] = _next["after"]
-            else:
-                break
-
-        logger.info(
-            f"[hubspot] search {object_type}: window done, "
-            f"yielded={total_yielded} last_id={last_id}"
-        )
-
-        # HubSpot search API has a 10,000 result hard limit. If we hit it,
-        # restart with the same date filters plus hs_object_id > last_id
-        # to continue from where we left off.
-        if total_yielded < 10000:
-            break
-
-
-def fetch_data_raw(
-    endpoint: str, api_key: str, params: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+def get_properties_labels(
+    api_key: str, object_type: str, property_name: str
+) -> Iterator[Dict[str, Any]]:
+    endpoint = f"/crm/v3/properties/{object_type}/{property_name}"
     url = get_url(endpoint)
     headers = _get_headers(api_key)
-    r = requests.get(url, headers=headers, params=params)
-    return r.json()
+    r = requests.get(url, headers=headers)
+    _data: Optional[Dict[str, Any]] = r.json()
+    while _data is not None:
+        yield _data
+        _data = pagination(_data, headers)
+
+
+def _to_dlt_columns_schema(col: Dict[str, str]) -> TColumnSchema:
+    """Converts hubspot column to dlt column schema that will be
+    used as a column hint."""
+    col_name, col_type = next(iter(col.items()))
+    # NOTE: if col_type is not in HS_TO_DLT_TYPE, we return an empty dict.
+    # Downstream, this means no column hints are provided for this property.
+    return (
+        {"name": col_name, "data_type": HS_TO_DLT_TYPE[col_type]}
+        if col_type in HS_TO_DLT_TYPE
+        else {}
+    )

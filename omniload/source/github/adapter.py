@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,23 +15,20 @@
 """Source that load github issues, pull requests and reactions for a specific repository via customizable graphql query. Loads events incrementally."""
 
 import urllib.parse
-from typing import Iterator, Optional, Sequence, cast
+from typing import Iterator, Optional, Sequence
 
 import dlt
-import pendulum
 from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
-
-from omniload.error import MissingValueError
 
 from .helpers import get_reactions_data, get_rest_pages, get_stargazers
 
 
-@dlt.source(max_table_nesting=0)
+@dlt.source
 def github_reactions(
     owner: str,
     name: str,
-    access_token: str,
+    access_token: str = dlt.secrets.value,
     items_per_page: int = 100,
     max_items: Optional[int] = None,
 ) -> Sequence[DltResource]:
@@ -82,13 +79,9 @@ def github_reactions(
     )
 
 
-@dlt.source(max_table_nesting=0)
+@dlt.source(max_table_nesting=2)
 def github_repo_events(
-    owner: str,
-    name: str,
-    access_token: str,
-    start_date: pendulum.DateTime,
-    end_date: Optional[pendulum.DateTime] = None,
+    owner: str, name: str, access_token: Optional[str] = None
 ) -> DltResource:
     """Gets events for repository `name` with owner `owner` incrementally.
 
@@ -107,58 +100,18 @@ def github_repo_events(
     """
 
     # use naming function in table name to generate separate tables for each event
-    @dlt.resource(
-        primary_key="id", table_name=lambda i: i["type"], write_disposition="merge"
-    )
+    @dlt.resource(primary_key="id", table_name=lambda i: i["type"])
     def repo_events(
         last_created_at: dlt.sources.incremental[str] = dlt.sources.incremental(
-            "created_at",
-            initial_value=start_date.isoformat(),
-            end_value=end_date.isoformat() if end_date else None,
-            last_value_func=max,
-            range_end="closed",
-            range_start="closed",
+            "created_at", initial_value="1970-01-01T00:00:00Z", last_value_func=max
         ),
     ) -> Iterator[TDataItems]:
         repos_path = (
             f"/repos/{urllib.parse.quote(owner)}/{urllib.parse.quote(name)}/events"
         )
 
-        # Get the date range from the incremental state
-        start_filter_value = last_created_at.last_value or last_created_at.initial_value
-        if start_filter_value is None:
-            raise MissingValueError("start_filter_value", "GitHub")
-        start_filter = cast(pendulum.DateTime, pendulum.parse(start_filter_value))
-        end_filter = cast(
-            pendulum.DateTime,
-            (
-                pendulum.parse(last_created_at.end_value)
-                if last_created_at.end_value
-                else pendulum.now()
-            ),
-        )
-
         for page in get_rest_pages(access_token, repos_path + "?per_page=100"):
-            # Filter events by date range
-            filtered_events = []
-            for event in page:
-                event_date = cast(
-                    pendulum.DateTime, pendulum.parse(event["created_at"])
-                )
-
-                # Check if event is within the date range
-                if event_date >= start_filter:
-                    if end_filter is None or event_date <= end_filter:
-                        filtered_events.append(event)
-                    elif event_date > end_filter:
-                        # Skip events that are newer than our end date
-                        continue
-                else:
-                    # Events are ordered by date desc, so if we hit an older event, we can stop
-                    break
-
-            if filtered_events:
-                yield filtered_events
+            yield page
 
             # stop requesting pages if the last element was already older than initial value
             # note: incremental will skip those items anyway, we just do not want to use the api limits
@@ -171,11 +124,11 @@ def github_repo_events(
     return repo_events
 
 
-@dlt.source(max_table_nesting=0)
+@dlt.source
 def github_stargazers(
     owner: str,
     name: str,
-    access_token: str,
+    access_token: str = dlt.secrets.value,
     items_per_page: int = 100,
     max_items: Optional[int] = None,
 ) -> Sequence[DltResource]:

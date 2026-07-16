@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,17 @@
 from typing import Dict
 
 import dlt
+from dlt.common import logger, pendulum
 from dlt.common.configuration.inject import with_config
 from dlt.sources.helpers import requests
+from facebook_business import FacebookAdsApi
+from facebook_business.adobjects.abstractcrudobject import AbstractCrudObject
+from facebook_business.adobjects.abstractobject import AbstractObject
+from facebook_business.adobjects.ad import Ad
+from facebook_business.adobjects.adcreative import AdCreative
+from facebook_business.adobjects.adset import AdSet
+from facebook_business.adobjects.campaign import Campaign
+from facebook_business.adobjects.lead import Lead
 
 
 @with_config(sections=("sources", "facebook_ads"))
