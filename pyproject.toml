@@ -192,7 +192,7 @@ urls.Repository = "https://github.com/panodata/omniload"
 scripts.omniload = "omniload.main:main"
 
 [tool.setuptools]
-packages.find = {}
+package-dir = { "" = "src" }
 
 [tool.ruff]
 line-length = 88
@@ -248,15 +248,15 @@ lint.extend-ignore = [
   # Probable insecure usage of temporary file or directory
   "S108",
 ]
-lint.per-file-ignores."omniload/api.py" = [
+lint.per-file-ignores."src/omniload/api.py" = [
   # line-too-long
   "E501",
 ]
-lint.per-file-ignores."omniload/core/router.py" = [
+lint.per-file-ignores."src/omniload/core/router.py" = [
   # line-too-long
   "E501",
 ]
-lint.per-file-ignores."omniload/{source,target}/*" = [
+lint.per-file-ignores."src/omniload/{source,target}/*" = [
   # TODO: Review B008
   #       Do not perform function call in argument defaults;
   #       instead, perform the call within the function,
