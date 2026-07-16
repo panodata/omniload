@@ -42,10 +42,10 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 |:---------------------|:----------------------------------------|:----------------|
 | {ref}`Local <file>`  | Local and mounted filesystems           | file://         |
 | [Amazon S3]          | S3 and compatible filesystems           | s3://           |
-| [Google GCS]         | Google Cloud Storage                    | gs://           |
 | [Azure Blob Storage] | Azure Blob Storage                      | az://           |
+| [Google GCS]         | Google Cloud Storage                    | gs://           |
+| {ref}`hdfs`          | Hadoop distributed file system          | hdfs://         |
 | [SFTP]               | Simple File Transfer Protocol (RFC 913) | sftp://         |
-
 
 :::{note}
 `omniload` supports read and write operations on both local and remote filesystems.

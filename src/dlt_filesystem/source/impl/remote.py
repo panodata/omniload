@@ -1,6 +1,6 @@
 import base64
 import json
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Type
 from urllib.parse import parse_qs, urlparse
 
 from dlt_filesystem.error import InvalidBlobTableError, MissingConnectorOption
@@ -14,6 +14,9 @@ from dlt_filesystem.source.router import (
     parse_uri,
 )
 from dlt_filesystem.util.auth import AzureBlobAuth, parse_azure_blob_auth
+
+if TYPE_CHECKING:
+    from pyarrow.fs import HadoopFileSystem
 
 
 def _endpoint_namespace(endpoint: str | None, default: str) -> str:
@@ -310,6 +313,76 @@ class SFTPSource(FilesystemSource):
                 storage_namespace=(f"sftp:{host.lower()}:{port}:{username or ''}"),
                 filesystem_incremental=kwargs.get("filesystem_incremental", False),
                 hints=hints,
+                column_types=kwargs.get("column_types"),
+            )
+        )
+
+
+class HDFSSource(FilesystemSource):
+    """
+    Provide access to HDFS via Arrow.
+    https://arrow.apache.org/docs/python/generated/pyarrow.fs.HadoopFileSystem.html
+    """
+
+    @property
+    def fs_class(self) -> Type["HadoopFileSystem"]:
+        from pyarrow.fs import HadoopFileSystem
+
+        return HadoopFileSystem
+
+    def dlt_source(self, uri: str, table: str, **kwargs):
+        if kwargs.get("incremental_key"):
+            raise ValueError(
+                "HDFS takes care of incrementality on its own, you should not provide incremental_key"
+            )
+
+        parsed_uri = urlparse(uri)
+
+        bucket_name, path_to_file = parse_uri(parsed_uri, table)
+        if not bucket_name or not path_to_file:
+            raise InvalidBlobTableError("HDFS")
+
+        parsed_fields = parse_qs(parsed_uri.query)
+        fs_kwargs: Dict[str, Any] = {
+            key: value[0] for key, value in parsed_fields.items()
+        }
+        # Rename `block_size` to `default_block_size`.
+        if "block_size" in fs_kwargs:
+            fs_kwargs["default_block_size"] = fs_kwargs["block_size"]
+            del fs_kwargs["block_size"]
+        # Cast values to `int`.
+        for field_name in ["port", "replication", "buffer_size", "default_block_size"]:
+            if field_name in fs_kwargs:
+                fs_kwargs[field_name] = int(fs_kwargs[field_name])
+        # Cast values to `dict`.
+        for field_name in ["extra_conf"]:
+            if field_name in fs_kwargs:
+                fs_kwargs[field_name] = json.loads(fs_kwargs[field_name])
+
+        fs = self.fs_class(**kwargs)
+
+        host = parsed_uri.hostname
+        port = parsed_uri.port or 8020
+        bucket_url = f"hdfs://{host}:{port}"
+        try:
+            endpoint: str = determine_endpoint(table, path_to_file)
+        except UnsupportedEndpointError:
+            raise ValueError(supported_file_format_message("HDFS"))
+        except Exception as e:
+            raise ValueError(
+                f"Failed to parse endpoint from path: {path_to_file}"
+            ) from e
+
+        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.model import FilesystemReference
+
+        return resource_for_reader(
+            FilesystemReference(
+                fs=fs,
+                bucket_url=bucket_url,
+                file_glob=path_to_file,
+                reader_name=endpoint,
+                hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
         )

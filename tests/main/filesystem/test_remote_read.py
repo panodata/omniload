@@ -15,6 +15,9 @@ URIS = [
     "gs://table-bucket-name/path/to/data.parquet?credentials_path=/path/to/service-account.json",
     # FIXME: KeyError: 'refresh_token'
     "gs://table-bucket-name/path/to/data.parquet?credentials_base64=eyJrZXkiOiAidmFsdWUifQ==",
+    # TODO: Mock `hdfs` backend.
+    #       OSError: Unable to load libjvm
+    "hdfs://example.com:8020/path/to/data.parquet",
     "s3://bucket/path/to/data.parquet?access_key_id=foo&secret_access_key=bar",
     "sftp://username:password@example.com:2222/path/to/data.parquet",
 ]
@@ -24,7 +27,7 @@ URIS = [
 def test_init_generic_filesystems(source_uri):
     """Initialize all available filesystem implementations without table parameter"""
     parsed_uri = urlparse(source_uri)
-    if parsed_uri.scheme in ["gs", "sftp"]:
+    if parsed_uri.scheme in ["gs", "hdfs", "sftp"]:
         pytest.skip(f"{parsed_uri.scheme}:// needs monkeypatching to make it testable")
     factory = SourceDestinationFactory(source_uri, "file://")
     source = factory.get_source()

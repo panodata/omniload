@@ -3,6 +3,7 @@
 ## in progress
 
 - Filesystem: Migrated local filesystem access to Apache Arrow.
+- Filesystem: Added support for reading from HDFS.
 
 ## 2026/07/16 v0.7.0
 

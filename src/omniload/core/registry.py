@@ -71,6 +71,7 @@ sources: LazyRegistry = LazyRegistry(
         "gorgias": "omniload.source.gorgias.api:GorgiasSource",
         "gs": "dlt_filesystem.source.api:GCSSource",
         "gsheets": "omniload.source.google_sheets.api:GoogleSheetsSource",
+        "hdfs": "dlt_filesystem.source.api:HDFSSource",
         "hostaway": "omniload.source.hostaway.api:HostawaySource",
         "http": "omniload.source.http.api:HttpSource",
         "https": "omniload.source.http.api:HttpSource",
