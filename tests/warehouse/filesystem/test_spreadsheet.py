@@ -1,6 +1,5 @@
 import sys
 from collections import OrderedDict
-from importlib.resources import as_file, files
 from pathlib import Path
 
 import polars as pl
@@ -10,32 +9,32 @@ from tests.util import invoke_ingest_command
 
 
 @pytest.fixture(scope="session")
-def ods_testfile(tmp_path_factory) -> Path:
+def ods_testfile(tmp_path_factory, testdata_path) -> Path:
     """Supply an OpenOffice workbook file (ODS) for testing purposes, synthesized from an existing CSV file asset."""
     import pyexcel_ods3
 
-    csv_traversable = files("omniload.testdata") / "create_replace.csv"
+    csv_file = testdata_path / "create_replace.csv"
     tmp_path = tmp_path_factory.mktemp("testdrive")
-    ods = tmp_path / "test.ods"
-    with as_file(csv_traversable) as csv:
-        workbook = OrderedDict()
-        df = pl.read_csv(csv)
-        data = [df.columns]
-        data.extend(df.rows())
-        workbook.update({"ticker-symbols": data})
-        pyexcel_ods3.save_data(str(ods), workbook)
-    return ods
+    ods_file = tmp_path / "test.ods"
+
+    workbook = OrderedDict()
+    df = pl.read_csv(csv_file)
+    data = [df.columns]
+    data.extend(df.rows())
+    workbook.update({"ticker-symbols": data})
+    pyexcel_ods3.save_data(str(ods_file), workbook)
+
+    return ods_file
 
 
 @pytest.fixture(scope="session")
-def xlsx_testfile(tmp_path_factory) -> Path:
+def xlsx_testfile(tmp_path_factory, testdata_path) -> Path:
     """Supply an Excel workbook file (XLSX) for testing purposes, synthesized from an existing CSV file asset."""
-    csv_traversable = files("omniload.testdata") / "create_replace.csv"
+    csv_file = testdata_path / "create_replace.csv"
     tmp_path = tmp_path_factory.mktemp("testdrive")
-    xlsx = tmp_path / "test.xlsx"
-    with as_file(csv_traversable) as csv:
-        pl.read_csv(csv).write_excel(xlsx, worksheet="ticker-symbols")
-    return xlsx
+    xlsx_file = tmp_path / "test.xlsx"
+    pl.read_csv(csv_file).write_excel(xlsx_file, worksheet="ticker-symbols")
+    return xlsx_file
 
 
 @pytest.mark.parametrize("spreadsheet_fixture", ["ods_testfile", "xlsx_testfile"])

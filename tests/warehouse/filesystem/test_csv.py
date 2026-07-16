@@ -1,5 +1,4 @@
 import sys
-from importlib.resources import as_file, files
 from pathlib import Path
 
 import pytest
@@ -8,14 +7,9 @@ from tests.util import invoke_ingest_command
 
 
 @pytest.fixture(scope="session")
-def csv_testfile(tmp_path_factory) -> Path:
-    """Supply the CSV file asset shipped with the test data package."""
-    csv_traversable = files("omniload.testdata") / "create_replace.csv"
-    tmp_path = tmp_path_factory.mktemp("testdrive")
-    csv_file = tmp_path / "test.csv"
-    with as_file(csv_traversable) as source:
-        csv_file.write_bytes(source.read_bytes())
-    return csv_file
+def csv_testfile(testdata_path) -> Path:
+    """Supply a CSV file to all test cases."""
+    return testdata_path / "create_replace.csv"
 
 
 def test_csv_source_without_hints(csv_testfile, tmp_path):

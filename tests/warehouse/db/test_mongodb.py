@@ -35,7 +35,7 @@ def mongodb_test_cases():
     def smoke_test(mongo):
         collection = f"smoke_test_{get_random_string(5)}"
         result = invoke_ingest_command(
-            "csv://omniload/testdata/create_replace.csv",
+            "csv://tests/assets/create_replace.csv",
             "raw.input",
             mongo.get_connection_url(),
             collection,

@@ -46,9 +46,8 @@ def get_etc_path() -> Path:
 
 
 def get_testdata_path() -> Path:
-    """Path to the omniload/testdata directory."""
-    with importlib.resources.path("omniload", "testdata") as path:
-        return path
+    """Path to the tests/assets directory."""
+    return Path("tests") / "assets"
 
 
 def pp(x):

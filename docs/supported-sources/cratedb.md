@@ -103,7 +103,7 @@ This is an example command that will import a CSV file into CrateDB,
 then display the content from CrateDB.
 
 ```shell
-wget -O input.csv https://github.com/panodata/omniload/raw/refs/heads/main/omniload/testdata/create_replace.csv
+wget -O input.csv https://github.com/panodata/omniload/raw/refs/heads/main/tests/assets/create_replace.csv
 ```
 ```shell
 omniload ingest \

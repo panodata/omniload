@@ -124,7 +124,7 @@ def test_run_ingest_without_tables_invalid_destination_table(tmp_path):
     dest = tmp_path / "warehouse.duckdb"
     with pytest.raises(ValueError) as excinfo:
         run_ingest(
-            source_uri="csv://omniload/testdata/create_replace.csv",
+            source_uri="csv://tests/assets/create_replace.csv",
             dest_uri=f"duckdb://{dest}",
         )
     assert excinfo.match("Table name must be in the format <schema>.<table>")
