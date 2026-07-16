@@ -19,6 +19,7 @@
   spreadsheet (ODS) formats.
 - Filesystem: Fixed and documented semantics of append/replace strategy
   and append/full-refresh behaviour. Thanks, @hampsterx.
+- Dependencies: Updated to dlt 1.29
 
 ## 2026/07/06 v0.6.0
 
