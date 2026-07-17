@@ -41,7 +41,7 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 | Name                 | Description                             | Protocol scheme |
 |:---------------------|:----------------------------------------|:----------------|
 | {ref}`Local <file>`  | Local and mounted filesystems           | file://         |
-| [Amazon S3]          | S3 and compatible filesystems           | s3://           |
+| {ref}`s3`            | Amazon S3 and compatible filesystems    | s3://           |
 | [Azure Blob Storage] | Azure Blob Storage                      | az://           |
 | [Google GCS]         | Google Cloud Storage                    | gs://           |
 | {ref}`hdfs`          | Hadoop distributed file system          | hdfs://         |
@@ -264,7 +264,6 @@ guarantee you get.
   are dropped silently. Validate file integrity upstream if partial loads would be a problem.
 
 
-[Amazon S3]: https://aws.amazon.com/
 [Azure Blob Storage]: https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction
 [CSV]: https://en.wikipedia.org/wiki/Comma-separated_values
 [Google GCS]: https://cloud.google.com/storage

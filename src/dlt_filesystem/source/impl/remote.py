@@ -117,7 +117,7 @@ class S3CompatibleSource(FilesystemSource):
     Access S3 and compatible filesystems.
 
     TODO: Forward more parameters than `access_key_id` and `secret_access_key`
-          (key/secret/endpoint_url) only.
+          (key/secret/endpoint_url) only, like `region`.
     """
 
     @property
