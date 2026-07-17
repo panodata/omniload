@@ -1,3 +1,5 @@
+(azure-data-lake-storage)=
+
 # Azure Data Lake Storage
 
 [Azure Data Lake Storage Gen2](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-introduction) is a set of capabilities built on Azure Blob Storage for big-data analytics. A Gen2 account is a storage account with a hierarchical namespace enabled; it shares the same underlying service and API as Azure Blob Storage.

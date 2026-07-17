@@ -1,6 +1,8 @@
+(azure-blob-storage)=
+
 # Azure Blob Storage
 
-[Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) is Microsoft's object storage service for the cloud, optimized for storing large amounts of unstructured data.
+[Azure Blob Storage] is Microsoft's object storage service for the cloud, optimized for storing large amounts of unstructured data.
 
 `omniload` supports Azure Blob Storage as both a data source and destination. The same backend also serves Azure Data Lake Storage Gen2; see [Azure Data Lake Storage](azure-data-lake-storage.md).
 
@@ -163,3 +165,6 @@ File type hinting works with `gzip` compressed files as well.
 ## Azure Data Lake Storage Gen2
 
 The `adls://` and `abfss://` schemes are aliases for the same backend and accept identical parameters. Use them when you think in terms of ADLS Gen2. See [Azure Data Lake Storage](azure-data-lake-storage.md).
+
+
+[Azure Blob Storage]: https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction

@@ -38,16 +38,16 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 
 ## Supported filesystems
 
-| Name                 | Description                             | Protocol scheme |
-|:---------------------|:----------------------------------------|:----------------|
-| {ref}`Local <file>`  | Local and mounted filesystems           | file://         |
-| {ref}`s3`            | Amazon S3 and compatible filesystems    | s3://           |
-| [Azure Blob Storage] | Azure Blob Storage                      | az://           |
-| [Google GCS]         | Google Cloud Storage                    | gs://           |
-| {ref}`hdfs`          | Hadoop distributed file system          | hdfs://         |
-| {ref}`oss`           | Alibaba Object Storage Service (OSS)    | oss://          |
-| {ref}`r2`            | Cloudflare R2                           | r2://           |
-| {ref}`sftp`          | Simple File Transfer Protocol (RFC 913) | sftp://         |
+| Name                      | Description                                                  | Protocol scheme          |
+|:--------------------------|:-------------------------------------------------------------|:-------------------------|
+| {ref}`Local files <file>` | Files on local and mounted filesystems                       | file://                  |
+| {ref}`s3`                 | Amazon S3 and compatible filesystems                         | s3://                    |
+| Azure Storage             | {ref}`azure-blob-storage` and {ref}`azure-data-lake-storage` | az://, adls://, abfss:// |
+| [Google GCS]              | Google Cloud Storage                                         | gs://                    |
+| {ref}`hdfs`               | Hadoop distributed file system                               | hdfs://                  |
+| {ref}`oss`                | Alibaba Object Storage Service (OSS)                         | oss://                   |
+| {ref}`r2`                 | Cloudflare R2                                                | r2://                    |
+| {ref}`sftp`               | Simple File Transfer Protocol (RFC 913)                      | sftp://                  |
 
 :::{note}
 `omniload` supports read and write operations on both local and remote filesystems.
@@ -264,7 +264,6 @@ guarantee you get.
   are dropped silently. Validate file integrity upstream if partial loads would be a problem.
 
 
-[Azure Blob Storage]: https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction
 [CSV]: https://en.wikipedia.org/wiki/Comma-separated_values
 [Google GCS]: https://cloud.google.com/storage
 [iterabledata]: https://pypi.org/project/iterabledata/
