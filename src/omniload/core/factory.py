@@ -45,13 +45,15 @@ class SourceDestinationFactory:
         elif self.source_scheme in self.sources:
             return self.sources[self.source_scheme]()
         else:
-            raise ValueError(f"Unsupported source scheme: {self.source_scheme}")
+            raise NotImplementedError(
+                f"Unsupported source scheme: {self.source_scheme}"
+            )
 
     def get_destination(self) -> DestinationProtocol:
         """Build the destination connector for the parsed destination scheme."""
         if self.destination_scheme in self.destinations:
             return self.destinations[self.destination_scheme]()
         else:
-            raise ValueError(
+            raise NotImplementedError(
                 f"Unsupported destination scheme: {self.destination_scheme}"
             )

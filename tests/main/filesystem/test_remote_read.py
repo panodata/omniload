@@ -57,6 +57,6 @@ def test_init_http_filesystem():
 def test_init_unknown_filesystem():
     """Initialize unknown filesystem implementation"""
     factory = SourceDestinationFactory("unknown://", "file://")
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(NotImplementedError) as exc_info:
         factory.get_source()
     assert exc_info.match("Unsupported source scheme: unknown")
