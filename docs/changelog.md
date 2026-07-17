@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Filesystem: Migrated local filesystem access to Apache Arrow.
+
 ## 2026/07/16 v0.7.0
 
 - Connectors: Added Azure Blob Storage (`az://`) and Azure Data Lake Storage

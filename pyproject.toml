@@ -91,6 +91,7 @@ dependencies = [
   "elasticsearch<10",
   "facebook-business<26",
   "flatten-json<0.2",
+  "fsspec>2021.9",
   "gcsfs",
   "google-ads<32",
   "google-analytics-data<0.24",
