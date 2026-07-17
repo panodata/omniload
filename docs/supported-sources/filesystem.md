@@ -43,7 +43,7 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 | {ref}`Local files <file>` | Files on local and mounted filesystems                       | file://                  |
 | {ref}`s3`                 | Amazon S3 and compatible filesystems                         | s3://                    |
 | Azure Storage             | {ref}`azure-blob-storage` and {ref}`azure-data-lake-storage` | az://, adls://, abfss:// |
-| [Google GCS]              | Google Cloud Storage                                         | gs://                    |
+| {ref}`gcs`                | Google Cloud Storage                                         | gs://                    |
 | {ref}`hdfs`               | Hadoop distributed file system                               | hdfs://                  |
 | {ref}`oss`                | Alibaba Object Storage Service (OSS)                         | oss://                   |
 | {ref}`r2`                 | Cloudflare R2                                                | r2://                    |
@@ -265,7 +265,6 @@ guarantee you get.
 
 
 [CSV]: https://en.wikipedia.org/wiki/Comma-separated_values
-[Google GCS]: https://cloud.google.com/storage
 [iterabledata]: https://pypi.org/project/iterabledata/
 [JSONL]: https://en.wikipedia.org/wiki/JSON_streaming#JSONL
 [Parquet]: https://en.wikipedia.org/wiki/Apache_Parquet
