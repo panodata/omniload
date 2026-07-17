@@ -47,7 +47,7 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 | {ref}`hdfs`          | Hadoop distributed file system          | hdfs://         |
 | {ref}`oss`           | Alibaba Object Storage Service (OSS)    | oss://          |
 | {ref}`r2`            | Cloudflare R2                           | r2://           |
-| [SFTP]               | Simple File Transfer Protocol (RFC 913) | sftp://         |
+| {ref}`sftp`          | Simple File Transfer Protocol (RFC 913) | sftp://         |
 
 :::{note}
 `omniload` supports read and write operations on both local and remote filesystems.
@@ -273,4 +273,3 @@ guarantee you get.
 [Parquet]: https://en.wikipedia.org/wiki/Apache_Parquet
 [polars.read_csv]: https://docs.pola.rs/api/python/stable/reference/api/polars.read_csv.html
 [polars.read_excel]: https://docs.pola.rs/api/python/stable/reference/api/polars.read_excel.html
-[SFTP]: https://en.wikipedia.org/wiki/File_Transfer_Protocol#Simple_File_Transfer_Protocol
