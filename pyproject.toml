@@ -104,6 +104,7 @@ dependencies = [
   "mysql-connector-python<10",
   "oracledb<5",
   "orjson<4",
+  "ossfs",
   "pendulum>=3,<4",
   "polars[excel]<2",
   "psycopg2-binary<3",

@@ -119,6 +119,7 @@ class S3CompatibleSource(FilesystemSource):
     TODO: Forward more parameters than `access_key_id` and `secret_access_key`
           (key/secret/endpoint_url) only.
     """
+
     @property
     @abstractmethod
     def fs_name(self) -> str:
@@ -434,3 +435,99 @@ class R2Source(S3CompatibleSource):
             protocol = "r2"
 
         return R2FileSystem
+
+
+class OSSSource(FilesystemSource):
+    """
+    Object Storage Service (OSS)
+    https://www.alibabacloud.com/en/product/object-storage-service
+    """
+
+    @property
+    def fs_class(self) -> Type["AbstractFileSystem"]:
+        import ossfs
+
+        return ossfs.OSSFileSystem
+
+    def dlt_source(self, uri: str, table: str, **kwargs):
+
+        # TODO: It looks like this is generic code that could be refactored already
+        #       if it's common amongst different implementations. Breaking out the
+        if kwargs.get("incremental_key"):
+            raise ValueError(
+                "OSS takes care of incrementality on its own, you should not provide incremental_key"
+            )
+
+        parsed_uri = urlparse(uri)
+        parsed_fields = parse_qs(parsed_uri.query)
+
+        # TODO: BaseOSSFileSystem accepts `endpoint`, `key`, `secret`, `token`,
+        #       with xor key/secret vs. token. Let's give those parameter bunches
+        #       a real data model and validate it using Pydantic or other such
+        #       frameworks in the future. Maybe `dataclasses` or `attrs` is enough?
+        fs_kwargs: Dict[str, Any] = {
+            key: value[0] for key, value in parsed_fields.items()
+        }
+
+        # TODO: BaseOSSFileSystem accepts `default_cache_type` and `default_block_size`.
+        #       I don't know why they are using the `default_` prefix. With an advanced
+        #       parameter model, let's rename them automatically so users can use shorter
+        #       names on input and output URIs.
+        if "cache_type" in fs_kwargs:
+            fs_kwargs["default_cache_type"] = fs_kwargs["cache_type"]
+            del fs_kwargs["cache_type"]
+        if "block_size" in fs_kwargs:
+            fs_kwargs["default_block_size"] = fs_kwargs["block_size"]
+            del fs_kwargs["block_size"]
+
+        # TODO: BaseOSSFileSystem accepts `default_block_size` as `int`.
+        #       Currently, only a single type conversion needs to be applied,
+        #       so let's do it manually here for now. In the future, it will be
+        #       sweet to let the parameter data model machinery handle it.
+        if "default_block_size" in fs_kwargs:
+            fs_kwargs["default_block_size"] = int(fs_kwargs["default_block_size"])
+
+        # TODO: BaseOSSFileSystem accepts `default_cache_type` as a `str` type with
+        #       a choice of different values. The default value is `readahead`, and
+        #       setting `none` is possible. For all other values, the inline
+        #       documentation refers to the `fsspec` documentation. Let's harvest
+        #       relevant details and add them to the parameter data model.
+        # No demo implementation here.
+
+        # TODO: It looks like this is generic code that could be refactored already
+        #       if it's common amongst different implementations. Breaking out the
+        #       reference to the relevant filesystem implementation itself per
+        #       `fs_class` already contributed to a better situation than before.
+        bucket_name, path_to_file = parse_uri(parsed_uri, table)
+        if not bucket_name or not path_to_file:
+            raise InvalidBlobTableError("OSS")
+
+        bucket_url = f"oss://{bucket_name}/"
+
+        fs = self.fs_class(**fs_kwargs)
+
+        # TODO: Naming things: Rename `determine_endpoint` to `find_reader`.
+        # TODO: Refactoring: Break out reader finding and fragments of the
+        #       filesystem initialization into common routines.
+        try:
+            endpoint: str = determine_endpoint(table, path_to_file)
+        except UnsupportedEndpointError:
+            raise ValueError(supported_file_format_message("OSS"))
+        except Exception as e:
+            raise ValueError(
+                f"Failed to parse endpoint from path: {path_to_file}"
+            ) from e
+
+        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.model import FilesystemReference
+
+        return resource_for_reader(
+            FilesystemReference(
+                fs=fs,
+                bucket_url=bucket_url,
+                file_glob=path_to_file,
+                reader_name=endpoint,
+                hints=blob_hints(parsed_uri, table),
+                column_types=kwargs.get("column_types"),
+            )
+        )
