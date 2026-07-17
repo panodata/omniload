@@ -38,20 +38,21 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 
 ## Supported filesystems
 
-| Name                      | Description                                                  | Protocol scheme          |
-|:--------------------------|:-------------------------------------------------------------|:-------------------------|
-| {ref}`Local files <file>` | Files on local and mounted filesystems                       | file://                  |
-| {ref}`s3`                 | Amazon S3 and compatible filesystems                         | s3://                    |
-| Azure Storage             | {ref}`azure-blob-storage` and {ref}`azure-data-lake-storage` | az://, adls://, abfss:// |
-| {ref}`gcs`                | Google Cloud Storage                                         | gs://                    |
-| {ref}`hdfs`               | Hadoop distributed file system                               | hdfs://                  |
-| {ref}`oss`                | Alibaba Object Storage Service (OSS)                         | oss://                   |
-| {ref}`r2`                 | Cloudflare R2                                                | r2://                    |
-| {ref}`sftp`               | Simple File Transfer Protocol (RFC 913)                      | sftp://                  |
+| Name                      | Description                                                  | Protocol scheme          | Read | Write |
+|:--------------------------|:-------------------------------------------------------------|:-------------------------|:-----|:------|
+| {ref}`Local files <file>` | Files on local and mounted filesystems                       | file://                  | ✅   | ✅    |
+| Azure Storage             | {ref}`azure-blob-storage` and {ref}`azure-data-lake-storage` | az://, adls://, abfss:// | ✅   | ✅    |
+| {ref}`s3`                 | Amazon S3 and compatible filesystems                         | s3://                    | ✅   | ✅    |
+| {ref}`gcs`                | Google Cloud Storage                                         | gs://                    | ✅   | ✅    |
+| {ref}`hdfs`               | Hadoop distributed file system                               | hdfs://                  | ✅   | ❌    |
+| {ref}`oss`                | Alibaba Object Storage Service (OSS)                         | oss://                   | ✅   | ❌    |
+| {ref}`r2`                 | Cloudflare R2                                                | r2://                    | ✅   | ❌    |
+| {ref}`sftp`               | Simple File Transfer Protocol (RFC 913)                      | sftp://                  | ✅   | ✅    |
 
 :::{note}
 `omniload` supports read and write operations on both local and remote filesystems.
-See {ref}`file:// destination <file-destination>` for write support.
+For some filesystems, write support has not been unlocked yet, but we expect it to
+land during the upcoming releases.
 :::
 
 ## Incremental file selection

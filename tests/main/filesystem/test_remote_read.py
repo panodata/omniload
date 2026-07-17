@@ -26,7 +26,14 @@ URIS = [
     "gs://table-bucket-name/path/to/data.parquet?credentials_base64=eyJrZXkiOiAidmFsdWUifQ==",
     # TODO: Mock `hdfs` backend.
     #       OSError: Unable to load libjvm
-    "hdfs://example.com:8020/path/to/data.parquet",
+    Item(
+        uri="hdfs://example.com:8020/path/to/data.parquet?user=test",
+        table="",
+    ),
+    Item(
+        uri="hdfs://example.com:8020/?user=test",
+        table="/path/to/data.parquet",
+    ),
     "oss://bucket/path/to/data.parquet?endpoint=http://oss-cn-hangzhou.aliyuncs.com/&key=foo&secret=bar",
     "oss://bucket/path/to/data.parquet?endpoint=https://oss-me-east-1.aliyuncs.com/&token=foobar",
     Item(

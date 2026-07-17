@@ -71,7 +71,6 @@ classifiers = [
 ]
 dynamic = [ "version" ]
 dependencies = [
-  "adlfs",
   "aiohttp<4",
   "asana<6",
   "click<8.5",
@@ -91,8 +90,6 @@ dependencies = [
   "elasticsearch<10",
   "facebook-business<26",
   "flatten-json<0.2",
-  "fsspec>2021.9",
-  "gcsfs",
   "google-ads<32",
   "google-analytics-data<0.24",
   "google-api-python-client<3",
@@ -102,9 +99,9 @@ dependencies = [
   "influxdb-client<2",
   "mq-bridge-py>=0.3.2,<0.4",
   "mysql-connector-python<10",
+  "omniload[filesystem]",
   "oracledb<5",
   "orjson<4",
-  "ossfs",
   "pendulum>=3,<4",
   "polars[excel]<2",
   "psycopg2-binary<3",
@@ -119,7 +116,6 @@ dependencies = [
   "python-quickbooks<0.10",
   "requests<3",
   "rudder-sdk-python<2.2",
-  "s3fs",
   "simple-salesforce<2",
   "smartsheet-python-sdk<5",
   "snowflake-connector-python>=3.18,<5",
@@ -146,6 +142,13 @@ optional-dependencies.develop = [
   "ruff<0.16",
   "ty==0.0.61",
   "validate-pyproject<1",
+]
+optional-dependencies.filesystem = [
+  "adlfs",
+  "fsspec>2021.9",
+  "gcsfs",
+  "ossfs",
+  "s3fs",
 ]
 optional-dependencies.full = [ "omniload[ibm-db,iterable,odbc,oracle]" ]
 optional-dependencies.ibm-db = [
