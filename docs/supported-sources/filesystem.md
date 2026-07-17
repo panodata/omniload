@@ -45,6 +45,7 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 | [Azure Blob Storage] | Azure Blob Storage                      | az://           |
 | [Google GCS]         | Google Cloud Storage                    | gs://           |
 | {ref}`hdfs`          | Hadoop distributed file system          | hdfs://         |
+| {ref}`r2`            | Cloudflare R2                           | r2://           |
 | [SFTP]               | Simple File Transfer Protocol (RFC 913) | sftp://         |
 
 :::{note}

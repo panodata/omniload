@@ -18,6 +18,7 @@ URIS = [
     # TODO: Mock `hdfs` backend.
     #       OSError: Unable to load libjvm
     "hdfs://example.com:8020/path/to/data.parquet",
+    "r2://bucket/path/to/data.parquet?access_key_id=foo&secret_access_key=bar",
     "s3://bucket/path/to/data.parquet?access_key_id=foo&secret_access_key=bar",
     "sftp://username:password@example.com:2222/path/to/data.parquet",
 ]

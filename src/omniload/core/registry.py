@@ -105,6 +105,7 @@ sources: LazyRegistry = LazyRegistry(
         "plusvibeai": "omniload.source.plusvibeai.api:PlusVibeAISource",
         "primer": "omniload.source.primer.api:PrimerSource",
         "quickbooks": "omniload.source.quickbooks.api:QuickBooksSource",
+        "r2": "dlt_filesystem.source.api:R2Source",
         "redditads": "omniload.source.reddit_ads.api:RedditAdsSource",
         "revenuecat": "omniload.source.revenuecat.api:RevenueCatSource",
         "s3": "dlt_filesystem.source.api:S3Source",

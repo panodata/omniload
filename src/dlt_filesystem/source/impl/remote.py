@@ -1,5 +1,6 @@
 import base64
 import json
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Type
 from urllib.parse import parse_qs, urlparse
 
@@ -16,6 +17,7 @@ from dlt_filesystem.source.router import (
 from dlt_filesystem.util.auth import AzureBlobAuth, parse_azure_blob_auth
 
 if TYPE_CHECKING:
+    from fsspec import AbstractFileSystem
     from pyarrow.fs import HadoopFileSystem
 
 
@@ -110,30 +112,50 @@ class GCSSource(FilesystemSource):
         )
 
 
-class S3Source(FilesystemSource):
+class S3CompatibleSource(FilesystemSource):
+    """
+    Access S3 and compatible filesystems.
+
+    TODO: Forward more parameters than `access_key_id` and `secret_access_key`
+          (key/secret/endpoint_url) only.
+    """
+    @property
+    @abstractmethod
+    def fs_name(self) -> str:
+        raise NotImplementedError("Need to implement abstract property")
+
+    @property
+    def fs_class(self) -> Type["AbstractFileSystem"]:
+        import s3fs
+
+        return s3fs.S3FileSystem
+
+    @property
+    def fs_protocol(self) -> str:
+        return self.fs_class.protocol[0]
+
     def dlt_source(self, uri: str, table: str, **kwargs):
         if kwargs.get("incremental_key"):
             raise ValueError(
-                "S3 takes care of incrementality on its own, you should not provide incremental_key"
+                f"{self.fs_name} takes care of incrementality on its own, "
+                f"you should not provide incremental_key"
             )
 
         parsed_uri = urlparse(uri)
         source_fields = parse_qs(parsed_uri.query)
         access_key_id = source_fields.get("access_key_id")
         if not access_key_id:
-            raise ValueError("access_key_id is required to connect to S3")
+            raise MissingConnectorOption("access_key_id", self.fs_name)
 
         secret_access_key = source_fields.get("secret_access_key")
         if not secret_access_key:
-            raise ValueError("secret_access_key is required to connect to S3")
+            raise MissingConnectorOption("secret_access_key", self.fs_name)
 
         bucket_name, path_to_file = parse_uri(parsed_uri, table)
         if not bucket_name or not path_to_file:
-            raise InvalidBlobTableError("S3")
+            raise InvalidBlobTableError(self.fs_name)
 
-        bucket_url = f"s3://{bucket_name}/"
-
-        import s3fs
+        bucket_url = f"{self.fs_protocol}://{bucket_name}/"
 
         endpoint_url = source_fields.get("endpoint_url")
         fs_kwargs: dict = {
@@ -143,12 +165,12 @@ class S3Source(FilesystemSource):
         if endpoint_url:
             fs_kwargs["endpoint_url"] = endpoint_url[0]
 
-        fs = s3fs.S3FileSystem(**fs_kwargs)
+        fs = self.fs_class(**fs_kwargs)
 
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("S3"))
+            raise ValueError(supported_file_format_message(self.fs_name))
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
@@ -169,6 +191,12 @@ class S3Source(FilesystemSource):
                 column_types=kwargs.get("column_types"),
             )
         )
+
+
+class S3Source(S3CompatibleSource):
+    @property
+    def fs_name(self) -> str:
+        return "S3"
 
 
 def _azure_fs(auth: AzureBlobAuth):
@@ -264,7 +292,7 @@ class SFTPSource(FilesystemSource):
         parsed_uri = urlparse(uri)
         host = parsed_uri.hostname
         if not host:
-            raise MissingConnectorOption("host", "SFTP URI")
+            raise MissingConnectorOption("host", "SFTP")
         port = parsed_uri.port or 22
         username = parsed_uri.username
         password = parsed_uri.password
@@ -386,3 +414,23 @@ class HDFSSource(FilesystemSource):
                 column_types=kwargs.get("column_types"),
             )
         )
+
+
+class R2Source(S3CompatibleSource):
+    """
+    Provide access to Cloudflare R2, compatible with Amazon S3.
+    https://github.com/panodata/omniload/issues/163
+    """
+
+    @property
+    def fs_name(self) -> str:
+        return "R2"
+
+    @property
+    def fs_class(self) -> Type["AbstractFileSystem"]:
+        import s3fs
+
+        class R2FileSystem(s3fs.S3FileSystem):
+            protocol = "r2"
+
+        return R2FileSystem
