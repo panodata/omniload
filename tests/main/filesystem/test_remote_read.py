@@ -1,3 +1,4 @@
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -43,8 +44,8 @@ URIS = [
         table="",
     ),
     Item(
-        uri="hdfs://example.com:8020/?user=test",
-        table="/path/to/data.parquet",
+        uri="hdfs://example.com:8020?user=test",
+        table="path/to/data.parquet",
     ),
     f'oci://bucket@namespace/prefix/path/to/data.parquet?iam_type=api_key&config={{"user":"ocid1.user.oc1..24g4uzg","region":"us-ashburn-1","tenancy":"ocid1.tenancy.oc1..23423r3","key_file":"{private_key_file}","fingerprint":"{private_key_fingerprint}"}}',
     "oss://bucket/path/to/data.parquet?endpoint=http://oss-cn-hangzhou.aliyuncs.com/&key=foo&secret=bar",
@@ -62,7 +63,7 @@ URIS = [
 
 
 @pytest.mark.parametrize("source_uri", URIS, ids=[str(item) for item in URIS])
-def test_init_generic_filesystems(source_uri):
+def test_init_generic_filesystems(source_uri, mocker):
     """Initialize all available filesystem implementations without table parameter"""
     if isinstance(source_uri, Item):
         uri = source_uri.uri
@@ -72,9 +73,21 @@ def test_init_generic_filesystems(source_uri):
         table = ""
     parsed_uri = urlparse(uri)
 
+    # Testing a few modules make problems on Windows.
+    no_hdfs = parsed_uri.scheme == "hdfs" and sys.version_info < (3, 11)
+    no_oci = parsed_uri.scheme == "oci" and sys.platform == "win32"
+    if no_hdfs or no_oci:
+        pytest.skip(f"{parsed_uri.scheme}:// fails testing on this test matrix slot")
+
     # Monkeypatch modules that would otherwise fail on initialization.
-    if parsed_uri.scheme in ["gs", "hdfs", "sftp"]:
+    if parsed_uri.scheme in ["gs", "sftp"]:
         pytest.skip(f"{parsed_uri.scheme}:// needs monkeypatching to make it testable")
+
+    if "pyarrow.fs" in sys.modules:
+        del sys.modules["pyarrow.fs"]
+    if "pyarrow._fs" in sys.modules:
+        del sys.modules["pyarrow._fs"]
+    mocker.patch("pyarrow.fs.HadoopFileSystem")
 
     factory = SourceDestinationFactory(uri, "file://")
     source = factory.get_source()

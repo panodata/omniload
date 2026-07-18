@@ -186,6 +186,7 @@ optional-dependencies.test = [
   "pytest<10",
   "pytest-asyncio<2",
   "pytest-cov<8",
+  "pytest-mock<4",
   "pytest-xdist[psutil]<4",
   "testcontainers[mysql,postgres]>=4.9.1,<4.15",
   "types-requests<3",
