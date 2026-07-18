@@ -48,9 +48,8 @@ local name, so `#tagname=product` matches both `<product>` and `<ns:product>`. W
 
 XML is available on every source that goes through the shared file readers:
 
-- Local files: [`file://`](file.md)
-- [`s3://`](s3.md), [`gs://`](google-cloud-storage.md), [Azure blob storage](azure-blob-storage.md)
-- [`sftp://`](sftp.md)
+- Local files: {ref}`file`
+- Remote files: {ref}`s3`, {ref}`gcs`, {ref}`azure-storage`, {ref}`sftp`, ...
 
 Remote reads go through the source's own fsspec handle, so they reuse its existing
 authentication (no separate XML storage configuration). A file is read as XML when its extension
