@@ -147,6 +147,7 @@ optional-dependencies.filesystem = [
   "adlfs",
   "fsspec>2021.9",
   "gcsfs",
+  "ocifs",
   "ossfs",
   "s3fs",
 ]

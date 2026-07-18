@@ -98,6 +98,7 @@ sources: LazyRegistry = LazyRegistry(
         "mqtt+mqb": "omniload.source.mqbridge.api:MqBridgeSource",
         "nats+mqb": "omniload.source.mqbridge.api:MqBridgeSource",
         "notion": "omniload.source.notion.api:NotionSource",
+        "oci": "dlt_filesystem.source.api:OCISource",
         "oss": "dlt_filesystem.source.api:OSSSource",
         "personio": "omniload.source.personio.api:PersonioSource",
         "phantombuster": "omniload.source.phantombuster.api:PhantombusterSource",

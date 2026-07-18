@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -12,6 +13,17 @@ class Item:
     uri: str
     table: Optional[str] = None
 
+
+# Create private key file in PKCS8 format and compute fingerprint.
+"""
+openssl genrsa -out test.pem 512
+openssl pkcs8 -nocrypt -topk8 -in test.pem -out test-pkcs8.pem
+openssl rsa -pubout -outform DER -in test-pkcs8.pem | openssl md5 -c
+"""
+private_key_file = Path("tests/assets/privatekey.pem").absolute()
+private_key_fingerprint = (
+    Path("tests/assets/privatekey-fingerprint.txt").read_text().strip()
+)
 
 # A collection of filesystem source URIs without table parameter.
 URIS = [
@@ -34,6 +46,7 @@ URIS = [
         uri="hdfs://example.com:8020/?user=test",
         table="/path/to/data.parquet",
     ),
+    f'oci://bucket@namespace/prefix/path/to/data.parquet?iam_type=api_key&config={{"user":"ocid1.user.oc1..24g4uzg","region":"us-ashburn-1","tenancy":"ocid1.tenancy.oc1..23423r3","key_file":"{private_key_file}","fingerprint":"{private_key_fingerprint}"}}',
     "oss://bucket/path/to/data.parquet?endpoint=http://oss-cn-hangzhou.aliyuncs.com/&key=foo&secret=bar",
     "oss://bucket/path/to/data.parquet?endpoint=https://oss-me-east-1.aliyuncs.com/&token=foobar",
     Item(
@@ -58,8 +71,11 @@ def test_init_generic_filesystems(source_uri):
         uri = source_uri
         table = ""
     parsed_uri = urlparse(uri)
+
+    # Monkeypatch modules that would otherwise fail on initialization.
     if parsed_uri.scheme in ["gs", "hdfs", "sftp"]:
         pytest.skip(f"{parsed_uri.scheme}:// needs monkeypatching to make it testable")
+
     factory = SourceDestinationFactory(uri, "file://")
     source = factory.get_source()
     dlt_source = source.dlt_source(
