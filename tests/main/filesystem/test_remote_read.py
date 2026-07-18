@@ -32,6 +32,10 @@ URIS = [
     "abfss://schrott@acme.dfs.core.windows.net/path/to/data.parquet?account_name=acme&account_key=secret",
     "adls://schrott@acme.dfs.core.windows.net/path/to/data.parquet?account_name=acme&account_key=secret",
     "az://schrott@acme.dfs.core.windows.net/path/to/data.parquet?account_name=acme&account_key=secret",
+    # TODO: Review note on the README at https://github.com/fsspec/dropboxdrivefs:
+    #       > Use `dropbox:///folder1/folder2/etc`. Yes, with three /// ! What happen if not, for some reasons
+    #       > the dropbox api will remove everything before the first / in the path keep only what is after.
+    "dropbox://path/to/data.parquet?token=secret",
     # TODO: Mock `gs` backend.
     # ValueError: Provided token is either not valid, or expired.
     "gs://table-bucket-name/path/to/data.parquet?credentials_path=/path/to/service-account.json",

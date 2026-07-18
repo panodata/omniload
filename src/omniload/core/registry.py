@@ -55,6 +55,7 @@ sources: LazyRegistry = LazyRegistry(
         "cursor": "omniload.source.cursor.api:CursorSource",
         "customerio": "omniload.source.customer_io.api:CustomerIoSource",
         "docebo": "omniload.source.docebo.api:DoceboSource",
+        "dropbox": "dlt_filesystem.source.api:DropboxSource",
         "dune": "omniload.source.dune.api:DuneSource",
         "dynamodb": "omniload.source.dynamodb.api:DynamoDBSource",
         "elasticsearch": "omniload.source.elasticsearch.api:ElasticsearchSource",

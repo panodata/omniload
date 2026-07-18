@@ -145,6 +145,7 @@ optional-dependencies.develop = [
 ]
 optional-dependencies.filesystem = [
   "adlfs",
+  "dropboxdrivefs",
   "fsspec>2021.9",
   "gcsfs",
   "ocifs",

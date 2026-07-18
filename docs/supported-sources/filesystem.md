@@ -42,6 +42,7 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 |:--------------------------|:-------------------------------------------|:-------------------------|:-----|:------|
 | {ref}`Local files <file>` | Files on local and mounted filesystems     | file://                  | ✅   | ✅    |
 | {ref}`azure-storage`      | Azure Blob and Data Lake Storage           | az://, adls://, abfss:// | ✅   | ✅    |
+| {ref}`dropbox`            | Dropbox                                    | dropbox://               | ✅   | ❌    |
 | {ref}`s3`                 | Amazon S3 and compatible filesystems       | s3://                    | ✅   | ✅    |
 | {ref}`gcs`                | Google Cloud Storage                       | gs://                    | ✅   | ✅    |
 | {ref}`hdfs`               | Hadoop distributed file system             | hdfs://                  | ✅   | ❌    |
