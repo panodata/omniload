@@ -76,6 +76,8 @@ sources: LazyRegistry = LazyRegistry(
         "hostaway": "omniload.source.hostaway.api:HostawaySource",
         "http": "omniload.source.http.api:HttpSource",
         "https": "omniload.source.http.api:HttpSource",
+        "http+webdav": "dlt_filesystem.source.api:WebdavSource",
+        "https+webdav": "dlt_filesystem.source.api:WebdavSource",
         "hubspot": "omniload.source.hubspot.api:HubspotSource",
         "ibmmq+mqb": "omniload.source.mqbridge.api:MqBridgeSource",
         "indeed": "omniload.source.indeed.api:IndeedSource",

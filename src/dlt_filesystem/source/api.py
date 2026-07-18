@@ -9,6 +9,7 @@ from dlt_filesystem.source.impl.remote import (
     R2Source,
     S3Source,
     SFTPSource,
+    WebdavSource,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "R2Source",
     "S3Source",
     "SFTPSource",
+    "WebdavSource",
 ]

@@ -38,18 +38,19 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 
 ## Supported filesystems
 
-| Name                      | Description                                | Protocol scheme          | Read | Write |
-|:--------------------------|:-------------------------------------------|:-------------------------|:-----|:------|
-| {ref}`Local files <file>` | Files on local and mounted filesystems     | file://                  | ✅   | ✅    |
-| {ref}`azure-storage`      | Azure Blob and Data Lake Storage           | az://, adls://, abfss:// | ✅   | ✅    |
-| {ref}`dropbox`            | Dropbox                                    | dropbox://               | ✅   | ❌    |
-| {ref}`s3`                 | Amazon S3 and compatible filesystems       | s3://                    | ✅   | ✅    |
-| {ref}`gcs`                | Google Cloud Storage                       | gs://                    | ✅   | ✅    |
-| {ref}`hdfs`               | Hadoop distributed file system             | hdfs://                  | ✅   | ❌    |
-| {ref}`oci`                | Oracle Cloud Infrastructure Object Storage | oci://                   | ✅   | ❌    |
-| {ref}`oss`                | Alibaba Object Storage Service (OSS)       | oss://                   | ✅   | ❌    |
-| {ref}`r2`                 | Cloudflare R2                              | r2://                    | ✅   | ❌    |
-| {ref}`sftp`               | Simple File Transfer Protocol (RFC 913)    | sftp://                  | ✅   | ✅    |
+| Name                      | Description                                       | Protocol scheme                 | Read | Write |
+|:--------------------------|:--------------------------------------------------|:--------------------------------|:-----|:------|
+| {ref}`Local files <file>` | Files on local and mounted filesystems            | file://                         | ✅   | ✅    |
+| {ref}`azure-storage`      | Azure Blob and Data Lake Storage                  | az://, adls://, abfss://        | ✅   | ✅    |
+| {ref}`dropbox`            | Dropbox                                           | dropbox://                      | ✅   | ❌    |
+| {ref}`s3`                 | Amazon S3 and compatible filesystems              | s3://                           | ✅   | ✅    |
+| {ref}`gcs`                | Google Cloud Storage                              | gs://                           | ✅   | ✅    |
+| {ref}`hdfs`               | Hadoop distributed file system                    | hdfs://                         | ✅   | ❌    |
+| {ref}`oci`                | Oracle Cloud Infrastructure Object Storage        | oci://                          | ✅   | ❌    |
+| {ref}`oss`                | Alibaba Object Storage Service (OSS)              | oss://                          | ✅   | ❌    |
+| {ref}`r2`                 | Cloudflare R2                                     | r2://                           | ✅   | ❌    |
+| {ref}`sftp`               | Simple File Transfer Protocol (RFC 913)           | sftp://                         | ✅   | ✅    |
+| {ref}`webdav`             | Web Distributed Authoring and Versioning (WebDAV) | http+webdav://, https+webdav:// | ✅   | ❌    |
 
 :::{note}
 `omniload` supports read and write operations on both local and remote filesystems.

@@ -151,6 +151,7 @@ optional-dependencies.filesystem = [
   "ocifs",
   "ossfs",
   "s3fs",
+  "webdav4[fsspec]",
 ]
 optional-dependencies.full = [ "omniload[ibm-db,iterable,odbc,oracle]" ]
 optional-dependencies.ibm-db = [

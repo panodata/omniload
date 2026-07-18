@@ -3,7 +3,8 @@
 ## in progress
 
 - Filesystem: Migrated local filesystem access to Apache Arrow.
-- Filesystem: Added support for reading from Dropbox, HDFS, R2, OCI, OSS.
+- Filesystem: Added support for reading from
+  Dropbox, HDFS, R2, OCI, OSS, WebDAV.
 
 ## 2026/07/16 v0.7.0
 
