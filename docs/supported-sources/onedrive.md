@@ -2,10 +2,10 @@
 
 # OneDrive
 
-[OneDrive] is a file-hosting service operated by Microsoft. it allows
-registered users to store, share, back-up and synchronize their files.
-OneDrive also works as the storage backend of the web version of
-Microsoft 365.
+[Microsoft OneDrive] is a cloud storage service that lets you store,
+share, and collaborate on files. You can connect your OneDrive for
+Business instance as a data source for your managed knowledge base
+to crawl the personal drives of users in your Microsoft 365 tenant.
 `omniload` supports OneDrive as a data source.
 
 ## URI format
@@ -71,9 +71,16 @@ the site and drive dynamically (e.g., `msgd://SiteA/DriveB/file.txt`).
 
 ## Authentication
 
-OneDrive uses OAuth 2.0 for authentication.
+The OneDrive connector uses OAuth 2.0 to authenticate with the
+Microsoft Graph API. [Microsoft Graph] is a protected API gateway for
+accessing data in Microsoft cloud services like [Microsoft Entra ID],
+Microsoft 365, OneDrive, or SharePoint. It is protected by the
+[Microsoft identity platform], which authorizes and verifies that an
+app is authorized to call Microsoft Graph.
 
-- [Set up OAuth 2.0 authentication for OneDrive]
+Please get familiar with relevant concepts to configure OAuth 2.0
+authentication properly, see also [authentication and authorization basics]
+and [set up OAuth 2.0 authentication for OneDrive] tutorial by AWS.
 
 ## Example: Load CSV file from OneDrive into DuckDB
 
@@ -81,12 +88,12 @@ OneDrive uses OAuth 2.0 for authentication.
 omniload ingest \
     --source-uri   'onedrive://?client_id=1d2befad-2f22-4124-a779-b147dfeca342&tenant_id=6b337423-f504-4060-a91b-e9eaaf782609&client_secret=abc~xyz789EXAMPLE_foo' \
     --source-table '<site_name>/<drive_name>/path/to/user.csv' \
-    --dest-uri     'duckdb:///OneDrive_data.duckdb' \
+    --dest-uri     'duckdb:///onedrive_data.duckdb' \
     --dest-table   'dest.users_details'
 ```
 
 Running the command creates a table named `users_details` within the
-`dest` schema in the DuckDB database file located at `OneDrive_data.duckdb`.
+`dest` schema in the DuckDB database file located at `onedrive_data.duckdb`.
 
 :::{tip}
 Here, instead of defining the remote resource exclusively per source URI
@@ -95,5 +102,9 @@ base directory on the server where `omniload` should start looking for files.
 :::
 
 
-[OneDrive]: https://en.wikipedia.org/wiki/OneDrive
+[authentication and authorization basics]: https://learn.microsoft.com/en-us/graph/auth/auth-concepts
+[Microsoft Entra ID]: https://en.wikipedia.org/wiki/Microsoft_Entra_ID
+[Microsoft Graph]: https://learn.microsoft.com/en-us/graph/
+[Microsoft identity platform]: https://learn.microsoft.com/en-us/entra/identity-platform/v2-overview
+[Microsoft OneDrive]: https://en.wikipedia.org/wiki/OneDrive
 [Set up OAuth 2.0 authentication for OneDrive]: https://docs.aws.amazon.com/bedrock/latest/userguide/kb-managed-onedrive-oauth2-setup.html

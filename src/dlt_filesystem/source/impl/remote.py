@@ -90,7 +90,7 @@ class GCSSource(FilesystemSource):
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("GCS"))
+            raise ValueError(supported_file_format_message("GCS")) from None
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
@@ -134,7 +134,9 @@ class S3CompatibleSource(FilesystemSource):
 
     @property
     def fs_protocol(self) -> str:
-        return self.fs_class.protocol[0]
+        if isinstance(self.fs_class.protocol, (list, tuple)):
+            return self.fs_class.protocol[0]
+        return self.fs_class.protocol
 
     def dlt_source(self, uri: str, table: str, **kwargs):
         if kwargs.get("incremental_key"):
@@ -172,7 +174,7 @@ class S3CompatibleSource(FilesystemSource):
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message(self.fs_name))
+            raise ValueError(supported_file_format_message(self.fs_name)) from None
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
@@ -263,7 +265,7 @@ class AzureSource(FilesystemSource):
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("Azure"))
+            raise ValueError(supported_file_format_message("Azure")) from None
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
@@ -463,7 +465,7 @@ class HDFSSource(FilesystemSource):
             if field_name in fs_kwargs:
                 fs_kwargs[field_name] = json.loads(fs_kwargs[field_name])
 
-        fs = self.fs_class(**kwargs)
+        fs = self.fs_class(**fs_kwargs)
 
         host = parsed_uri.hostname
         port = parsed_uri.port or 8020
@@ -471,7 +473,7 @@ class HDFSSource(FilesystemSource):
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("HDFS"))
+            raise ValueError(supported_file_format_message("HDFS")) from None
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
@@ -587,7 +589,7 @@ class OSSSource(FilesystemSource):
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("OSS"))
+            raise ValueError(supported_file_format_message("OSS")) from None
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
@@ -677,7 +679,7 @@ class OCISource(FilesystemSource):
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("OCI"))
+            raise ValueError(supported_file_format_message("OCI")) from None
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
@@ -746,7 +748,7 @@ class DropboxSource(FilesystemSource):
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("Dropbox"))
+            raise ValueError(supported_file_format_message("Dropbox")) from None
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
@@ -813,7 +815,7 @@ class WebdavSource(FilesystemSource):
         scheme = parsed_uri.scheme.replace("+webdav", "")
         bucket_url = f"{scheme}://{bucket_name}/"
 
-        fs = self.fs_class(uri, auth=auth)
+        fs = self.fs_class(bucket_url, auth=auth)
 
         # TODO: Naming things: Rename `determine_endpoint` to `infer_reader`.
         # TODO: Refactoring: Break out reader finding and fragments of the
@@ -821,7 +823,7 @@ class WebdavSource(FilesystemSource):
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("WebDAV"))
+            raise ValueError(supported_file_format_message("WebDAV")) from None
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
@@ -904,7 +906,9 @@ class SharePointOneDriveSource(FilesystemSource):
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("MSSharePointOneDrive"))
+            raise ValueError(
+                supported_file_format_message("MSSharePointOneDrive")
+            ) from None
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"

@@ -99,6 +99,7 @@ linkcheck_ignore = [
     r"https://www.reddit.com/",
     r"https://www.linkedin.com/developers.*",
     r"https://github.com/",
+    r"https://medium.com/",
 ]
 linkcheck_anchors_ignore_for_url = [
     r"https://developers.zoom.us/",

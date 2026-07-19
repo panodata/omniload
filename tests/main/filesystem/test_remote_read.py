@@ -23,9 +23,11 @@ openssl genrsa -out test.pem 512
 openssl pkcs8 -nocrypt -topk8 -in test.pem -out test-pkcs8.pem
 openssl rsa -pubout -outform DER -in test-pkcs8.pem | openssl md5 -c
 """
-private_key_file = Path("tests/assets/privatekey.pem").absolute()
+assets_dir = Path(__file__).resolve().parents[2] / "assets"
+
+private_key_file = (assets_dir / "privatekey.pem").as_posix()
 private_key_fingerprint = (
-    Path("tests/assets/privatekey-fingerprint.txt").read_text().strip()
+    (assets_dir / "privatekey-fingerprint.txt").read_text().strip()
 )
 
 # A collection of filesystem source URIs without table parameter.

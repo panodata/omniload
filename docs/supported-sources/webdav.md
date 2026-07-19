@@ -12,7 +12,7 @@ edit content directly in an HTTP server, which may act as a file server.
 The URI for connecting to WebDAV is structured as follows.
 
 ```text
-https+webdav://username:password@www.example.org/path/to/data.parquet
+https+webdav://<USERNAME>:<PASSWORD>@www.example.org/path/to/data.parquet
 ```
 
 ## Authentication
@@ -31,7 +31,7 @@ know about your needs.
 
 ```sh
 omniload ingest \
-    --source-uri   'https+webdav://username:password@www.example.org' \
+    --source-uri   'https+webdav://<USERNAME>:<PASSWORD>@www.example.org' \
     --source-table 'path/to/user.csv' \
     --dest-uri     'duckdb:///webdav_data.duckdb' \
     --dest-table   'dest.users_details'

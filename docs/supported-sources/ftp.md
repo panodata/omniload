@@ -12,7 +12,7 @@ network.
 The URI for connecting to an FTP server is structured as follows.
 
 ```text
-ftp://username:password@intranet.example.org/path/to/data.parquet?tls=tls
+ftp://<USERNAME>:<PASSWORD>@intranet.example.org/path/to/data.parquet?tls=tls
 ```
 
 ## URI parameters
@@ -74,7 +74,7 @@ hostname, port, a valid username, and a password.
 
 ```sh
 omniload ingest \
-    --source-uri   'ftp://username:password@intranet.example.org?tls=tls' \
+    --source-uri   'ftp://<USERNAME>:<PASSWORD>@intranet.example.org?tls=tls' \
     --source-table '/path/to/user.csv' \
     --dest-uri     'duckdb:///ftp_data.duckdb' \
     --dest-table   'dest.users_details'

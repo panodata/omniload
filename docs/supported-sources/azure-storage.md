@@ -126,7 +126,7 @@ about the format of the files. This is done by appending a fragment identifier
 For example, if you have JSONL-formatted log files stored in Azure with a
 non-standard extension, use an URI pattern like this.
 
-```
+```text
 --source-table "my-container/logs/event-data#jsonl"
 ```
 
@@ -190,7 +190,7 @@ omniload ingest \
 ```
 
 This will result in a file structure like the following:
-```
+```text
 my-container/
 └── records
     ├── _dlt_loads

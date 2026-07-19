@@ -2,8 +2,11 @@
 
 # SharePoint
 
-[SharePoint] is a web-based collaborative platform primarily used for building
-corporate intranets, document and content management, and file sharing. 
+[Microsoft SharePoint] is a collaborative web-based service for working on
+documents, web pages, web sites, lists, and more, mostly used for building
+corporate intranets. You can connect your SharePoint Online instance as a
+data source for your managed knowledge base to crawl files and pages from
+one or more SharePoint sites.
 `omniload` supports SharePoint as a data source.
 
 ## URI format
@@ -69,7 +72,17 @@ the site and drive dynamically (e.g., `msgd://SiteA/DriveB/file.txt`).
 
 ## Authentication
 
-SharePoint uses OAuth 2.0 for authentication.
+The SharePoint connector uses OAuth 2.0 to authenticate with the
+Microsoft Graph API. [Microsoft Graph] is a protected API gateway for
+accessing data in Microsoft cloud services like [Microsoft Entra ID],
+Microsoft 365, OneDrive, or SharePoint. It is protected by the
+[Microsoft identity platform], which authorizes and verifies that an
+app is authorized to call Microsoft Graph.
+
+Please get familiar with relevant concepts to configure OAuth 2.0
+authentication properly, see also [authentication and authorization
+basics] and [set up OAuth 2.0 authentication for SharePoint] tutorial
+by AWS and other resources.
 
 - [Mastering File Access in SharePoint with OAuth 2.0: A Comprehensive Guide]
 - [Understanding Microsoft Entra ID and OAuth 2.0 in the context of SharePoint Online modern development]
@@ -94,6 +107,11 @@ base directory on the server where `omniload` should start looking for files.
 :::
 
 
+[authentication and authorization basics]: https://learn.microsoft.com/en-us/graph/auth/auth-concepts
+[Microsoft Entra ID]: https://en.wikipedia.org/wiki/Microsoft_Entra_ID
 [Mastering File Access in SharePoint with OAuth 2.0: A Comprehensive Guide]: https://medium.com/@pavithrasainath7/mastering-file-access-in-sharepoint-with-oauth-2-0-a-comprehensive-guide-0a6b2d53736a
-[SharePoint]: https://en.wikipedia.org/wiki/SharePoint
+[Microsoft Graph]: https://learn.microsoft.com/en-us/graph/
+[Microsoft identity platform]: https://learn.microsoft.com/en-us/entra/identity-platform/v2-overview
+[Microsoft SharePoint]: https://en.wikipedia.org/wiki/SharePoint
+[Set up OAuth 2.0 authentication for SharePoint]: https://docs.aws.amazon.com/bedrock/latest/userguide/kb-managed-sharepoint-oauth2-setup.html
 [Understanding Microsoft Entra ID and OAuth 2.0 in the context of SharePoint Online modern development]: https://learn.microsoft.com/en-us/sharepoint/dev/sp-add-ins-modernize/understanding-aad-and-oauth-for-spo-modern

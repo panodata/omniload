@@ -22,7 +22,7 @@ hdfs://example.com:8020/path/to/data.parquet?user=test
   `core-site.xml`.
 
 :port:
-  HDFS port to connect to. Set to 0 for default or logical (HA) nodes.
+  HDFS port to connect to.
   Type: `int`. Default: `8020`.
 
 :user:
@@ -52,12 +52,12 @@ hdfs://example.com:8020/path/to/data.parquet?user=test
 
 ## Examples
 
-To integrate `omniload` with OSS, you need the server's hostname (endpoint)
+To integrate `omniload` with HDFS, you need the server's hostname (endpoint)
 and valid credentials.
 
 ### Load Parquet data from HDFS into DuckDB
 
-The following command demonstrates how to copy data from a specified OSS
+The following command demonstrates how to copy data from a specified HDFS
 location into a DuckDB database.
 
 ```sh
@@ -81,9 +81,10 @@ separate `--source-table` option. Both addressing variants are supported equally
 
 :::{todo}
 PyArrow comes with bindings to the Hadoop File System, however you must
-still [configure it properly]. In this spirit, because not packaging
+still [configure it properly]. In this spirit, because no packaging
 efforts were poured into this, the HDFS connector can not be expected
 to work out of the box, for example when using the omniload OCI image.
+Please [create an issue] to ping us about any improvement needs.
 :::
 
 
