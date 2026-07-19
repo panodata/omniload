@@ -40,6 +40,15 @@ URIS = [
     #       Currently, we are using two slashes, because otherwise the machinery fails. In this
     #       spirit, it is essential to run a few cycles of user testing.
     "dropbox://path/to/data.parquet?token=secret",
+    Item(
+        uri="ftp://username:password@intranet.example.org/path/to/data.parquet?tls=tls",
+        table="",
+    ),
+    # TODO: Two FTP tests currently don't work. Why?
+    # Item(
+    #    uri="ftp://username:password@intranet.example.org?tls=tls",
+    #    table="/path/to/data.parquet",
+    # ),
     "gs://table-bucket-name/path/to/data.parquet?credentials_path=/path/to/service-account.json",
     # FIXME: KeyError: 'refresh_token'
     # "gs://table-bucket-name/path/to/data.parquet?credentials_base64=eyJrZXkiOiAidmFsdWUifQ==",
@@ -102,6 +111,9 @@ def test_init_generic_filesystems(source_uri, mocker):
     # It's enough to mock the `_connect` method with SFTP.
     mocker.patch("fsspec.implementations.sftp.SFTPFileSystem._connect")
 
+    # For FTP, let's mock the low-level libraries.
+    mocker.patch("ftplib.FTP")
+    mocker.patch("ftplib.FTP_TLS")
 
     factory = SourceDestinationFactory(uri, "file://")
     source = factory.get_source()

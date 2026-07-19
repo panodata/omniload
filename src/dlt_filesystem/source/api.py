@@ -2,6 +2,7 @@ from dlt_filesystem.source.impl.local import LocalFilesystemSource
 from dlt_filesystem.source.impl.remote import (
     AzureSource,
     DropboxSource,
+    FTPSource,
     GCSSource,
     HDFSSource,
     OCISource,
@@ -16,6 +17,7 @@ from dlt_filesystem.source.impl.remote import (
 __all__ = [
     "AzureSource",
     "DropboxSource",
+    "FTPSource",
     "GCSSource",
     "HDFSSource",
     "LocalFilesystemSource",

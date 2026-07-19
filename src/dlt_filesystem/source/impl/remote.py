@@ -289,6 +289,79 @@ class AzureSource(FilesystemSource):
         )
 
 
+class FTPSource(FilesystemSource):
+    def dlt_source(self, uri: str, table: str, **kwargs):
+
+        from fsspec.implementations.ftp import FTPFileSystem
+
+        # Let's use the fsspec approach of decoding URIs.
+        options = FTPFileSystem._get_kwargs_from_urls(uri)
+
+        # Extract and merge query parameters.
+        parsed_fields = parse_qs(options.pop("url_query", ""))
+        fs_kwargs: Dict[str, Any] = {
+            key: value[0] for key, value in parsed_fields.items()
+        }
+        options.update(fs_kwargs)
+
+        # Extract and separate reader hints.
+        parsed_hints = parse_qs(options.pop("url_fragment", ""))
+        fs_hints: Dict[str, Any] = {
+            key: value[0] for key, value in parsed_hints.items()
+        }
+
+        # Decode individual options (type casting, default values, sanity checks).
+        if not options["host"]:
+            raise MissingConnectorOption("host", "FTP")
+        options["port"] = options.get("port", 21)
+        # Cast values to `int`.
+        for field_name in ["block_size", "timeout"]:
+            if field_name in fs_kwargs:
+                fs_kwargs[field_name] = int(fs_kwargs[field_name])
+        # Special case casting.
+        if "tls" in options:
+            try:
+                options["tls"] = asbool(options["tls"])
+            except ValueError:
+                pass
+
+        # Create filesystem.
+        fs = FTPFileSystem(**options)
+
+        # TODO: Review why the URL must be partly reconstructed
+        #       across the board of all filesystem wrappers?
+        bucket_url = f"ftp://{options['host']}:{options['port']}"
+
+        # Decode into base url and url path / file glob, and apply sanity checks.
+        bucket_name, path_to_file = parse_uri(uri, table)
+        if not bucket_name or not path_to_file:
+            # TODO: Rename exception.
+            raise InvalidBlobTableError("FTP")
+
+        # FIXME: Refactoring and naming things.
+        try:
+            endpoint = determine_endpoint(table, path_to_file)
+        except UnsupportedEndpointError:
+            raise ValueError(supported_file_format_message("FTP")) from None
+        except Exception as e:
+            raise ValueError(f"Failed to parse endpoint from path: {table}") from e
+
+        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.model import FilesystemReference
+
+        return resource_for_reader(
+            FilesystemReference(
+                fs=fs,
+                bucket_url=bucket_url,
+                file_glob=path_to_file,
+                reader_name=endpoint,
+                hints=fs_hints,
+                # TODO: Can `column_types` be looped into reader hints instead?
+                column_types=kwargs.get("column_types"),
+            )
+        )
+
+
 class SFTPSource(FilesystemSource):
     def dlt_source(self, uri: str, table: str, **kwargs):
         parsed_uri = urlparse(uri)

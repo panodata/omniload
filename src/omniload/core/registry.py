@@ -65,6 +65,7 @@ sources: LazyRegistry = LazyRegistry(
         "fluxx": "omniload.source.fluxx.api:FluxxSource",
         "frankfurter": "omniload.source.frankfurter.api:FrankfurterSource",
         "freshdesk": "omniload.source.freshdesk.api:FreshdeskSource",
+        "ftp": "dlt_filesystem.source.api:FTPSource",
         "fundraiseup": "omniload.source.fundraiseup.api:FundraiseupSource",
         "github": "omniload.source.github.api:GitHubSource",
         "googleads": "omniload.source.google_ads.api:GoogleAdsSource",
