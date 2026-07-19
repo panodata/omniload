@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Tuple, TypeAlias
+from typing import Any, Dict, Optional, Tuple, TypeAlias, Union
 from urllib.parse import ParseResult, parse_qsl, urlparse
 
 import dlt
@@ -17,7 +17,7 @@ BucketName: TypeAlias = str
 FileGlob: TypeAlias = str
 
 
-def parse_uri(uri: ParseResult, table: str) -> Tuple[BucketName, FileGlob]:
+def parse_uri(uri: Union[ParseResult, str], table: str) -> Tuple[BucketName, FileGlob]:
     """
     parse the URI of a blob storage and
     return the bucket name and the file glob.
@@ -36,6 +36,9 @@ def parse_uri(uri: ParseResult, table: str) -> Tuple[BucketName, FileGlob]:
 
     The first form is the preferred method. Other forms are supported but discouraged.
     """
+
+    if isinstance(uri, str):
+        uri = urlparse(uri)
 
     table = table.strip()
     host = uri.netloc.strip()

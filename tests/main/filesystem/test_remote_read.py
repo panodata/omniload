@@ -1,3 +1,4 @@
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -5,6 +6,7 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import pytest
+from fsspec.implementations.memory import MemoryFileSystem
 
 from omniload.core.factory import SourceDestinationFactory
 
@@ -35,14 +37,12 @@ URIS = [
     # TODO: Review note on the README at https://github.com/fsspec/dropboxdrivefs:
     #       > Use `dropbox:///folder1/folder2/etc`. Yes, with three /// ! What happen if not, for some reasons
     #       > the dropbox api will remove everything before the first / in the path keep only what is after.
+    #       Currently, we are using two slashes, because otherwise the machinery fails. In this
+    #       spirit, it is essential to run a few cycles of user testing.
     "dropbox://path/to/data.parquet?token=secret",
-    # TODO: Mock `gs` backend.
-    # ValueError: Provided token is either not valid, or expired.
     "gs://table-bucket-name/path/to/data.parquet?credentials_path=/path/to/service-account.json",
     # FIXME: KeyError: 'refresh_token'
-    "gs://table-bucket-name/path/to/data.parquet?credentials_base64=eyJrZXkiOiAidmFsdWUifQ==",
-    # TODO: Mock `hdfs` backend.
-    #       OSError: Unable to load libjvm
+    # "gs://table-bucket-name/path/to/data.parquet?credentials_base64=eyJrZXkiOiAidmFsdWUifQ==",
     Item(
         uri="hdfs://example.com:8020/path/to/data.parquet?user=test",
         table="",
@@ -65,7 +65,11 @@ URIS = [
     #       doing it across the board, and like the OSS wrapper already started inheriting it.
     "r2://bucket/path/to/data.parquet?access_key_id=foo&secret_access_key=bar",
     "s3://bucket/path/to/data.parquet?access_key_id=foo&secret_access_key=bar",
-    "sftp://username:password@example.com:2222/path/to/data.parquet",
+    Item(
+        uri="sftp://username:password@intranet.example.org:2222",
+        table="/path/to/data.parquet",
+    ),
+    "sftp://username:password@intranet.example.org:2222/path/to/data.parquet",
     "sharepoint://site_name/drive_name/path/to/data.parquet?client_id=1d2befad-2f22-4124-a779-b147dfeca342&tenant_id=6b337423-f504-4060-a91b-e9eaaf782609&client_secret=abc~xyz789EXAMPLE_foo",
 ]
 
@@ -81,21 +85,23 @@ def test_init_generic_filesystems(source_uri, mocker):
         table = ""
     parsed_uri = urlparse(uri)
 
-    # Testing a few modules make problems on Windows.
+    # Testing a few modules has problems on Windows.
     no_hdfs = parsed_uri.scheme == "hdfs" and sys.version_info < (3, 11)
     no_oci = parsed_uri.scheme == "oci" and sys.platform == "win32"
     if no_hdfs or no_oci:
         pytest.skip(f"{parsed_uri.scheme}:// fails testing on this test matrix slot")
 
-    # Monkeypatch modules that would otherwise fail on initialization.
-    if parsed_uri.scheme in ["gs", "sftp"]:
-        pytest.skip(f"{parsed_uri.scheme}:// needs monkeypatching to make it testable")
+    # Apply monkeypatching to make a few filesystem implementations ready for unit testing.
 
-    if "pyarrow.fs" in sys.modules:
-        del sys.modules["pyarrow.fs"]
-    if "pyarrow._fs" in sys.modules:
-        del sys.modules["pyarrow._fs"]
-    mocker.patch("pyarrow.fs.HadoopFileSystem")
+    # GCS is fine with this environment variable being mocked.
+    mocker.patch.dict(os.environ, {"FETCH_RAW_TOKEN_EXPIRY": "false"})
+
+    # Must patch the whole class, because can't patch details which are immutable.
+    mocker.patch("pyarrow.fs.HadoopFileSystem", MemoryFileSystem)
+
+    # It's enough to mock the `_connect` method with SFTP.
+    mocker.patch("fsspec.implementations.sftp.SFTPFileSystem._connect")
+
 
     factory = SourceDestinationFactory(uri, "file://")
     source = factory.get_source()

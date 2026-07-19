@@ -20,7 +20,6 @@ from dlt_filesystem.util.auth import AzureBlobAuth, parse_azure_blob_auth
 
 if TYPE_CHECKING:
     from fsspec import AbstractFileSystem
-    from pyarrow.fs import HadoopFileSystem
 
 
 def _endpoint_namespace(endpoint: str | None, default: str) -> str:
@@ -317,16 +316,17 @@ class SFTPSource(FilesystemSource):
             raise ConnectionError(
                 f"Failed to connect or authenticate to sftp server {host}:{port}. Error: {e}"
             ) from e
+
+        bucket_name, path_to_file = parse_uri(parsed_uri, table)
+        if not bucket_name or not path_to_file:
+            raise InvalidBlobTableError("WebDAV")
+
         bucket_url = f"sftp://{host}:{port}"
 
-        table_path, _, hints = parse_fragment(table)
-        if table_path.startswith("/"):
-            file_glob = table_path
-        else:
-            file_glob = f"/{table_path}"
+        _, _, hints = parse_fragment(table)
 
         try:
-            endpoint = determine_endpoint(table, file_glob)
+            endpoint = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
             raise ValueError(supported_file_format_message("SFTP")) from None
         except Exception as e:
@@ -339,7 +339,7 @@ class SFTPSource(FilesystemSource):
             FilesystemReference(
                 fs=fs,
                 bucket_url=bucket_url,
-                file_glob=file_glob,
+                file_glob=path_to_file,
                 reader_name=endpoint,
                 storage_namespace=(f"sftp:{host.lower()}:{port}:{username or ''}"),
                 filesystem_incremental=kwargs.get("filesystem_incremental", False),
@@ -356,8 +356,8 @@ class HDFSSource(FilesystemSource):
     """
 
     @property
-    def fs_class(self) -> Type["HadoopFileSystem"]:
-        from pyarrow.fs import HadoopFileSystem
+    def fs_class(self) -> Type["AbstractFileSystem"]:
+        from fsspec.implementations.arrow import HadoopFileSystem
 
         return HadoopFileSystem
 
@@ -508,7 +508,7 @@ class OSSSource(FilesystemSource):
 
         fs = self.fs_class(**fs_kwargs)
 
-        # TODO: Naming things: Rename `determine_endpoint` to `find_reader`.
+        # TODO: Naming things: Rename `determine_endpoint` to `infer_reader`.
         # TODO: Refactoring: Break out reader finding and fragments of the
         #       filesystem initialization into common routines.
         try:
@@ -598,7 +598,7 @@ class OCISource(FilesystemSource):
 
         fs = self.fs_class(**fs_kwargs)
 
-        # TODO: Naming things: Rename `determine_endpoint` to `find_reader`.
+        # TODO: Naming things: Rename `determine_endpoint` to `infer_reader`.
         # TODO: Refactoring: Break out reader finding and fragments of the
         #       filesystem initialization into common routines.
         try:
@@ -667,7 +667,7 @@ class DropboxSource(FilesystemSource):
 
         fs = self.fs_class(**fs_kwargs)
 
-        # TODO: Naming things: Rename `determine_endpoint` to `find_reader`.
+        # TODO: Naming things: Rename `determine_endpoint` to `infer_reader`.
         # TODO: Refactoring: Break out reader finding and fragments of the
         #       filesystem initialization into common routines.
         try:
@@ -742,7 +742,7 @@ class WebdavSource(FilesystemSource):
 
         fs = self.fs_class(uri, auth=auth)
 
-        # TODO: Naming things: Rename `determine_endpoint` to `find_reader`.
+        # TODO: Naming things: Rename `determine_endpoint` to `infer_reader`.
         # TODO: Refactoring: Break out reader finding and fragments of the
         #       filesystem initialization into common routines.
         try:
@@ -796,6 +796,7 @@ class SharePointOneDriveSource(FilesystemSource):
         parsed_fields = parse_qs(parsed_uri.query)
 
         # Decode query arguments.
+        # TODO: Why not use `fsspec.utils.infer_storage_options`?
         fs_kwargs: Dict[str, Any] = {
             key: value[0] for key, value in parsed_fields.items()
         }
@@ -821,9 +822,10 @@ class SharePointOneDriveSource(FilesystemSource):
 
         bucket_url = f"{parsed_uri.scheme}://{bucket_name}/"
 
+        # TODO: Is it possible to use `fsspec.core.url_to_fs` here?
         fs = self.fs_class(**fs_kwargs)
 
-        # TODO: Naming things: Rename `determine_endpoint` to `find_reader`.
+        # TODO: Naming things: Rename `determine_endpoint` to `infer_reader`.
         # TODO: Refactoring: Break out reader finding and fragments of the
         #       filesystem initialization into common routines.
         try:

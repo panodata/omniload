@@ -151,6 +151,7 @@ optional-dependencies.filesystem = [
   "msgraphfs",
   "ocifs",
   "ossfs",
+  "paramiko",
   "s3fs",
   "webdav4[fsspec]",
 ]
