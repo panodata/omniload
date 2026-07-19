@@ -1,3 +1,6 @@
+from fsspec.utils import infer_storage_options
+
+
 class FilesystemSource:
     """Shared capabilities for the filesystem-family sources.
 
@@ -14,6 +17,16 @@ class FilesystemSource:
     set their own resource-level disposition leave this ``False`` (the default)
     so the run-level value never overrides theirs.
     """
+
+    @staticmethod
+    def _get_kwargs_from_urls(path):
+        """
+        A few filesystems do not provide the method, so add it here.
+        """
+        out = infer_storage_options(path)
+        out.pop("path", None)
+        out.pop("protocol", None)
+        return out
 
     def handles_incrementality(self) -> bool:
         return True

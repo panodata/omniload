@@ -8,13 +8,21 @@ from sqlalchemy.util import asbool
 
 from dlt_filesystem.error import InvalidBlobTableError, MissingConnectorOption
 from dlt_filesystem.source.base import FilesystemSource
+from dlt_filesystem.source.core import infer_resource
 from dlt_filesystem.source.error import UnsupportedEndpointError
 from dlt_filesystem.source.format.registry import supported_file_format_message
+from dlt_filesystem.source.model import FilesystemLocator
 from dlt_filesystem.source.router import (
     blob_hints,
     determine_endpoint,
     parse_fragment,
     parse_uri,
+)
+from dlt_filesystem.source.util import (
+    apply_alias,
+    cast_to_bool,
+    cast_to_dict,
+    cast_to_int,
 )
 from dlt_filesystem.util.auth import AzureBlobAuth, parse_azure_blob_auth
 
@@ -96,7 +104,7 @@ class GCSSource(FilesystemSource):
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.core import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
@@ -180,7 +188,7 @@ class S3CompatibleSource(FilesystemSource):
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.core import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
@@ -271,7 +279,7 @@ class AzureSource(FilesystemSource):
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.core import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
@@ -292,79 +300,47 @@ class AzureSource(FilesystemSource):
 
 
 class FTPSource(FilesystemSource):
+    """Access files on FTP servers."""
+
     def dlt_source(self, uri: str, table: str, **kwargs):
 
         from fsspec.implementations.ftp import FTPFileSystem
 
-        # Let's use the fsspec approach of decoding URIs.
-        options = FTPFileSystem._get_kwargs_from_urls(uri)
-
-        # Extract and merge query parameters.
-        parsed_fields = parse_qs(options.pop("url_query", ""))
-        fs_kwargs: Dict[str, Any] = {
-            key: value[0] for key, value in parsed_fields.items()
-        }
-        options.update(fs_kwargs)
-
-        # Extract and separate reader hints.
-        parsed_hints = parse_qs(options.pop("url_fragment", ""))
-        fs_hints: Dict[str, Any] = {
-            key: value[0] for key, value in parsed_hints.items()
-        }
+        # Bundle essential information to infer filesystem wrapper.
+        locator = FilesystemLocator(
+            name="FTP", fs_class=FTPFileSystem, uri=uri, path=table
+        )
 
         # Decode individual options (type casting, default values, sanity checks).
-        if not options["host"]:
+        fs_kwargs = locator.options.fs_kwargs
+        fs_kwargs.update(kwargs)
+        if "host" not in fs_kwargs or not fs_kwargs["host"]:
             raise MissingConnectorOption("host", "FTP")
-        options["port"] = options.get("port", 21)
+        fs_kwargs["port"] = fs_kwargs.get("port", 21)
         # Cast values to `int`.
-        for field_name in ["block_size", "timeout"]:
-            if field_name in fs_kwargs:
-                fs_kwargs[field_name] = int(fs_kwargs[field_name])
-        # Special case casting.
-        if "tls" in options:
+        cast_to_int(fs_kwargs, ["block_size", "port", "timeout"])
+        # Type casting for special parameters.
+        if "tls" in fs_kwargs:
             try:
-                options["tls"] = asbool(options["tls"])
+                fs_kwargs["tls"] = asbool(fs_kwargs["tls"])
             except ValueError:
                 pass
 
-        # Create filesystem.
-        fs = FTPFileSystem(**options)
+        # Create filesystem wrapper.
+        fs = FTPFileSystem(**fs_kwargs)
 
+        # Attach canonical URL form. It is currently required, but why?
         # TODO: Review why the URL must be partly reconstructed
         #       across the board of all filesystem wrappers?
-        bucket_url = f"ftp://{options['host']}:{options['port']}"
+        bucket_url = f"ftp://{fs_kwargs['host']}:{fs_kwargs['port']}"
+        locator.baseurl = bucket_url
 
-        # Decode into base url and url path / file glob, and apply sanity checks.
-        bucket_name, path_to_file = parse_uri(uri, table)
-        if not bucket_name or not path_to_file:
-            # TODO: Rename exception.
-            raise InvalidBlobTableError("FTP")
-
-        # FIXME: Refactoring and naming things.
-        try:
-            endpoint = determine_endpoint(table, path_to_file)
-        except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("FTP")) from None
-        except Exception as e:
-            raise ValueError(f"Failed to parse endpoint from path: {table}") from e
-
-        from dlt_filesystem.source.adapter import resource_for_reader
-        from dlt_filesystem.source.model import FilesystemReference
-
-        return resource_for_reader(
-            FilesystemReference(
-                fs=fs,
-                bucket_url=bucket_url,
-                file_glob=path_to_file,
-                reader_name=endpoint,
-                hints=fs_hints,
-                # TODO: Can `column_types` be looped into reader hints instead?
-                column_types=kwargs.get("column_types"),
-            )
-        )
+        return infer_resource(fs=fs, locator=locator)
 
 
 class SFTPSource(FilesystemSource):
+    """Access files on SFTP servers."""
+
     def dlt_source(self, uri: str, table: str, **kwargs):
         parsed_uri = urlparse(uri)
         host = parsed_uri.hostname
@@ -407,7 +383,7 @@ class SFTPSource(FilesystemSource):
         except Exception as e:
             raise ValueError(f"Failed to parse endpoint from path: {table}") from e
 
-        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.core import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
@@ -426,7 +402,7 @@ class SFTPSource(FilesystemSource):
 
 class HDFSSource(FilesystemSource):
     """
-    Provide access to HDFS via Arrow.
+    Access files on HDFS via Arrow.
     https://arrow.apache.org/docs/python/generated/pyarrow.fs.HadoopFileSystem.html
     """
 
@@ -442,61 +418,40 @@ class HDFSSource(FilesystemSource):
                 "HDFS takes care of incrementality on its own, you should not provide incremental_key"
             )
 
-        parsed_uri = urlparse(uri)
+        # Bundle essential information to infer filesystem wrapper.
+        locator = FilesystemLocator(
+            name="HDFS", fs_class=self.fs_class, uri=uri, path=table
+        )
 
-        bucket_name, path_to_file = parse_uri(parsed_uri, table)
-        if not bucket_name or not path_to_file:
-            raise InvalidBlobTableError("HDFS")
+        # Decode individual options (type casting, default values, sanity checks).
+        fs_kwargs = locator.options.fs_kwargs
+        fs_kwargs.update(kwargs)
+        if "host" not in fs_kwargs or not fs_kwargs["host"]:
+            raise MissingConnectorOption("host", "FTP")
+        fs_kwargs["port"] = fs_kwargs.get("port", 8020)
+        apply_alias(fs_kwargs, "block_size", "default_block_size")
+        cast_to_int(
+            fs_kwargs, ["port", "replication", "buffer_size", "default_block_size"]
+        )
+        cast_to_dict(fs_kwargs, ["extra_conf"])
 
-        parsed_fields = parse_qs(parsed_uri.query)
-        fs_kwargs: Dict[str, Any] = {
-            key: value[0] for key, value in parsed_fields.items()
-        }
-        # Rename `block_size` to `default_block_size`.
-        if "block_size" in fs_kwargs:
-            fs_kwargs["default_block_size"] = fs_kwargs["block_size"]
-            del fs_kwargs["block_size"]
-        # Cast values to `int`.
-        for field_name in ["port", "replication", "buffer_size", "default_block_size"]:
-            if field_name in fs_kwargs:
-                fs_kwargs[field_name] = int(fs_kwargs[field_name])
-        # Cast values to `dict`.
-        for field_name in ["extra_conf"]:
-            if field_name in fs_kwargs:
-                fs_kwargs[field_name] = json.loads(fs_kwargs[field_name])
-
+        # Create filesystem wrapper.
         fs = self.fs_class(**fs_kwargs)
 
-        host = parsed_uri.hostname
-        port = parsed_uri.port or 8020
-        bucket_url = f"hdfs://{host}:{port}"
-        try:
-            endpoint: str = determine_endpoint(table, path_to_file)
-        except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("HDFS")) from None
-        except Exception as e:
-            raise ValueError(
-                f"Failed to parse endpoint from path: {path_to_file}"
-            ) from e
+        # Attach canonical URL form. It is currently required, but why?
+        # TODO: Review why the URL must be partly reconstructed
+        #       across the board of all filesystem wrappers?
+        bucket_url = f"hdfs://{fs_kwargs['host']}:{fs_kwargs['port']}"
+        locator.baseurl = bucket_url
 
-        from dlt_filesystem.source.adapter import resource_for_reader
-        from dlt_filesystem.source.model import FilesystemReference
-
-        return resource_for_reader(
-            FilesystemReference(
-                fs=fs,
-                bucket_url=bucket_url,
-                file_glob=path_to_file,
-                reader_name=endpoint,
-                hints=blob_hints(parsed_uri, table),
-                column_types=kwargs.get("column_types"),
-            )
-        )
+        return infer_resource(fs=fs, locator=locator)
 
 
 class R2Source(S3CompatibleSource):
     """
-    Provide access to Cloudflare R2, compatible with Amazon S3.
+    Access files on Cloudflare R2.
+
+    R2 is compatible with Amazon S3.
     https://github.com/panodata/omniload/issues/163
     """
 
@@ -516,7 +471,7 @@ class R2Source(S3CompatibleSource):
 
 class OSSSource(FilesystemSource):
     """
-    Object Storage Service (OSS)
+    Access files on Alibaba Cloud Object Storage Service (OSS).
     https://www.alibabacloud.com/en/product/object-storage-service
     """
 
@@ -535,34 +490,17 @@ class OSSSource(FilesystemSource):
                 "OSS takes care of incrementality on its own, you should not provide incremental_key"
             )
 
-        parsed_uri = urlparse(uri)
-        parsed_fields = parse_qs(parsed_uri.query)
+        # Bundle essential information to infer filesystem wrapper.
+        locator = FilesystemLocator(
+            name="OSS", fs_class=self.fs_class, uri=uri, path=table
+        )
 
-        # TODO: BaseOSSFileSystem accepts `endpoint`, `key`, `secret`, `token`,
-        #       with xor key/secret vs. token. Let's give those parameter bunches
-        #       a real data model and validate it using Pydantic or other such
-        #       frameworks in the future. Maybe `dataclasses` or `attrs` is enough?
-        fs_kwargs: Dict[str, Any] = {
-            key: value[0] for key, value in parsed_fields.items()
-        }
-
-        # TODO: BaseOSSFileSystem accepts `default_cache_type` and `default_block_size`.
-        #       I don't know why they are using the `default_` prefix. With an advanced
-        #       parameter model, let's rename them automatically so users can use shorter
-        #       names on input and output URIs.
-        if "cache_type" in fs_kwargs:
-            fs_kwargs["default_cache_type"] = fs_kwargs["cache_type"]
-            del fs_kwargs["cache_type"]
-        if "block_size" in fs_kwargs:
-            fs_kwargs["default_block_size"] = fs_kwargs["block_size"]
-            del fs_kwargs["block_size"]
-
-        # TODO: BaseOSSFileSystem accepts `default_block_size` as `int`.
-        #       Currently, only a single type conversion needs to be applied,
-        #       so let's do it manually here for now. In the future, it will be
-        #       sweet to let the parameter data model machinery handle it.
-        if "default_block_size" in fs_kwargs:
-            fs_kwargs["default_block_size"] = int(fs_kwargs["default_block_size"])
+        # Decode individual options (type casting, default values, sanity checks).
+        fs_kwargs = locator.options.fs_kwargs
+        fs_kwargs.update(kwargs)
+        apply_alias(fs_kwargs, "block_size", "default_block_size")
+        apply_alias(fs_kwargs, "cache_type", "default_cache_type")
+        cast_to_int(fs_kwargs, ["default_block_size"])
 
         # TODO: BaseOSSFileSystem accepts `default_cache_type` as a `str` type with
         #       a choice of different values. The default value is `readahead`, and
@@ -571,48 +509,21 @@ class OSSSource(FilesystemSource):
         #       relevant details and add them to the parameter data model.
         # No demo implementation here.
 
-        # TODO: It looks like this is generic code that could be refactored already
-        #       if it's common amongst different implementations. Breaking out the
-        #       reference to the relevant filesystem implementation itself per
-        #       `fs_class` already contributed to a better situation than before.
-        bucket_name, path_to_file = parse_uri(parsed_uri, table)
-        if not bucket_name or not path_to_file:
-            raise InvalidBlobTableError("OSS")
-
-        bucket_url = f"oss://{bucket_name}/"
-
+        # Create filesystem wrapper.
         fs = self.fs_class(**fs_kwargs)
 
-        # TODO: Naming things: Rename `determine_endpoint` to `infer_reader`.
-        # TODO: Refactoring: Break out reader finding and fragments of the
-        #       filesystem initialization into common routines.
-        try:
-            endpoint: str = determine_endpoint(table, path_to_file)
-        except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("OSS")) from None
-        except Exception as e:
-            raise ValueError(
-                f"Failed to parse endpoint from path: {path_to_file}"
-            ) from e
+        # Attach canonical URL form. It is currently required, but why?
+        # TODO: Review why the URL must be partly reconstructed
+        #       across the board of all filesystem wrappers?
+        bucket_url = f"oss://{locator.bucket_name}/"
+        locator.baseurl = bucket_url
 
-        from dlt_filesystem.source.adapter import resource_for_reader
-        from dlt_filesystem.source.model import FilesystemReference
-
-        return resource_for_reader(
-            FilesystemReference(
-                fs=fs,
-                bucket_url=bucket_url,
-                file_glob=path_to_file,
-                reader_name=endpoint,
-                hints=blob_hints(parsed_uri, table),
-                column_types=kwargs.get("column_types"),
-            )
-        )
+        return infer_resource(fs=fs, locator=locator)
 
 
 class OCISource(FilesystemSource):
     """
-    Oracle Cloud Infrastructure Object Storage (OCI)
+    Access files on Oracle Cloud Infrastructure Object Storage (OCI).
 
     https://docs.oracle.com/en-us/iaas/Content/Object/Concepts/objectstorageoverview.htm
     https://docs.oracle.com/en-us/iaas/Content/API/Concepts/sdkconfig.htm
@@ -620,9 +531,11 @@ class OCISource(FilesystemSource):
 
     @property
     def fs_class(self) -> Type["AbstractFileSystem"]:
-        import ocifs
+        from ocifs import OCIFileSystem
 
-        return ocifs.OCIFileSystem
+        OCIFileSystem._get_kwargs_from_urls = self._get_kwargs_from_urls  # ty: ignore[invalid-assignment]
+
+        return OCIFileSystem
 
     def dlt_source(self, uri: str, table: str, **kwargs):
 
@@ -631,73 +544,33 @@ class OCISource(FilesystemSource):
                 "OCI takes care of incrementality on its own, you should not provide incremental_key"
             )
 
-        # Decode URL.
-        parsed_uri = urlparse(uri)
-        parsed_fields = parse_qs(parsed_uri.query)
+        # Bundle essential information to infer filesystem wrapper.
+        locator = FilesystemLocator(
+            name="OCI", fs_class=self.fs_class, uri=uri, path=table
+        )
 
-        # Decode query arguments.
-        fs_kwargs: Dict[str, Any] = {
-            key: value[0] for key, value in parsed_fields.items()
-        }
+        # Decode individual options (type casting, default values, sanity checks). Schema:
+        # {"default_block_size": int, "config": dict, "config_kwargs": dict, "oci_additional_kwargs": dict}
+        fs_kwargs = locator.options.fs_kwargs
+        fs_kwargs.update(kwargs)
 
-        # TODO: OCIFileSystem accepts dict-typed `config`, `config_kwargs`,
-        #       and `oci_additional_kwargs`. Convey this using JSON.
-        for field_name in ["config", "config_kwargs", "oci_additional_kwargs"]:
-            if field_name in fs_kwargs:
-                fs_kwargs[field_name] = json.loads(fs_kwargs[field_name])
+        # Decode dict-typed `config`, `config_kwargs`, `oci_additional_kwargs` from JSON.
+        cast_to_dict(fs_kwargs, ["config", "config_kwargs", "oci_additional_kwargs"])
+        # The `default_` prefix seems unnecessary. Let's make it optional by using an alias.
+        apply_alias(fs_kwargs, "block_size", "default_block_size")
+        # Convert to integers.
+        cast_to_int(fs_kwargs, ["default_block_size"])
 
-        # TODO: OCIFileSystem accepts `default_block_size`.
-        #       I don't know why they are using the `default_` prefix. With an advanced
-        #       parameter model, let's rename them automatically so users can use shorter
-        #       names on input and output URIs.
-        if "block_size" in fs_kwargs:
-            fs_kwargs["default_block_size"] = fs_kwargs["block_size"]
-            del fs_kwargs["block_size"]
-
-        # TODO: OCIFileSystem accepts `default_block_size` as `int`.
-        #       Currently, only a single type conversion needs to be applied,
-        #       so let's do it manually here for now. In the future, it will be
-        #       sweet to let the parameter data model machinery handle it.
-        if "default_block_size" in fs_kwargs:
-            fs_kwargs["default_block_size"] = int(fs_kwargs["default_block_size"])
-
-        # TODO: It looks like this is generic code that could be refactored already
-        #       if it's common amongst different implementations. Breaking out the
-        #       reference to the relevant filesystem implementation itself per
-        #       `fs_class` already contributed to a better situation than before.
-        bucket_name, path_to_file = parse_uri(parsed_uri, table)
-        if not bucket_name or not path_to_file:
-            raise InvalidBlobTableError("OCI")
-
-        bucket_url = f"oci://{bucket_name}/"
-
+        # Create filesystem wrapper.
         fs = self.fs_class(**fs_kwargs)
 
-        # TODO: Naming things: Rename `determine_endpoint` to `infer_reader`.
-        # TODO: Refactoring: Break out reader finding and fragments of the
-        #       filesystem initialization into common routines.
-        try:
-            endpoint: str = determine_endpoint(table, path_to_file)
-        except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("OCI")) from None
-        except Exception as e:
-            raise ValueError(
-                f"Failed to parse endpoint from path: {path_to_file}"
-            ) from e
+        # Attach canonical URL form. It is currently required, but why?
+        # TODO: Review why the URL must be partly reconstructed
+        #       across the board of all filesystem wrappers?
+        bucket_url = f"oci://{locator.bucket_name}/"
+        locator.baseurl = bucket_url
 
-        from dlt_filesystem.source.adapter import resource_for_reader
-        from dlt_filesystem.source.model import FilesystemReference
-
-        return resource_for_reader(
-            FilesystemReference(
-                fs=fs,
-                bucket_url=bucket_url,
-                file_glob=path_to_file,
-                reader_name=endpoint,
-                hints=blob_hints(parsed_uri, table),
-                column_types=kwargs.get("column_types"),
-            )
-        )
+        return infer_resource(fs=fs, locator=locator)
 
 
 class DropboxSource(FilesystemSource):
@@ -709,9 +582,11 @@ class DropboxSource(FilesystemSource):
 
     @property
     def fs_class(self) -> Type["AbstractFileSystem"]:
-        import dropboxdrivefs
+        from dropboxdrivefs import DropboxDriveFileSystem
 
-        return dropboxdrivefs.DropboxDriveFileSystem
+        DropboxDriveFileSystem._get_kwargs_from_urls = self._get_kwargs_from_urls  # ty: ignore[invalid-assignment]
+
+        return DropboxDriveFileSystem
 
     def dlt_source(self, uri: str, table: str, **kwargs):
 
@@ -721,53 +596,25 @@ class DropboxSource(FilesystemSource):
                 "Dropbox takes care of incrementality on its own, you should not provide incremental_key"
             )
 
-        # Decode URL.
-        parsed_uri = urlparse(uri)
-        parsed_fields = parse_qs(parsed_uri.query)
+        # Bundle essential information to infer filesystem wrapper.
+        locator = FilesystemLocator(
+            name="Dropbox", fs_class=self.fs_class, uri=uri, path=table
+        )
 
-        # Decode query arguments.
-        fs_kwargs: Dict[str, Any] = {
-            key: value[0] for key, value in parsed_fields.items()
-        }
+        # Decode individual options (type casting, default values, sanity checks). Schema:
+        fs_kwargs = locator.options.fs_kwargs
+        fs_kwargs.update(kwargs)
 
-        # TODO: It looks like this is generic code that could be refactored already
-        #       if it's common amongst different implementations. Breaking out the
-        #       reference to the relevant filesystem implementation itself per
-        #       `fs_class` already contributed to a better situation than before.
-        bucket_name, path_to_file = parse_uri(parsed_uri, table)
-        if not bucket_name or not path_to_file:
-            raise InvalidBlobTableError("Dropbox")
-
-        bucket_url = f"dropbox://{bucket_name}/"
-
+        # Create filesystem wrapper.
         fs = self.fs_class(**fs_kwargs)
 
-        # TODO: Naming things: Rename `determine_endpoint` to `infer_reader`.
-        # TODO: Refactoring: Break out reader finding and fragments of the
-        #       filesystem initialization into common routines.
-        try:
-            endpoint: str = determine_endpoint(table, path_to_file)
-        except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("Dropbox")) from None
-        except Exception as e:
-            raise ValueError(
-                f"Failed to parse endpoint from path: {path_to_file}"
-            ) from e
+        # Attach canonical URL form. It is currently required, but why?
+        # TODO: Review why the URL must be partly reconstructed
+        #       across the board of all filesystem wrappers?
+        bucket_url = f"dropbox://{locator.bucket_name}/"
+        locator.baseurl = bucket_url
 
-        from dlt_filesystem.source.adapter import resource_for_reader
-        from dlt_filesystem.source.model import FilesystemReference
-
-        return resource_for_reader(
-            FilesystemReference(
-                fs=fs,
-                bucket_url=bucket_url,
-                file_glob=path_to_file,
-                reader_name=endpoint,
-                hints=blob_hints(parsed_uri, table),
-                # TODO: Can `column_types` be looped into reader hints instead?
-                column_types=kwargs.get("column_types"),
-            )
-        )
+        return infer_resource(fs=fs, locator=locator)
 
 
 class WebdavSource(FilesystemSource):
@@ -782,6 +629,8 @@ class WebdavSource(FilesystemSource):
     def fs_class(self) -> Type["AbstractFileSystem"]:
         from webdav4.fsspec import WebdavFileSystem
 
+        WebdavFileSystem._get_kwargs_from_urls = self._get_kwargs_from_urls  # ty: ignore[invalid-assignment]
+
         return WebdavFileSystem
 
     def dlt_source(self, uri: str, table: str, **kwargs):
@@ -792,57 +641,28 @@ class WebdavSource(FilesystemSource):
                 "WebDAV takes care of incrementality on its own, you should not provide incremental_key"
             )
 
-        # Decode URL.
-        parsed_uri = urlparse(uri)
-        parsed_fields = parse_qs(parsed_uri.query)
+        # Bundle essential information to infer filesystem wrapper.
+        locator = FilesystemLocator(
+            name="WebDAV", fs_class=self.fs_class, uri=uri, path=table
+        )
 
-        # Decode query arguments.
-        fs_kwargs: Dict[str, Any] = {
-            key: value[0] for key, value in parsed_fields.items()
-        }
+        # Decode individual options (type casting, default values, sanity checks). Schema:
+        fs_kwargs = locator.options.fs_kwargs
+        fs_kwargs.update(kwargs)
         auth = None
         if "username" in fs_kwargs:
             auth = (fs_kwargs["username"], fs_kwargs.get("password"))
 
-        # TODO: It looks like this is generic code that could be refactored already
-        #       if it's common amongst different implementations. Breaking out the
-        #       reference to the relevant filesystem implementation itself per
-        #       `fs_class` already contributed to a better situation than before.
-        bucket_name, path_to_file = parse_uri(parsed_uri, table)
-        if not bucket_name or not path_to_file:
-            raise InvalidBlobTableError("WebDAV")
-
-        scheme = parsed_uri.scheme.replace("+webdav", "")
-        bucket_url = f"{scheme}://{bucket_name}/"
-
+        # Create filesystem wrapper.
+        bucket_url = f"webdav://{locator.bucket_name}/"
         fs = self.fs_class(bucket_url, auth=auth)
 
-        # TODO: Naming things: Rename `determine_endpoint` to `infer_reader`.
-        # TODO: Refactoring: Break out reader finding and fragments of the
-        #       filesystem initialization into common routines.
-        try:
-            endpoint: str = determine_endpoint(table, path_to_file)
-        except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("WebDAV")) from None
-        except Exception as e:
-            raise ValueError(
-                f"Failed to parse endpoint from path: {path_to_file}"
-            ) from e
+        # Attach canonical URL form. It is currently required, but why?
+        # TODO: Review why the URL must be partly reconstructed
+        #       across the board of all filesystem wrappers?
+        locator.baseurl = bucket_url
 
-        from dlt_filesystem.source.adapter import resource_for_reader
-        from dlt_filesystem.source.model import FilesystemReference
-
-        return resource_for_reader(
-            FilesystemReference(
-                fs=fs,
-                bucket_url=bucket_url,
-                file_glob=path_to_file,
-                reader_name=endpoint,
-                hints=blob_hints(parsed_uri, table),
-                # TODO: Can `column_types` be looped into reader hints instead?
-                column_types=kwargs.get("column_types"),
-            )
-        )
+        return infer_resource(fs=fs, locator=locator)
 
 
 class SharePointOneDriveSource(FilesystemSource):
@@ -856,6 +676,8 @@ class SharePointOneDriveSource(FilesystemSource):
     def fs_class(self) -> Type["AbstractFileSystem"]:
         from msgraphfs import MSGDriveFS
 
+        MSGDriveFS._get_kwargs_from_urls = self._get_kwargs_from_urls  # ty: ignore[invalid-assignment]
+
         return MSGDriveFS
 
     def dlt_source(self, uri: str, table: str, **kwargs):
@@ -866,65 +688,24 @@ class SharePointOneDriveSource(FilesystemSource):
                 "MSSharePointOneDrive takes care of incrementality on its own, you should not provide incremental_key"
             )
 
-        # Decode URL.
-        parsed_uri = urlparse(uri)
-        parsed_fields = parse_qs(parsed_uri.query)
+        # Bundle essential information to infer filesystem wrapper.
+        locator = FilesystemLocator(
+            name="MSSharePointOneDrive", fs_class=self.fs_class, uri=uri, path=table
+        )
 
-        # Decode query arguments.
-        # TODO: Why not use `fsspec.utils.infer_storage_options`?
-        fs_kwargs: Dict[str, Any] = {
-            key: value[0] for key, value in parsed_fields.items()
-        }
+        # Decode individual options (type casting, default values, sanity checks). Schema:
+        fs_kwargs = locator.options.fs_kwargs
+        fs_kwargs.update(kwargs)
+        cast_to_dict(fs_kwargs, ["oauth2_client_params"])
+        cast_to_bool(fs_kwargs, ["use_recycle_bin"])
 
-        # TODO: MSGDriveFS accepts dict-typed `oauth2_client_params`.
-        #       Convey this using JSON.
-        for field_name in ["oauth2_client_params"]:
-            if field_name in fs_kwargs:
-                fs_kwargs[field_name] = json.loads(fs_kwargs[field_name])
-
-        # TODO: MSGDriveFS accepts bool-typed `use_recycle_bin`.
-        for field_name in ["use_recycle_bin"]:
-            if field_name in fs_kwargs:
-                fs_kwargs[field_name] = asbool(fs_kwargs[field_name])
-
-        # TODO: It looks like this is generic code that could be refactored already
-        #       if it's common amongst different implementations. Breaking out the
-        #       reference to the relevant filesystem implementation itself per
-        #       `fs_class` already contributed to a better situation than before.
-        bucket_name, path_to_file = parse_uri(parsed_uri, table)
-        if not bucket_name or not path_to_file:
-            raise InvalidBlobTableError("MSSharePointOneDrive")
-
-        bucket_url = f"{parsed_uri.scheme}://{bucket_name}/"
-
-        # TODO: Is it possible to use `fsspec.core.url_to_fs` here?
+        # Create filesystem wrapper.
         fs = self.fs_class(**fs_kwargs)
 
-        # TODO: Naming things: Rename `determine_endpoint` to `infer_reader`.
-        # TODO: Refactoring: Break out reader finding and fragments of the
-        #       filesystem initialization into common routines.
-        try:
-            endpoint: str = determine_endpoint(table, path_to_file)
-        except UnsupportedEndpointError:
-            raise ValueError(
-                supported_file_format_message("MSSharePointOneDrive")
-            ) from None
-        except Exception as e:
-            raise ValueError(
-                f"Failed to parse endpoint from path: {path_to_file}"
-            ) from e
+        # Attach canonical URL form. It is currently required, but why?
+        # TODO: Review why the URL must be partly reconstructed
+        #       across the board of all filesystem wrappers?
+        bucket_url = f"msgd://{locator.bucket_name}/"
+        locator.baseurl = bucket_url
 
-        from dlt_filesystem.source.adapter import resource_for_reader
-        from dlt_filesystem.source.model import FilesystemReference
-
-        return resource_for_reader(
-            FilesystemReference(
-                fs=fs,
-                bucket_url=bucket_url,
-                file_glob=path_to_file,
-                reader_name=endpoint,
-                hints=blob_hints(parsed_uri, table),
-                # TODO: Can `column_types` be looped into reader hints instead?
-                column_types=kwargs.get("column_types"),
-            )
-        )
+        return infer_resource(fs=fs, locator=locator)

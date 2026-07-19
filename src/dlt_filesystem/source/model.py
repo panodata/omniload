@@ -1,13 +1,17 @@
 import hashlib
 import json
+from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Any, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union
+from urllib.parse import parse_qs
 
 from dlt.common.configuration import configspec, resolve_type
 from dlt.common.configuration.specs import CredentialsConfiguration
 from dlt.common.storages import FilesystemConfiguration
 from dlt.common.storages.configuration import FileSystemCredentials
 from fsspec import AbstractFileSystem
+
+from dlt_filesystem.source.util import shrink_qs_dict
 
 
 @configspec
@@ -28,8 +32,76 @@ class FilesystemConfigurationResource(FilesystemConfiguration):
 
 
 @dataclass
+class FilesystemOptions:
+    """Bundle filesystem options from URL."""
+
+    options: Dict[str, Any] = field(default_factory=dict)
+    params: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def fs_kwargs(self) -> Dict[str, Any]:
+        response = deepcopy(self.options)
+        response.update(self.params)
+        return response
+
+
+@dataclass
+class FilesystemLocator:
+    """A full filesystem information locator."""
+
+    name: str
+    fs_class: Type[AbstractFileSystem]
+    uri: str
+    path: str
+    baseurl: Optional[str] = None
+    bucket_name: Optional[str] = None
+    options: FilesystemOptions = field(default_factory=FilesystemOptions)
+
+    def __post_init__(self):
+        self.read_options()
+
+    @property
+    def hints(self) -> Dict[str, Any]:
+        """
+        Destructure reader or writer hints from URL fragment.
+
+        Let's use the omniload approach of decoding
+        URL fragments, because it handles a few edge cases, also taking
+        the URL path into consideration.
+        """
+        from urllib.parse import urlparse
+
+        from dlt_filesystem.source.router import blob_hints
+
+        parsed_uri = urlparse(self.uri)
+        return blob_hints(parsed_uri, self.path)
+
+    def read_options(self) -> "FilesystemLocator":
+        """
+        Destructure input URL as a baseline for fsspec kwargs.
+
+        Let's use the fsspec approach of decoding
+        URIs, based on `fsspec.utils.infer_storage_options`.
+        Invoking `_get_kwargs_from_urls` should happen before instantiation of the
+        class; incoming paths then should be amended to strip the options in methods.
+        """
+        options = self.fs_class._get_kwargs_from_urls(self.uri)
+
+        # URL query parameters.
+        params = shrink_qs_dict(parse_qs(options.pop("url_query", "")))
+
+        # Reader or writer hints.
+        self.options = FilesystemOptions(
+            options=options,
+            params=params,
+        )
+        return self
+
+
+@dataclass
 class FilesystemReference:
-    """Bundle the arguments needed by `resource_for_reader` to build a resource.
+    """
+    Bundle the arguments needed by `resource_for_reader` to build a resource.
 
     Args:
         fs (AbstractFilesystem): fsspec filesystem instance.

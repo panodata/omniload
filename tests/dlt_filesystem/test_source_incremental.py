@@ -7,7 +7,8 @@ from fsspec import AbstractFileSystem
 from fsspec.implementations.arrow import ArrowFSWrapper
 from pyarrow.fs import LocalFileSystem
 
-from dlt_filesystem.source.adapter import readers, resource_for_reader
+from dlt_filesystem.source.adapter import readers
+from dlt_filesystem.source.core import resource_for_reader
 from dlt_filesystem.source.impl.local import LocalFilesystemSource
 from dlt_filesystem.source.impl.remote import (
     AzureSource,
