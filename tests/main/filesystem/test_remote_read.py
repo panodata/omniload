@@ -52,7 +52,9 @@ URIS = [
         table="path/to/data.parquet",
     ),
     "http+webdav://username:password@www.example.org/path/to/data.parquet",
+    "msgd://site_name/drive_name/path/to/data.parquet?client_id=1d2befad-2f22-4124-a779-b147dfeca342&tenant_id=6b337423-f504-4060-a91b-e9eaaf782609&client_secret=abc~xyz789EXAMPLE_foo",
     f'oci://bucket@namespace/prefix/path/to/data.parquet?iam_type=api_key&config={{"user":"ocid1.user.oc1..24g4uzg","region":"us-ashburn-1","tenancy":"ocid1.tenancy.oc1..23423r3","key_file":"{private_key_file}","fingerprint":"{private_key_fingerprint}"}}',
+    "onedrive://drive_name/path/to/data.parquet?client_id=1d2befad-2f22-4124-a779-b147dfeca342&tenant_id=6b337423-f504-4060-a91b-e9eaaf782609&client_secret=abc~xyz789EXAMPLE_foo",
     "oss://bucket/path/to/data.parquet?endpoint=http://oss-cn-hangzhou.aliyuncs.com/&key=foo&secret=bar",
     "oss://bucket/path/to/data.parquet?endpoint=https://oss-me-east-1.aliyuncs.com/&token=foobar",
     Item(
@@ -64,6 +66,7 @@ URIS = [
     "r2://bucket/path/to/data.parquet?access_key_id=foo&secret_access_key=bar",
     "s3://bucket/path/to/data.parquet?access_key_id=foo&secret_access_key=bar",
     "sftp://username:password@example.com:2222/path/to/data.parquet",
+    "sharepoint://site_name/drive_name/path/to/data.parquet?client_id=1d2befad-2f22-4124-a779-b147dfeca342&tenant_id=6b337423-f504-4060-a91b-e9eaaf782609&client_secret=abc~xyz789EXAMPLE_foo",
 ]
 
 

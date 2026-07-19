@@ -4,6 +4,8 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Type
 from urllib.parse import parse_qs, urlparse
 
+from sqlalchemy.util import asbool
+
 from dlt_filesystem.error import InvalidBlobTableError, MissingConnectorOption
 from dlt_filesystem.source.base import FilesystemSource
 from dlt_filesystem.source.error import UnsupportedEndpointError
@@ -747,6 +749,87 @@ class WebdavSource(FilesystemSource):
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
             raise ValueError(supported_file_format_message("WebDAV"))
+        except Exception as e:
+            raise ValueError(
+                f"Failed to parse endpoint from path: {path_to_file}"
+            ) from e
+
+        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.model import FilesystemReference
+
+        return resource_for_reader(
+            FilesystemReference(
+                fs=fs,
+                bucket_url=bucket_url,
+                file_glob=path_to_file,
+                reader_name=endpoint,
+                hints=blob_hints(parsed_uri, table),
+                # TODO: Can `column_types` be looped into reader hints instead?
+                column_types=kwargs.get("column_types"),
+            )
+        )
+
+
+class SharePointOneDriveSource(FilesystemSource):
+    """
+    Access files on Microsoft SharePoint and OneDrive.
+
+    https://github.com/acsone/msgraphfs
+    """
+
+    @property
+    def fs_class(self) -> Type["AbstractFileSystem"]:
+        from msgraphfs import MSGDriveFS
+
+        return MSGDriveFS
+
+    def dlt_source(self, uri: str, table: str, **kwargs):
+
+        # TODO: Is this applicable for Dropbox and friends at all?
+        if kwargs.get("incremental_key"):
+            raise ValueError(
+                "MSSharePointOneDrive takes care of incrementality on its own, you should not provide incremental_key"
+            )
+
+        # Decode URL.
+        parsed_uri = urlparse(uri)
+        parsed_fields = parse_qs(parsed_uri.query)
+
+        # Decode query arguments.
+        fs_kwargs: Dict[str, Any] = {
+            key: value[0] for key, value in parsed_fields.items()
+        }
+
+        # TODO: MSGDriveFS accepts dict-typed `oauth2_client_params`.
+        #       Convey this using JSON.
+        for field_name in ["oauth2_client_params"]:
+            if field_name in fs_kwargs:
+                fs_kwargs[field_name] = json.loads(fs_kwargs[field_name])
+
+        # TODO: MSGDriveFS accepts bool-typed `use_recycle_bin`.
+        for field_name in ["use_recycle_bin"]:
+            if field_name in fs_kwargs:
+                fs_kwargs[field_name] = asbool(fs_kwargs[field_name])
+
+        # TODO: It looks like this is generic code that could be refactored already
+        #       if it's common amongst different implementations. Breaking out the
+        #       reference to the relevant filesystem implementation itself per
+        #       `fs_class` already contributed to a better situation than before.
+        bucket_name, path_to_file = parse_uri(parsed_uri, table)
+        if not bucket_name or not path_to_file:
+            raise InvalidBlobTableError("MSSharePointOneDrive")
+
+        bucket_url = f"{parsed_uri.scheme}://{bucket_name}/"
+
+        fs = self.fs_class(**fs_kwargs)
+
+        # TODO: Naming things: Rename `determine_endpoint` to `find_reader`.
+        # TODO: Refactoring: Break out reader finding and fragments of the
+        #       filesystem initialization into common routines.
+        try:
+            endpoint: str = determine_endpoint(table, path_to_file)
+        except UnsupportedEndpointError:
+            raise ValueError(supported_file_format_message("MSSharePointOneDrive"))
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"

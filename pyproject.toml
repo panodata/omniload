@@ -148,6 +148,7 @@ optional-dependencies.filesystem = [
   "dropboxdrivefs",
   "fsspec>2021.9",
   "gcsfs",
+  "msgraphfs",
   "ocifs",
   "ossfs",
   "s3fs",

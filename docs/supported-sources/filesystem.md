@@ -47,8 +47,10 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 | {ref}`gcs`                | Google Cloud Storage                              | gs://                           | ✅   | ✅    |
 | {ref}`hdfs`               | Hadoop distributed file system                    | hdfs://                         | ✅   | ❌    |
 | {ref}`oci`                | Oracle Cloud Infrastructure Object Storage        | oci://                          | ✅   | ❌    |
+| {ref}`onedrive`           | Microsoft OneDrive                                | onedrive://                     | ✅   | ❌    |
 | {ref}`oss`                | Alibaba Object Storage Service (OSS)              | oss://                          | ✅   | ❌    |
 | {ref}`r2`                 | Cloudflare R2                                     | r2://                           | ✅   | ❌    |
+| {ref}`sharepoint`         | Microsoft SharePoint                              | sharepoint://                   | ✅   | ❌    |
 | {ref}`sftp`               | Simple File Transfer Protocol (RFC 913)           | sftp://                         | ✅   | ✅    |
 | {ref}`webdav`             | Web Distributed Authoring and Versioning (WebDAV) | http+webdav://, https+webdav:// | ✅   | ❌    |
 
