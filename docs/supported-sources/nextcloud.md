@@ -24,12 +24,12 @@ do with any HTTP server.
 ```sh
 omniload ingest \
     --source-uri   'https+webdav://<USERNAME>:<PASSWORD>@cloud.example.org/remote.php/webdav' \
-    --source-table '/path/to/data.parquet' \
+    --source-table 'path/to/data.parquet' \
     --dest-uri     'duckdb:///demo.duckdb' \
-    --dest-table   'public.example'
+    --dest-table   'testdrive.data'
 ```
 
-Running the command creates a table named `example` within the `public`
+Running the command creates a table named `data` within the `testdrive`
 schema in the DuckDB database file located at `demo.duckdb`.
 
 

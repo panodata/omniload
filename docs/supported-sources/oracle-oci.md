@@ -78,11 +78,14 @@ start with the [free tier] and later [upgrade your account].
 
 ```shell
 omniload ingest \
-    --source-uri 'oci://bucket@namespace?iam_type=api_key&config={"user":"ocid1.user.oc1..24g4uzg","region":"us-ashburn-1","tenancy":"ocid1.tenancy.oc1..23423r3","key_file":"/path/to/key.pem","fingerprint":"06:8c:ce:5b:4a:b5:53:d4:f8:e0:d2:58:63:1c:8d:d2"}' \
+    --source-uri   'oci://bucket@namespace?iam_type=api_key&config={"user":"ocid1.user.oc1..24g4uzg","region":"us-ashburn-1","tenancy":"ocid1.tenancy.oc1..23423r3","key_file":"/path/to/key.pem","fingerprint":"06:8c:ce:5b:4a:b5:53:d4:f8:e0:d2:58:63:1c:8d:d2"}' \
     --source-table '/prefix/data.parquet' \
-    --dest-uri 'duckdb:///example.duckdb' \
-    --dest-table 'testdrive.data'
+    --dest-uri     'duckdb:///demo.duckdb' \
+    --dest-table   'testdrive.data'
 ```
+
+Running the command creates a table named `data` within the `testdrive`
+schema in the DuckDB database file located at `demo.duckdb`.
 
 
 [free tier]: https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier.htm

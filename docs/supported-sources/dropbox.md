@@ -30,13 +30,13 @@ See [generate an access token for your own account].
 ```sh
 omniload ingest \
     --source-uri   'dropbox://?token=secret' \
-    --source-table 'path/to/user.csv' \
-    --dest-uri     'duckdb:///dropbox_data.duckdb' \
-    --dest-table   'dest.users_details'
+    --source-table 'path/to/data.csv' \
+    --dest-uri     'duckdb:///demo.duckdb' \
+    --dest-table   'testdrive.data'
 ```
 
-Running the command creates a table named `users_details` within the
-`dest` schema in the DuckDB database file located at `dropbox_data.duckdb`.
+Running the command creates a table named `data` within the `testdrive`
+schema in the DuckDB database file located at `demo.duckdb`.
 
 :::{tip}
 Here, instead of defining the remote resource exclusively per source URI

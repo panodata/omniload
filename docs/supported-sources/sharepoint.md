@@ -92,13 +92,13 @@ by AWS and other resources.
 ```sh
 omniload ingest \
     --source-uri   'sharepoint://?client_id=1d2befad-2f22-4124-a779-b147dfeca342&tenant_id=6b337423-f504-4060-a91b-e9eaaf782609&client_secret=abc~xyz789EXAMPLE_foo' \
-    --source-table '<site_name>/<drive_name>/path/to/user.csv' \
-    --dest-uri     'duckdb:///sharepoint_data.duckdb' \
-    --dest-table   'dest.users_details'
+    --source-table '<site_name>/<drive_name>/path/to/data.csv' \
+    --dest-uri     'duckdb:///demo.duckdb' \
+    --dest-table   'testdrive.data'
 ```
 
-Running the command creates a table named `users_details` within the
-`dest` schema in the DuckDB database file located at `sharepoint_data.duckdb`.
+Running the command creates a table named `data` within the `testdrive`
+schema in the DuckDB database file located at `demo.duckdb`.
 
 :::{tip}
 Here, instead of defining the remote resource exclusively per source URI

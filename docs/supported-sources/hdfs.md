@@ -65,11 +65,11 @@ omniload ingest \
     --source-uri   'hdfs://example.com:8020/?user=test' \
     --source-table 'path/to/data.parquet' \
     --dest-uri     'duckdb:///demo.duckdb' \
-    --dest-table   'public.example'
+    --dest-table   'testdrive.data'
 ```
 
-Running the command creates a table named `example` within the `public` schema
-(or equivalent grouping) in the DuckDB database file located at `demo.duckdb`.
+Running the command creates a table named `data` within the `testdrive`
+schema in the DuckDB database file located at `demo.duckdb`.
 
 :::{tip}
 Here, instead of defining the remote resource exclusively per source URI

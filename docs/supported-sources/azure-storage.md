@@ -158,19 +158,20 @@ Let's assume the following details:
 *   `account_name`: `mystorageacct`
 *   `account_key`: `dGVzdA==`
 *   Container name: `my-container`
-*   Path to files within the container: `students/students_details.csv`
+*   Path to files within the container: `path/to/data.csv`
 
 The following command demonstrates how to copy data from the specified Azure location to a DuckDB database (the account key is URL-encoded, so `==` becomes `%3D%3D`):
 
 ```sh
 omniload ingest \
-    --source-uri 'az://?account_name=mystorageacct&account_key=dGVzdA%3D%3D' \
-    --source-table 'my-container/students/students_details.csv' \
-    --dest-uri duckdb:///azure_data.duckdb \
-    --dest-table 'processed_students.student_details'
+    --source-uri   'az://?account_name=mystorageacct&account_key=dGVzdA%3D%3D' \
+    --source-table 'my-container/path/to/data.csv' \
+    --dest-uri     'duckdb:///demo.duckdb' \
+    --dest-table   'testdrive.data'
 ```
 
-This command will create a table named `student_details` within the `processed_students` schema (or equivalent grouping) in the DuckDB database file located at `azure_data.duckdb`.
+Running the command creates a table named `data` within the `testdrive`
+schema in the DuckDB database file located at `demo.duckdb`.
 
 ### Upload data to Azure Blob Storage
 

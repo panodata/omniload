@@ -39,14 +39,14 @@ hostname, port, a valid username, and a password.
 
 ```sh
 omniload ingest \
-    --source-uri 'sftp://YOUR_USERNAME:YOUR_PASSWORD@sftp.example.com' \
-    --source-table 'user.csv' \
-    --dest-uri 'duckdb:///sftp_data.duckdb' \
-    --dest-table 'dest.users_details'
+    --source-uri   'sftp://YOUR_USERNAME:YOUR_PASSWORD@sftp.example.com' \
+    --source-table 'path/to/data.csv' \
+    --dest-uri     'duckdb:///demo.duckdb' \
+    --dest-table   'testdrive.data'
 ```
 
-Running the command creates a table named `users_details` within the
-`dest` schema in the DuckDB database file located at `sftp_data.duckdb`.
+Running the command creates a table named `data` within the `testdrive`
+schema in the DuckDB database file located at `demo.duckdb`.
 
 <img alt="sftp" src="../media/sftp.png"/>
 
