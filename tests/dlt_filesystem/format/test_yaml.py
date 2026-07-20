@@ -16,12 +16,12 @@ import importlib.util
 
 import pytest
 
-from dlt_filesystem.source.api import LocalFilesystemSource
 from dlt_filesystem.source.error import MissingDecoderError
 from dlt_filesystem.source.format.iterable_codec import (
     FORMAT_TO_ITERABLE,
 )
 from dlt_filesystem.source.format.readers import read_yaml
+from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
 from dlt_filesystem.testing.stub import (
     FileItemStub,
     NonSeekableItem,

@@ -11,7 +11,7 @@ from dlt.common.storages import FilesystemConfiguration
 from dlt.common.storages.configuration import FileSystemCredentials
 from fsspec import AbstractFileSystem
 
-from dlt_filesystem.source.util import shrink_qs_dict
+from dlt_filesystem.util.web import shrink_qs_dict
 
 
 @configspec

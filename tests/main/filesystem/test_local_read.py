@@ -1,4 +1,4 @@
-from dlt_filesystem.source.impl.local import LocalFilesystemSource
+from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
 from omniload.core.factory import SourceDestinationFactory
 
 

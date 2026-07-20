@@ -9,14 +9,14 @@ from fsspec.implementations.arrow import ArrowFSWrapper
 from pyarrow.fs import LocalFileSystem
 
 from dlt_filesystem.source.adapter import readers
-from dlt_filesystem.source.api import resource_for_reader
-from dlt_filesystem.source.impl.local import LocalFilesystemSource
+from dlt_filesystem.source.base import FilesystemSource
+from dlt_filesystem.source.core import resource_for_reader
+from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
 from dlt_filesystem.source.impl.remote import (
     AzureSource,
     GCSSource,
     S3Source,
     SFTPSource,
-    _endpoint_namespace,
 )
 from dlt_filesystem.source.model import FilesystemReference
 
@@ -125,14 +125,14 @@ def _captured_reference(call) -> FilesystemReference:
 
 def test_filesystem_sources_thread_incremental_identity_without_auth_material(tmp_path):
     local_path = tmp_path / "local" / "*.csv"
-    with patch("dlt_filesystem.source.api.resource_for_reader") as build:
+    with patch("dlt_filesystem.source.core.resource_for_reader") as build:
         LocalFilesystemSource().dlt_source(
             f"file://{local_path}", "", filesystem_incremental=True
         )
     local = _captured_reference(build)
 
     with (
-        patch("dlt_filesystem.source.api.resource_for_reader") as build,
+        patch("dlt_filesystem.source.core.resource_for_reader") as build,
         patch("gcsfs.GCSFileSystem"),
     ):
         GCSSource().dlt_source(
@@ -143,7 +143,7 @@ def test_filesystem_sources_thread_incremental_identity_without_auth_material(tm
     gcs = _captured_reference(build)
 
     with (
-        patch("dlt_filesystem.source.api.resource_for_reader") as build,
+        patch("dlt_filesystem.source.core.resource_for_reader") as build,
         patch("s3fs.S3FileSystem"),
     ):
         S3Source().dlt_source(
@@ -154,7 +154,7 @@ def test_filesystem_sources_thread_incremental_identity_without_auth_material(tm
     s3 = _captured_reference(build)
 
     with (
-        patch("dlt_filesystem.source.api.resource_for_reader") as build,
+        patch("dlt_filesystem.source.core.resource_for_reader") as build,
         patch("dlt_filesystem.source.impl.remote._azure_fs"),
     ):
         AzureSource().dlt_source(
@@ -165,7 +165,7 @@ def test_filesystem_sources_thread_incremental_identity_without_auth_material(tm
     azure = _captured_reference(build)
 
     with (
-        patch("dlt_filesystem.source.api.resource_for_reader") as build,
+        patch("dlt_filesystem.source.core.resource_for_reader") as build,
         patch("fsspec.filesystem"),
     ):
         SFTPSource().dlt_source(
@@ -192,7 +192,7 @@ def test_filesystem_sources_thread_incremental_identity_without_auth_material(tm
 
 def test_endpoint_namespace_excludes_credentials_and_query_values():
     assert (
-        _endpoint_namespace(
+        FilesystemSource.endpoint_namespace(
             "https://user:password@MINIO.example:9000/storage/?token=secret",
             "default",
         )
@@ -201,20 +201,20 @@ def test_endpoint_namespace_excludes_credentials_and_query_values():
 
 
 def test_endpoint_namespace_normalizes_bare_host_and_url_forms():
-    assert _endpoint_namespace("account.blob.example", "default") == (
-        _endpoint_namespace("https://account.blob.example", "default")
+    assert FilesystemSource.endpoint_namespace("account.blob.example", "default") == (
+        FilesystemSource.endpoint_namespace("https://account.blob.example", "default")
     )
 
 
 def test_endpoint_namespace_brackets_ipv6_hosts():
     assert (
-        _endpoint_namespace("https://[::1]:9000/bucket", "default")
+        FilesystemSource.endpoint_namespace("https://[::1]:9000/bucket", "default")
         == "[::1]:9000/bucket"
     )
 
 
 def test_endpoint_namespace_falls_back_when_hostname_is_missing():
-    assert _endpoint_namespace("/just/a/path", "default") == "default"
+    assert FilesystemSource.endpoint_namespace("/just/a/path", "default") == "default"
 
 
 def test_auth_rotation_does_not_change_incremental_resource_names(mocker):
@@ -225,13 +225,13 @@ def test_auth_rotation_does_not_change_incremental_resource_names(mocker):
         b'{"client_id":"qux","client_secret":"quux","refresh_token":"corge"}'
     ).decode("ascii")
     with (
-        patch("dlt_filesystem.source.api.resource_for_reader") as first_build,
+        patch("dlt_filesystem.source.core.resource_for_reader") as first_build,
     ):
         GCSSource().dlt_source(
             f"gs://?credentials_base64={gs_credentials_first}", "bucket/*.csv"
         )
     with (
-        patch("dlt_filesystem.source.api.resource_for_reader") as second_build,
+        patch("dlt_filesystem.source.core.resource_for_reader") as second_build,
     ):
         GCSSource().dlt_source(
             f"gs://?credentials_base64={gs_credentials_second}", "bucket/*.csv"
@@ -242,14 +242,14 @@ def test_auth_rotation_does_not_change_incremental_resource_names(mocker):
     )
 
     with (
-        patch("dlt_filesystem.source.api.resource_for_reader") as first_build,
+        patch("dlt_filesystem.source.core.resource_for_reader") as first_build,
     ):
         S3Source().dlt_source(
             "s3://?access_key_id=OLD&secret_access_key=OLD_SECRET",
             "bucket/*.csv",
         )
     with (
-        patch("dlt_filesystem.source.api.resource_for_reader") as second_build,
+        patch("dlt_filesystem.source.core.resource_for_reader") as second_build,
     ):
         S3Source().dlt_source(
             "s3://?access_key_id=NEW&secret_access_key=NEW_SECRET",
@@ -261,14 +261,14 @@ def test_auth_rotation_does_not_change_incremental_resource_names(mocker):
     )
 
     with (
-        patch("dlt_filesystem.source.api.resource_for_reader") as first_build,
+        patch("dlt_filesystem.source.core.resource_for_reader") as first_build,
     ):
         AzureSource().dlt_source(
             "az://?account_name=account&account_key=OLD_SECRET",
             "container/*.csv",
         )
     with (
-        patch("dlt_filesystem.source.api.resource_for_reader") as second_build,
+        patch("dlt_filesystem.source.core.resource_for_reader") as second_build,
     ):
         AzureSource().dlt_source(
             "az://?account_name=account&account_key=NEW_SECRET",
@@ -281,11 +281,11 @@ def test_auth_rotation_does_not_change_incremental_resource_names(mocker):
 
     mocker.patch("fsspec.implementations.sftp.SFTPFileSystem._connect")
     with (
-        patch("dlt_filesystem.source.api.resource_for_reader") as first_build,
+        patch("dlt_filesystem.source.core.resource_for_reader") as first_build,
     ):
         SFTPSource().dlt_source("sftp://user:OLD_SECRET@sftp.example:22", "/*.csv")
     with (
-        patch("dlt_filesystem.source.api.resource_for_reader") as second_build,
+        patch("dlt_filesystem.source.core.resource_for_reader") as second_build,
     ):
         SFTPSource().dlt_source("sftp://user:NEW_SECRET@sftp.example:22", "/*.csv")
     assert (
