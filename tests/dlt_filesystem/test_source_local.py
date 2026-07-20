@@ -26,7 +26,7 @@ def capture_reader_args(uri: str, table: str = "", **kwargs) -> dict:
         captured.update(ref.__dict__)
         return "SENTINEL"
 
-    with patch("dlt_filesystem.source.adapter.resource_for_reader", fake_reader):
+    with patch("dlt_filesystem.source.api.resource_for_reader", fake_reader):
         result = LocalFilesystemSource().dlt_source(uri, table, **kwargs)
 
     assert result == "SENTINEL"

@@ -82,7 +82,7 @@ class LocalFilesystemSource(FilesystemSource):
 
         fs = ArrowFSWrapper(LocalFileSystem())
 
-        from dlt_filesystem.source.core import resource_for_reader
+        from dlt_filesystem.source.api import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         # Pass the plain absolute directory (not a hand-built file:// URL). dlt's

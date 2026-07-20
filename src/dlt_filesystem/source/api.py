@@ -1,3 +1,4 @@
+from dlt_filesystem.source.core import infer_resource, resource_for_reader
 from dlt_filesystem.source.impl.local import LocalFilesystemSource
 from dlt_filesystem.source.impl.remote import (
     AzureSource,
@@ -30,4 +31,6 @@ __all__ = [
     "SharePointOneDriveSource",
     "SMBSource",
     "WebdavSource",
+    "infer_resource",
+    "resource_for_reader",
 ]

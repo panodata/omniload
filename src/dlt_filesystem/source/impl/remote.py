@@ -7,8 +7,8 @@ from urllib.parse import parse_qs, urlparse
 from sqlalchemy.util import asbool
 
 from dlt_filesystem.error import InvalidBlobTableError, MissingConnectorOption
+from dlt_filesystem.source.api import infer_resource
 from dlt_filesystem.source.base import FilesystemSource
-from dlt_filesystem.source.core import infer_resource
 from dlt_filesystem.source.error import UnsupportedEndpointError
 from dlt_filesystem.source.format.registry import supported_file_format_message
 from dlt_filesystem.source.model import FilesystemLocator
@@ -104,7 +104,7 @@ class GCSSource(FilesystemSource):
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from dlt_filesystem.source.core import resource_for_reader
+        from dlt_filesystem.source.api import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
@@ -188,7 +188,7 @@ class S3CompatibleSource(FilesystemSource):
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from dlt_filesystem.source.core import resource_for_reader
+        from dlt_filesystem.source.api import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
@@ -279,7 +279,7 @@ class AzureSource(FilesystemSource):
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from dlt_filesystem.source.core import resource_for_reader
+        from dlt_filesystem.source.api import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
@@ -383,7 +383,7 @@ class SFTPSource(FilesystemSource):
         except Exception as e:
             raise ValueError(f"Failed to parse endpoint from path: {table}") from e
 
-        from dlt_filesystem.source.core import resource_for_reader
+        from dlt_filesystem.source.api import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
