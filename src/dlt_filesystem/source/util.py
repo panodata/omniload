@@ -26,7 +26,7 @@ def cast_to_bool(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
 
 
 def cast_to_dict(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
-    """Cast dictionary values to integers."""
+    """Cast dictionary values from JSON."""
     for field_name in names:
         if field_name in data:
             data[field_name] = json.loads(data[field_name])

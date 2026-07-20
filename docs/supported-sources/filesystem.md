@@ -52,7 +52,7 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 | {ref}`oss`                | Alibaba Object Storage Service (OSS)              | oss://                          | ✅   | ❌    |
 | {ref}`r2`                 | Cloudflare R2                                     | r2://                           | ✅   | ❌    |
 | {ref}`sharepoint`         | Microsoft SharePoint                              | sharepoint://                   | ✅   | ❌    |
-| {ref}`sftp`               | Simple File Transfer Protocol (RFC 913)           | sftp://                         | ✅   | ✅    |
+| {ref}`sftp`               | SSH File Transfer Protocol                        | sftp://                         | ✅   | ❌    |
 | {ref}`webdav`             | Web Distributed Authoring and Versioning (WebDAV) | http+webdav://, https+webdav:// | ✅   | ❌    |
 
 :::{note}

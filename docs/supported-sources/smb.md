@@ -26,7 +26,7 @@ smb://workgroup;user:password@server.example.org:445/path/to/data.parquet
 
 :port:
   Port to connect with. Usually `445`, sometimes `139`.
-  Type: `int`. Defaul: `445`.
+  Type: `int`. Default: `445`.
 
 :username:
   Username to connect with.
@@ -84,7 +84,7 @@ smb://workgroup;user:password@server.example.org:445/path/to/data.parquet
 To integrate `omniload` with SMB, you need the SMB connection address
 to connect to.
 
-### Load CSV data from SMB into DuckDB
+### Load Parquet data from SMB into DuckDB
 
 The following command demonstrates how to copy data from a specified SMB
 location into a DuckDB database.
@@ -102,9 +102,8 @@ Running the command creates a table named `example` within the `public` schema
 
 :::{tip}
 Here, instead of defining the remote resource exclusively per source URI
-using its `<path>` component, the bucket name and the file glob pattern
-are specified using the separate `--source-table` option. Both addressing
-variants are supported equally.
+using its `<path>` component, the file glob pattern is specified using the
+separate `--source-table` option. Both addressing variants are supported equally.
 :::
 
 

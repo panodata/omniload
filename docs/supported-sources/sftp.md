@@ -39,7 +39,7 @@ hostname, port, a valid username, and a password.
 
 ```sh
 omniload ingest \
-    --source-uri 'sftp://myuser:MySecretPassword123@sftp.example.com' \
+    --source-uri 'sftp://YOUR_USERNAME:YOUR_PASSWORD@sftp.example.com' \
     --source-table 'user.csv' \
     --dest-uri 'duckdb:///sftp_data.duckdb' \
     --dest-table 'dest.users_details'
@@ -57,4 +57,4 @@ base directory on the server where `omniload` should start looking for files.
 :::
 
 
-[SFTP]: https://en.wikipedia.org/wiki/File_Transfer_Protocol#Simple_File_Transfer_Protocol
+[SFTP]: https://en.wikipedia.org/wiki/SSH_File_Transfer_Protocol

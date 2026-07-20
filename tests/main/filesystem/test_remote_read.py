@@ -52,8 +52,7 @@ URIS = [
     #    table="/path/to/data.parquet",
     # ),
     "gs://table-bucket-name/path/to/data.parquet?credentials_path=/path/to/service-account.json",
-    # FIXME: KeyError: 'refresh_token'
-    # "gs://table-bucket-name/path/to/data.parquet?credentials_base64=eyJrZXkiOiAidmFsdWUifQ==",
+    "gs://table-bucket-name/path/to/data.parquet?credentials_base64=eyJjbGllbnRfaWQiOiAiZm9vIiwgImNsaWVudF9zZWNyZXQiOiAiYmFyIiwgInJlZnJlc2hfdG9rZW4iOiAiYW55dGhpbmcifQ==",
     Item(
         uri="hdfs://example.com:8020/path/to/data.parquet?user=test",
         table="",

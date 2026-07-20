@@ -7,15 +7,14 @@ from urllib.parse import parse_qs, urlparse
 from sqlalchemy.util import asbool
 
 from dlt_filesystem.error import InvalidBlobTableError, MissingConnectorOption
-from dlt_filesystem.source.api import infer_resource
 from dlt_filesystem.source.base import FilesystemSource
+from dlt_filesystem.source.core import infer_resource
 from dlt_filesystem.source.error import UnsupportedEndpointError
 from dlt_filesystem.source.format.registry import supported_file_format_message
 from dlt_filesystem.source.model import FilesystemLocator
 from dlt_filesystem.source.router import (
     blob_hints,
     determine_endpoint,
-    parse_fragment,
     parse_uri,
 )
 from dlt_filesystem.source.util import (
@@ -370,18 +369,18 @@ class SFTPSource(FilesystemSource):
 
         bucket_name, path_to_file = parse_uri(parsed_uri, table)
         if not bucket_name or not path_to_file:
-            raise InvalidBlobTableError("WebDAV")
+            raise InvalidBlobTableError("SFTP")
 
         bucket_url = f"sftp://{host}:{port}"
-
-        _, _, hints = parse_fragment(table)
 
         try:
             endpoint = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
             raise ValueError(supported_file_format_message("SFTP")) from None
         except Exception as e:
-            raise ValueError(f"Failed to parse endpoint from path: {table}") from e
+            raise ValueError(
+                f"Failed to parse endpoint from path: {path_to_file}"
+            ) from e
 
         from dlt_filesystem.source.api import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
@@ -394,7 +393,7 @@ class SFTPSource(FilesystemSource):
                 reader_name=endpoint,
                 storage_namespace=(f"sftp:{host.lower()}:{port}:{username or ''}"),
                 filesystem_incremental=kwargs.get("filesystem_incremental", False),
-                hints=hints,
+                hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
         )
@@ -427,7 +426,7 @@ class HDFSSource(FilesystemSource):
         fs_kwargs = locator.options.fs_kwargs
         fs_kwargs.update(kwargs)
         if "host" not in fs_kwargs or not fs_kwargs["host"]:
-            raise MissingConnectorOption("host", "FTP")
+            raise MissingConnectorOption("host", "HDFS")
         fs_kwargs["port"] = fs_kwargs.get("port", 8020)
         apply_alias(fs_kwargs, "block_size", "default_block_size")
         cast_to_int(
@@ -758,7 +757,7 @@ class SMBSource(FilesystemSource):
         # Attach canonical URL form. It is currently required, but why?
         # TODO: Review why the URL must be partly reconstructed
         #       across the board of all filesystem wrappers?
-        bucket_url = f"smb://{locator.baseurl}/"
+        bucket_url = f"smb://{locator.bucket_name}/"
         locator.baseurl = bucket_url
 
         return infer_resource(fs=fs, locator=locator)
