@@ -123,6 +123,7 @@ sources: LazyRegistry = LazyRegistry(
         "shopify": "omniload.source.shopify.api:ShopifySource",
         "slack": "omniload.source.slack.api:SlackSource",
         "smartsheet": "omniload.source.smartsheets.api:SmartsheetSource",
+        "smb": "dlt_filesystem.source.api:SMBSource",
         "snapchatads": "omniload.source.snapchat_ads.api:SnapchatAdsSource",
         "socrata": "omniload.source.socrata.api:SocrataSource",
         "solidgate": "omniload.source.solidgate.api:SolidgateSource",

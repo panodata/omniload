@@ -153,6 +153,7 @@ optional-dependencies.filesystem = [
   "ossfs",
   "paramiko",
   "s3fs",
+  "smbprotocol[kerberos]",
   "webdav4[fsspec]",
 ]
 optional-dependencies.full = [ "omniload[ibm-db,iterable,odbc,oracle]" ]

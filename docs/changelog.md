@@ -4,7 +4,7 @@
 
 - Filesystem: Migrated local filesystem access to Apache Arrow.
 - Filesystem: Added support for reading from
-  Dropbox, FTP, HDFS, OCI, OneDrive, OSS, R2, SharePoint, WebDAV.
+  Dropbox, FTP, HDFS, OCI, OneDrive, OSS, R2, SharePoint, SMB, WebDAV.
 
 ## 2026/07/16 v0.7.0
 

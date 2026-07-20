@@ -82,6 +82,7 @@ URIS = [
     ),
     "sftp://username:password@intranet.example.org:2222/path/to/data.parquet",
     "sharepoint://site_name/drive_name/path/to/data.parquet?client_id=1d2befad-2f22-4124-a779-b147dfeca342&tenant_id=6b337423-f504-4060-a91b-e9eaaf782609&client_secret=abc~xyz789EXAMPLE_foo",
+    "smb://workgroup;user:password@server.example.org:445/path/to/data.parquet",
 ]
 
 
@@ -110,8 +111,9 @@ def test_init_generic_filesystems(source_uri, mocker):
     # Must patch the whole class, because can't patch details which are immutable.
     mocker.patch("pyarrow.fs.HadoopFileSystem", MemoryFileSystem)
 
-    # It's enough to mock the `_connect` method with SFTP.
+    # It's enough to mock the `_connect` method with SFTP and SMB.
     mocker.patch("fsspec.implementations.sftp.SFTPFileSystem._connect")
+    mocker.patch("fsspec.implementations.smb.SMBFileSystem._connect")
 
     # For FTP, let's mock the low-level libraries.
     mocker.patch("ftplib.FTP")
