@@ -204,6 +204,17 @@ def test_endpoint_namespace_normalizes_bare_host_and_url_forms():
     )
 
 
+def test_endpoint_namespace_brackets_ipv6_hosts():
+    assert (
+        _endpoint_namespace("https://[::1]:9000/bucket", "default")
+        == "[::1]:9000/bucket"
+    )
+
+
+def test_endpoint_namespace_falls_back_when_hostname_is_missing():
+    assert _endpoint_namespace("/just/a/path", "default") == "default"
+
+
 def test_auth_rotation_does_not_change_incremental_resource_names():
     with (
         patch("dlt_filesystem.source.adapter.resource_for_reader") as first_build,

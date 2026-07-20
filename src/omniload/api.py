@@ -57,8 +57,20 @@ def run_ingest(**kwargs) -> LoadInfo | None:
     :class:`omniload.ValidationError` for invalid parameters and
     :class:`omniload.IngestJobError` when one or more load jobs fail.
     """
-    import hashlib
     import tempfile
+
+    jr = LoadRequest(**kwargs)
+    if jr.pipelines_dir is not None:
+        return _run_ingest(jr, jr.pipelines_dir, is_pipelines_dir_temp=False)
+
+    with tempfile.TemporaryDirectory() as pipelines_dir:
+        return _run_ingest(jr, pipelines_dir, is_pipelines_dir_temp=True)
+
+
+def _run_ingest(
+    jr: LoadRequest, pipelines_dir: str, *, is_pipelines_dir_temp: bool
+) -> LoadInfo | None:
+    import hashlib
     import time
     from typing import Any, Dict, Optional
 
@@ -83,8 +95,6 @@ def run_ingest(**kwargs) -> LoadInfo | None:
     from omniload.target.athena import AthenaDestination
     from omniload.target.clickhouse import ClickhouseDestination
     from omniload.util.spinner import SpinnerCollector
-
-    jr = LoadRequest(**kwargs)
 
     # `incremental_strategy` defaults to None ("not explicitly requested"). Capture the
     # explicit-ness before resolving the default: for the filesystem family it decides
@@ -270,18 +280,6 @@ def run_ingest(**kwargs) -> LoadInfo | None:
     elif progress == Progress.spinner:
         progressInstance = SpinnerCollector()
 
-    is_pipelines_dir_temp = False
-    pipelines_dir = jr.pipelines_dir
-    if pipelines_dir is None:
-        pipelines_dir = tempfile.mkdtemp()
-        is_pipelines_dir_temp = True
-
-    def remove_temp_pipelines_dir() -> None:
-        if is_pipelines_dir_temp:
-            import shutil
-
-            shutil.rmtree(pipelines_dir)
-
     dlt_dest = destination.dlt_dest(
         uri=jr.dest_uri, dest_table=dest_table, staging_bucket=jr.staging_bucket
     )
@@ -322,7 +320,6 @@ def run_ingest(**kwargs) -> LoadInfo | None:
             client_class, WithStateSync
         )
         if not supports_state_sync:
-            remove_temp_pipelines_dir()
             raise ValidationError(
                 "The destination cannot restore filesystem incremental state when "
                 "omniload uses a temporary pipeline directory. Set '--pipelines-dir' "
@@ -461,7 +458,6 @@ def run_ingest(**kwargs) -> LoadInfo | None:
 
     if jr.dry_run:
         logger.info("Skipping data transfer, because `--dry-run` was selected.")
-        remove_temp_pipelines_dir()
         return None
 
     logger.info("Starting the ingestion")
@@ -666,8 +662,6 @@ def run_ingest(**kwargs) -> LoadInfo | None:
     end_time = datetime.now()
     elapsed = end_time - start_time
     elapsedHuman = f"in {humanize.precisedelta(elapsed)}"
-
-    remove_temp_pipelines_dir()
 
     logger.info(
         f"Successfully finished loading data from '{factory.source_scheme}' to '{factory.destination_scheme}' {elapsedHuman}"

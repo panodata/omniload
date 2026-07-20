@@ -217,7 +217,9 @@ def test_temp_pipeline_dir_requires_destination_state_sync(tmp_path, monkeypatch
     temp_pipelines_dir.mkdir()
     _write_csv(source / "a.csv", "Alice", 1_700_000_000)
 
-    monkeypatch.setattr(tempfile, "mkdtemp", lambda: str(temp_pipelines_dir))
+    monkeypatch.setattr(
+        tempfile, "mkdtemp", lambda *args, **kwargs: str(temp_pipelines_dir)
+    )
     monkeypatch.setattr(
         dlt,
         "pipeline",
@@ -228,6 +230,61 @@ def test_temp_pipeline_dir_requires_destination_state_sync(tmp_path, monkeypatch
 
     with pytest.raises(ValidationError, match="Set '--pipelines-dir'"):
         _load(source / "*.csv", dest)
+
+    assert not temp_pipelines_dir.exists()
+
+
+def test_temp_pipeline_dir_is_removed_when_load_fails(tmp_path, monkeypatch):
+    from dlt.common.destination.client import WithStateSync
+
+    source = tmp_path / "source"
+    dest = tmp_path / "warehouse.duckdb"
+    temp_pipelines_dir = tmp_path / "temporary-pipeline"
+    temp_pipelines_dir.mkdir()
+    _write_csv(source / "a.csv", "Alice", 1_700_000_000)
+
+    monkeypatch.setattr(
+        tempfile, "mkdtemp", lambda *args, **kwargs: str(temp_pipelines_dir)
+    )
+
+    def fail_load(*args, **kwargs):
+        raise RuntimeError("load failed")
+
+    monkeypatch.setattr(
+        dlt,
+        "pipeline",
+        lambda **kwargs: SimpleNamespace(
+            destination=SimpleNamespace(client_class=WithStateSync),
+            run=fail_load,
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="load failed"):
+        _load(source / "*.csv", dest)
+
+    assert not temp_pipelines_dir.exists()
+
+
+def test_temp_pipeline_dir_is_removed_on_early_validation_error(tmp_path, monkeypatch):
+    temp_pipelines_dir = tmp_path / "temporary-pipeline"
+    temp_pipelines_dir.mkdir()
+
+    monkeypatch.setattr(
+        tempfile, "mkdtemp", lambda *args, **kwargs: str(temp_pipelines_dir)
+    )
+
+    with pytest.raises(
+        ValidationError, match="cannot be combined with '--yield-limit'"
+    ):
+        run_ingest(
+            source_uri=f"sqlite:///{tmp_path / 'source.db'}",
+            dest_uri=f"duckdb:///{tmp_path / 'warehouse.duckdb'}",
+            source_table="main.people",
+            dest_table="out.people",
+            incremental_strategy="scd2",
+            yield_limit=1,
+            progress="log",
+        )
 
     assert not temp_pipelines_dir.exists()
 
