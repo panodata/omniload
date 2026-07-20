@@ -1,3 +1,4 @@
+import base64
 import re
 from typing import Any
 from unittest.mock import patch
@@ -216,17 +217,25 @@ def test_endpoint_namespace_falls_back_when_hostname_is_missing():
     assert _endpoint_namespace("/just/a/path", "default") == "default"
 
 
-def test_auth_rotation_does_not_change_incremental_resource_names():
+def test_auth_rotation_does_not_change_incremental_resource_names(mocker):
+    gs_credentials_first = base64.b64encode(
+        b'{"client_id":"foo","client_secret":"bar","refresh_token":"baz"}'
+    ).decode("ascii")
+    gs_credentials_second = base64.b64encode(
+        b'{"client_id":"qux","client_secret":"quux","refresh_token":"corge"}'
+    ).decode("ascii")
     with (
         patch("dlt_filesystem.source.api.resource_for_reader") as first_build,
-        patch("gcsfs.GCSFileSystem"),
     ):
-        GCSSource().dlt_source("gs://?credentials_base64=e30K", "bucket/*.csv")
+        GCSSource().dlt_source(
+            f"gs://?credentials_base64={gs_credentials_first}", "bucket/*.csv"
+        )
     with (
         patch("dlt_filesystem.source.api.resource_for_reader") as second_build,
-        patch("gcsfs.GCSFileSystem"),
     ):
-        GCSSource().dlt_source("gs://?credentials_base64=e30=", "bucket/*.csv")
+        GCSSource().dlt_source(
+            f"gs://?credentials_base64={gs_credentials_second}", "bucket/*.csv"
+        )
     assert (
         _captured_reference(first_build).incremental_resource_name
         == _captured_reference(second_build).incremental_resource_name
@@ -234,7 +243,6 @@ def test_auth_rotation_does_not_change_incremental_resource_names():
 
     with (
         patch("dlt_filesystem.source.api.resource_for_reader") as first_build,
-        patch("s3fs.S3FileSystem"),
     ):
         S3Source().dlt_source(
             "s3://?access_key_id=OLD&secret_access_key=OLD_SECRET",
@@ -242,7 +250,6 @@ def test_auth_rotation_does_not_change_incremental_resource_names():
         )
     with (
         patch("dlt_filesystem.source.api.resource_for_reader") as second_build,
-        patch("s3fs.S3FileSystem"),
     ):
         S3Source().dlt_source(
             "s3://?access_key_id=NEW&secret_access_key=NEW_SECRET",
@@ -255,7 +262,6 @@ def test_auth_rotation_does_not_change_incremental_resource_names():
 
     with (
         patch("dlt_filesystem.source.api.resource_for_reader") as first_build,
-        patch("dlt_filesystem.source.impl.remote._azure_fs"),
     ):
         AzureSource().dlt_source(
             "az://?account_name=account&account_key=OLD_SECRET",
@@ -263,7 +269,6 @@ def test_auth_rotation_does_not_change_incremental_resource_names():
         )
     with (
         patch("dlt_filesystem.source.api.resource_for_reader") as second_build,
-        patch("dlt_filesystem.source.impl.remote._azure_fs"),
     ):
         AzureSource().dlt_source(
             "az://?account_name=account&account_key=NEW_SECRET",
@@ -274,14 +279,13 @@ def test_auth_rotation_does_not_change_incremental_resource_names():
         == _captured_reference(second_build).incremental_resource_name
     )
 
+    mocker.patch("fsspec.implementations.sftp.SFTPFileSystem._connect")
     with (
         patch("dlt_filesystem.source.api.resource_for_reader") as first_build,
-        patch("fsspec.filesystem"),
     ):
         SFTPSource().dlt_source("sftp://user:OLD_SECRET@sftp.example:22", "/*.csv")
     with (
         patch("dlt_filesystem.source.api.resource_for_reader") as second_build,
-        patch("fsspec.filesystem"),
     ):
         SFTPSource().dlt_source("sftp://user:NEW_SECRET@sftp.example:22", "/*.csv")
     assert (
