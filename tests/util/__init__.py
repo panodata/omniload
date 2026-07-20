@@ -34,6 +34,7 @@ def build_ingest_args(
     sql_limit=None,
     yield_limit=None,
     mask=None,
+    filesystem_incremental=False,
 ):
     """Build the ``ingest`` CLI argument list. Pure: no I/O, no CliRunner.
 
@@ -122,6 +123,9 @@ def build_ingest_args(
             args.append("--mask")
             args.append(m)
 
+    if filesystem_incremental:
+        args.append("--filesystem-incremental")
+
     return args
 
 
@@ -146,6 +150,7 @@ def invoke_ingest_command(
     print_output=True,
     run_in_subprocess=False,
     subprocess_timeout=120,
+    filesystem_incremental=False,
 ):
     """Invoke the ``ingest`` CLI command for a test.
 
@@ -182,6 +187,7 @@ def invoke_ingest_command(
         sql_limit=sql_limit,
         yield_limit=yield_limit,
         mask=mask,
+        filesystem_incremental=filesystem_incremental,
     )
 
     if not run_in_subprocess:

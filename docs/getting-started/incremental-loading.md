@@ -320,12 +320,60 @@ Each of these sources declares (via `handles_incrementality()`) that omniload sh
 
 omniload's per-key incremental logic stays disabled, so `--incremental-key` does not drive loading: the local `file://` source rejects an explicit key with an error, while the remote transports ignore it. `--incremental-strategy` is honoured only for the two dispositions these sources can support, described next.
 
+### Opt in to file-level incremental loading
+
+Pass `--filesystem-incremental` to append rows only from files that have not
+already been loaded. omniload lists matching files without reading their content,
+filters that metadata using each file's modification time, and opens only the
+files that survive the filter.
+
+```bash
+omniload ingest \
+    --source-uri 's3://?access_key_id=...&secret_access_key=...' \
+    --source-table 'my-bucket/events/*.jsonl' \
+    --dest-uri 'duckdb://output.duckdb' \
+    --dest-table 'events' \
+    --filesystem-incremental
+```
+
+The mode is opt-in, so omitting the flag keeps the append-on-re-run behaviour
+described above. It is append-only: omit `--incremental-strategy` or set it to
+`append`. Combining it with `replace`, `delete+insert`, `merge`, or `scd2` is
+rejected before extraction. Python callers set `filesystem_incremental=True` on
+`run_ingest()`.
+
+The cursor is stored in dlt pipeline state. With omniload's default temporary
+pipeline directory, the destination must support dlt state sync so the next run
+can restore that cursor from the destination. omniload checks this before
+extraction and fails with a validation error when state cannot be restored. For
+such a destination, pass a stable `--pipelines-dir` path and reuse it on every
+run.
+
+The single-file `csv://` and `file://` destinations are not supported. They
+rebuild their output from the current run instead of retaining previously loaded
+rows.
+
+Cursor state is isolated by a hash of the storage namespace, bucket or local
+directory, and file glob. Authentication values are excluded, so rotating a key
+or password does not reset the cursor. Endpoints and accounts that distinguish
+storage namespaces are included, such as an S3-compatible endpoint, Azure
+account, or SFTP host, port, and username.
+
+The modification-time boundary is closed. Files newer than the last maximum are
+loaded. Files at exactly that maximum are compared using the lister's `file_url`
+primary key, which lets a new file sharing the same timestamp load without
+reopening files already recorded at the boundary. A newly added file with an
+older modification time is not visible to the cursor. Likewise, modifying a file
+without advancing its modification time leaves it unchanged from the cursor's
+perspective. Use `--full-refresh` to reset the cursor and reload every matching
+file when importing a backfill or working around coarse mtime precision.
+
 ### Choosing append or replace explicitly
 
 Pass `--incremental-strategy` to make the write disposition explicit instead of relying on the append default:
 
 - `append` keeps the default behaviour (each run adds the source rows), now as a stated, logged choice.
-- `replace` resets the destination table on every run, so each run produces a clean replica rather than another copy. This is the flag-driven equivalent of `--full-refresh` for the common "re-import an updated file" case.
+- `replace` resets the destination table on every run, so each run produces a clean replica rather than another copy. This is the flag-driven equivalent of `--full-refresh` for the common "re-import an updated file" case. It cannot be combined with `--filesystem-incremental`, because replacing a table with only the newly selected files would discard rows loaded earlier.
 
 ```bash
 omniload ingest \
@@ -350,7 +398,7 @@ omniload ingest \
     --full-refresh
 ```
 
-`--full-refresh` maps to dlt's `refresh="drop_resources"`: it drops the resource's tables and pipeline state, then reloads. `--incremental-strategy replace` resets the destination too, via a `replace` write disposition; use whichever reads more clearly, and passing both together is harmless. The `FULL_REFRESH` and `OMNILOAD_FULL_REFRESH` environment variables set the same option.
+`--full-refresh` maps to dlt's `refresh="drop_resources"`: it drops the resource's tables and pipeline state, then reloads. With `--filesystem-incremental`, this is the supported way to reset the modification-time cursor and load an older backfill. Without that mode, `--incremental-strategy replace` also resets the destination through a `replace` write disposition. The `FULL_REFRESH` and `OMNILOAD_FULL_REFRESH` environment variables set the same option.
 
 :::{tip}
 For a one-shot import where you re-run the command to pick up an updated file, add `--full-refresh` so each run produces a clean replica instead of appending another copy.

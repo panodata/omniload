@@ -203,6 +203,31 @@ def run_ingest(**kwargs) -> LoadInfo | None:
     column_hints: dict[str, TColumnSchema] = {}
     original_incremental_strategy = incremental_strategy
 
+    supports_filesystem_incremental = getattr(
+        source, "supports_filesystem_incremental", lambda: False
+    )()
+    if jr.filesystem_incremental and not supports_filesystem_incremental:
+        raise ValidationError(
+            "The '--filesystem-incremental' option is only supported by "
+            "filesystem-family sources."
+        )
+    if jr.filesystem_incremental and factory.destination_scheme in {"csv", "file"}:
+        raise ValidationError(
+            "The '--filesystem-incremental' option cannot write to the 'csv' or "
+            "'file' destinations because those destinations replace a single output "
+            "file using only the rows selected for the current run."
+        )
+    if jr.filesystem_incremental and original_incremental_strategy not in (
+        None,
+        IncrementalStrategy.append,
+        IncrementalStrategy.none,
+    ):
+        raise ValidationError(
+            "The '--filesystem-incremental' option requires append loading. "
+            "Omit '--incremental-strategy' or set it to 'append'; use "
+            "'--full-refresh' to reset the cursor and reload every matching file."
+        )
+
     column_types = parse_columns(jr.columns) if jr.columns else None
     if column_types:
         for column_name, column_type in column_types.items():
@@ -246,9 +271,16 @@ def run_ingest(**kwargs) -> LoadInfo | None:
         progressInstance = SpinnerCollector()
 
     is_pipelines_dir_temp = False
-    if jr.pipelines_dir is None:
+    pipelines_dir = jr.pipelines_dir
+    if pipelines_dir is None:
         pipelines_dir = tempfile.mkdtemp()
         is_pipelines_dir_temp = True
+
+    def remove_temp_pipelines_dir() -> None:
+        if is_pipelines_dir_temp:
+            import shutil
+
+            shutil.rmtree(pipelines_dir)
 
     dlt_dest = destination.dlt_dest(
         uri=jr.dest_uri, dest_table=dest_table, staging_bucket=jr.staging_bucket
@@ -282,15 +314,31 @@ def run_ingest(**kwargs) -> LoadInfo | None:
         refresh="drop_resources" if jr.full_refresh else None,  # ty: ignore[invalid-argument-type]
     )
 
+    if jr.filesystem_incremental and is_pipelines_dir_temp:
+        from dlt.common.destination.client import WithStateSync
+
+        client_class = getattr(pipeline.destination, "client_class", None)
+        supports_state_sync = isinstance(client_class, type) and issubclass(
+            client_class, WithStateSync
+        )
+        if not supports_state_sync:
+            remove_temp_pipelines_dir()
+            raise ValidationError(
+                "The destination cannot restore filesystem incremental state when "
+                "omniload uses a temporary pipeline directory. Set '--pipelines-dir' "
+                "to a persistent directory, or use a destination that supports dlt "
+                "state sync."
+            )
+
     # Capture the user's original request before it is nulled below: sources that manage
     # incrementality themselves (e.g. mq-bridge) need to see what was asked for so they can
     # reject conflicting flags, rather than silently ignoring them.
     requested_incremental_key = jr.incremental_key
     if source.handles_incrementality():
         jr.incremental_key = None
-        # Filesystem-family sources scan a set of files each run and can't derive a
-        # per-file incremental key, but (unlike SaaS/streaming sources) they hold no
-        # resource-level write disposition, so a run-level one is safe to apply. Honour an
+        # Filesystem-family sources cannot derive a row-level incremental or merge key.
+        # Unlike SaaS/streaming sources, they hold no resource-level write disposition,
+        # so a run-level one is safe to apply. Honour an
         # explicit --incremental-strategy append/replace for them; otherwise fall back to
         # `none` and let the source/platform own the write. `honours_run_disposition` is
         # absent on sources that set their own disposition, so getattr defaults to False.
@@ -404,11 +452,16 @@ def run_ingest(**kwargs) -> LoadInfo | None:
     logger.info(
         "Incremental Key: %s", jr.incremental_key if jr.incremental_key else "None"
     )
+    logger.info(
+        "Filesystem Incremental: %s",
+        "Enabled" if jr.filesystem_incremental else "Disabled",
+    )
     logger.info("Primary Key: %s", jr.primary_key if jr.primary_key else "None")
     logger.info("Pipeline ID: %s", m.hexdigest())
 
     if jr.dry_run:
         logger.info("Skipping data transfer, because `--dry-run` was selected.")
+        remove_temp_pipelines_dir()
         return None
 
     logger.info("Starting the ingestion")
@@ -456,6 +509,7 @@ def run_ingest(**kwargs) -> LoadInfo | None:
         sql_exclude_columns=sql_exclude_columns,
         extract_parallelism=jr.extract_parallelism,
         column_types=column_types,
+        filesystem_incremental=jr.filesystem_incremental,
     )
 
     resource.for_each(dlt_source, lambda x: x.add_map(cast_set_to_list))
@@ -613,10 +667,7 @@ def run_ingest(**kwargs) -> LoadInfo | None:
     elapsed = end_time - start_time
     elapsedHuman = f"in {humanize.precisedelta(elapsed)}"
 
-    if is_pipelines_dir_temp:
-        import shutil
-
-        shutil.rmtree(pipelines_dir)
+    remove_temp_pipelines_dir()
 
     logger.info(
         f"Successfully finished loading data from '{factory.source_scheme}' to '{factory.destination_scheme}' {elapsedHuman}"

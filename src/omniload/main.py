@@ -96,6 +96,18 @@ def ingest(
             envvar=["INCREMENTAL_STRATEGY", "OMNILOAD_INCREMENTAL_STRATEGY"],
         ),
     ] = None,
+    filesystem_incremental: Annotated[
+        bool,
+        typer.Option(
+            help="Read filesystem files newer than the previous modification-time "
+            "boundary, plus unseen files at that boundary. This opt-in mode requires "
+            "append loading and durable pipeline state.",
+            envvar=[
+                "FILESYSTEM_INCREMENTAL",
+                "OMNILOAD_FILESYSTEM_INCREMENTAL",
+            ],
+        ),
+    ] = False,
     interval_start: Annotated[
         Optional[datetime],
         typer.Option(
@@ -275,6 +287,7 @@ def ingest(
             dest_table=dest_table,
             incremental_key=incremental_key,
             incremental_strategy=incremental_strategy,
+            filesystem_incremental=filesystem_incremental,
             interval_start=interval_start,
             interval_end=interval_end,
             primary_key=primary_key,

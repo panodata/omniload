@@ -32,8 +32,9 @@ class LocalFilesystemSource(FilesystemSource):
     """
 
     def dlt_source(self, uri: str, table: str, **kwargs):
-        # The shared filesystem adapter deliberately disables per-file incremental
-        # loading, so a user-supplied incremental key can't be honoured. run_ingest()
+        # The shared filesystem adapter cannot use a caller-supplied row-level
+        # incremental key, even though it supports opt-in file selection by
+        # modification time. run_ingest()
         # nulls kwargs["incremental_key"] before calling us (because
         # handles_incrementality() is True), so check requested_incremental_key, which
         # preserves what the user actually asked for.
@@ -95,6 +96,8 @@ class LocalFilesystemSource(FilesystemSource):
                 bucket_url=directory,
                 file_glob=file_glob,
                 reader_name=endpoint,
+                storage_namespace="file",
+                filesystem_incremental=kwargs.get("filesystem_incremental", False),
                 hints=hints,
                 column_types=kwargs.get("column_types"),
             )

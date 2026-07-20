@@ -16,6 +16,25 @@ from dlt_filesystem.source.router import (
 from dlt_filesystem.util.auth import AzureBlobAuth, parse_azure_blob_auth
 
 
+def _endpoint_namespace(endpoint: str | None, default: str) -> str:
+    """Return a normalized endpoint identity without credentials or query values."""
+    if not endpoint:
+        return default
+
+    parsed = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
+    host = parsed.hostname
+    if not host:
+        return default
+
+    host = host.lower()
+    if ":" in host:
+        host = f"[{host}]"
+    if parsed.port is not None:
+        host = f"{host}:{parsed.port}"
+
+    return f"{host}{parsed.path.rstrip('/')}"
+
+
 class GCSSource(FilesystemSource):
     def dlt_source(self, uri: str, table: str, **kwargs):
         if kwargs.get("incremental_key"):
@@ -80,6 +99,8 @@ class GCSSource(FilesystemSource):
                 bucket_url=bucket_url,
                 file_glob=path_to_file,
                 reader_name=endpoint,
+                storage_namespace="gcs",
+                filesystem_incremental=kwargs.get("filesystem_incremental", False),
                 hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
@@ -139,6 +160,8 @@ class S3Source(FilesystemSource):
                 bucket_url=bucket_url,
                 file_glob=path_to_file,
                 reader_name=endpoint,
+                storage_namespace=f"s3:{_endpoint_namespace(endpoint_url[0] if endpoint_url else None, 'aws')}",
+                filesystem_incremental=kwargs.get("filesystem_incremental", False),
                 hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
@@ -222,6 +245,11 @@ class AzureSource(FilesystemSource):
                 bucket_url=bucket_url,
                 file_glob=path_to_file,
                 reader_name=endpoint,
+                storage_namespace=(
+                    f"azure:{auth.account_name.lower()}:"
+                    f"{_endpoint_namespace(auth.account_host, 'azure-public')}"
+                ),
+                filesystem_incremental=kwargs.get("filesystem_incremental", False),
                 hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
@@ -279,6 +307,8 @@ class SFTPSource(FilesystemSource):
                 bucket_url=bucket_url,
                 file_glob=file_glob,
                 reader_name=endpoint,
+                storage_namespace=(f"sftp:{host.lower()}:{port}:{username or ''}"),
+                filesystem_incremental=kwargs.get("filesystem_incremental", False),
                 hints=hints,
                 column_types=kwargs.get("column_types"),
             )

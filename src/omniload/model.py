@@ -78,6 +78,7 @@ class LoadRequest:
     # the explicit-ness to decide whether to honour a run-level write disposition
     # for filesystem sources.
     incremental_strategy: IncrementalStrategy | str | None = None
+    filesystem_incremental: bool = False
     interval_start: dt.datetime | None = None
     interval_end: dt.datetime | None = None
     primary_key: list[str] | None = None

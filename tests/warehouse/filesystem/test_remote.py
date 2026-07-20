@@ -3,6 +3,7 @@ import gzip
 import importlib.util
 import io
 import json
+from datetime import datetime, timezone
 from typing import Callable, Iterable
 from unittest.mock import patch
 
@@ -445,6 +446,66 @@ def fs_test_cases(
             assert result.exit_code == 0
             assert_rows(dest_uri, dest_table, 6)
 
+    def test_incremental_glob_load(dest_uri):
+        """Remote adapters keep their mtime cursor through the shared lazy lister."""
+        with (
+            patch(target_fs) as target_fs_mock,
+            patch(
+                "dlt_filesystem.source.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
+        ):
+            target_fs_mock.return_value = test_fs
+            prefix = f"incremental_{get_random_string(5)}"
+            first_path = f"/{prefix}/a.csv"
+            with test_fs.open(first_path, "w") as f:
+                f.write("name\nAlice\n")
+            test_fs.store[first_path].created = datetime(
+                2025, 1, 1, tzinfo=timezone.utc
+            )
+
+            schema_rand_prefix = f"testschema_fs_{get_random_string(5)}"
+            dest_table = f"{schema_rand_prefix}.fs_{get_random_string(5)}"
+            source_table = f"/{prefix}/*.csv"
+            source_uri = f"{protocol}://bucket?{auth}"
+
+            result = invoke_ingest_command(
+                source_uri,
+                source_table,
+                dest_uri,
+                dest_table,
+                filesystem_incremental=True,
+            )
+            assert result.exit_code == 0
+            assert_rows(dest_uri, dest_table, 1)
+
+            result = invoke_ingest_command(
+                source_uri,
+                source_table,
+                dest_uri,
+                dest_table,
+                filesystem_incremental=True,
+            )
+            assert result.exit_code == 0
+            assert_rows(dest_uri, dest_table, 1)
+
+            second_path = f"/{prefix}/b.csv"
+            with test_fs.open(second_path, "w") as f:
+                f.write("name\nBob\n")
+            test_fs.store[second_path].created = datetime(
+                2025, 1, 2, tzinfo=timezone.utc
+            )
+
+            result = invoke_ingest_command(
+                source_uri,
+                source_table,
+                dest_uri,
+                dest_table,
+                filesystem_incremental=True,
+            )
+            assert result.exit_code == 0
+            assert_rows(dest_uri, dest_table, 2)
+
     def test_compound_table_name(dest_uri):
         """
         When table contains both the bucket name and the file glob,
@@ -505,6 +566,7 @@ def fs_test_cases(
         test_jsonl_load,
         test_jsonl_gz_load,
         test_glob_load,
+        test_incremental_glob_load,
         test_compound_table_name,
         test_uri_precedence,
     ]

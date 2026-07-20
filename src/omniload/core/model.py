@@ -20,6 +20,11 @@ class SourceProtocol(Protocol):
     append/replace is safe to honour. It is absent on sources that set their own
     resource-level disposition; run_ingest reads it via
     ``getattr(source, "honours_run_disposition", lambda: False)()``, so the default is False.
+
+    Filesystem-family sources may also define
+    ``supports_filesystem_incremental(self) -> bool`` to opt into file selection by
+    modification time. It is optional for the same reason and defaults to False when
+    absent.
     """  # noqa: E501
 
     def dlt_source(self, uri: str, table: str, **kwargs):

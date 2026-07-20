@@ -1,3 +1,5 @@
+import hashlib
+import json
 from dataclasses import dataclass, field
 from typing import Any, Optional, Type, Union
 
@@ -34,6 +36,12 @@ class FilesystemReference:
         bucket_url (str): The url to the bucket.
         file_glob (str): The filter to apply to the files in glob format.
         reader_name (str): The name of the reader resource to build, e.g. `read_csv`.
+        storage_namespace (str): Secret-free identity for the storage service or
+            endpoint. Defaults to ``filesystem`` for callers that do not need to
+            distinguish transports. The bucket URL and glob are added separately
+            when deriving the incremental resource-state key.
+        filesystem_incremental (bool): Whether to filter files using their
+            modification time and persistent dlt resource state.
         hints (dict[str, str]): Free-form per-URI reader hints parsed from the
             `#key=value` fragment (e.g. `{"sheet_name": "ticker-symbols"}`). The
             key a reader looks up is that reader's contract; no reader consumes
@@ -45,5 +53,18 @@ class FilesystemReference:
     bucket_url: str
     file_glob: str
     reader_name: str
+    storage_namespace: str = "filesystem"
+    filesystem_incremental: bool = False
     hints: dict[str, str] = field(default_factory=dict)
     column_types: Optional[dict[str, Any]] = None
+
+    @property
+    def incremental_resource_name(self) -> str:
+        """Return a stable, secret-free resource name for this file selection."""
+        identity = json.dumps(
+            [self.storage_namespace, self.bucket_url, self.file_glob],
+            ensure_ascii=True,
+            separators=(",", ":"),
+        )
+        digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
+        return f"filesystem_{digest}"

@@ -60,13 +60,6 @@ def readers(
     """
     filesystem_resource = filesystem(bucket_url, credentials, file_glob=file_glob)
 
-    # NOTE: incremental support is disabled until we can figure out
-    #       how to support incremental loads per matching file, rather
-    #       than a blanket threshold.
-    #
-    # filesystem_resource.apply_hints(
-    #     incremental=dlt.sources.incremental("modification_date"),
-    # )
     return (
         filesystem_resource
         | dlt.transformer(name="read_csv", max_table_nesting=0)(read_csv),
@@ -150,7 +143,19 @@ def resource_for_reader(ref: FilesystemReference) -> DltSource | DltResource:
     """
 
     # Establish filesystem and reader elements.
-    filesystem_resource = filesystem(ref.bucket_url, ref.fs, file_glob=ref.file_glob)
+    filesystem_resource = filesystem(
+        ref.bucket_url,
+        ref.fs,
+        file_glob=ref.file_glob,
+        extract_content=False,
+    )
+    if ref.filesystem_incremental:
+        filesystem_resource = filesystem_resource.with_name(
+            ref.incremental_resource_name
+        )
+        filesystem_resource.apply_hints(
+            incremental=dlt.sources.incremental("modification_date")
+        )
     all_readers = readers(
         ref.bucket_url, ref.fs, file_glob=ref.file_glob
     ).with_resources(ref.reader_name)

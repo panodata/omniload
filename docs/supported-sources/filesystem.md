@@ -52,6 +52,32 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 See {ref}`file:// destination <file-destination>` for write support.
 :::
 
+## Incremental file selection
+
+Filesystem sources append every matching file again on a normal re-run. Add
+`--filesystem-incremental` to keep an mtime cursor and append rows only from new
+or newly modified files:
+
+```sh
+omniload ingest \
+    --source-uri 'file:///data/events/*.jsonl' \
+    --dest-uri duckdb:///local.duckdb \
+    --dest-table 'public.events' \
+    --filesystem-incremental
+```
+
+This mode is opt-in and append-only. Its cursor needs durable dlt pipeline state:
+the default temporary pipeline directory works when the destination supports
+state sync, while other destinations require a stable `--pipelines-dir`. Files
+at the current maximum modification time are deduplicated by their URL, and an
+older-mtime backfill requires `--full-refresh` to reset the cursor.
+
+The single-file `csv://` and `file://` destinations are rejected because they
+replace their output using only the rows selected for the current run.
+
+See {ref}`Filesystem sources <incremental-loading-filesystem>` for the state,
+boundary, source-identity, and reset details.
+
 (format-hint)=
 (format-hints)=
 
