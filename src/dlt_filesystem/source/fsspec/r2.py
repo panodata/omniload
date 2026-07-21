@@ -19,9 +19,12 @@ class R2Source(S3CompatibleSource):
 
     @property
     def fs_class(self) -> Type["AbstractFileSystem"]:
+        if hasattr(self, "_r2_fs_class"):
+            return self._r2_fs_class
         import s3fs
 
         class R2FileSystem(s3fs.S3FileSystem):
             protocol = "r2"
 
-        return R2FileSystem
+        self._r2_fs_class = R2FileSystem
+        return self._r2_fs_class

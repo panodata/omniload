@@ -24,7 +24,7 @@ do with any HTTP server.
 ```sh
 omniload ingest \
     --source-uri   'https+webdav://<USERNAME>:<PASSWORD>@cloud.example.org/remote.php/webdav' \
-    --source-table 'path/to/data.parquet' \
+    --source-table 'path/to/data.csv' \
     --dest-uri     'duckdb:///demo.duckdb' \
     --dest-table   'testdrive.data'
 ```
@@ -34,4 +34,3 @@ schema in the DuckDB database file located at `demo.duckdb`.
 
 
 [Nextcloud Files]: https://nextcloud.com/files/
-[WebDAV]: https://en.wikipedia.org/wiki/WebDAV
