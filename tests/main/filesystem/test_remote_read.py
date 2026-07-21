@@ -131,6 +131,9 @@ def test_init_generic_filesystems(source_uri, mocker):
     assert dlt_source._parent.name == "filesystem"
     assert dlt_source._parent.section == "adapter"
 
+    # Remark: Unfortunately can't inspect the fsspec instance,
+    #         because there is no reference to it.
+
 
 def test_init_http_filesystem():
     """Initialize HTTP filesystem implementation without table parameter"""

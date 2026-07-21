@@ -44,12 +44,9 @@ class WebdavSource(FilesystemSource):
             auth = (fs_kwargs["username"], fs_kwargs.get("password"))
 
         # Create filesystem wrapper.
-        bucket_url = f"webdav://{locator.bucket_name}/"
-        fs = self.fs_class(bucket_url, auth=auth)
+        fs = self.fs_class(base_url=uri, auth=auth)
 
         # Attach canonical URL form. It is currently required, but why?
-        # TODO: Review why the URL must be partly reconstructed
-        #       across the board of all filesystem wrappers?
-        locator.baseurl = bucket_url
+        locator.baseurl = uri
 
         return infer_resource(fs=fs, locator=locator)

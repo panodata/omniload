@@ -1,7 +1,7 @@
 from typing import Union
 from urllib.parse import urlparse
 
-from fsspec.utils import infer_storage_options
+from dlt_filesystem.util.fsspec import infer_storage_options
 
 
 class FilesystemSource:
