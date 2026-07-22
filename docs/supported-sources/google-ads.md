@@ -19,7 +19,7 @@ googleads://<customer_id>?client_id=<client_id>&client_secret=<client_secret>&re
 URI parameters:
 
 - `customer_id`: Customer ID of the Google Ads account to use. You can specify multiple customer IDs separated by commas (e.g., `1234567890,0987654321,1122334455`).
-- `dev_token`: [developer token](https://developers.google.com/google-ads/api/docs/get-started/dev-token) to use for accessing the account.
+- `dev_token`: [developer token] to use for accessing the account.
 - `credentials_path`: path to the service account JSON file (service account auth).
 - `client_id`: OAuth2 client ID (OAuth2 auth).
 - `client_secret`: OAuth2 client secret (OAuth2 auth).
@@ -36,17 +36,17 @@ parameter, unless you're integrating omniload into another system.
 ## Setting up a Google Ads integration
 
 ### Prerequisites
-* A Google Ads [developer token](https://developers.google.com/google-ads/api/docs/get-started/dev-token)
+* A Google Ads [developer token]
 * A Google Ads account
-* **Either** a Google Cloud [service account](https://cloud.google.com/iam/docs/service-account-overview) **or** OAuth2 credentials (client ID, client secret, and refresh token)
+* **Either** a Google Cloud [service account] **or** OAuth2 credentials (client ID, client secret, and refresh token)
 
 ### Obtaining necessary credentials
 
 #### Option 1: Service Account
 
-You can use the [Google Cloud IAM Console](https://cloud.google.com/security/products/iam) to create a service account for ingesting data from Google Ads. Make sure to enable Google Ads API in your console.
+You can use the [Google Cloud IAM Console](https://docs.cloud.google.com/iam/docs) to create a service account for ingesting data from Google Ads. Make sure to enable Google Ads API in your console.
 
-Next, you need to add your service account user to your Google Ads account. See [Google Developers Docs](https://developers.google.com/google-ads/api/docs/oauth/service-accounts) for exact steps.
+Next, you need to add your [service account] user to your Google Ads account.
 
 #### Option 2: OAuth2
 
@@ -159,9 +159,9 @@ The format of a custom report looks like the following:
 daily:{resource_name}:{dimensions}:{metrics}:{customer_ids}
 ```
 Where:
-* `{resource_name}` is a [Google Ads Resource](https://developers.google.com/google-ads/api/fields/v18/overview_query_builder#list-of-all-resources).
+* `{resource_name}` is a [Google Ads Resource](https://web.archive.org/web/20250615225027/https://developers.google.com/google-ads/api/fields/v18/overview_query_builder#list-of-all-resources).
 * `{dimensions}` is a comma separated list of the Resource's attribute fields, or fields of [attributed resources](https://developers.google.com/google-ads/api/docs/query/overview).
-* `{metrics}` is a comma separated list of the Resource's [metrics](https://developers.google.com/google-ads/api/fields/v18/metrics). Note that the `metrics.` prefix is optional.
+* `{metrics}` is a comma separated list of the Resource's [metrics](https://web.archive.org/web/20250615225027/https://developers.google.com/google-ads/api/fields/v18/metrics). Note that the `metrics.` prefix is optional.
 * `{customer_ids}` (optional) is a comma separated list of customer IDs to use for this report. If not provided, the customer IDs from the URI will be used.
 
 Notes:
@@ -208,7 +208,7 @@ In this example, `1234567890` and `0987654321` will be used instead of `default_
 
 ## GAQL Queries
 
-In addition to predefined tables and custom reports, you can execute raw [Google Ads Query Language (GAQL)](https://developers.google.com/google-ads/api/docs/query/overview) queries directly. This gives you full flexibility to query any resource with any combination of fields, segments, and metrics.
+In addition to predefined tables and custom reports, you can execute raw [Google Ads Query Language (GAQL)] queries directly. This gives you full flexibility to query any resource with any combination of fields, segments, and metrics.
 
 ### GAQL Query Format
 
@@ -267,5 +267,10 @@ GAQL queries use `append` write disposition by default. Each row includes a `cus
 :::
 
 :::{tip}
-Use the [Google Ads Query Builder](https://developers.google.com/google-ads/api/fields/v18/overview_query_builder) to construct and validate your GAQL queries before using them with omniload.
+Use the [Google Ads Query Builder](https://web.archive.org/web/20250615225027/https://developers.google.com/google-ads/api/fields/v18/overview_query_builder) to construct and validate your GAQL queries before using them with omniload.
 :::
+
+
+[developer token]: https://developers.google.com/google-ads/api/docs/get-started/dev-token
+[service account]: https://cloud.google.com/iam/docs/service-account-overview
+[Google Ads Query Language (GAQL)]: https://developers.google.com/google-ads/api/docs/query/overview
