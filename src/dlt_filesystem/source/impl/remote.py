@@ -108,6 +108,8 @@ class GCSSource(FilesystemSource):
 
 
 class S3Source(FilesystemSource):
+    """dlt source for Amazon S3"""
+
     def dlt_source(self, uri: str, table: str, **kwargs):
         if kwargs.get("incremental_key"):
             raise ValueError(
