@@ -14,7 +14,7 @@ class FTPSource(FilesystemSource):
 
         # Bundle essential information to infer filesystem wrapper.
         locator = FilesystemLocator(
-            name="FTP", fs_class=FTPFileSystem, uri=uri, path=table
+            name="FTP", fs_class=FTPFileSystem, uri=uri, path=table, default_port=21
         )
 
         # Decode individual options (type casting, default values, sanity checks).
@@ -22,7 +22,7 @@ class FTPSource(FilesystemSource):
         fs_kwargs.update(kwargs)
         if "host" not in fs_kwargs or not fs_kwargs["host"]:
             raise MissingConnectorOption("host", "FTP")
-        fs_kwargs["port"] = fs_kwargs.get("port", 21)
+        fs_kwargs["port"] = fs_kwargs.get("port", locator.default_port)
         # Cast values to `int`.
         cast_to_int(fs_kwargs, ["block_size", "port", "timeout"])
         # Type casting for special parameters.
@@ -32,13 +32,6 @@ class FTPSource(FilesystemSource):
             except ValueError:
                 pass
 
-        # Create filesystem wrapper.
+        # Create filesystem and dlt resource wrapper.
         fs = FTPFileSystem(**fs_kwargs)
-
-        # Attach canonical URL form. It is currently required, but why?
-        # TODO: Review why the URL must be partly reconstructed
-        #       across the board of all filesystem wrappers?
-        bucket_url = f"ftp://{fs_kwargs['host']}:{fs_kwargs['port']}"
-        locator.baseurl = bucket_url
-
         return infer_resource(fs=fs, locator=locator)

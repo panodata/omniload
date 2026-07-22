@@ -20,8 +20,6 @@ class OCISource(FilesystemSource):
     def fs_class(self) -> Type["AbstractFileSystem"]:
         from ocifs import OCIFileSystem
 
-        OCIFileSystem._get_kwargs_from_urls = self._get_kwargs_from_urls  # ty: ignore[invalid-assignment]
-
         return OCIFileSystem
 
     def dlt_source(self, uri: str, table: str, **kwargs):
@@ -48,13 +46,6 @@ class OCISource(FilesystemSource):
         # Convert to integers.
         cast_to_int(fs_kwargs, ["default_block_size"])
 
-        # Create filesystem wrapper.
+        # Create filesystem and dlt resource wrapper.
         fs = self.fs_class(**fs_kwargs)
-
-        # Attach canonical URL form. It is currently required, but why?
-        # TODO: Review why the URL must be partly reconstructed
-        #       across the board of all filesystem wrappers?
-        bucket_url = f"oci://{locator.bucket_name}/"
-        locator.baseurl = bucket_url
-
         return infer_resource(fs=fs, locator=locator)

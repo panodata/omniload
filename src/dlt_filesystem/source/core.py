@@ -1,15 +1,14 @@
-from typing import Union, cast
+from typing import Union
 
 import dlt
 from dlt.extract import DltResource, DltSource
 from fsspec import AbstractFileSystem
 
-from dlt_filesystem.error import InvalidBlobTableError
 from dlt_filesystem.source.adapter import filesystem, readers
 from dlt_filesystem.source.error import UnsupportedEndpointError
 from dlt_filesystem.source.format.registry import supported_file_format_message
 from dlt_filesystem.source.model import FilesystemLocator, FilesystemReference
-from dlt_filesystem.source.router import determine_endpoint, parse_uri
+from dlt_filesystem.source.router import determine_endpoint
 
 
 def resource_for_reader(ref: FilesystemReference) -> Union[DltSource, DltResource]:
@@ -39,6 +38,7 @@ def resource_for_reader(ref: FilesystemReference) -> Union[DltSource, DltResourc
     reader = all_readers.selected_resources[ref.reader_name]
 
     # Apply parameter bindings for certain readers.
+    # TODO: Can this be generalized? Why not always loop in column_names into reader hints?
     if ref.reader_name == "read_csv_headless":
         column_names = list(ref.column_types.keys()) if ref.column_types else None
         reader = reader.bind(column_names=column_names, **ref.hints)
@@ -57,25 +57,20 @@ def infer_resource(
     """
 
     # Decode into base url and url path / file glob, and apply sanity checks.
-    # TODO: Better OO!
-    locator.bucket_name, path_to_file = parse_uri(locator.uri, locator.path)
-    if not locator.bucket_name or not path_to_file:
-        # TODO: Rename exception.
-        raise InvalidBlobTableError(locator.name)
+    locator.validate()
 
     # TODO: Naming things: Rename `determine_endpoint` to `infer_reader`.
     try:
-        endpoint = determine_endpoint(locator.path, path_to_file)
+        endpoint = determine_endpoint(locator.path, locator.file_glob)
     except UnsupportedEndpointError:
         raise ValueError(supported_file_format_message(locator.name)) from None
-    except Exception as e:
-        raise ValueError(f"Failed to parse endpoint from path: {locator.path}") from e
 
+    # TODO: FilesystemLocator and FilesystemReference are somewhat redundant now. Refactor!
     return resource_for_reader(
         FilesystemReference(
             fs=fs,
-            bucket_url=cast(str, locator.baseurl),
-            file_glob=path_to_file,
+            bucket_url=locator.bucket_url,
+            file_glob=locator.file_glob,
             reader_name=endpoint,
             hints=locator.hints,
             # TODO: Can `column_types` be looped into reader|writer hints instead?

@@ -46,7 +46,7 @@ def infer_storage_options(
     # Discover Windows paths including disk name in this special case.
     is_filesystem = re.match(r"^[a-zA-Z]:[\\/]", urlpath)
 
-    # Discover URL according to RFC 3986: Scheme names consist of a
+    # Discover URI according to RFC 3986: Scheme names consist of a
     # sequence of characters beginning with a letter and followed by
     # any combination of letters, digits, plus ("+"), period ("."),
     # or hyphen ("-").

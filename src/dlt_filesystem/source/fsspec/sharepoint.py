@@ -23,8 +23,6 @@ class SharePointSource(FilesystemSource):
     def fs_class(self) -> Type["AbstractFileSystem"]:
         from msgraphfs import MSGDriveFS
 
-        MSGDriveFS._get_kwargs_from_urls = self._get_kwargs_from_urls  # ty: ignore[invalid-assignment]
-
         return MSGDriveFS
 
     def dlt_source(self, uri: str, table: str, **kwargs):
@@ -46,13 +44,6 @@ class SharePointSource(FilesystemSource):
         cast_to_dict(fs_kwargs, ["oauth2_client_params"])
         cast_to_bool(fs_kwargs, ["use_recycle_bin"])
 
-        # Create filesystem wrapper.
+        # Create filesystem and dlt resource wrapper.
         fs = self.fs_class(**fs_kwargs)
-
-        # Attach canonical URL form. It is currently required, but why?
-        # TODO: Review why the URL must be partly reconstructed
-        #       across the board of all filesystem wrappers?
-        bucket_url = f"msgd://{locator.bucket_name}/"
-        locator.baseurl = bucket_url
-
         return infer_resource(fs=fs, locator=locator)

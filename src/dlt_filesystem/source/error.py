@@ -10,6 +10,8 @@ class MissingDecoderError(UnsupportedEndpointError):
     absent. Carries the exact ``pip install`` target so the message is actionable.
     """
 
+    pass
+
 
 class MissingReaderOptionError(ValueError):
     """A file reader needs a per-URI ``#key=value`` hint that was not supplied.

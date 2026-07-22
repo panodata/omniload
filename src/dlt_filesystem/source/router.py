@@ -175,7 +175,7 @@ def blob_hints(parsed_uri: ParseResult, table: str) -> Dict[str, str]:
 
 def determine_endpoint(table: str, path: str) -> str:
     """
-    determines the endpoint/method to use for reading data from a blob source
+    Find the designated reader method from either `table` or URL `path` component.
     """
 
     _, file_format = split_format_hint(table)
@@ -183,9 +183,14 @@ def determine_endpoint(table: str, path: str) -> str:
         return reader_for_format(file_format)
 
     try:
-        return parse_endpoint(path)
-    except Exception as e:
-        raise ValueError(f"Failed to parse endpoint from path: {path}") from e
+        return parse_endpoint(table)
+    except Exception:
+        try:
+            return parse_endpoint(path)
+        except Exception as e:
+            raise ValueError(
+                f"Failed to parse endpoint from table '{table}' or path '{path}'"
+            ) from e
 
 
 def fsspec_from_resource(filesystem_instance: DltResource) -> AbstractFileSystem:

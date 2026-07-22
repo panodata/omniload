@@ -18,8 +18,6 @@ class DropboxSource(FilesystemSource):
     def fs_class(self) -> Type["AbstractFileSystem"]:
         from dropboxdrivefs import DropboxDriveFileSystem
 
-        DropboxDriveFileSystem._get_kwargs_from_urls = self._get_kwargs_from_urls  # ty: ignore[invalid-assignment]
-
         return DropboxDriveFileSystem
 
     def dlt_source(self, uri: str, table: str, **kwargs):
@@ -39,13 +37,6 @@ class DropboxSource(FilesystemSource):
         fs_kwargs = locator.options.fs_kwargs
         fs_kwargs.update(kwargs)
 
-        # Create filesystem wrapper.
+        # Create filesystem and dlt resource wrapper.
         fs = self.fs_class(**fs_kwargs)
-
-        # Attach canonical URL form. It is currently required, but why?
-        # TODO: Review why the URL must be partly reconstructed
-        #       across the board of all filesystem wrappers?
-        bucket_url = f"dropbox://{locator.bucket_name}/"
-        locator.baseurl = bucket_url
-
         return infer_resource(fs=fs, locator=locator)

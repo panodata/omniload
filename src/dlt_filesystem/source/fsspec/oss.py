@@ -48,13 +48,6 @@ class OSSSource(FilesystemSource):
         #       relevant details and add them to the parameter data model.
         # No demo implementation here.
 
-        # Create filesystem wrapper.
+        # Create filesystem and dlt resource wrapper.
         fs = self.fs_class(**fs_kwargs)
-
-        # Attach canonical URL form. It is currently required, but why?
-        # TODO: Review why the URL must be partly reconstructed
-        #       across the board of all filesystem wrappers?
-        bucket_url = f"oss://{locator.bucket_name}/"
-        locator.baseurl = bucket_url
-
         return infer_resource(fs=fs, locator=locator)
