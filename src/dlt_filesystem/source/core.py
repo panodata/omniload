@@ -66,6 +66,8 @@ def infer_resource(
         raise ValueError(supported_file_format_message(locator.name)) from None
 
     # TODO: FilesystemLocator and FilesystemReference are somewhat redundant now. Refactor!
+    #       => Bundle fs, locator and reader into another data class , then feed that to
+    #       `resource_for_reader`.
     return resource_for_reader(
         FilesystemReference(
             fs=fs,

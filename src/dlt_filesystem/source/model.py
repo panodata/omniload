@@ -42,6 +42,7 @@ class FilesystemOptions:
 
     @property
     def fs_kwargs(self) -> Dict[str, Any]:
+        """Return inferred storage options modulo `protocol` and `path` fields."""
         # FIXME: Review using URL options as a baseline.
         response = deepcopy(self.address)
         # Remove certain options like `_get_kwargs_from_urls` is doing it.
@@ -66,6 +67,7 @@ class FilesystemLocator:
     options: FilesystemOptions = field(default_factory=FilesystemOptions)
 
     def __post_init__(self):
+        """Decode fundamental options right away."""
         self.read_options()
 
     def read_options(self) -> "FilesystemLocator":
@@ -129,6 +131,7 @@ class FilesystemLocator:
 
     @property
     def file_glob(self) -> str:
+        """URL path component that describes the file glob."""
         # FIXME: Inline imports!
         from dlt_filesystem.source.router import parse_uri
 
@@ -175,6 +178,8 @@ class FilesystemReference:
             key a reader looks up is that reader's contract; no reader consumes
             hints yet, so this is currently populated but unread.
         column_types (dict[str, Any], optional): Column name to type mapping, e.g. used by `read_csv_headless`.
+
+    TODO: Zap into / synchronize with the new `FilesystemLocator`?
     """
 
     fs: AbstractFileSystem
