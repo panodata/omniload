@@ -92,6 +92,10 @@ URIS = [
     "sftp://username:password@intranet.example.org:2222/path/to/data.parquet",
     "sharepoint://site_name/drive_name/path/to/data.parquet?client_id=1d2befad-2f22-4124-a779-b147dfeca342&tenant_id=6b337423-f504-4060-a91b-e9eaaf782609&client_secret=abc~xyz789EXAMPLE_foo",
     "smb://workgroup;user:password@server.example.org:445/path/to/data.parquet",
+    Item(
+        uri="webhdfs://host:9870/endpoint",
+        table="path/to/data.parquet",
+    ),
 ]
 
 

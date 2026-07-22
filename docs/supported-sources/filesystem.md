@@ -56,6 +56,7 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 | {ref}`sharepoint`         | Microsoft SharePoint                              | sharepoint://                   | ✅   | ❌    |
 | {ref}`sftp`               | SSH File Transfer Protocol                        | sftp://                         | ✅   | ❌    |
 | {ref}`webdav`             | Web Distributed Authoring and Versioning (WebDAV) | http+webdav://, https+webdav:// | ✅   | ❌    |
+| {ref}`webhdfs`            | WebHDFS REST API for Hadoop                       | webhdfs://                      | ✅   | ❌    |
 
 :::{note}
 `omniload` supports read and write operations on both local and remote filesystems.

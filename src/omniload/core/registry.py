@@ -133,6 +133,7 @@ sources: LazyRegistry = LazyRegistry(
         "stripe": "omniload.source.stripe.api:StripeAnalyticsSource",
         "tiktok": "omniload.source.tiktok_ads.api:TikTokSource",
         "trustpilot": "omniload.source.trustpilot.api:TrustpilotSource",
+        "webhdfs": "dlt_filesystem.source.fsspec.webhdfs:WebHDFSSource",
         "wise": "omniload.source.wise.api:WiseSource",
         "zendesk": "omniload.source.zendesk.api:ZendeskSource",
         "zeromq+mqb": "omniload.source.mqbridge.api:MqBridgeSource",
