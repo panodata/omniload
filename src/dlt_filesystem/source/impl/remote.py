@@ -1,6 +1,7 @@
 import base64
 import json
-from typing import Any, Dict
+from abc import abstractmethod
+from typing import TYPE_CHECKING, Any, Dict, Type
 from urllib.parse import parse_qs, urlparse
 
 from dlt_filesystem.error import InvalidBlobTableError, MissingConnectorOption
@@ -10,29 +11,12 @@ from dlt_filesystem.source.format.registry import supported_file_format_message
 from dlt_filesystem.source.router import (
     blob_hints,
     determine_endpoint,
-    parse_fragment,
     parse_uri,
 )
 from dlt_filesystem.util.auth import AzureBlobAuth, parse_azure_blob_auth
 
-
-def _endpoint_namespace(endpoint: str | None, default: str) -> str:
-    """Return a normalized endpoint identity without credentials or query values."""
-    if not endpoint:
-        return default
-
-    parsed = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
-    host = parsed.hostname
-    if not host:
-        return default
-
-    host = host.lower()
-    if ":" in host:
-        host = f"[{host}]"
-    if parsed.port is not None:
-        host = f"{host}:{parsed.port}"
-
-    return f"{host}{parsed.path.rstrip('/')}"
+if TYPE_CHECKING:
+    from fsspec import AbstractFileSystem
 
 
 class GCSSource(FilesystemSource):
@@ -84,13 +68,13 @@ class GCSSource(FilesystemSource):
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("GCS"))
+            raise ValueError(supported_file_format_message("GCS")) from None
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.core import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
@@ -107,30 +91,53 @@ class GCSSource(FilesystemSource):
         )
 
 
-class S3Source(FilesystemSource):
+class S3CompatibleSource(FilesystemSource):
+    """
+    Access S3 and compatible filesystems.
+
+    TODO: Forward more parameters than `access_key_id` and `secret_access_key`
+          (key/secret/endpoint_url) only, like `region`.
+    """
+
+    @property
+    @abstractmethod
+    def fs_name(self) -> str:
+        raise NotImplementedError("Need to implement abstract property")
+
+    @property
+    def fs_class(self) -> Type["AbstractFileSystem"]:
+        import s3fs
+
+        return s3fs.S3FileSystem
+
+    @property
+    def fs_protocol(self) -> str:
+        if isinstance(self.fs_class.protocol, (list, tuple)):
+            return self.fs_class.protocol[0]
+        return self.fs_class.protocol
+
     def dlt_source(self, uri: str, table: str, **kwargs):
         if kwargs.get("incremental_key"):
             raise ValueError(
-                "S3 takes care of incrementality on its own, you should not provide incremental_key"
+                f"{self.fs_name} takes care of incrementality on its own, "
+                f"you should not provide incremental_key"
             )
 
         parsed_uri = urlparse(uri)
         source_fields = parse_qs(parsed_uri.query)
         access_key_id = source_fields.get("access_key_id")
         if not access_key_id:
-            raise ValueError("access_key_id is required to connect to S3")
+            raise MissingConnectorOption("access_key_id", self.fs_name)
 
         secret_access_key = source_fields.get("secret_access_key")
         if not secret_access_key:
-            raise ValueError("secret_access_key is required to connect to S3")
+            raise MissingConnectorOption("secret_access_key", self.fs_name)
 
         bucket_name, path_to_file = parse_uri(parsed_uri, table)
         if not bucket_name or not path_to_file:
-            raise InvalidBlobTableError("S3")
+            raise InvalidBlobTableError(self.fs_name)
 
-        bucket_url = f"s3://{bucket_name}/"
-
-        import s3fs
+        bucket_url = f"{self.fs_protocol}://{bucket_name}/"
 
         endpoint_url = source_fields.get("endpoint_url")
         fs_kwargs: dict = {
@@ -140,18 +147,18 @@ class S3Source(FilesystemSource):
         if endpoint_url:
             fs_kwargs["endpoint_url"] = endpoint_url[0]
 
-        fs = s3fs.S3FileSystem(**fs_kwargs)
+        fs = self.fs_class(**fs_kwargs)
 
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("S3"))
+            raise ValueError(supported_file_format_message(self.fs_name)) from None
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.core import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
@@ -160,12 +167,18 @@ class S3Source(FilesystemSource):
                 bucket_url=bucket_url,
                 file_glob=path_to_file,
                 reader_name=endpoint,
-                storage_namespace=f"s3:{_endpoint_namespace(endpoint_url[0] if endpoint_url else None, 'aws')}",
+                storage_namespace=f"s3:{self.endpoint_namespace(endpoint_url[0] if endpoint_url else None, 'aws')}",
                 filesystem_incremental=kwargs.get("filesystem_incremental", False),
                 hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
         )
+
+
+class S3Source(S3CompatibleSource):
+    @property
+    def fs_name(self) -> str:
+        return "S3"
 
 
 def _azure_fs(auth: AzureBlobAuth):
@@ -230,13 +243,13 @@ class AzureSource(FilesystemSource):
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
-            raise ValueError(supported_file_format_message("Azure"))
+            raise ValueError(supported_file_format_message("Azure")) from None
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from path: {path_to_file}"
             ) from e
 
-        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.core import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
@@ -247,7 +260,7 @@ class AzureSource(FilesystemSource):
                 reader_name=endpoint,
                 storage_namespace=(
                     f"azure:{auth.account_name.lower()}:"
-                    f"{_endpoint_namespace(auth.account_host, 'azure-public')}"
+                    f"{self.endpoint_namespace(auth.account_host, 'azure-public')}"
                 ),
                 filesystem_incremental=kwargs.get("filesystem_incremental", False),
                 hints=blob_hints(parsed_uri, table),
@@ -257,11 +270,13 @@ class AzureSource(FilesystemSource):
 
 
 class SFTPSource(FilesystemSource):
+    """Access files on SFTP servers."""
+
     def dlt_source(self, uri: str, table: str, **kwargs):
         parsed_uri = urlparse(uri)
         host = parsed_uri.hostname
         if not host:
-            raise MissingConnectorOption("host", "SFTP URI")
+            raise MissingConnectorOption("host", "SFTP")
         port = parsed_uri.port or 22
         username = parsed_uri.username
         password = parsed_uri.password
@@ -283,33 +298,34 @@ class SFTPSource(FilesystemSource):
             raise ConnectionError(
                 f"Failed to connect or authenticate to sftp server {host}:{port}. Error: {e}"
             ) from e
+
+        bucket_name, path_to_file = parse_uri(parsed_uri, table)
+        if not bucket_name or not path_to_file:
+            raise InvalidBlobTableError("SFTP")
+
         bucket_url = f"sftp://{host}:{port}"
 
-        table_path, _, hints = parse_fragment(table)
-        if table_path.startswith("/"):
-            file_glob = table_path
-        else:
-            file_glob = f"/{table_path}"
-
         try:
-            endpoint = determine_endpoint(table, file_glob)
+            endpoint = determine_endpoint(table, path_to_file)
         except UnsupportedEndpointError:
             raise ValueError(supported_file_format_message("SFTP")) from None
         except Exception as e:
-            raise ValueError(f"Failed to parse endpoint from path: {table}") from e
+            raise ValueError(
+                f"Failed to parse endpoint from path: {path_to_file}"
+            ) from e
 
-        from dlt_filesystem.source.adapter import resource_for_reader
+        from dlt_filesystem.source.core import resource_for_reader
         from dlt_filesystem.source.model import FilesystemReference
 
         return resource_for_reader(
             FilesystemReference(
                 fs=fs,
                 bucket_url=bucket_url,
-                file_glob=file_glob,
+                file_glob=path_to_file,
                 reader_name=endpoint,
                 storage_namespace=(f"sftp:{host.lower()}:{port}:{username or ''}"),
                 filesystem_incremental=kwargs.get("filesystem_incremental", False),
-                hints=hints,
+                hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
         )

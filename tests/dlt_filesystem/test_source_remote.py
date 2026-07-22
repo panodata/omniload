@@ -36,7 +36,7 @@ test_cases: list[URITestCase] = [
 ]
 
 
-@pytest.mark.parametrize("test_case", test_cases)
+@pytest.mark.parametrize("test_case", test_cases, ids=[case.uri for case in test_cases])
 def test_parse_uri(test_case: URITestCase):
     """Parsing a source URI splits it into the expected bucket and file glob."""
     uri = urlparse(test_case.uri)

@@ -1,5 +1,4 @@
-import warnings
-from typing import Any, Dict, Optional, Tuple, TypeAlias
+from typing import Any, Dict, Optional, Tuple, TypeAlias, Union
 from urllib.parse import ParseResult, parse_qsl, urlparse
 
 import dlt
@@ -9,6 +8,7 @@ from dlt.common.storages.configuration import FileSystemCredentials
 from dlt.extract import DltResource
 from fsspec import AbstractFileSystem
 
+from dlt_filesystem.source.error import UnsupportedEndpointError
 from dlt_filesystem.source.format.registry import (
     FORMAT_TO_READER,
     reader_for_format,
@@ -18,7 +18,7 @@ BucketName: TypeAlias = str
 FileGlob: TypeAlias = str
 
 
-def parse_uri(uri: ParseResult, table: str) -> Tuple[BucketName, FileGlob]:
+def parse_uri(uri: Union[ParseResult, str], table: str) -> Tuple[BucketName, FileGlob]:
     """
     parse the URI of a blob storage and
     return the bucket name and the file glob.
@@ -38,15 +38,15 @@ def parse_uri(uri: ParseResult, table: str) -> Tuple[BucketName, FileGlob]:
     The first form is the preferred method. Other forms are supported but discouraged.
     """
 
+    if isinstance(uri, str):
+        uri = urlparse(uri)
+
     table = table.strip()
     host = uri.netloc.strip()
 
+    # Form: scheme://bucket-name/file-glob
+    # Note: This form was previously slated for deprecation.
     if table == "" or uri.path.strip() != "":
-        warnings.warn(
-            f"Using the form '{uri.scheme}://bucket-name/file-glob' is deprecated and will be removed in future versions.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         return host, uri.path.lstrip("/")
 
     table_uri = urlparse(table)
@@ -176,7 +176,7 @@ def blob_hints(parsed_uri: ParseResult, table: str) -> Dict[str, str]:
 
 def determine_endpoint(table: str, path: str) -> str:
     """
-    determines the endpoint/method to use for reading data from a blob source
+    Find the designated reader method from either `table` or URL `path` component.
     """
 
     _, file_format = split_format_hint(table)
@@ -184,9 +184,16 @@ def determine_endpoint(table: str, path: str) -> str:
         return reader_for_format(file_format)
 
     try:
-        return parse_endpoint(path)
-    except Exception as e:
-        raise ValueError(f"Failed to parse endpoint from path: {path}") from e
+        return parse_endpoint(table)
+    except Exception:
+        try:
+            return parse_endpoint(path)
+        except UnsupportedEndpointError:
+            raise
+        except Exception as e:
+            raise ValueError(
+                f"Failed to parse endpoint from table '{table}' or path '{path}'"
+            ) from e
 
 
 def fsspec_from_resource(filesystem_instance: DltResource) -> AbstractFileSystem:

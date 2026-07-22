@@ -1,3 +1,7 @@
+from typing import Union
+from urllib.parse import urlparse
+
+
 class FilesystemSource:
     """Shared capabilities for the filesystem-family sources.
 
@@ -24,3 +28,27 @@ class FilesystemSource:
     def supports_filesystem_incremental(self) -> bool:
         """Return whether the source supports file-level mtime selection."""
         return True
+
+    @staticmethod
+    def endpoint_namespace(endpoint: Union[str, None], default: str) -> str:
+        """
+        Return a normalized endpoint identity without credentials or query values.
+        It is used for incremental loading based on file modification times.
+
+        # TODO: Remove `default` argument again?
+        """
+        if not endpoint:
+            return default
+
+        parsed = urlparse(endpoint if "://" in endpoint else f"//{endpoint}")
+        host = parsed.hostname
+        if not host:
+            return default
+
+        host = host.lower()
+        if ":" in host:
+            host = f"[{host}]"
+        if parsed.port is not None:
+            host = f"{host}:{parsed.port}"
+
+        return f"{host}{parsed.path.rstrip('/')}"

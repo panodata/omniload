@@ -38,18 +38,30 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 
 ## Supported filesystems
 
-| Name                 | Description                             | Protocol scheme |
-|:---------------------|:----------------------------------------|:----------------|
-| {ref}`Local <file>`  | Local and mounted filesystems           | file://         |
-| [Amazon S3]          | S3 and compatible filesystems           | s3://           |
-| [Google GCS]         | Google Cloud Storage                    | gs://           |
-| [Azure Blob Storage] | Azure Blob Storage                      | az://           |
-| [SFTP]               | Simple File Transfer Protocol (RFC 913) | sftp://         |
-
+| Name                      | Description                                       | Protocol scheme                 | Read | Write |
+|:--------------------------|:--------------------------------------------------|:--------------------------------|:-----|:------|
+| {ref}`Local files <file>` | Files on local and mounted filesystems            | file://                         | ✅   | ✅    |
+| {ref}`azure-storage`      | Azure Blob and Data Lake Storage                  | az://, adls://, abfss://        | ✅   | ✅    |
+| {ref}`dbfs`               | Databricks files on volumes and workspaces        | dbfs://                         | ✅   | ❌    |
+| {ref}`dropbox`            | Dropbox                                           | dropbox://                      | ✅   | ❌    |
+| {ref}`s3`                 | Amazon S3 and compatible filesystems              | s3://                           | ✅   | ✅    |
+| {ref}`ftp`                | File transfer protocol (FTP)                      | ftp://                          | ✅   | ❌    |
+| {ref}`gcs`                | Google Cloud Storage                              | gs://                           | ✅   | ✅    |
+| {ref}`gdrive`             | Google Drive                                      | gdrive://                       | ✅   | ❌    |
+| {ref}`hdfs`               | Hadoop distributed file system                    | hdfs://                         | ✅   | ❌    |
+| {ref}`oci`                | Oracle Cloud Infrastructure Object Storage        | oci://                          | ✅   | ❌    |
+| {ref}`onedrive`           | Microsoft OneDrive                                | onedrive://                     | ✅   | ❌    |
+| {ref}`oss`                | Alibaba Object Storage Service (OSS)              | oss://                          | ✅   | ❌    |
+| {ref}`r2`                 | Cloudflare R2                                     | r2://                           | ✅   | ❌    |
+| {ref}`sharepoint`         | Microsoft SharePoint                              | sharepoint://                   | ✅   | ❌    |
+| {ref}`sftp`               | SSH File Transfer Protocol                        | sftp://                         | ✅   | ❌    |
+| {ref}`webdav`             | Web Distributed Authoring and Versioning (WebDAV) | http+webdav://, https+webdav:// | ✅   | ❌    |
+| {ref}`webhdfs`            | WebHDFS REST API for Hadoop                       | webhdfs://                      | ✅   | ❌    |
 
 :::{note}
 `omniload` supports read and write operations on both local and remote filesystems.
-See {ref}`file:// destination <file-destination>` for write support.
+For some filesystems, write support has not been unlocked yet, but we expect it to
+land during the upcoming releases.
 :::
 
 ## Incremental file selection
@@ -262,13 +274,9 @@ guarantee you get.
   are dropped silently. Validate file integrity upstream if partial loads would be a problem.
 
 
-[Amazon S3]: https://aws.amazon.com/
-[Azure Blob Storage]: https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction
 [CSV]: https://en.wikipedia.org/wiki/Comma-separated_values
-[Google GCS]: https://cloud.google.com/storage
 [iterabledata]: https://pypi.org/project/iterabledata/
 [JSONL]: https://en.wikipedia.org/wiki/JSON_streaming#JSONL
 [Parquet]: https://en.wikipedia.org/wiki/Apache_Parquet
 [polars.read_csv]: https://docs.pola.rs/api/python/stable/reference/api/polars.read_csv.html
 [polars.read_excel]: https://docs.pola.rs/api/python/stable/reference/api/polars.read_excel.html
-[SFTP]: https://en.wikipedia.org/wiki/File_Transfer_Protocol#Simple_File_Transfer_Protocol

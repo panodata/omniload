@@ -4,8 +4,8 @@ from unittest.mock import patch
 import pytest
 
 from dlt_filesystem.error import MissingConnectorOption
-from dlt_filesystem.source.api import LocalFilesystemSource
 from dlt_filesystem.source.format.registry import supported_file_format_message
+from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
 from dlt_filesystem.source.impl.util import _is_absolute_local, _url_path_to_local
 from dlt_filesystem.source.model import FilesystemReference
 
@@ -26,7 +26,7 @@ def capture_reader_args(uri: str, table: str = "", **kwargs) -> dict:
         captured.update(ref.__dict__)
         return "SENTINEL"
 
-    with patch("dlt_filesystem.source.adapter.resource_for_reader", fake_reader):
+    with patch("dlt_filesystem.source.core.resource_for_reader", fake_reader):
         result = LocalFilesystemSource().dlt_source(uri, table, **kwargs)
 
     assert result == "SENTINEL"

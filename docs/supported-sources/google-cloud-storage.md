@@ -1,6 +1,8 @@
-# Google Cloud Storage
+(gcs)=
 
-[Google Cloud Storage](https://cloud.google.com/storage?hl=en) is an online file storage web service for storing and accessing data on Google Cloud Platform infrastructure. The service combines the performance and scalability of Google's cloud with advanced security and sharing capabilities. It is an Infrastructure as a Service (IaaS), comparable to Amazon S3.
+# GCS
+
+[Google Cloud Storage (GCS)] is an online file storage web service for storing and accessing data on Google Cloud Platform infrastructure. The service combines the performance and scalability of Google's cloud with advanced security and sharing capabilities. It is an Infrastructure as a Service (IaaS), comparable to Amazon S3.
 
 `omniload` supports Google Cloud Storage as both a data source and destination.
 
@@ -194,3 +196,6 @@ omniload ingest \
     --dest-uri "duckdb:///local.db" \
     --dest-table "public.raw_data"
 ```
+
+
+[Google Cloud Storage (GCS)]: https://cloud.google.com/storage?hl=en

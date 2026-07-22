@@ -17,7 +17,6 @@
 from typing import Iterator, List, Optional, Tuple, Union
 
 import dlt
-from dlt.extract import DltSource
 from dlt.sources import DltResource
 from dlt.sources.credentials import FileSystemCredentials
 from dlt.sources.filesystem import FileItem, FileItemDict, fsspec_filesystem, glob_files
@@ -39,7 +38,7 @@ from dlt_filesystem.source.format.readers import (
     read_yaml,
 )
 
-from .model import FilesystemConfigurationResource, FilesystemReference
+from .model import FilesystemConfigurationResource
 
 
 @dlt.source(_impl_cls=ReadersSource, spec=FilesystemConfigurationResource)
@@ -133,40 +132,3 @@ def filesystem(
             files_chunk = []
     if files_chunk:
         yield files_chunk
-
-
-def resource_for_reader(ref: FilesystemReference) -> DltSource | DltResource:
-    """Build the filesystem reader resource named by ``ref.reader_name``.
-
-    Threads ``column_types`` into ``read_csv_headless`` and per-URI reader hints (e.g. XML's
-    ``#tagname``) into a hint-consuming reader; every other reader is selected as-is.
-    """
-
-    # Establish filesystem and reader elements.
-    filesystem_resource = filesystem(
-        ref.bucket_url,
-        ref.fs,
-        file_glob=ref.file_glob,
-        extract_content=False,
-    )
-    if ref.filesystem_incremental:
-        filesystem_resource = filesystem_resource.with_name(
-            ref.incremental_resource_name
-        )
-        filesystem_resource.apply_hints(
-            incremental=dlt.sources.incremental("modification_date")
-        )
-    all_readers = readers(
-        ref.bucket_url, ref.fs, file_glob=ref.file_glob
-    ).with_resources(ref.reader_name)
-    reader = all_readers.selected_resources[ref.reader_name]
-
-    # Apply parameter bindings for certain readers.
-    if ref.reader_name == "read_csv_headless":
-        column_names = list(ref.column_types.keys()) if ref.column_types else None
-        reader = reader.bind(column_names=column_names, **ref.hints)
-    else:
-        reader = reader.bind(**ref.hints)
-
-    # Connect and propagate elements.
-    return filesystem_resource | reader
