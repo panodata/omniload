@@ -14,6 +14,7 @@
 
 """Source that load github issues, pull requests and reactions for a specific repository via customizable graphql query. Loads events incrementally."""
 
+import logging
 import urllib.parse
 from typing import Iterator, Optional, Sequence, cast
 
@@ -25,6 +26,8 @@ from dlt.sources import DltResource
 from omniload.error import MissingValueError
 
 from .helpers import get_reactions_data, get_rest_pages, get_stargazers
+
+logger = logging.getLogger(__name__)
 
 
 @dlt.source(max_table_nesting=0)
@@ -163,7 +166,7 @@ def github_repo_events(
             # stop requesting pages if the last element was already older than initial value
             # note: incremental will skip those items anyway, we just do not want to use the api limits
             if last_created_at.start_out_of_range:
-                print(
+                logger.info(
                     f"Overlap with previous run created at {last_created_at.initial_value}"
                 )
                 break
