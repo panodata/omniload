@@ -42,6 +42,7 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 |:--------------------------|:--------------------------------------------------|:--------------------------------|:-----|:------|
 | {ref}`Local files <file>` | Files on local and mounted filesystems            | file://                         | ✅   | ✅    |
 | {ref}`azure-storage`      | Azure Blob and Data Lake Storage                  | az://, adls://, abfss://        | ✅   | ✅    |
+| {ref}`dbfs`               | Databricks files on volumes and workspaces        | dbfs://                         | ✅   | ❌    |
 | {ref}`dropbox`            | Dropbox                                           | dropbox://                      | ✅   | ❌    |
 | {ref}`s3`                 | Amazon S3 and compatible filesystems              | s3://                           | ✅   | ✅    |
 | {ref}`ftp`                | File transfer protocol (FTP)                      | ftp://                          | ✅   | ❌    |

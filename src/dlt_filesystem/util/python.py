@@ -134,6 +134,14 @@ def cast_to_dict(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
     return data
 
 
+def cast_to_list(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
+    """Cast list values from JSON."""
+    for field_name in names:
+        if field_name in data:
+            data[field_name] = json.loads(data[field_name])
+    return data
+
+
 def apply_alias(data: Dict[str, Any], name: str, effective_name: str) -> Dict[str, Any]:
     """Apply aliasing to dictionary keys."""
     if name in data:

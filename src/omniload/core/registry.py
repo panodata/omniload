@@ -55,6 +55,7 @@ sources: LazyRegistry = LazyRegistry(
         "csv": "omniload.source.csv.api:LocalCsvSource",
         "cursor": "omniload.source.cursor.api:CursorSource",
         "customerio": "omniload.source.customer_io.api:CustomerIoSource",
+        "dbfs": "dlt_filesystem.source.fsspec.databricks:DatabricksSource",
         "docebo": "omniload.source.docebo.api:DoceboSource",
         "dropbox": "dlt_filesystem.source.fsspec.dropbox:DropboxSource",
         "dune": "omniload.source.dune.api:DuneSource",

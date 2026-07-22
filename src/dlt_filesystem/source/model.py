@@ -65,6 +65,8 @@ class FilesystemLocator:
     default_port: Optional[int] = None
     address: Dict[str, str] = field(default_factory=dict)
     options: FilesystemOptions = field(default_factory=FilesystemOptions)
+    accept_no_bucket_name: Optional[bool] = False
+    accept_no_host_name: Optional[bool] = False
 
     def __post_init__(self):
         """Decode fundamental options right away."""
@@ -95,12 +97,17 @@ class FilesystemLocator:
     def validate(self):
         """Decode into base url and url path / file glob, and apply sanity checks."""
         if not self.bucket_name or not self.file_glob:
+            if self.accept_no_bucket_name:
+                return
             # TODO: Rename exception.
             raise InvalidBlobTableError(self.name)
 
     @property
     def bucket_url(self) -> str:
         """URL without credentials and path."""
+
+        if self.accept_no_host_name:
+            return self.uri
 
         address = self.options.address
         if "host" in address and ("port" in address or self.default_port is not None):

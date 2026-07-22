@@ -36,6 +36,8 @@ URIS = [
     "abfss://schrott@acme.dfs.core.windows.net/path/to/data.parquet?account_name=acme&account_key=secret",
     "adls://schrott@acme.dfs.core.windows.net/path/to/data.parquet?account_name=acme&account_key=secret",
     "az://schrott@acme.dfs.core.windows.net/path/to/data.parquet?account_name=acme&account_key=secret",
+    "dbfs:/Volumes/catalog/schema/volume/path/to/data.parquet",
+    "dbfs:/Workspace/path/to/data.parquet",
     # TODO: Review note on the README at https://github.com/fsspec/dropboxdrivefs:
     #       > Use `dropbox:///folder1/folder2/etc`. Yes, with three /// ! What happen if not, for some reasons
     #       > the dropbox api will remove everything before the first / in the path keep only what is after.
@@ -104,9 +106,10 @@ def test_init_generic_filesystems(source_uri, mocker):
     parsed_uri = urlparse(uri)
 
     # Testing a few modules has problems on Windows.
+    no_dbfs = parsed_uri.scheme == "dbfs" and sys.version_info < (3, 11)
     no_hdfs = parsed_uri.scheme == "hdfs" and sys.version_info < (3, 11)
     no_oci = parsed_uri.scheme == "oci" and sys.platform == "win32"
-    if no_hdfs or no_oci:
+    if no_dbfs or no_hdfs or no_oci:
         pytest.skip(f"{parsed_uri.scheme}:// fails testing on this test matrix slot")
 
     # Apply monkeypatching to make a few filesystem implementations ready for unit testing.
