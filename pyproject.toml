@@ -287,7 +287,9 @@ lint.per-file-ignores."src/omniload/{source,target}/*" = [
   "C417",
   # line-too-long
   "E501",
-  # FIXME: `print` found
+]
+lint.per-file-ignores."src/omniload/{source,target}/**/{client,helpers}.py" = [
+  # `print` found
   "T201",
 ]
 lint.per-file-ignores."tests/*" = [
@@ -299,7 +301,7 @@ lint.per-file-ignores."tests/*" = [
   "C416",
   # line-too-long
   "E501",
-  # Allow use of `assert`, and `print`.
+  # Allow use of `assert`.
   "S101",
   # Possible SQL injection vector through string-based query construction
   "S608",
