@@ -69,6 +69,7 @@ sources: LazyRegistry = LazyRegistry(
         "freshdesk": "omniload.source.freshdesk.api:FreshdeskSource",
         "ftp": "dlt_filesystem.source.fsspec.ftp:FTPSource",
         "fundraiseup": "omniload.source.fundraiseup.api:FundraiseupSource",
+        "gdrive": "dlt_filesystem.source.fsspec.gdrive:GoogleDriveSource",
         "github": "omniload.source.github.api:GitHubSource",
         "googleads": "omniload.source.google_ads.api:GoogleAdsSource",
         "googleanalytics": "omniload.source.google_analytics.api:GoogleAnalyticsSource",

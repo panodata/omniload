@@ -53,6 +53,7 @@ URIS = [
     #    uri="ftp://username:password@intranet.example.org?tls=tls",
     #    table="/path/to/data.parquet",
     # ),
+    "gdrive://path/to/data.parquet?token=anon",
     "gs://table-bucket-name/path/to/data.parquet?credentials_path=/path/to/service-account.json",
     "gs://table-bucket-name/path/to/data.parquet?credentials_base64=eyJjbGllbnRfaWQiOiAiZm9vIiwgImNsaWVudF9zZWNyZXQiOiAiYmFyIiwgInJlZnJlc2hfdG9rZW4iOiAiYW55dGhpbmcifQ==",
     Item(

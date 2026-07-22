@@ -47,6 +47,7 @@ Supported formats for write operations are currently CSV, JSONL, and Parquet.
 | {ref}`s3`                 | Amazon S3 and compatible filesystems              | s3://                           | ✅   | ✅    |
 | {ref}`ftp`                | File transfer protocol (FTP)                      | ftp://                          | ✅   | ❌    |
 | {ref}`gcs`                | Google Cloud Storage                              | gs://                           | ✅   | ✅    |
+| {ref}`gdrive`             | Google Drive                                      | gdrive://                       | ✅   | ❌    |
 | {ref}`hdfs`               | Hadoop distributed file system                    | hdfs://                         | ✅   | ❌    |
 | {ref}`oci`                | Oracle Cloud Infrastructure Object Storage        | oci://                          | ✅   | ❌    |
 | {ref}`onedrive`           | Microsoft OneDrive                                | onedrive://                     | ✅   | ❌    |

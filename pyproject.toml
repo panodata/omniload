@@ -149,6 +149,7 @@ optional-dependencies.filesystem = [
   "fsspec>=2024.6.0",
   "fsspec-databricks",
   "gcsfs",
+  "gdrive-fsspec",
   "msgraphfs",
   "ocifs",
   "ossfs",
