@@ -11,6 +11,13 @@ def infer_storage_options(
     """Infer storage options from URL path and merge it with existing storage
     options.
 
+    TODO: This is a copy of `fsspec.utils.infer_storage_options` with two
+          adjustments. If this can land upstream, let's remove the function
+          again.
+          - The regex: r"^[a-zA-Z0-9+]+://".
+            https://github.com/fsspec/filesystem_spec/pull/2085
+          - Don't suppress parsing http/https urls.
+
     Parameters
     ----------
     urlpath: str or unicode
@@ -35,13 +42,18 @@ def infer_storage_options(
     "host": "node", "port": 123, "path": "/mnt/datasets/test.csv",
     "url_query": "q=1", "extra": "value"}
     """
-    # Handle Windows paths including disk name in this special case
-    # TODO: A `+` character was added to the second regex.
-    #       https://github.com/fsspec/filesystem_spec/pull/2085
-    if (
-        re.match(r"^[a-zA-Z]:[\\/]", urlpath)
-        or re.match(r"^[a-zA-Z0-9+]+://", urlpath) is None
-    ):
+
+    # Discover Windows paths including disk name in this special case.
+    is_filesystem = re.match(r"^[a-zA-Z]:[\\/]", urlpath)
+
+    # Discover URL according to RFC 3986: Scheme names consist of a
+    # sequence of characters beginning with a letter and followed by
+    # any combination of letters, digits, plus ("+"), period ("."),
+    # or hyphen ("-").
+    # https://datatracker.ietf.org/doc/html/rfc3986#section-3.1
+    is_uri = re.match(r"^[a-zA-Z0-9+.-]+://", urlpath)
+
+    if is_filesystem and not is_uri:
         return {"protocol": "file", "path": urlpath}
 
     parsed_path = urlsplit(urlpath)
@@ -58,9 +70,14 @@ def infer_storage_options(
             drive, path = windows_path.groups()
             path = f"{drive}:{path}"
 
+    # Within omniload, we _want_ to parse, to create fewer anomalies.
+    # Specifically, the WebDAV connector needs it because it uses the
+    # `http` protocol scheme.
+    """
     if protocol in ["http", "https"]:
         # for HTTP, we don't want to parse, as requests will anyway
         return {"protocol": protocol, "path": urlpath}
+    """
 
     options: dict[str, Any] = {"protocol": protocol, "path": path}
 

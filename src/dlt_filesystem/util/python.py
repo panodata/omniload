@@ -110,6 +110,14 @@ def cast_to_int(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
     return data
 
 
+def cast_to_float(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
+    """Cast dictionary values to floats."""
+    for field_name in names:
+        if field_name in data:
+            data[field_name] = float(data[field_name])
+    return data
+
+
 def cast_to_bool(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
     """Cast dictionary values to booleans."""
     for field_name in names:

@@ -15,6 +15,58 @@ The URI for connecting to WebDAV is structured as follows.
 https+webdav://<USERNAME>:<PASSWORD>@www.example.org/path/to/data.parquet
 ```
 
+## URI parameters
+
+:retry: Disable retry on the HTTP client. When enabled, some well-known
+  errors are handled and retried a few times with backoff.
+  Type: `bool`. Default: `true`.
+
+:chunk_size:
+  The chunk size in bytes.
+  Type: `int`. Default: `4194304` (`4 MB`).
+
+:headers:
+  HTTP headers to include when sending requests.
+  Type: `dict`. Use JSON to encode the dictionary.
+
+:cookies:
+  Cookie items to include when sending requests.
+  Type: `dict`. Use JSON to encode the dictionary.
+
+:verify:
+  SSL certificates used to verify the identity of requested
+  hosts. Can be any of:
+
+  - `true`: Use default CA bundle.
+  - `false`: Disable verification.
+  - Path to an SSL certificate file.
+
+  Default: `true`.
+
+:cert:
+  An SSL certificate used by the requested host to
+  authenticate the client.
+  Either a path to an SSL certificate file,
+  or two-tuple of (certificate file, key file),
+  or a three-tuple of (certificate file, key file, password).
+  Note: Tuple decoding is not implemented yet.
+
+:proxies:
+  A mapping of proxy keys to proxy URLs.
+  Type: `dict`. Use JSON to encode the dictionary.
+
+:timeout:
+  The socket timeout in seconds.
+  Type: `float`.
+
+:max_redirects:
+  The maximum number of redirect responses that should be followed.
+  Type: `int`.
+
+:trust_env:
+  Enable or disable usage of environment variables for configuration.
+  Type: `bool`. Default: `true`.
+
 ## Authentication
 
 To integrate `omniload` with WebDAV, you need to authenticate like you
