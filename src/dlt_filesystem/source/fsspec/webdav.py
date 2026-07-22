@@ -56,8 +56,9 @@ class WebdavSource(FilesystemSource):
         if "username" in fs_kwargs:
             auth = (fs_kwargs.pop("username"), fs_kwargs.pop("password", None))
 
-        # Downstream implementation does not accept this kwarg.
+        # Downstream implementation does not accept those kwargs.
         fs_kwargs.pop("host", None)
+        fs_kwargs.pop("port", None)
 
         # Create filesystem and dlt resource wrapper.
         fs = self.fs_class(base_url=uri, auth=auth, **fs_kwargs)

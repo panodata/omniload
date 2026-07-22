@@ -66,7 +66,7 @@ URIS = [
         table="",
     ),
     Item(
-        uri="https+webdav://username:password@cloud.example.org/remote.php/webdav",
+        uri="https+webdav://username:password@cloud.example.org:4443/remote.php/webdav",
         table="path/to/data.parquet",
     ),
     "msgd://site_name/drive_name/path/to/data.parquet?client_id=1d2befad-2f22-4124-a779-b147dfeca342&tenant_id=6b337423-f504-4060-a91b-e9eaaf782609&client_secret=abc~xyz789EXAMPLE_foo",

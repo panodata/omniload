@@ -80,6 +80,8 @@ class FilesystemLocator:
 
         # URL query parameters.
         params = shrink_qs_dict(parse_qs(self.address.pop("url_query", "")))
+        # TODO: Why not compute hints right here instead of doing it at runtime?
+        self.address.pop("url_fragment", None)
 
         # Reader or writer hints.
         self.options = FilesystemOptions(
@@ -99,7 +101,7 @@ class FilesystemLocator:
         """URL without credentials and path."""
 
         address = self.options.address
-        if "port" in address or self.default_port is not None:
+        if "host" in address and ("port" in address or self.default_port is not None):
             return f"{address['protocol']}://{address['host']}:{address.get('port', self.default_port)}"
         elif "host" in address:
             return f"{address['protocol']}://{address['host']}"
@@ -111,10 +113,10 @@ class FilesystemLocator:
         # When that happens, try to borrow a hostname from other suitable parameters
         # like `endpoint`.
         else:
-            surrogate_host = self.options.params.get("endpoint")
-            if not surrogate_host:
+            surrogate_host_port = self.options.params.get("endpoint")
+            if not surrogate_host_port:
                 raise ValueError("dlt needs bucket_url to include netloc and path")
-            return f"{address['protocol']}://{surrogate_host}"
+            return f"{address['protocol']}://{surrogate_host_port}"
 
     @property
     def bucket_name(self) -> str:

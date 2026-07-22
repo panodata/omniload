@@ -8,6 +8,7 @@ from dlt.common.storages.configuration import FileSystemCredentials
 from dlt.extract import DltResource
 from fsspec import AbstractFileSystem
 
+from dlt_filesystem.source.error import UnsupportedEndpointError
 from dlt_filesystem.source.format.registry import (
     FORMAT_TO_READER,
     reader_for_format,
@@ -187,6 +188,8 @@ def determine_endpoint(table: str, path: str) -> str:
     except Exception:
         try:
             return parse_endpoint(path)
+        except UnsupportedEndpointError:
+            raise
         except Exception as e:
             raise ValueError(
                 f"Failed to parse endpoint from table '{table}' or path '{path}'"
