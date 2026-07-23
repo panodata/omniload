@@ -73,7 +73,7 @@ dynamic = [ "version" ]
 dependencies = [
   "adlfs",
   "aiohttp<4",
-  "asana<6",
+  "asana>=5,<6",
   "click<8.5",
   "clickhouse-connect>=0.8,<2",
   "clickhouse-driver<0.3",
