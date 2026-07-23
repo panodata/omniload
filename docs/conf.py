@@ -100,6 +100,7 @@ linkcheck_ignore = [
     r"https://www.linkedin.com/developers.*",
     r"https://github.com/",
     r"https://web.archive.org/",
+    r"https://images.minimus.io/",
 ]
 linkcheck_anchors_ignore_for_url = [
     r"https://developers.zoom.us/",
