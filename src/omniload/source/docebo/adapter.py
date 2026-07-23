@@ -122,7 +122,6 @@ def docebo_source(
         },
     )
     def courses() -> Iterator[Dict[str, Any]]:
-        print("running courses transformer")
         """Fetch all courses from Docebo."""
         for courses_batch in client.fetch_courses(page_size=1000):
             for course in courses_batch:
