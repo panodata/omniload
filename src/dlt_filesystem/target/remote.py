@@ -167,9 +167,9 @@ class AzureDestination(BlobStorageDestination):
             # parse_azure_blob_auth guarantees the full triplet here; the
             # per-field `is not None` guards mirror the account-key branch and
             # narrow the parsed optionals to str for ty.
-            sp_credentials = AzureServicePrincipalCredentials(
-                azure_storage_account_name=auth.account_name,
-            )
+            sp_credentials = AzureServicePrincipalCredentials()
+            if auth.account_name is not None:
+                sp_credentials.azure_storage_account_name = auth.account_name
             if auth.tenant_id is not None:
                 sp_credentials.azure_tenant_id = auth.tenant_id
             if auth.client_id is not None:
@@ -180,9 +180,9 @@ class AzureDestination(BlobStorageDestination):
                 sp_credentials.azure_account_host = auth.account_host
             return sp_credentials
 
-        key_credentials = AzureCredentials(
-            azure_storage_account_name=auth.account_name,
-        )
+        key_credentials = AzureCredentials()
+        if auth.account_name is not None:
+            key_credentials.azure_storage_account_name = auth.account_name
         if auth.account_key is not None:
             key_credentials.azure_storage_account_key = auth.account_key
         if auth.sas_token is not None:

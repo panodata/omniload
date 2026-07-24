@@ -18,13 +18,15 @@ class AzureBlobAuth:
     spec fields.
     """
 
-    account_name: str
+    account_name: Optional[str] = None
     account_key: Optional[str] = None
     sas_token: Optional[str] = None
     tenant_id: Optional[str] = None
     client_id: Optional[str] = None
     client_secret: Optional[str] = None
     account_host: Optional[str] = None
+    connection_string: Optional[str] = None
+    api_version: Optional[str] = None
 
     @property
     def is_service_principal(self) -> bool:
@@ -67,14 +69,23 @@ def parse_azure_blob_auth(params: dict) -> AzureBlobAuth:
     def one(key: str) -> Optional[str]:
         return params.get(key, [None])[0]
 
-    account_name = one("account_name")
-    if account_name is None:
-        raise MissingConnectorOption("account_name", "Azure")
+    connection_string = one("connection_string")
+    api_version = one("api_version")
 
+    if connection_string is not None:
+        return AzureBlobAuth(
+            connection_string=connection_string,
+            api_version=api_version,
+        )
+
+    account_name = one("account_name")
     account_key = one("account_key")
     sas_token = one("sas_token")
     sp_values = {field: one(field) for field in AZURE_SERVICE_PRINCIPAL_FIELDS}
     account_host = one("account_host")
+
+    if account_name is None:
+        raise MissingConnectorOption("account_name", "Azure")
 
     if account_key is not None and sas_token is not None:
         raise ValueError(
@@ -109,5 +120,7 @@ def parse_azure_blob_auth(params: dict) -> AzureBlobAuth:
         account_key=account_key,
         sas_token=sas_token,
         account_host=account_host,
+        connection_string=connection_string,
+        api_version=api_version,
         **sp_values,
     )

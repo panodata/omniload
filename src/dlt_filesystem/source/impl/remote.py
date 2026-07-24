@@ -1,7 +1,9 @@
 import base64
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Type
 from urllib.parse import parse_qs, urlparse
+
+from fsspec import AbstractFileSystem
 
 from dlt_filesystem.error import InvalidBlobTableError, MissingConnectorOption
 from dlt_filesystem.source.base import FilesystemSource
@@ -170,15 +172,14 @@ class S3Source(FilesystemSource):
         )
 
 
-def _azure_fs(auth: AzureBlobAuth):
-    """Build an ``adlfs.AzureBlobFileSystem`` from resolved Azure auth params.
+def _azure_kwargs(auth: AzureBlobAuth):
+    """Return AzureBlobAuth information as dictionary.
 
     The ingestr-style short names already match adlfs kwargs, so they pass
     straight through; only the supplied ones are forwarded. ``adlfs`` is
     imported lazily so the CLI ``--help`` and every non-Azure path never load
     the Azure SDK (matching the s3fs/gcsfs deferred-import convention).
     """
-    import adlfs
 
     kwargs = {"account_name": auth.account_name}
     if auth.account_key is not None:
@@ -193,12 +194,11 @@ def _azure_fs(auth: AzureBlobAuth):
         kwargs["client_secret"] = auth.client_secret
     if auth.account_host is not None:
         kwargs["account_host"] = auth.account_host
-
-    # adlfs annotates its credential params as `str` (defaulting to None) and
-    # mixes in non-str params (blocksize: int, ...), so ty can't check a
-    # conditional str-kwargs splat against the signature. The kwargs are all
-    # valid adlfs credential arguments by construction.
-    return adlfs.AzureBlobFileSystem(**kwargs)  # ty: ignore[invalid-argument-type]
+    if auth.connection_string is not None:
+        kwargs["connection_string"] = auth.connection_string
+    if auth.api_version is not None:
+        kwargs["api_version"] = auth.api_version
+    return kwargs
 
 
 class AzureSource(FilesystemSource):
@@ -209,6 +209,17 @@ class AzureSource(FilesystemSource):
     same ``az://`` backend; the ``adls://`` / ``abfss://`` schemes are registry
     aliases onto this class.
     """
+
+    @property
+    def fs_class(self) -> Type["AbstractFileSystem"]:
+        """Return AzureBlobFileSystem class"""
+        # adlfs annotates its credential params as `str` (defaulting to None) and
+        # mixes in non-str params (blocksize: int, ...), so ty can't check a
+        # conditional str-kwargs splat against the signature. The kwargs are all
+        # valid adlfs credential arguments by construction.
+        from adlfs import AzureBlobFileSystem
+
+        return AzureBlobFileSystem
 
     def dlt_source(self, uri: str, table: str, **kwargs):
         if kwargs.get("incremental_key"):
@@ -227,7 +238,8 @@ class AzureSource(FilesystemSource):
 
         bucket_url = f"az://{bucket_name}"
 
-        fs = _azure_fs(auth)
+        kwargs.update(_azure_kwargs(auth))
+        fs = self.fs_class(**kwargs)
 
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
@@ -248,7 +260,7 @@ class AzureSource(FilesystemSource):
                 file_glob=path_to_file,
                 reader_name=endpoint,
                 storage_namespace=(
-                    f"azure:{auth.account_name.lower()}:"
+                    f"azure:{(auth.account_name or '').lower()}:"
                     f"{_endpoint_namespace(auth.account_host, 'azure-public')}"
                 ),
                 filesystem_incremental=kwargs.get("filesystem_incremental", False),

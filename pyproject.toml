@@ -182,7 +182,7 @@ optional-dependencies.test = [
   "pytest-asyncio<2",
   "pytest-cov<8",
   "pytest-xdist[psutil]<4",
-  "testcontainers[mysql,postgres]>=4.9.1,<4.16",
+  "testcontainers[azurite,mysql,postgres]>=4.9.1,<4.16",
   "types-requests<3",
   "verlib2",
 ]
