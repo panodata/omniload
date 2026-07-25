@@ -69,14 +69,16 @@ In case of Airflow, the source is created and executed separately. In typical co
 **Moreover, you should not use `scc` decomposition in our Airflow helper**. It will create an instance of the source for each requested range in order to run a task that corresponds to it! Following our [Airflow deployment guide](https://dlthub.com/docs/walkthroughs/deploy-a-pipeline/deploy-with-airflow-composer#2-modify-dag-file), this is how you should use `tasks.add_run` on `PipelineTasksGroup`:
 ```python
 @dag(
-    schedule_interval='@daily',
+    schedule_interval="@daily",
     start_date=pendulum.datetime(2023, 2, 1),
     catchup=False,
     max_active_runs=1,
-    default_args=default_task_args
+    default_args=default_task_args,
 )
 def get_named_ranges():
-    tasks = PipelineTasksGroup("get_named_ranges", use_data_folder=False, wipe_local_data=True)
+    tasks = PipelineTasksGroup(
+        "get_named_ranges", use_data_folder=False, wipe_local_data=True
+    )
 
     # import your source from pipeline script
     from google_sheets import google_spreadsheet
@@ -84,11 +86,18 @@ def get_named_ranges():
     pipeline = dlt.pipeline(
         pipeline_name="get_named_ranges",
         dataset_name="named_ranges_data",
-        destination='bigquery',
+        destination="bigquery",
     )
 
     # do not use decompose to run `google_spreadsheet` in single task
-    tasks.add_run(pipeline, google_spreadsheet("1HhWHjqouQnnCIZAFa2rL6vT91YRN8aIhts22SUUR580"), decompose="none", trigger_rule="all_done", retries=0, provide_context=True)
+    tasks.add_run(
+        pipeline,
+        google_spreadsheet("1HhWHjqouQnnCIZAFa2rL6vT91YRN8aIhts22SUUR580"),
+        decompose="none",
+        trigger_rule="all_done",
+        retries=0,
+        provide_context=True,
+    )
 ```
 
 ## Setup credentials

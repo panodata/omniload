@@ -142,7 +142,7 @@ optional-dependencies.develop = [
   "poethepoet<1",
   "pyproject-fmt<3",
   "pytest-repeat<1",
-  "ruff<0.16",
+  "ruff==0.16.*",
   "ty==0.0.63",
   "validate-pyproject<1",
 ]
@@ -206,6 +206,9 @@ lint.select = [
   "C4",
   # Pycodestyle
   "E",
+  "E4",
+  "E7",
+  "E9",
   # eradicate
   "ERA",
   # Pyflakes
