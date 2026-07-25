@@ -70,8 +70,10 @@ class GCSSource(FilesystemSource):
         credentials_path = params.pop("credentials_path", [None])[0]
         credentials_base64 = params.pop("credentials_base64", [None])[0]
 
-        # Merge params into fs kwargs.
-        kwargs.update({key: value[0] for key, value in params.items()})
+        # Merge params into fs kwargs, without overriding kwargs already
+        # supplied by the caller (e.g. filesystem_incremental, column_types).
+        for key, value in params.items():
+            kwargs.setdefault(key, value[0])
 
         if "token" not in kwargs:
             credentials = None

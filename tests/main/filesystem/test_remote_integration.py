@@ -29,6 +29,9 @@ def floci():
     container.stop()
 
 
+AZURE_API_VERSION = "2025-11-05"
+
+
 @pytest.fixture(autouse=True)
 def adlfs_patch(monkeypatch):
     """
@@ -44,7 +47,7 @@ def adlfs_patch(monkeypatch):
         return AIOBlobServiceClient.from_connection_string(
             conn_str=connection_string,
             user_agent=_USER_AGENT,
-            api_version="2025-11-05",
+            api_version=AZURE_API_VERSION,
         )
 
     monkeypatch.setattr(
@@ -61,7 +64,8 @@ def azurite():
     container.start()
     connection_string = container.get_connection_string()
     client = BlobServiceClient.from_connection_string(
-        connection_string, api_version="2025-11-05"
+        connection_string,
+        api_version=AZURE_API_VERSION,
     )
     client.create_container("test-container")
     cc = client.get_container_client("test-container")

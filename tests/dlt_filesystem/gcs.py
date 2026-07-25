@@ -38,7 +38,7 @@ class GCSFakeServerContainer(DockerContainer):
             ...   client = google.cloud.storage.Client(
             ...     credentials=AnonymousCredentials(),
             ...     project="test",
-            ...     client_options={"api_endpoint": connection_string},
+            ...     client_options={"api_endpoint": endpoint_url},
             ...   )
             ...   bucket = client.create_bucket("test-bucket")
             ...   blob = bucket.blob("path/to/file.csv")
