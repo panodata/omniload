@@ -93,6 +93,7 @@ dependencies = [
   "flatten-json<0.2",
   "fsspec>2021.9",
   "gcsfs",
+  "gitpython>=3.1.55",
   "google-ads<32",
   "google-analytics-data<0.24",
   "google-api-python-client<3",
@@ -110,6 +111,7 @@ dependencies = [
   "py-machineid<2",
   "pyairtable<4",
   "pyarrow>=18,<26",
+  "pyasn1>=0.6.4",
   "pyathena<4",
   "pymongo<5",
   "pymongoarrow<2",
@@ -172,6 +174,7 @@ optional-dependencies.oracle = [
 ]
 optional-dependencies.release = [
   "build<2",
+  "setuptools>=83",
   "twine<7",
 ]
 optional-dependencies.test = [
