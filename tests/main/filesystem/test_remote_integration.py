@@ -6,6 +6,7 @@ from azure.storage.blob import BlobServiceClient
 from testcontainers.azurite import AzuriteContainer
 
 from omniload import run_ingest
+from tests.dlt_filesystem.gcs import GCSFakeServerContainer
 from tests.util.container.impl.floci import FlociContainer
 from tests.warehouse.manager import FLOCI_IMAGE
 
@@ -72,6 +73,28 @@ def azurite():
     container.stop()
 
 
+@pytest.fixture(scope="session")
+def gcsfakeserver():
+    """Provide GCS emulator container for the whole test session."""
+    import google.cloud.storage
+    from google.auth.credentials import AnonymousCredentials
+
+    container = GCSFakeServerContainer()
+    container.start()
+    endpoint_url = container.get_endpoint_url()
+
+    client = google.cloud.storage.Client(
+        credentials=AnonymousCredentials(),
+        project="test",
+        client_options={"api_endpoint": endpoint_url},
+    )
+    bucket = client.create_bucket("test-bucket")
+    blob = bucket.blob("path/to/create_replace.csv")
+    blob.upload_from_filename("tests/assets/create_replace.csv")
+    yield container
+    container.stop()
+
+
 def duckdb_table_cardinality(db_path: Path, table_name: str) -> int:
     """Return number of records in database table."""
     import duckdb
@@ -110,6 +133,25 @@ def test_azure_source(azurite, tmp_path):
         source_uri=f"az://?connection_string={quote(connection_string)}&api_version=2025-11-05",
         dest_uri=f"duckdb:///{db_path}",
         source_table="test-container/path/to/create_replace.csv",
+        dest_table="testdrive.data",
+    )
+    if result is None:
+        raise RuntimeError("Ingest failed")
+    package = result.asdict()["load_packages"][0]
+    assert package["state"] == "loaded"
+
+    count = duckdb_table_cardinality(db_path, "testdrive.data")
+    assert count == 20, f"Wrong number of records: {count}. Expected: 20"
+
+
+def test_gcs_source(gcsfakeserver, tmp_path):
+    """Google Cloud Storage source integration test."""
+    endpoint_url = gcsfakeserver.get_endpoint_url()
+    db_path = tmp_path / "db.duckdb"
+    result = run_ingest(
+        source_uri=f"gs://?endpoint_url={endpoint_url}&token=anon&project=test",
+        dest_uri=f"duckdb:///{db_path}",
+        source_table="test-bucket/path/to/create_replace.csv",
         dest_table="testdrive.data",
     )
     if result is None:

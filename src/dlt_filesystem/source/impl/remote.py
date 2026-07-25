@@ -38,6 +38,20 @@ def _endpoint_namespace(endpoint: str | None, default: str) -> str:
 
 
 class GCSSource(FilesystemSource):
+    """dlt source for Google Cloud Storage"""
+
+    @property
+    def fs_class(self) -> Type["AbstractFileSystem"]:
+        """Return GCSFileSystem class"""
+        # There's a compatibility issue between google-auth, dlt and gcsfs
+        # that makes it difficult to use google.oauth2.service_account.Credentials
+        # (The RECOMMENDED way of passing service account credentials)
+        # directly with gcsfs. As a workaround, we construct the GCSFileSystem
+        # and pass it directly to filesystem.readers.
+        from gcsfs import GCSFileSystem
+
+        return GCSFileSystem
+
     def dlt_source(self, uri: str, table: str, **kwargs):
         if kwargs.get("incremental_key"):
             raise ValueError(
@@ -53,35 +67,23 @@ class GCSSource(FilesystemSource):
 
         bucket_url = f"gs://{bucket_name}"
 
-        credentials_path = params.get("credentials_path")
-        credentials_base64 = params.get("credentials_base64")
-        credentials_available = any(
-            map(  # noqa: C417
-                lambda x: x is not None,
-                [credentials_path, credentials_base64],
-            )
-        )
-        if credentials_available is False:
-            raise MissingConnectorOption(
-                "credentials_path or credentials_base64", "GCS"
-            )
+        credentials_path = params.pop("credentials_path", [None])[0]
+        credentials_base64 = params.pop("credentials_base64", [None])[0]
 
-        credentials = None
-        if credentials_path:
-            credentials = credentials_path[0]
-        else:
-            credentials = json.loads(base64.b64decode(credentials_base64[0]).decode())  # type: ignore
+        # Merge params into fs kwargs.
+        kwargs.update({key: value[0] for key, value in params.items()})
 
-        # There's a compatibility issue between google-auth, dlt and gcsfs
-        # that makes it difficult to use google.oauth2.service_account.Credentials
-        # (The RECOMMENDED way of passing service account credentials)
-        # directly with gcsfs. As a workaround, we construct the GCSFileSystem
-        # and pass it directly to filesystem.readers.
-        import gcsfs
+        if "token" not in kwargs:
+            credentials = None
+            if credentials_path:
+                credentials = credentials_path
+            elif credentials_base64:
+                credentials = json.loads(base64.b64decode(credentials_base64).decode())
+            else:
+                credentials = "anon"
+            kwargs["token"] = credentials
 
-        fs = gcsfs.GCSFileSystem(
-            token=credentials,
-        )
+        fs = self.fs_class(**kwargs)
 
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
