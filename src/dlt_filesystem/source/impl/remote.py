@@ -289,6 +289,12 @@ class SFTPSource(FilesystemSource):
     """Access files on SFTP servers."""
 
     def dlt_source(self, uri: str, table: str, **kwargs):
+
+        if kwargs.get("incremental_key"):
+            raise ValueError(
+                "SFTP takes care of incrementality on its own, you should not provide incremental_key"
+            )
+
         parsed_uri = urlparse(uri)
         host = parsed_uri.hostname
         if not host:

@@ -10,6 +10,11 @@ class FTPSource(FilesystemSource):
 
     def dlt_source(self, uri: str, table: str, **kwargs):
 
+        if kwargs.get("incremental_key"):
+            raise ValueError(
+                "FTP takes care of incrementality on its own, you should not provide incremental_key"
+            )
+
         from fsspec.implementations.ftp import FTPFileSystem
 
         # Bundle essential information to infer filesystem wrapper.

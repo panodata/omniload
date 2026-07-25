@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 import pytest
 from fsspec.implementations.memory import MemoryFileSystem
 
+from dlt_filesystem.error import MissingConnectorOption
 from omniload.core.factory import SourceDestinationFactory
 
 
@@ -48,7 +49,7 @@ URIS = [
         uri="ftp://username:password@intranet.example.org/path/to/data.parquet?tls=tls",
         table="",
     ),
-    # TODO: Two FTP tests currently don't work. Why?
+    # TODO: More than one FTP test currently doesn't work due to mocking issues. Please resolve.
     # Item(
     #    uri="ftp://username:password@intranet.example.org?tls=tls",
     #    table="/path/to/data.parquet",
@@ -99,9 +100,47 @@ URIS = [
 ]
 
 
-@pytest.mark.parametrize("source_uri", URIS, ids=[str(item) for item in URIS])
-def test_init_generic_filesystems(source_uri, mocker):
-    """Initialize all available filesystem implementations without table parameter"""
+URIS_UNKNOWN_FORMAT = [
+    "az://schrott@acme.dfs.core.windows.net/path/to/data.unknown?account_name=acme&account_key=secret",
+    "dbfs:/Workspace/path/to/data.unknown",
+    "dropbox://path/to/data.unknown?token=secret",
+    # TODO: More than one FTP test currently doesn't work due to mocking issues. Please resolve.
+    # Item(
+    #    uri="ftp://username:password@intranet.example.org/path/to/data.unknown?tls=tls",
+    #    table="",
+    # ),
+    "gdrive://path/to/data.unknown?token=anon",
+    "gs://table-bucket-name/path/to/data.unknown?credentials_path=/path/to/service-account.json",
+    Item(
+        uri="hdfs://example.com:8020/path/to/data.unknown?user=test",
+        table="",
+    ),
+    Item(
+        uri="http+webdav://public.example.org/path/to/data.unknown",
+        table="",
+    ),
+    Item(
+        uri="https+webdav://username:password@cloud.example.org:4443/remote.php/webdav",
+        table="path/to/data.unknown",
+    ),
+    "msgd://site_name/drive_name/path/to/data.unknown?client_id=1d2befad-2f22-4124-a779-b147dfeca342&tenant_id=6b337423-f504-4060-a91b-e9eaaf782609&client_secret=abc~xyz789EXAMPLE_foo",
+    f'oci://bucket@namespace/prefix/path/to/data.unknown?iam_type=api_key&config={{"user":"ocid1.user.oc1..24g4uzg","region":"us-ashburn-1","tenancy":"ocid1.tenancy.oc1..23423r3","key_file":"{private_key_file}","fingerprint":"{private_key_fingerprint}"}}',
+    "onedrive://drive_name/path/to/data.unknown?client_id=1d2befad-2f22-4124-a779-b147dfeca342&tenant_id=6b337423-f504-4060-a91b-e9eaaf782609&client_secret=abc~xyz789EXAMPLE_foo",
+    "oss://bucket/path/to/data.unknown?endpoint=http://oss-cn-hangzhou.aliyuncs.com/&key=foo&secret=bar",
+    "r2://bucket/path/to/data.unknown?access_key_id=foo&secret_access_key=bar",
+    "s3://bucket/path/to/data.unknown?access_key_id=foo&secret_access_key=bar",
+    "sftp://username:password@intranet.example.org:2222/path/to/data.unknown",
+    "sharepoint://site_name/drive_name/path/to/data.unknown?client_id=1d2befad-2f22-4124-a779-b147dfeca342&tenant_id=6b337423-f504-4060-a91b-e9eaaf782609&client_secret=abc~xyz789EXAMPLE_foo",
+    "smb://workgroup;user:password@server.example.org:445/path/to/data.unknown",
+    Item(
+        uri="webhdfs://host:9870/endpoint",
+        table="path/to/data.unknown",
+    ),
+]
+
+
+def decode_uri(source_uri):
+    """Helper function to decode URI into components."""
     if isinstance(source_uri, Item):
         uri = source_uri.uri
         table = source_uri.table
@@ -109,16 +148,21 @@ def test_init_generic_filesystems(source_uri, mocker):
         uri = source_uri
         table = ""
     parsed_uri = urlparse(uri)
+    return parsed_uri, uri, table
 
-    # Testing a few modules has problems on Windows.
+
+def check_skip_tests(parsed_uri):
+    """Testing a few modules has problems on Windows."""
     no_dbfs = parsed_uri.scheme == "dbfs" and sys.version_info < (3, 11)
     no_hdfs = parsed_uri.scheme == "hdfs" and sys.version_info < (3, 11)
     no_oci = parsed_uri.scheme == "oci" and sys.platform == "win32"
     if no_dbfs or no_hdfs or no_oci:
         pytest.skip(f"{parsed_uri.scheme}:// fails testing on this test matrix slot")
 
-    # Apply monkeypatching to make a few filesystem implementations ready for unit testing.
 
+@pytest.fixture
+def fsspec_mock(mocker):
+    """Apply monkeypatching to make a few filesystem implementations ready for unit testing."""
     # GCS is fine with this environment variable being mocked.
     mocker.patch.dict(os.environ, {"FETCH_RAW_TOKEN_EXPIRY": "false"})
 
@@ -132,6 +176,15 @@ def test_init_generic_filesystems(source_uri, mocker):
     # For FTP, let's mock the low-level libraries.
     mocker.patch("ftplib.FTP")
     mocker.patch("ftplib.FTP_TLS")
+
+
+@pytest.mark.parametrize("source_uri", URIS, ids=[str(item) for item in URIS])
+def test_touch_filesystems_success(source_uri, fsspec_mock):
+    """Initialize all available filesystem implementations just a bit"""
+    parsed_uri, uri, table = decode_uri(source_uri)
+
+    # Testing a few modules has problems on Windows.
+    check_skip_tests(parsed_uri)
 
     factory = SourceDestinationFactory(uri, "file://")
     source = factory.get_source()
@@ -150,7 +203,51 @@ def test_init_generic_filesystems(source_uri, mocker):
     #         because there is no reference to it.
 
 
-def test_init_http_filesystem():
+@pytest.mark.parametrize(
+    "source_uri", URIS_UNKNOWN_FORMAT, ids=[str(item) for item in URIS_UNKNOWN_FORMAT]
+)
+def test_touch_filesystems_unknown_format(source_uri, fsspec_mock):
+    """Using an unknown file format should raise an error."""
+    parsed_uri, uri, table = decode_uri(source_uri)
+
+    # Testing a few modules has problems on Windows.
+    check_skip_tests(parsed_uri)
+
+    factory = SourceDestinationFactory(uri, "file://")
+    source = factory.get_source()
+    with pytest.raises(ValueError) as exc_info:
+        source.dlt_source(
+            uri=uri,
+            # TODO: Make `table` argument optional.
+            #       AzureSource.dlt_source() missing 1 required positional argument: 'table'
+            table=table,
+        )
+    assert exc_info.match("Source only supports file formats")
+
+
+@pytest.mark.parametrize("source_uri", URIS, ids=[str(item) for item in URIS])
+def test_touch_filesystems_incremental_key(source_uri, fsspec_mock):
+    """Using the `incremental_key` kwarg should raise an error."""
+    # source_uri = "az://schrott@acme.dfs.core.windows.net/path/to/data.parquet?account_name=acme&account_key=secret"
+    parsed_uri, uri, table = decode_uri(source_uri)
+
+    # Testing a few modules has problems on Windows.
+    check_skip_tests(parsed_uri)
+
+    factory = SourceDestinationFactory(uri, "file://")
+    source = factory.get_source()
+    with pytest.raises(ValueError) as exc_info:
+        source.dlt_source(
+            uri=uri,
+            # TODO: Make `table` argument optional.
+            #       AzureSource.dlt_source() missing 1 required positional argument: 'table'
+            table=table,
+            incremental_key="foobar",
+        )
+    assert exc_info.match("you should not provide incremental_key")
+
+
+def test_touch_http_filesystem():
     """Initialize HTTP filesystem implementation without table parameter"""
     source_uri = "http://example.org/path/to/data.parquet"
     factory = SourceDestinationFactory(source_uri, "file://")
@@ -165,9 +262,39 @@ def test_init_http_filesystem():
     assert dlt_source.section == "adapter"
 
 
-def test_init_unknown_filesystem():
+def test_touch_unknown_filesystem():
     """Initialize unknown filesystem implementation"""
     factory = SourceDestinationFactory("unknown://", "file://")
     with pytest.raises(NotImplementedError) as exc_info:
         factory.get_source()
     assert exc_info.match("Unsupported source scheme: unknown")
+
+
+def test_touch_s3_filesystem_without_secret_access_key():
+    """Missing a required parameter should raise an error."""
+    source_uri = "s3://bucket/path/to/data.parquet?access_key_id=foo"
+    factory = SourceDestinationFactory(source_uri, "file://")
+    source = factory.get_source()
+    with pytest.raises(MissingConnectorOption) as exc_info:
+        source.dlt_source(
+            uri=source_uri,
+            # TODO: Make `table` parameter optional.
+            #       AzureSource.dlt_source() missing 1 required positional argument: 'table'
+            table="",
+        )
+    assert exc_info.match("secret_access_key is required")
+
+
+def test_touch_sftp_filesystem_without_host():
+    """Missing a required parameter should raise an error."""
+    source_uri = "sftp://"
+    factory = SourceDestinationFactory(source_uri, "file://")
+    source = factory.get_source()
+    with pytest.raises(MissingConnectorOption) as exc_info:
+        source.dlt_source(
+            uri=source_uri,
+            # TODO: Make `table` parameter optional.
+            #       AzureSource.dlt_source() missing 1 required positional argument: 'table'
+            table="",
+        )
+    assert exc_info.match("host is required")
