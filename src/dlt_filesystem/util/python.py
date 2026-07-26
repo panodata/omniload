@@ -129,13 +129,14 @@ def cast_to_dict(
     """Cast dictionary values from JSON."""
     for field_name in names:
         if field_name in data:
+            value = data[field_name]
             try:
-                data[field_name] = json.loads(data[field_name])
-            except JSONDecodeError:
-                if on_error == "raise":
-                    raise
-                elif on_error == "ignore":
+                data[field_name] = json.loads(value)
+            except (JSONDecodeError, TypeError) as e:
+                if on_error == "ignore":
                     pass
+                elif on_error == "raise":
+                    raise ValueError(f"Cannot cast value to dict: {value}. Error: {e}")
                 else:
                     raise ValueError(f"Invalid value for on_error: {on_error!r}")
     return data
@@ -147,13 +148,14 @@ def cast_to_list(
     """Cast list values from JSON."""
     for field_name in names:
         if field_name in data:
+            value = data[field_name]
             try:
-                data[field_name] = json.loads(data[field_name])
-            except JSONDecodeError:
-                if on_error == "raise":
-                    raise
-                elif on_error == "ignore":
+                data[field_name] = json.loads(value)
+            except (JSONDecodeError, TypeError) as e:
+                if on_error == "ignore":
                     pass
+                elif on_error == "raise":
+                    raise ValueError(f"Cannot cast value to list: {value}. Error: {e}")
                 else:
                     raise ValueError(f"Invalid value for on_error: {on_error!r}")
     return data

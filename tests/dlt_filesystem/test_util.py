@@ -47,11 +47,22 @@ def test_cast_to_float():
     assert data["foo"] == 42.42
 
 
-def test_cast_to_list():
+def test_cast_to_list_success():
     """Validate the `cast_to_list` utility function."""
     data = {"foo": '["bar"]'}
     cast_to_list(data, ["foo"])
     assert data["foo"] == ["bar"]
+
+
+def test_cast_to_list_failure():
+    """Validate failing the `cast_to_list` utility function."""
+    data = {"foo": None}
+    with pytest.raises(ValueError) as exc_info:
+        cast_to_list(data, ["foo"])
+    assert exc_info.match(
+        "Cannot cast value to list: None. "
+        "Error: the JSON object must be str, bytes or bytearray, not NoneType"
+    )
 
 
 def test_apply_alias_success():
@@ -69,13 +80,20 @@ def test_apply_alias_collision():
     assert exc_info.match("use only one")
 
 
-def test_strip_protocol_suffix():
+def test_strip_protocol_suffix_success():
     """Validate the `strip_protocol_suffix` utility function."""
     assert (
         strip_protocol_suffix("http+dav://foo:1234/bar/?baz=+dav", "webdav", "dav")
         == "http://foo:1234/bar/?baz=+dav"
     )
     assert (
-        strip_protocol_suffix("http+dav://foo:1234/bar/?baz=+webdav", "webdav", "dav")
+        strip_protocol_suffix(
+            "http+webdav://foo:1234/bar/?baz=+webdav", "webdav", "dav"
+        )
         == "http://foo:1234/bar/?baz=+webdav"
     )
+
+
+def test_strip_protocol_suffix_no_suffix():
+    """Validate the `strip_protocol_suffix` utility function."""
+    assert strip_protocol_suffix("http+dav://") == "http+dav://"

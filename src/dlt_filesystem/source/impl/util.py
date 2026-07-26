@@ -61,7 +61,10 @@ def _split_dir_glob(path: str) -> Tuple[str, str]:
 
 def strip_protocol_suffix(uri: str, *suffix: str) -> str:
     """Remove protocol suffixes like http+webdav:// => http://"""
+    if not suffix:
+        return uri
     parts = urlsplit(uri)
+    scheme = parts.scheme
     for suffix_item in suffix:
-        scheme = parts.scheme.removesuffix("+" + suffix_item)
+        scheme = scheme.removesuffix("+" + suffix_item)
     return urlunsplit(parts._replace(scheme=scheme))

@@ -2,19 +2,18 @@
 
 # WebHDFS
 
-[WebHDFS] provides a complete FileSystem interface for HDFS over HTTP.
-Supports also HttpFS gateways.
+[WebHDFS] provides a complete filesystem interface for HDFS over HTTP,
+and also supports [HttpFS] gateways.
 `omniload` supports WebHDFS as a data source.
 
 ## URI Format
 
-The URI for connecting to WebHDFS is structured as follows. Either access the resource
-anonymously, use key/secret credentials, or a security token for authentication.
-In this form, the remote resource is addressed exclusively using a single
-parameter, an URI, encoding all required options.
+The URI for connecting to WebHDFS is structured as follows. Either access the
+resource anonymously (`insecure`), or use one of the available authentication
+mechanisms `spnego`, `token`, or `basic-auth`.
 
 ```text
-webhdfs://host:9870/path
+webhdfs://host:9870/path?token=<TOKEN>
 ```
 
 ## URI parameters
@@ -114,6 +113,7 @@ Running the command creates a table named `data` within the `testdrive`
 schema in the DuckDB database file located at `demo.duckdb`.
 
 
+[HttpFS]: https://hadoop.apache.org/docs/stable/hadoop-hdfs-httpfs/
 [kerberos_.py]: https://github.com/requests/requests-kerberos/blob/master/requests_kerberos/kerberos_.py
 [requests_kerberos]: https://github.com/requests/requests-kerberos
 [WebHDFS]: https://hadoop.apache.org/docs/r1.0.4/webhdfs.html

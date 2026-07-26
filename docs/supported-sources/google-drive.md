@@ -49,12 +49,9 @@ gdrive://path/to/data.parquet?token=anon
   (`pydata_google_auth.get_user_credentials` for user OAuth, or
   `service_account.Credentials.from_service_account_info` for service
   accounts). For headless or remote environments where a local callback
-  server is unavailable, pass `use_local_webserver=False` to request a
+  server is unavailable, pass `use_local_webserver=false` to request a
   token via the console.
   Type: `dict`. Use JSON to encode the dictionary.
-
-:use_local_webserver:
-  Type: `bool`. Default: `true`. 
 
 ## Authentication
 
