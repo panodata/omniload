@@ -1,4 +1,5 @@
 from typing import Tuple
+from urllib.parse import urlsplit, urlunsplit
 
 _GLOB_CHARS = "*?["
 
@@ -56,3 +57,11 @@ def _split_dir_glob(path: str) -> Tuple[str, str]:
             return directory, file_glob
     directory, _, basename = path.rpartition("/")
     return (directory or "/"), basename
+
+
+def strip_protocol_suffix(uri: str, *suffix: str) -> str:
+    """Remove protocol suffixes like http+webdav:// => http://"""
+    parts = urlsplit(uri)
+    for suffix_item in suffix:
+        scheme = parts.scheme.removesuffix("+" + suffix_item)
+    return urlunsplit(parts._replace(scheme=scheme))

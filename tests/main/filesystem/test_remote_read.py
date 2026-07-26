@@ -138,6 +138,17 @@ URIS_UNKNOWN_FORMAT = [
     ),
 ]
 
+# All those schemes need a host.
+SCHEMES_WITH_HOST = [
+    "ftp://",
+    "hdfs://",
+    "http://",
+    "http+webdav://",
+    "sftp://",
+    "smb://",
+    "webhdfs://",
+]
+
 
 def decode_uri(source_uri):
     """Helper function to decode URI into components."""
@@ -285,9 +296,11 @@ def test_touch_s3_filesystem_without_secret_access_key():
     assert exc_info.match("secret_access_key is required")
 
 
-def test_touch_sftp_filesystem_without_host():
-    """Missing a required parameter should raise an error."""
-    source_uri = "sftp://"
+@pytest.mark.parametrize(
+    "source_uri", SCHEMES_WITH_HOST, ids=[str(item) for item in SCHEMES_WITH_HOST]
+)
+def test_touch_filesystems_without_host(source_uri):
+    """The hostname is required on certain remote filesystems, otherwise an error is raised."""
     factory = SourceDestinationFactory(source_uri, "file://")
     source = factory.get_source()
     with pytest.raises(MissingConnectorOption) as exc_info:

@@ -2,8 +2,10 @@ from typing import Type
 
 from fsspec import AbstractFileSystem
 
+from dlt_filesystem.error import MissingConnectorOption
 from dlt_filesystem.source.base import FilesystemSource
 from dlt_filesystem.source.core import infer_resource
+from dlt_filesystem.source.impl.util import strip_protocol_suffix
 from dlt_filesystem.source.model import FilesystemLocator
 from dlt_filesystem.util.python import asbool, cast_to_bool, cast_to_dict, cast_to_int
 
@@ -26,7 +28,7 @@ class WebdavSource(FilesystemSource):
 
         # This adjustment is specific to WebDAV.
         # omniload uses the `https+webdav://`, but fsspec uses `https://`.
-        uri = uri.replace("+webdav", "").replace("+dav", "")
+        uri = strip_protocol_suffix(uri, "dav", "webdav")
 
         # TODO: Is this applicable for Dropbox and friends at all?
         if kwargs.get("incremental_key"):
@@ -56,10 +58,14 @@ class WebdavSource(FilesystemSource):
         if "username" in fs_kwargs:
             auth = (fs_kwargs.pop("username"), fs_kwargs.pop("password", None))
 
+        # Sanity checks.
+        if "host" not in fs_kwargs or not fs_kwargs["host"]:
+            raise MissingConnectorOption("host", "WebDAV")
+
         # Downstream implementation does not accept those kwargs.
         fs_kwargs.pop("host", None)
         fs_kwargs.pop("port", None)
 
         # Create filesystem and dlt resource wrapper.
-        fs = self.fs_class(base_url=uri, auth=auth, **fs_kwargs)
+        fs = self.fs_class(uri, auth=auth, **fs_kwargs)
         return infer_resource(fs=fs, locator=locator)

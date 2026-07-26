@@ -35,14 +35,16 @@ class HDFSSource(FilesystemSource):
         # Decode individual options (type casting, default values, sanity checks).
         fs_kwargs = locator.options.fs_kwargs
         fs_kwargs.update(kwargs)
-        if "host" not in fs_kwargs or not fs_kwargs["host"]:
-            raise MissingConnectorOption("host", "HDFS")
         fs_kwargs["port"] = fs_kwargs.get("port", locator.default_port)
         apply_alias(fs_kwargs, "block_size", "default_block_size")
         cast_to_int(
             fs_kwargs, ["port", "replication", "buffer_size", "default_block_size"]
         )
         cast_to_dict(fs_kwargs, ["extra_conf"])
+
+        # Sanity checks.
+        if "host" not in fs_kwargs or not fs_kwargs["host"]:
+            raise MissingConnectorOption("host", "HDFS")
 
         # Create filesystem and dlt resource wrapper.
         fs = self.fs_class(**fs_kwargs)

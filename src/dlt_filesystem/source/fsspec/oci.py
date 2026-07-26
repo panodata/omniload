@@ -40,7 +40,8 @@ class OCISource(FilesystemSource):
         fs_kwargs.update(kwargs)
 
         # Decode dict-typed `config`, `config_kwargs`, `oci_additional_kwargs` from JSON.
-        cast_to_dict(fs_kwargs, ["config", "config_kwargs", "oci_additional_kwargs"])
+        cast_to_dict(fs_kwargs, ["config"], on_error="ignore")
+        cast_to_dict(fs_kwargs, ["config_kwargs", "oci_additional_kwargs"])
         # The `default_` prefix seems unnecessary. Let's make it optional by using an alias.
         apply_alias(fs_kwargs, "block_size", "default_block_size")
         # Convert to integers.

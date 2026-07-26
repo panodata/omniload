@@ -7,7 +7,10 @@ from urllib.parse import urlparse
 import requests
 from dlt.sources import TDataItems
 
+from dlt_filesystem.error import MissingConnectorOption
 
+
+# TODO: Migrate HTTP access to shared adapter/reader infrastructure.
 class HttpReader:
     """Reader for HTTP-based file sources"""
 
@@ -18,7 +21,10 @@ class HttpReader:
         column_names: Optional[list[str]] = None,
     ):
         self.url = url
-        self.file_format = file_format or self._infer_format(url)
+        self.parsed_url = urlparse(url)
+
+        self._validate_host()
+        self.file_format = file_format or self._infer_format()
         self.column_names = column_names
 
         if self.file_format not in ["csv", "csv_headless", "json", "parquet"]:
@@ -27,10 +33,14 @@ class HttpReader:
                 "Supported formats: csv, csv_headless, json, parquet"
             )
 
-    def _infer_format(self, url: str) -> str:
+    def _validate_host(self) -> None:
+        """Check that the hostname is not missing or empty"""
+        if not self.parsed_url.hostname:
+            raise MissingConnectorOption("host", "HTTP")
+
+    def _infer_format(self) -> str:
         """Infer file format from URL extension"""
-        parsed = urlparse(url)
-        path = parsed.path.lower()
+        path = self.parsed_url.path.lower()
 
         if path.endswith(".csv"):
             return "csv"
@@ -40,7 +50,7 @@ class HttpReader:
             return "parquet"
         else:
             raise ValueError(
-                f"Cannot infer file format from URL: {url}. "
+                f"Cannot infer file format from URL: {self.url}. "
                 "Please specify file_format parameter."
             )
 

@@ -99,7 +99,7 @@ Four authentication mechanisms are supported.
 
 ### Load Parquet data from WebHDFS into DuckDB
 
-The following command demonstrates how to copy data from a specified OSS
+The following command demonstrates how to copy data from a specified WebHDFS
 location into a DuckDB database.
 
 ```sh

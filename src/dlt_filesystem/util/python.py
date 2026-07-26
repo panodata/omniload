@@ -3,10 +3,11 @@ import json
 import logging
 import types
 import typing
+from json import JSONDecodeError
 from typing import Any, Callable, Dict, List, Optional
 
-_TRUE_VALUES = {"true", "1", "yes", "on"}
-_FALSE_VALUES = {"false", "0", "no", "off"}
+_TRUE_VALUES = {"true", "1", "yes", "on", "t", "y"}
+_FALSE_VALUES = {"false", "0", "no", "off", "f", "n"}
 
 
 logger = logging.getLogger(__name__)
@@ -66,11 +67,7 @@ def _cast_value(value: str, target_type: Any) -> Any:
 
     if target_type is bool:
         normalized = value.strip().lower()
-        if normalized in _TRUE_VALUES:
-            return True
-        if normalized in _FALSE_VALUES:
-            return False
-        raise ValueError(f"Cannot cast {value!r} to bool")
+        return asbool(normalized)
     if target_type is int:
         return int(value)
     if target_type is float:
@@ -93,12 +90,12 @@ def asbool(obj: Any) -> bool:
     """From `sqlalchemy.util.langhelpers`"""
     if isinstance(obj, str):
         obj = obj.strip().lower()
-        if obj in ["true", "yes", "on", "y", "t", "1"]:
+        if obj in _TRUE_VALUES:
             return True
-        elif obj in ["false", "no", "off", "n", "f", "0"]:
+        elif obj in _FALSE_VALUES:
             return False
         else:
-            raise ValueError("String is not true/false: %r" % obj)
+            raise ValueError("Cannot cast value to bool: %r" % obj)
     return bool(obj)
 
 
@@ -126,24 +123,48 @@ def cast_to_bool(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
     return data
 
 
-def cast_to_dict(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
+def cast_to_dict(
+    data: Dict[str, Any], names: List[str], on_error: Optional[str] = "raise"
+) -> Dict[str, Any]:
     """Cast dictionary values from JSON."""
     for field_name in names:
         if field_name in data:
-            data[field_name] = json.loads(data[field_name])
+            try:
+                data[field_name] = json.loads(data[field_name])
+            except JSONDecodeError:
+                if on_error == "raise":
+                    raise
+                elif on_error == "ignore":
+                    pass
+                else:
+                    raise ValueError(f"Invalid value for on_error: {on_error!r}")
     return data
 
 
-def cast_to_list(data: Dict[str, Any], names: List[str]) -> Dict[str, Any]:
+def cast_to_list(
+    data: Dict[str, Any], names: List[str], on_error: Optional[str] = "raise"
+) -> Dict[str, Any]:
     """Cast list values from JSON."""
     for field_name in names:
         if field_name in data:
-            data[field_name] = json.loads(data[field_name])
+            try:
+                data[field_name] = json.loads(data[field_name])
+            except JSONDecodeError:
+                if on_error == "raise":
+                    raise
+                elif on_error == "ignore":
+                    pass
+                else:
+                    raise ValueError(f"Invalid value for on_error: {on_error!r}")
     return data
 
 
 def apply_alias(data: Dict[str, Any], name: str, effective_name: str) -> Dict[str, Any]:
     """Apply aliasing to dictionary keys."""
+    if name in data and effective_name in data:
+        raise ValueError(
+            f"Both '{name}' and '{effective_name}' were provided; use only one"
+        )
     if name in data:
         data[effective_name] = data.pop(name)
     return data

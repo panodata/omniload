@@ -25,8 +25,6 @@ class FTPSource(FilesystemSource):
         # Decode individual options (type casting, default values, sanity checks).
         fs_kwargs = locator.options.fs_kwargs
         fs_kwargs.update(kwargs)
-        if "host" not in fs_kwargs or not fs_kwargs["host"]:
-            raise MissingConnectorOption("host", "FTP")
         fs_kwargs["port"] = fs_kwargs.get("port", locator.default_port)
         # Cast values to `int`.
         cast_to_int(fs_kwargs, ["block_size", "port", "timeout"])
@@ -36,6 +34,10 @@ class FTPSource(FilesystemSource):
                 fs_kwargs["tls"] = asbool(fs_kwargs["tls"])
             except ValueError:
                 pass
+
+        # Sanity checks.
+        if "host" not in fs_kwargs or not fs_kwargs["host"]:
+            raise MissingConnectorOption("host", "FTP")
 
         # Create filesystem and dlt resource wrapper.
         fs = FTPFileSystem(**fs_kwargs)

@@ -118,8 +118,8 @@ common patterns and their descriptions.
 
 ## File type hinting
 
-If your files are properly encoded but lack the correct file extension (BSON,
-CSV, JSONL, or Parquet), you can provide a file type hint to inform `omniload`
+If your files are properly encoded but lack the correct file extension,
+you can provide a file type hint to inform `omniload`
 about the format of the files. This is done by appending a fragment identifier
 (`#format`) to the end of the path in your `--source-table` parameter.
 

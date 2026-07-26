@@ -17,8 +17,9 @@ https+webdav://<USERNAME>:<PASSWORD>@www.example.org/path/to/data.parquet
 
 ## URI parameters
 
-:retry: Disable retry on the HTTP client. When enabled, some well-known
-  errors are handled and retried a few times with backoff.
+:retry:
+  Enable or disable retry on the HTTP client. When enabled, some
+  well-known errors are handled and retried a few times with backoff.
   Type: `bool`. Default: `true`.
 
 :chunk_size:

@@ -67,9 +67,6 @@ provided.
 
 ## Examples
 
-To integrate `omniload` with an FTP server, you need the server's
-hostname, port, a valid username, and a password.
-
 ### Load CSV data from FTP into DuckDB
 
 ```sh

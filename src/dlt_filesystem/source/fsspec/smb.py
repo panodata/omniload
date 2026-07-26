@@ -2,6 +2,7 @@ from typing import Type
 
 from fsspec import AbstractFileSystem
 
+from dlt_filesystem.error import MissingConnectorOption
 from dlt_filesystem.source.base import FilesystemSource
 from dlt_filesystem.source.core import infer_resource
 from dlt_filesystem.source.model import FilesystemLocator
@@ -48,6 +49,10 @@ class SMBSource(FilesystemSource):
             ],
         )
         cast_to_bool(fs_kwargs, ["encrypt", "auto_mkdir"])
+
+        # Sanity checks.
+        if "host" not in fs_kwargs or not fs_kwargs["host"]:
+            raise MissingConnectorOption("host", "SMB")
 
         # Create filesystem and dlt resource wrapper.
         fs = self.fs_class(**fs_kwargs)

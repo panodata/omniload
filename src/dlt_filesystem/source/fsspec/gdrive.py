@@ -41,7 +41,8 @@ class GoogleDriveSource(FilesystemSource):
         fs_kwargs.update(kwargs)
         apply_alias(fs_kwargs, "auth", "auth_kwargs")
         cast_to_dict(fs_kwargs, ["creds", "auth_kwargs"])
-        cast_to_bool(fs_kwargs, ["use_local_webserver"])
+        if "auth_kwargs" in fs_kwargs:
+            cast_to_bool(fs_kwargs["auth_kwargs"], ["use_local_webserver"])
 
         # Create filesystem and dlt resource wrapper.
         fs = self.fs_class(**fs_kwargs)
