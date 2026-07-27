@@ -188,7 +188,7 @@ optional-dependencies.oracle = [
 optional-dependencies.release = [
   "build<2",
   "setuptools>=83",
-  "twine<7",
+  "twine<8",
 ]
 optional-dependencies.test = [
   "boto3<2",
