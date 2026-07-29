@@ -10,8 +10,8 @@ from __future__ import annotations
 from typing import Optional
 from urllib.parse import urlparse
 
-from dlt_filesystem.source.core import resource_for_reader
 from dlt_filesystem.source.base import FilesystemSource
+from dlt_filesystem.source.core import resource_for_reader
 from dlt_filesystem.source.error import UnsupportedEndpointError
 from dlt_filesystem.source.format.registry import supported_file_format_message
 from dlt_filesystem.source.model import FilesystemReference

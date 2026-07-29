@@ -1,5 +1,6 @@
 import os
 import stat
+import sys
 
 import pytest
 
@@ -155,7 +156,9 @@ def test_builder_requires_both_source_and_destination():
         RsyncCommandBuilder("oc-rsync").source("host:/x/").build()
 
 
-# --- SubprocessRunner ------------------------------------------------------
+# --- SubprocessRunner (POSIX only — shell scripts cannot run on Windows) ---
+
+_posix_only = pytest.mark.skipif(sys.platform == "win32", reason="requires POSIX shell")
 
 
 def _write_script(path: str, body: str) -> str:
@@ -165,11 +168,13 @@ def _write_script(path: str, body: str) -> str:
     return path
 
 
+@_posix_only
 def test_subprocess_runner_success(tmp_path):
     script = _write_script(str(tmp_path / "ok.sh"), "#!/bin/sh\nexit 0\n")
     SubprocessRunner().run([script])
 
 
+@_posix_only
 def test_subprocess_runner_raises_with_stderr(tmp_path):
     script = _write_script(
         str(tmp_path / "fail.sh"),
@@ -182,6 +187,7 @@ def test_subprocess_runner_raises_with_stderr(tmp_path):
     assert "status 23" in str(excinfo.value)
 
 
+@_posix_only
 def test_subprocess_runner_overlays_env(tmp_path):
     out = tmp_path / "env.txt"
     script = _write_script(
@@ -192,6 +198,7 @@ def test_subprocess_runner_overlays_env(tmp_path):
     assert out.read_text() == "s3cret"
 
 
+@_posix_only
 def test_subprocess_runner_does_not_use_shell(tmp_path):
     marker = tmp_path / "created_by_injection"
     script = _write_script(str(tmp_path / "noop.sh"), "#!/bin/sh\nexit 0\n")
