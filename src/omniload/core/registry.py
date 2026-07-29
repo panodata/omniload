@@ -119,6 +119,8 @@ sources: LazyRegistry = LazyRegistry(
         "r2": "dlt_filesystem.source.fsspec.r2:R2Source",
         "redditads": "omniload.source.reddit_ads.api:RedditAdsSource",
         "revenuecat": "omniload.source.revenuecat.api:RevenueCatSource",
+        "rsync": "omniload.source.rsync.api:RsyncSource",
+        "rsync+ssh": "omniload.source.rsync.api:RsyncSource",
         "s3": "dlt_filesystem.source.impl.remote:S3Source",
         "salesforce": "omniload.source.salesforce.api:SalesforceSource",
         "sftp": "dlt_filesystem.source.impl.remote:SFTPSource",
