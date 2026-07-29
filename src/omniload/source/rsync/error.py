@@ -25,13 +25,11 @@ class InvalidRsyncUriError(RsyncError):
 
 
 class RsyncTransferError(RsyncError):
-    """The ``oc-rsync`` process exited with a non-zero status.
+    """``oc-rsync`` exited with a non-zero status.
 
-    Carries the invoked argv, the exit code, and captured stderr so callers get
-    an actionable message instead of a bare ``CalledProcessError``. The remote
-    source spec is the last-but-one argv element; secrets never appear on the
-    command line (daemon passwords travel via ``--password-file`` or the
-    ``RSYNC_PASSWORD`` environment variable), so echoing argv is safe.
+    Argv is included in the message because secrets never appear on the command
+    line — daemon passwords travel via ``--password-file`` or the
+    ``RSYNC_PASSWORD`` environment variable.
     """
 
     def __init__(self, argv: Sequence[str], returncode: int, stderr: str) -> None:

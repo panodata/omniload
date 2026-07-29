@@ -15,15 +15,16 @@ def _is_recursive(pattern: str) -> bool:
 
 
 def filter_rules(pattern: str) -> List[str]:
-    """Translate an fsspec file glob into oc-rsync ``--filter`` rules.
+    """Translate a file glob into oc-rsync ``--filter`` rules.
 
-    Recursive patterns use ``+ */`` / ``+ <basename>`` / ``- *``; non-recursive
-    patterns include the pattern at the top level only.  The basename extraction
-    can over-select for subdirectory-constrained globs (e.g. ``logs/**/*.csv``
-    pulls ``*.csv`` from every directory); this is deliberate — the reader
+    Recursive globs use ``+ */`` / ``+ <basename>`` / ``- *``; non-recursive
+    patterns include only the top level.  Basename extraction may over-select
+    (e.g. ``logs/**/*.csv`` pulls ``*.csv`` from every directory) — the reader
     re-applies the exact glob on the staged tree, so over-selection costs
-    bandwidth but never drops a wanted file.
+    bandwidth but never drops a file.
     """
+    if not pattern:
+        raise ValueError("filter pattern must not be empty")
     if not _is_recursive(pattern):
         return [f"+ {pattern}", "- *"]
     basename = pattern.rsplit("/", 1)[-1]
@@ -106,8 +107,7 @@ class SubprocessRunner:
     """Run oc-rsync via :mod:`subprocess`.
 
     ``env`` is overlaid on the current process environment so transport secrets
-    are added without discarding ``PATH``.  On non-zero exit, stderr is surfaced
-    through :class:`RsyncTransferError`.
+    are added without discarding ``PATH``.
     """
 
     def run(self, argv: Sequence[str], env: Optional[Mapping[str, str]] = None) -> None:

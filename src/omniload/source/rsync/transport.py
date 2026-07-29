@@ -1,11 +1,9 @@
 """Transport strategies for reaching an oc-rsync source.
 
-SSH (``rsync+ssh://``) uses a single-colon ``host:path`` spec and reaches the
-remote through a shell; the rsync daemon (``rsync://``) uses a URL on TCP 873.
-Everything downstream (file selection, staging, reading) is identical, so the
-connection-specific behaviour is isolated behind :class:`RsyncTransport`.
-
-New transports are added by subclassing and registering in ``_FACTORIES``.
+SSH (``rsync+ssh://``) uses ``host:path`` through a remote shell; the daemon
+transport (``rsync://``) uses a URL on TCP 873.  Connection-specific behaviour
+is isolated behind :class:`RsyncTransport`; new transports subclass it and
+register in ``_FACTORIES``.
 """
 
 from __future__ import annotations
@@ -42,9 +40,9 @@ class RsyncTransport(ABC):
     def remote_spec(self, remote_root: str) -> str:
         """Return the oc-rsync source argument for ``remote_root``.
 
-        The returned spec always ends in ``/`` so oc-rsync copies the *contents*
-        of the root into the (also trailing-slash) staging directory, keeping
-        the staged layout aligned with the reader's glob.
+        Trailing slashes on ``remote_root`` are normalised; the returned spec
+        always ends in ``/`` so oc-rsync copies the *contents* of the root,
+        keeping the staged layout aligned with the reader's glob.
         """
 
     def command_args(self) -> List[str]:
@@ -64,9 +62,9 @@ class RsyncTransport(ABC):
 class SshTransport(RsyncTransport):
     """SSH transport: ``[user@]host:path``, reached through a remote shell.
 
-    When ``rsh`` is set it overrides the entire remote-shell command.  Otherwise
-    ``ssh_key``, ``port``, and ``ssh_options`` compose a ``ssh`` invocation;
-    ``-e`` is emitted only when at least one of these is present.
+    ``rsh`` overrides the entire remote-shell command; otherwise ``ssh_key``,
+    ``port``, and ``ssh_options`` compose a ``ssh`` invocation (``-e`` is
+    emitted only when at least one of these is present).
     """
 
     host: str
@@ -77,7 +75,7 @@ class SshTransport(RsyncTransport):
     ssh_options: Optional[str] = None
 
     def remote_spec(self, remote_root: str) -> str:
-        return f"{_authority(self.user, self.host)}:{remote_root}/"
+        return f"{_authority(self.user, self.host)}:{remote_root.rstrip('/')}/"
 
     def command_args(self) -> List[str]:
         shell = self._remote_shell()
@@ -120,11 +118,11 @@ class SshTransport(RsyncTransport):
 
 @dataclass(frozen=True)
 class DaemonTransport(RsyncTransport):
-    """rsync daemon transport: ``rsync://[user@]host[:port]/module/path``.
+    """Daemon transport: ``rsync://[user@]host[:port]/module/path``.
 
-    Authentication uses ``--password-file`` when available; otherwise an inline
-    password is promoted to the ``RSYNC_PASSWORD`` environment variable so it
-    never appears on the command line.
+    ``--password-file`` is preferred for authentication; otherwise an inline
+    password is promoted to ``RSYNC_PASSWORD`` so it never appears on the
+    command line.
     """
 
     host: str
@@ -135,7 +133,7 @@ class DaemonTransport(RsyncTransport):
     no_motd: bool = True
 
     def remote_spec(self, remote_root: str) -> str:
-        root = remote_root.lstrip("/")
+        root = remote_root.strip("/")
         return f"rsync://{_authority(self.user, self.host)}:{self.port}/{root}/"
 
     def command_args(self) -> List[str]:
@@ -147,8 +145,7 @@ class DaemonTransport(RsyncTransport):
         return args
 
     def environment(self) -> Dict[str, str]:
-        # A file-based password wins; only fall back to the environment variable
-        # when no file was supplied, so the two auth channels never disagree.
+        # File-based password wins; fall back to env only when no file is set.
         if self.password and not self.password_file:
             return {"RSYNC_PASSWORD": self.password}
         return {}
@@ -172,7 +169,7 @@ class DaemonTransport(RsyncTransport):
         )
 
 
-# Scheme -> strategy constructor. New transports register here only.
+# Scheme -> factory. New transports register here.
 _FACTORIES = {
     SSH_SCHEME: SshTransport.from_uri,
     DAEMON_SCHEME: DaemonTransport.from_uri,

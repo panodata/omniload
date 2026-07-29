@@ -1,4 +1,4 @@
-"""Test doubles for the oc-rsync connector."""
+"""Test doubles for the rsync connector."""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ from typing import Dict, List, Mapping, Optional, Sequence
 
 @dataclass
 class RecordingRunner:
-    """A :class:`CommandRunner` that records calls and optionally stages files.
+    """Records calls and optionally stages files under the destination.
 
-    When ``files`` is provided, each ``run`` writes them under the destination
-    (the final argv element), emulating a completed rsync transfer.
+    When ``files`` is provided, each ``run`` writes them into the destination
+    directory (the final argv element), emulating a completed transfer.
     """
 
     files: Mapping[str, str] = field(default_factory=dict)

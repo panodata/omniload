@@ -1,24 +1,26 @@
-"""Transport-agnostic tuning knobs for an oc-rsync transfer.
+"""Tuning options for an oc-rsync transfer.
 
-Parsed once from the source-URI query string and consumed by the command
-builder. Connection-specific settings live in the transport instead.
+Parsed from the source-URI query string; connection-specific settings live
+in the transport layer instead.
 """
 
 from __future__ import annotations
 
+import os
 import shlex
 from dataclasses import dataclass, field
 from typing import Dict, List, Mapping, Optional
 from urllib.parse import parse_qsl, urlparse
 
 DEFAULT_BINARY = "oc-rsync"
+ALLOWED_BINARIES = frozenset({"oc-rsync", "rsync"})
 
 
 def query_params(uri: str) -> Dict[str, str]:
-    """Return the URI query string as a flat, last-wins ``{key: value}`` map.
+    """Return the URI query string as a ``{key: value}`` map.
 
-    Blank values are preserved (``?no_motd=`` is distinguishable from an absent
-    key) and duplicate keys keep the last occurrence.
+    Duplicate keys keep the last occurrence; blank values are preserved so
+    ``?no_motd=`` is distinguishable from an absent key.
     """
     query = urlparse(uri).query
     return {key: value for key, value in parse_qsl(query, keep_blank_values=True)}
@@ -27,8 +29,8 @@ def query_params(uri: str) -> Dict[str, str]:
 def _as_bool(value: Optional[str], default: bool) -> bool:
     """Interpret a query-string value as a boolean.
 
-    Accepts ``true/false``, ``1/0``, ``yes/no``, ``on/off``; a bare flag
-    (empty string, e.g. ``?compress``) is treated as ``True``.
+    A bare flag (``?compress``) is ``True``; accepts ``true/false``, ``1/0``,
+    ``yes/no``, ``on/off``.
     """
     if value is None:
         return default
@@ -70,8 +72,10 @@ class RsyncConfig:
         single query value (e.g. ``?extra_args=--chmod%3DD755%20--numeric-ids``).
         """
         extra = params.get("extra_args")
+        binary = params.get("binary") or DEFAULT_BINARY
+        _validate_binary(binary)
         return cls(
-            binary=params.get("binary") or DEFAULT_BINARY,
+            binary=binary,
             compress=_as_bool(params.get("compress"), default=True),
             timeout=_as_int(params.get("timeout")),
             contimeout=_as_int(params.get("contimeout")),
@@ -79,4 +83,18 @@ class RsyncConfig:
             rsync_path=params.get("rsync_path") or None,
             staging_dir=params.get("staging_dir") or None,
             extra_args=shlex.split(extra) if extra else [],
+        )
+
+
+def _validate_binary(binary: str) -> None:
+    """Raise ``ValueError`` if ``binary`` is not an allowed rsync executable.
+
+    Absolute paths are accepted when their basename is allowed (e.g.
+    ``/usr/local/bin/rsync``), bare names must match directly.
+    """
+    name = os.path.basename(binary) if os.sep in binary or "/" in binary else binary
+    if name not in ALLOWED_BINARIES:
+        allowed = ", ".join(sorted(ALLOWED_BINARIES))
+        raise ValueError(
+            f"Binary {binary!r} is not allowed; permitted names: {allowed}"
         )

@@ -12,8 +12,8 @@ from tests.rsync.support import RecordingRunner
 
 
 def capture_reader_args(uri, table="", runner=None, **kwargs):
-    """Run ``dlt_source`` with ``resource_for_reader`` stubbed, returning the
-    captured :class:`FilesystemReference` fields for assertion.
+    """Call ``dlt_source`` with a stubbed reader and return the captured
+    :class:`FilesystemReference` fields.
     """
     captured = {}
 

@@ -59,6 +59,24 @@ def test_config_extra_args_are_shell_split():
     assert cfg.extra_args == ["--chmod=D755", "--numeric-ids"]
 
 
+@pytest.mark.parametrize(
+    "binary",
+    ["oc-rsync", "rsync", "/usr/local/bin/rsync", "/opt/oc-rsync"],
+)
+def test_config_allows_known_binaries(binary):
+    cfg = RsyncConfig.from_params({"binary": binary})
+    assert cfg.binary == binary
+
+
+@pytest.mark.parametrize(
+    "binary",
+    ["/usr/bin/env", "bash", "/bin/sh", "python3"],
+)
+def test_config_rejects_unknown_binaries(binary):
+    with pytest.raises(ValueError, match="not allowed"):
+        RsyncConfig.from_params({"binary": binary})
+
+
 # --- filter_rules ----------------------------------------------------------
 
 
@@ -73,6 +91,11 @@ def test_config_extra_args_are_shell_split():
 )
 def test_filter_rules(pattern, expected):
     assert filter_rules(pattern) == expected
+
+
+def test_filter_rules_rejects_empty_pattern():
+    with pytest.raises(ValueError, match="empty"):
+        filter_rules("")
 
 
 @pytest.mark.parametrize(

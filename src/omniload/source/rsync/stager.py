@@ -1,8 +1,4 @@
-"""Staging a remote file selection into a local directory via oc-rsync.
-
-Composes a transport, config, and file selection into a runnable command,
-executes it, and returns the local staging path for the filesystem reader.
-"""
+"""Stage a remote file selection into a local directory via oc-rsync."""
 
 from __future__ import annotations
 
@@ -44,11 +40,10 @@ class FileSelection:
 
 
 class RsyncStager:
-    """Compose and run the oc-rsync transfer for one file selection.
+    """Run the oc-rsync transfer for one file selection.
 
-    The staging directory is keyed by the transport namespace and the file
-    selection, so repeated runs reuse the same local cache and oc-rsync
-    transfers only the delta.
+    The staging directory is keyed by transport namespace and file selection,
+    so repeated runs reuse the same local cache and only transfer the delta.
     """
 
     def __init__(
@@ -71,7 +66,7 @@ class RsyncStager:
         )
         digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
         path = os.path.join(base, digest)
-        os.makedirs(path, exist_ok=True)
+        os.makedirs(path, mode=0o700, exist_ok=True)
         return path
 
     def stage(self, selection: FileSelection) -> str:
@@ -95,12 +90,9 @@ class RsyncStager:
         return builder.build()
 
     def _base_flags(self, pattern: str) -> Tuple[str, ...]:
-        """Return policy flags for a correct and repeatable remote read.
-
-        ``-q`` quiet, ``-t`` preserve mtime for incremental selection,
-        ``-L`` resolve symlinks, ``--partial`` resume interrupted transfers,
-        ``-r`` recurse into subdirectories (only for recursive globs),
-        ``-z`` compress (opt-out via config).
+        """Return policy flags: ``-q`` quiet, ``-t`` preserve mtime, ``-L``
+        resolve symlinks, ``--partial`` resume, ``-r`` recurse (recursive globs
+        only), ``-z`` compress (opt-out via config).
         """
         flags = ["-q", "-t", "-L", "--partial"]
         if is_recursive_glob(pattern):

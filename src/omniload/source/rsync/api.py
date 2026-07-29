@@ -1,13 +1,8 @@
-"""The oc-rsync omniload source connector.
+"""Source connector for ``rsync+ssh://`` and ``rsync://`` (daemon, TCP 873).
 
-Handles two URI schemes:
-
-* ``rsync+ssh://[user@]host[:ssh_port]`` -- SSH transport.
-* ``rsync://[user@]host[:port]`` -- rsync daemon transport (TCP 873).
-
-The remote path/glob is supplied via ``--source-table``; when empty, the URI
-path is used as a fallback.  A ``#format`` / ``#key=value`` fragment on the
-table selects the reader and passes reader hints, as with ``file://``.
+The remote path/glob is supplied via ``--source-table``; when empty the URI
+path is the fallback.  A ``#format`` / ``#key=value`` fragment on the table
+selects the reader and passes reader hints, as with ``file://``.
 """
 
 from __future__ import annotations
@@ -29,10 +24,9 @@ from omniload.source.rsync.transport import transport_for
 
 
 class RsyncSource(FilesystemSource):
-    """omniload source that stages oc-rsync transfers and reads the result.
+    """Stage remote files via oc-rsync, then read through the filesystem reader.
 
-    The ``runner`` parameter allows injecting a test double; production uses the
-    default :class:`SubprocessRunner`.
+    ``runner`` accepts a test double; production uses :class:`SubprocessRunner`.
     """
 
     def __init__(self, runner: Optional[CommandRunner] = None) -> None:
@@ -47,8 +41,9 @@ class RsyncSource(FilesystemSource):
                 "modification time; you should not provide incremental_key"
             )
 
-        transport = transport_for(uri, query_params(uri))
-        config = RsyncConfig.from_params(query_params(uri))
+        params = query_params(uri)
+        transport = transport_for(uri, params)
+        config = RsyncConfig.from_params(params)
 
         remote_path, _, hints = parse_fragment(self._resolve_remote_path(uri, table))
         endpoint = self._resolve_endpoint(table, remote_path)
@@ -56,7 +51,6 @@ class RsyncSource(FilesystemSource):
 
         staging_dir = RsyncStager(transport, config, self._runner).stage(selection)
 
-        # Read the staged tree through the local-filesystem reader.
         from fsspec.implementations.arrow import ArrowFSWrapper
         from pyarrow.fs import LocalFileSystem
 

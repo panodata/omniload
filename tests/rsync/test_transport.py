@@ -35,14 +35,28 @@ def test_factory_rejects_unknown_scheme():
 # --- SSH transport ---------------------------------------------------------
 
 
-def test_ssh_remote_spec_single_colon_with_trailing_slash():
+@pytest.mark.parametrize(
+    ("remote_root", "expected"),
+    [
+        ("/srv/data", "deploy@example.com:/srv/data/"),
+        ("/srv/data/", "deploy@example.com:/srv/data/"),
+    ],
+)
+def test_ssh_remote_spec_normalises_trailing_slash(remote_root, expected):
     t = _transport("rsync+ssh://deploy@example.com")
-    assert t.remote_spec("/srv/data") == "deploy@example.com:/srv/data/"
+    assert t.remote_spec(remote_root) == expected
 
 
-def test_ssh_remote_spec_without_user():
+@pytest.mark.parametrize(
+    ("remote_root", "expected"),
+    [
+        ("data", "example.com:data/"),
+        ("data/", "example.com:data/"),
+    ],
+)
+def test_ssh_remote_spec_without_user(remote_root, expected):
     t = _transport("rsync+ssh://example.com")
-    assert t.remote_spec("data") == "example.com:data/"
+    assert t.remote_spec(remote_root) == expected
 
 
 def test_ssh_default_shell_emits_no_dash_e():
@@ -83,9 +97,16 @@ def test_ssh_requires_host():
 # --- daemon transport ------------------------------------------------------
 
 
-def test_daemon_remote_spec_builds_rsync_url():
+@pytest.mark.parametrize(
+    ("remote_root", "expected"),
+    [
+        ("mod/exports", "rsync://user@host:873/mod/exports/"),
+        ("mod/exports/", "rsync://user@host:873/mod/exports/"),
+    ],
+)
+def test_daemon_remote_spec_normalises_trailing_slash(remote_root, expected):
     t = _transport("rsync://user@host/mod")
-    assert t.remote_spec("mod/exports") == "rsync://user@host:873/mod/exports/"
+    assert t.remote_spec(remote_root) == expected
 
 
 def test_daemon_custom_port_from_netloc():

@@ -1,4 +1,5 @@
 import os
+import stat
 
 import pytest
 
@@ -53,6 +54,13 @@ def test_staging_dir_defaults_under_tempdir_prefix():
     stager = RsyncStager(FakeTransport(), config, RecordingRunner())
     path = stager.staging_dir(FileSelection.from_remote_path("/data/*.csv"))
     assert STAGING_PREFIX in path
+
+
+def test_staging_dir_has_owner_only_permissions(tmp_path):
+    config = RsyncConfig(staging_dir=str(tmp_path))
+    stager = RsyncStager(FakeTransport(), config, RecordingRunner())
+    path = stager.staging_dir(FileSelection.from_remote_path("/data/*.csv"))
+    assert stat.S_IMODE(os.stat(path).st_mode) == 0o700
 
 
 # --- command composition ---------------------------------------------------
