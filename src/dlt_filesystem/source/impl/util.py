@@ -1,7 +1,6 @@
+from glob import has_magic
 from typing import Tuple
 from urllib.parse import urlsplit, urlunsplit
-
-_GLOB_CHARS = "*?["
 
 
 def _is_windows_drive(path: str) -> bool:
@@ -39,8 +38,14 @@ def _is_absolute_local(path: str) -> bool:
 
 
 def has_glob_magic(path: str) -> bool:
-    """Return whether ``path`` contains fsspec's ``*``, ``?``, or ``[`` syntax."""
-    return any(char in path for char in _GLOB_CHARS)
+    """Return whether ``path`` contains fsspec's ``*``, ``?``, or ``[`` syntax.
+
+    Delegates to the standard library's ``glob.has_magic``, which tests the same
+    ``*?[`` character class fsspec globbing uses, so the two stay in step. Brace
+    expansion (``{a,b}``) is magic to neither, matching fsspec, which does not
+    expand braces.
+    """
+    return has_magic(path)
 
 
 def _split_dir_glob(path: str) -> Tuple[str, str]:
