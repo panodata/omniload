@@ -192,7 +192,11 @@ def fsspec_mock(mocker):
     mocker.patch.dict(os.environ, {"FETCH_RAW_TOKEN_EXPIRY": "false"})
 
     # Must patch the whole class, because can't patch details which are immutable.
-    mocker.patch("pyarrow.fs.HadoopFileSystem", MemoryFileSystem)
+    # fsspec's ArrowFSWrapper reads `type_name`, which MemoryFileSystem does not provide.
+    class MockHadoopFileSystem(MemoryFileSystem):
+        type_name = "hdfs"
+
+    mocker.patch("pyarrow.fs.HadoopFileSystem", MockHadoopFileSystem)
 
     # It's enough to mock the `_connect` method with SFTP and SMB.
     mocker.patch("fsspec.implementations.sftp.SFTPFileSystem._connect")
