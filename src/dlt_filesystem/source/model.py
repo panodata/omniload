@@ -146,6 +146,13 @@ class FilesystemLocator:
         return file_glob
 
     @property
+    def require_file_match(self) -> bool:
+        """Whether the locator's raw carrier names one concrete file."""
+        from dlt_filesystem.source.router import source_selects_single_file
+
+        return source_selects_single_file(self.uri, self.path)
+
+    @property
     def hints(self) -> Dict[str, Any]:
         """
         Destructure reader or writer hints from URL fragment.
@@ -180,6 +187,8 @@ class FilesystemReference:
             when deriving the incremental resource-state key.
         filesystem_incremental (bool): Whether to filter files using their
             modification time and persistent dlt resource state.
+        require_file_match (bool): Whether extraction must fail when the concrete
+            source selection matches no file.
         hints (dict[str, str]): Free-form per-URI reader hints parsed from the
             `#key=value` fragment (e.g. `{"sheet_name": "ticker-symbols"}`). The
             key a reader looks up is that reader's contract; no reader consumes
@@ -195,6 +204,7 @@ class FilesystemReference:
     reader_name: str
     storage_namespace: str = "filesystem"
     filesystem_incremental: bool = False
+    require_file_match: bool = False
     hints: dict[str, str] = field(default_factory=dict)
     column_types: Optional[dict[str, Any]] = None
 

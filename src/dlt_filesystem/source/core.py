@@ -18,12 +18,15 @@ def resource_for_reader(ref: FilesystemReference) -> Union[DltSource, DltResourc
     ``#tagname``) into a hint-consuming reader; every other reader is selected as-is.
     """
 
-    # Establish filesystem and reader elements.
+    # Enforce concrete selections on this outer lister only. Piping it into the
+    # selected reader replaces the reader source's inner parent, so discovery runs
+    # exactly once and the check happens before any downstream incremental filter.
     filesystem_resource = filesystem(
         ref.bucket_url,
         ref.fs,
         file_glob=ref.file_glob,
         extract_content=False,
+        require_file_match=ref.require_file_match,
     )
     if ref.filesystem_incremental:
         filesystem_resource = filesystem_resource.with_name(
@@ -74,6 +77,9 @@ def infer_resource(
             bucket_url=locator.bucket_url,
             file_glob=locator.file_glob,
             reader_name=endpoint,
+            # Require a match only when the locator's unparsed carrier names one
+            # concrete file. This keeps wildcard discovery empty-safe.
+            require_file_match=locator.require_file_match,
             hints=locator.hints,
             # TODO: Can `column_types` be looped into reader|writer hints instead?
             #       We believe it represents a special case handling for `csv_headless`.

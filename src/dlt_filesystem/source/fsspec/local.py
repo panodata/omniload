@@ -12,6 +12,7 @@ from dlt_filesystem.source.impl.util import (
 from dlt_filesystem.source.router import (
     determine_endpoint,
     parse_fragment,
+    source_selects_single_file,
 )
 
 
@@ -98,6 +99,7 @@ class LocalFilesystemSource(FilesystemSource):
                 reader_name=endpoint,
                 storage_namespace="file",
                 filesystem_incremental=kwargs.get("filesystem_incremental", False),
+                require_file_match=source_selects_single_file("", spec),
                 hints=hints,
                 column_types=kwargs.get("column_types"),
             )

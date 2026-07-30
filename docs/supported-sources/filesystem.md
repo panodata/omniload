@@ -8,6 +8,15 @@ local and remote filesystem types.
 Filesystem handlers support globbing, gzip decompression, as well as format
 and reader hints.
 
+:::{note}
+A concrete filesystem source path must match an existing file. If it does not,
+the ingest fails during file discovery. A glob may match zero files and still
+succeed. Supported glob syntax uses `*`, `?`, and `[...]`; braces such as
+`{a,b}` are treated as literal filename characters. This rule is based on
+matched files, not loaded rows, so a parseable file with no data rows and an
+incremental re-run with no new rows remain valid.
+:::
+
 (file-formats)=
 
 ## Supported formats

@@ -5,15 +5,18 @@ from types import SimpleNamespace
 import dlt
 import duckdb
 import pytest
+from dlt.pipeline.exceptions import PipelineStepFailed
 from dlt.sources.filesystem import FileItemDict
 from fsspec.implementations.arrow import ArrowFSWrapper
 from pyarrow.fs import LocalFileSystem
 
 from dlt_filesystem.source.base import FilesystemSource
 from dlt_filesystem.source.core import resource_for_reader
+from dlt_filesystem.source.error import NoFilesFoundError
 from dlt_filesystem.source.model import FilesystemReference
 from omniload import ValidationError, run_ingest
 from omniload.core.factory import SourceDestinationFactory
+from tests.util.common import has_exception
 
 
 def _write_csv(path, name: str, mtime: int) -> None:
@@ -79,6 +82,38 @@ def test_unchanged_files_are_not_opened_and_one_newer_file_is_loaded(
     _load(source / "*.csv", dest)
     assert opened == ["b.csv"]
     assert _names(dest) == ["Alice", "Bob"]
+
+
+def test_unchanged_concrete_file_still_succeeds_with_zero_new_rows(
+    tmp_path, monkeypatch
+):
+    source = tmp_path / "source" / "people.csv"
+    dest = tmp_path / "warehouse.duckdb"
+    _write_csv(source, "Alice", 1_700_000_000)
+    opened = _record_file_opens(monkeypatch)
+
+    _load(source, dest)
+    assert opened == ["people.csv"]
+
+    opened.clear()
+    _load(source, dest)
+
+    assert opened == []
+    assert _names(dest) == ["Alice"]
+
+
+def test_deleted_concrete_file_fails_on_incremental_rerun(tmp_path):
+    source = tmp_path / "source" / "people.csv"
+    dest = tmp_path / "warehouse.duckdb"
+    _write_csv(source, "Alice", 1_700_000_000)
+    _load(source, dest)
+    source.unlink()
+
+    with pytest.raises(PipelineStepFailed) as exc_info:
+        _load(source, dest)
+
+    assert has_exception(exc_info, NoFilesFoundError)
+    assert _names(dest) == ["Alice"]
 
 
 def test_closed_boundary_uses_file_url_hashes_for_equal_mtimes(tmp_path, monkeypatch):

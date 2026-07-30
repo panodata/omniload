@@ -10,6 +10,7 @@ from dlt_filesystem.source.router import (
     parse_endpoint,
     parse_fragment,
     parse_uri,
+    source_selects_single_file,
     split_format_hint,
 )
 
@@ -43,6 +44,39 @@ def test_parse_uri(test_case: URITestCase):
     (bucket, glob) = parse_uri(uri, test_case.table)
     assert bucket == test_case.expect_bucket
     assert glob == test_case.expect_glob
+
+
+@pytest.mark.parametrize(
+    ("uri", "table", "expected"),
+    [
+        ("", "path/file.csv", True),
+        ("", "path/*.csv", False),
+        ("", "path/file?.csv", False),
+        ("", "path/da?ta/y=1/*.csv", False),
+        ("", "path/[ab].csv", False),
+        ("", "path/**/*.csv", False),
+        ("", "", False),
+        ("", None, False),
+        ("", "path/{a,b}.csv", True),
+        ("", "path/no-extension#csv", True),
+        ("", "path/file.csv#sheet_name=*", True),
+        ("", "path/vendor#1/data.csv", True),
+        ("", "path/vendor#1/*.csv", False),
+        ("gs://", "bucket/file.csv", True),
+        ("gs://primary", "gs://secondary/file.csv", True),
+        ("gs://", "gs://bucket/*.csv", False),
+        ("gs://", "gs://bucket/file.csv?token=secret", True),
+        ("gs://bucket/file.csv", "", True),
+        ("gs://bucket", "file.csv", True),
+        ("s3://bucket/bar/baz?.csv", "ignored.csv", False),
+        ("s3://bucket/bar/baz?.csv?token=secret", "ignored.csv", False),
+        ("s3://bucket/file.csv?token=secret", "ignored.csv", True),
+        ("s3://bucket/vendor#1/*.csv", "ignored.csv", False),
+    ],
+)
+def test_source_selects_single_file(uri: str, table: str | None, expected: bool):
+    """Classification uses the unparsed carrier and strips valid directives."""
+    assert source_selects_single_file(uri, table) is expected
 
 
 @pytest.mark.parametrize(

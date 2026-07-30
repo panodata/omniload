@@ -22,6 +22,7 @@ from dlt.sources.credentials import FileSystemCredentials
 from dlt.sources.filesystem import FileItem, FileItemDict, fsspec_filesystem, glob_files
 from fsspec import AbstractFileSystem
 
+from dlt_filesystem.source.error import NoFilesFoundError
 from dlt_filesystem.source.format.readers import (
     ReadersSource,
     read_bson,
@@ -98,6 +99,7 @@ def filesystem(
     file_glob: Optional[str] = "*",
     files_per_page: int = 100,
     extract_content: bool = True,
+    require_file_match: bool = False,
 ) -> Iterator[List[FileItem]]:
     """This resource lists files in `bucket_url` using `file_glob` pattern. The files are yielded as FileItem which also
     provide methods to open and read file data. It should be combined with transformers that further process (ie. load files)
@@ -109,6 +111,8 @@ def filesystem(
         files_per_page (int, optional): The number of files to process at once, defaults to 100.
         extract_content (bool, optional): If true, the content of the file will be extracted if
             false it will return a fsspec file, defaults to False.
+        require_file_match (bool, optional): Raise when the concrete source selection
+            matches no file. Defaults to False for direct uses of this resource.
 
     Returns:
         Iterator[List[FileItem]]: The list of files.
@@ -120,8 +124,10 @@ def filesystem(
     else:
         fs_client = fsspec_filesystem(bucket_url, credentials)[0]
 
+    matched_files = 0
     files_chunk: List[FileItem] = []
     for file_model in glob_files(fs_client, bucket_url, file_glob or "**"):
+        matched_files += 1
         file_dict = FileItemDict(file_model, fs_client)
         if extract_content:
             file_dict["file_content"] = file_dict.read_bytes()
@@ -130,5 +136,7 @@ def filesystem(
         if len(files_chunk) >= files_per_page:
             yield files_chunk
             files_chunk = []
+    if require_file_match and matched_files == 0:
+        raise NoFilesFoundError(bucket_url, file_glob or "**")
     if files_chunk:
         yield files_chunk

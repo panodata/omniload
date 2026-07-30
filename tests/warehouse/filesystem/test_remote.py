@@ -16,6 +16,7 @@ from fsspec.registry import _registry as _fsspec_registry
 from pyarrow import parquet as pya_parquet
 
 from dlt_filesystem.error import InvalidBlobTableError, MissingConnectorOption
+from dlt_filesystem.source.error import NoFilesFoundError
 from dlt_filesystem.target.api import AzureDestination, S3Destination
 from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string, has_exception
@@ -163,6 +164,28 @@ def fs_test_cases(
             print_output=False,
         )
         assert has_exception(result.exception, InvalidBlobTableError)
+
+    def test_missing_concrete_source(dest_uri):
+        """A concrete remote file selection must match an actual file."""
+        with (
+            patch(target_fs) as target_fs_mock,
+            patch(
+                "dlt_filesystem.source.adapter.glob_files",
+                wraps=glob_files_override,
+            ),
+        ):
+            target_fs_mock.return_value = test_fs
+            schema = f"testschema_fs_{get_random_string(5)}"
+            result = invoke_ingest_command(
+                f"{protocol}://bucket?{auth}",
+                "/missing.csv",
+                dest_uri,
+                f"{schema}.test",
+                print_output=False,
+            )
+
+        assert result.exit_code != 0
+        assert has_exception(result.exception, NoFilesFoundError)
 
     def test_unsupported_file_format(dest_uri):
         """
@@ -557,6 +580,7 @@ def fs_test_cases(
 
     cases = [
         test_empty_source_uri,
+        test_missing_concrete_source,
         test_missing_credentials,
         test_unsupported_file_format,
         test_csv_load,

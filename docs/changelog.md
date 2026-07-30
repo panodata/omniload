@@ -2,6 +2,9 @@
 
 ## in progress
 
+- Filesystem: Fail ingestion when a concrete source path matches no file while
+  keeping unmatched glob selections valid.
+
 ## 2026/07/27 v0.8.0
 
 - Core: Added real [SCD2] loading when selecting the `scd2` strategy.

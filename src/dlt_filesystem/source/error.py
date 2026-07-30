@@ -1,3 +1,26 @@
+from urllib.parse import urlsplit, urlunsplit
+
+
+def _safe_location(bucket_url: str) -> str:
+    """Remove query and fragment data that may contain filesystem credentials."""
+    parsed = urlsplit(bucket_url)
+    netloc = parsed.netloc.rpartition("@")[2]
+    location = urlunsplit((parsed.scheme, netloc, parsed.path, "", ""))
+    if parsed.scheme and not netloc and not parsed.path and "://" in bucket_url:
+        return f"{parsed.scheme}://"
+    return location
+
+
+class NoFilesFoundError(FileNotFoundError):
+    """A concrete filesystem source selection matched no file."""
+
+    def __init__(self, bucket_url: str, file_glob: str):
+        super().__init__(
+            f"No files found at {_safe_location(bucket_url)!r} "
+            f"for concrete source selection {file_glob!r}"
+        )
+
+
 class UnsupportedEndpointError(Exception):
     pass
 

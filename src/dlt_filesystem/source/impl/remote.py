@@ -14,6 +14,7 @@ from dlt_filesystem.source.router import (
     blob_hints,
     determine_endpoint,
     parse_uri,
+    source_selects_single_file,
 )
 from dlt_filesystem.util.auth import AzureBlobAuth, parse_azure_blob_auth
 
@@ -91,6 +92,7 @@ class GCSSource(FilesystemSource):
                 reader_name=endpoint,
                 storage_namespace="gcs",
                 filesystem_incremental=kwargs.get("filesystem_incremental", False),
+                require_file_match=source_selects_single_file(uri, table),
                 hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
@@ -175,6 +177,7 @@ class S3CompatibleSource(FilesystemSource):
                 reader_name=endpoint,
                 storage_namespace=f"s3:{self.endpoint_namespace(endpoint_url[0] if endpoint_url else None, 'aws')}",
                 filesystem_incremental=kwargs.get("filesystem_incremental", False),
+                require_file_match=source_selects_single_file(uri, table),
                 hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
@@ -279,6 +282,7 @@ class AzureSource(FilesystemSource):
                     f"{self.endpoint_namespace(auth.account_host, 'azure-public')}"
                 ),
                 filesystem_incremental=kwargs.get("filesystem_incremental", False),
+                require_file_match=source_selects_single_file(uri, table),
                 hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )
@@ -347,6 +351,7 @@ class SFTPSource(FilesystemSource):
                 reader_name=endpoint,
                 storage_namespace=(f"sftp:{host.lower()}:{port}:{username or ''}"),
                 filesystem_incremental=kwargs.get("filesystem_incremental", False),
+                require_file_match=source_selects_single_file(uri, table),
                 hints=blob_hints(parsed_uri, table),
                 column_types=kwargs.get("column_types"),
             )

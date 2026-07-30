@@ -13,6 +13,7 @@ from dlt_filesystem.source.format.registry import (
     FORMAT_TO_READER,
     reader_for_format,
 )
+from dlt_filesystem.source.impl.util import has_glob_magic
 
 BucketName: TypeAlias = str
 FileGlob: TypeAlias = str
@@ -135,6 +136,40 @@ def parse_fragment(spec: str) -> Tuple[str, Optional[str], Dict[str, str]]:
         return spec, None, {}
 
     return path, format_hint, hints
+
+
+def _raw_uri_path(uri: str) -> str:
+    """Return the URI path carrier without letting ``urlparse`` consume ``?`` or ``#``."""
+    _, separator, remainder = uri.partition("://")
+    if not separator:
+        return uri
+    _, slash, path = remainder.partition("/")
+    return path if slash else ""
+
+
+def source_selects_single_file(uri: str, table: Optional[str]) -> bool:
+    """Return whether the raw source carrier selects one concrete file.
+
+    The carrier choice mirrors :func:`parse_uri`, but the URI path comes from the
+    original string so question-mark globs and glob syntax after a literal ``#``
+    remain visible. A URI tail made entirely of ``key=value`` segments is treated
+    as connection parameters; if a glob also contains ``?``, only the final query
+    delimiter is removed. Valid format and reader-hint fragments are removed before
+    classification. Empty selections are treated like globs because they mean
+    recursive discovery for filesystem implementations that accept an omitted
+    bucket or path.
+    """
+    table = (table or "").strip()
+    parsed_uri = urlparse(uri)
+    from_uri = bool(parsed_uri.path.strip()) or not table
+    carrier = _raw_uri_path(uri) if from_uri else table
+    if from_uri or "://" in carrier:
+        carrier_query = urlparse(carrier).query
+        query_segments = [segment for segment in carrier_query.split("&") if segment]
+        if query_segments and all("=" in segment for segment in query_segments):
+            carrier = carrier.rsplit("?", maxsplit=1)[0]
+    selection, _, _ = parse_fragment(carrier)
+    return bool(selection) and not has_glob_magic(selection)
 
 
 def split_format_hint(table: str) -> Tuple[str, Optional[str]]:
