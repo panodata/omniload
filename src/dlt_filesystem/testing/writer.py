@@ -1,3 +1,9 @@
+import typing
+
+if typing.TYPE_CHECKING:
+    import pandas as pd
+
+
 def write_bson(path, docs):
     """Write BSON documents concatenated into a single file (on-disk mongodump form)."""
     import bson
@@ -24,6 +30,12 @@ def write_msgpack(path, rows, **packb_kwargs):
     with open(path, "wb") as f:
         for row in rows:
             f.write(msgpack.packb(row, use_bin_type=True, **packb_kwargs))
+    return path
+
+
+def write_orc(path, df: "pd.DataFrame"):
+    """Write dataframe to ORC file."""
+    df.to_orc(path)
     return path
 
 
