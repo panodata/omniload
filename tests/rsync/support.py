@@ -6,6 +6,8 @@ import os
 from dataclasses import dataclass, field
 from typing import Dict, List, Mapping, Optional, Sequence
 
+from omniload.source.rsync.transport import RsyncTransport
+
 
 @dataclass
 class RecordingRunner:
@@ -16,8 +18,8 @@ class RecordingRunner:
     """
 
     files: Mapping[str, str] = field(default_factory=dict)
-    argv: Optional[List[str]] = None
-    env: Optional[Mapping[str, str]] = None
+    argv: List[str] = field(default_factory=list)
+    env: Mapping[str, str] = field(default_factory=dict)
     calls: int = 0
 
     def run(self, argv: Sequence[str], env: Optional[Mapping[str, str]] = None) -> None:
@@ -39,7 +41,7 @@ class RecordingRunner:
 
 
 @dataclass(frozen=True)
-class FakeTransport:
+class FakeTransport(RsyncTransport):
     """Minimal transport stub for exercising the stager in isolation."""
 
     spec_prefix: str = "fake:"

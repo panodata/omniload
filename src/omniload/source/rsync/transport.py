@@ -182,7 +182,7 @@ def transport_for(uri: str, params: Mapping[str, str]) -> RsyncTransport:
     try:
         factory = _FACTORIES[parsed.scheme]
     except KeyError as exc:
-        raise UnsupportedTransportError(parsed.scheme, _FACTORIES.keys()) from exc
+        raise UnsupportedTransportError(parsed.scheme, list(_FACTORIES.keys())) from exc
     return factory(parsed, params)
 
 
