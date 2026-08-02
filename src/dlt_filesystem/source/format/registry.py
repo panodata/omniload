@@ -6,6 +6,7 @@ BASE_FILE_FORMATS: dict[str, str] = {
     "csv_headless": "read_csv_headless",
     "jsonl": "read_jsonl",
     "ods": "read_ods",
+    "orc": "read_orc",
     "parquet": "read_parquet",
     # bson is read-only: the file:// destination's WRITE_FORMATS is a separate tuple.
     "bson": "read_bson",
