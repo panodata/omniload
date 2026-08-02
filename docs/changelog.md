@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Filesystem: Added reader for ORC format
+
 ## 2026/08/18 v0.10.1
 
 - Azure: Scope file-level incremental cursors from connection-string sources to
