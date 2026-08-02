@@ -34,7 +34,8 @@ abfss://?account_name=<your_account_name>&account_key=<your_account_key>
 ## URI parameters
 
 :account_name:
-  Your Azure storage account name (required).
+  Your Azure storage account name (required for account-key, SAS-token, and
+  service-principal authentication). Do not supply it with `connection_string`.
 
 :account_key:
   Your storage account access key (account-key auth).
@@ -47,14 +48,28 @@ abfss://?account_name=<your_account_name>&account_key=<your_account_key>
 
 :account_host:
   Custom storage endpoint host (optional, for sovereign clouds or Azurite).
+  Do not supply it with `connection_string`, which carries its own endpoints.
+
+:connection_string:
+  A complete Azure Storage connection string, as an alternative to the
+  account-key, SAS-token, or service-principal fields. URL-encode the whole
+  value before placing it in the URI. Connection strings can include custom
+  service endpoints for local emulators such as Azurite.
+
+:api_version:
+  Azure Storage API version override (optional, source only). Destination URIs
+  ignore this parameter because adlfs does not forward it when constructing a
+  client from a connection string.
 
 :layout:
   Layout template (optional, destination only).
 
-Supply **one** authentication mode: an `account_key`, a `sas_token`, or the
-full service-principal triplet (`tenant_id` + `client_id` + `client_secret`).
-Supplying both an account key/SAS and service-principal fields is rejected as
+Supply **one** authentication mode: a `connection_string`, an `account_key`, a
+`sas_token`, or the full service-principal triplet (`tenant_id` + `client_id` +
+`client_secret`). Supplying fields from multiple modes is rejected as
 ambiguous, and a partial service-principal triplet reports the missing field.
+When using `connection_string`, omit `account_name`, `account_host`, and all
+other credential fields.
 
 :::{warning}
 Account keys are base64 (containing `+`, `/`, `=`) and SAS tokens embed their
@@ -62,6 +77,17 @@ own `&` and `=` characters. You must URL-encode credential values in the URI
 (`+` becomes `%2B`, `/` becomes `%2F`, `=` becomes `%3D`, `&` becomes `%26`).
 Unencoded values are mangled when the query string is parsed.
 :::
+
+For example, write to an Azurite container by URL-encoding its connection
+string and passing it as the destination URI.
+
+```sh
+omniload ingest \
+    --source-uri 'csv:///local/users.csv' \
+    --source-table 'users' \
+    --dest-uri 'az://?connection_string=<url_encoded_connection_string>' \
+    --dest-table 'my-container/users'
+```
 
 :::{note}
 A Gen2 account differs from a plain Blob account only by having its
@@ -74,7 +100,7 @@ To integrate `omniload` with Azure Blob or Data Lake Storage, you need a
 storage account and one of the supported credentials. For guidance on
 obtaining an account key or SAS token, refer to the Microsoft documentation
 on [managing storage account access keys] and [shared access signatures].
-Service-principal credentials come from an [Azure AD app registration]. 
+Service-principal credentials come from an [Azure AD app registration].
 
 ## Authenticate with SAS token
 

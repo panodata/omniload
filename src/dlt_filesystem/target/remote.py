@@ -63,8 +63,15 @@ class BlobStorageDestination(abc.ABC):
         layout = params.get("layout", [None])[0]
         if layout is not None:
             opts["layout"] = layout
+        filesystem_kwargs = self.filesystem_kwargs(params)
+        if filesystem_kwargs:
+            opts["kwargs"] = filesystem_kwargs
 
         return BlobFS(**opts)  # type: ignore
+
+    def filesystem_kwargs(self, params: dict) -> dict:
+        """Return extra fsspec constructor arguments for the destination."""
+        return {}
 
     def validate_table(self, table: str):
         table = table.strip("/ ")
@@ -167,6 +174,13 @@ class AzureDestination(BlobStorageDestination):
         """
         auth = parse_azure_blob_auth(params)
 
+        if auth.connection_string is not None:
+            # dlt does not model Azure connection strings in its credential union.
+            # The actual credential is forwarded through filesystem_kwargs; a
+            # resolved empty object prevents dlt from probing for unrelated account
+            # fields before it constructs the adlfs filesystem.
+            return AzureCredentials().resolve()
+
         if auth.is_service_principal:
             # parse_azure_blob_auth guarantees the full triplet here; the
             # per-field `is not None` guards mirror the account-key branch and
@@ -194,6 +208,15 @@ class AzureDestination(BlobStorageDestination):
         if auth.account_host is not None:
             key_credentials.azure_account_host = auth.account_host
         return key_credentials
+
+    def filesystem_kwargs(self, params: dict) -> dict:
+        """Forward connection-string credentials that dlt does not model."""
+        auth = parse_azure_blob_auth(params)
+        if auth.connection_string is None:
+            return {}
+        # adlfs does not forward api_version when constructing a client from a
+        # connection string, so do not pass that parsed option here.
+        return {"connection_string": auth.connection_string}
 
 
 class BlobFSClient(dlt.destinations.impl.filesystem.filesystem.FilesystemClient):

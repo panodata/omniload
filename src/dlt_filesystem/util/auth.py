@@ -51,8 +51,9 @@ def parse_azure_blob_auth(params: dict) -> AzureBlobAuth:
     which ``parse_qs`` would otherwise mangle (``+`` becomes a space, an
     unencoded SAS token shatters into junk params).
 
-    Two auth modes are supported:
+    Three auth modes are supported:
 
+    * connection string: ``connection_string``
     * account-key / SAS: ``account_key`` or ``sas_token``
     * service principal: the full ``tenant_id`` + ``client_id`` +
       ``client_secret`` triplet
@@ -61,9 +62,8 @@ def parse_azure_blob_auth(params: dict) -> AzureBlobAuth:
         MissingValueError: if ``account_name`` is absent, if no auth material is
             supplied, or if the service-principal triplet is only partially
             supplied (naming the missing field(s)).
-        ValueError: if mutually exclusive credentials are supplied together
-            (``account_key`` with ``sas_token``, or account-key/SAS material
-            with service-principal material), rather than silently picking one.
+        ValueError: if mutually exclusive credentials are supplied together,
+            rather than silently picking one.
     """
 
     def one(key: str) -> Optional[str]:
@@ -71,18 +71,33 @@ def parse_azure_blob_auth(params: dict) -> AzureBlobAuth:
 
     connection_string = one("connection_string")
     api_version = one("api_version")
-
-    if connection_string is not None:
-        return AzureBlobAuth(
-            connection_string=connection_string,
-            api_version=api_version,
-        )
-
     account_name = one("account_name")
     account_key = one("account_key")
     sas_token = one("sas_token")
     sp_values = {field: one(field) for field in AZURE_SERVICE_PRINCIPAL_FIELDS}
     account_host = one("account_host")
+
+    if connection_string is not None:
+        conflicting_fields = [
+            field
+            for field, value in {
+                "account_name": account_name,
+                "account_key": account_key,
+                "sas_token": sas_token,
+                "account_host": account_host,
+                **sp_values,
+            }.items()
+            if value is not None
+        ]
+        if conflicting_fields:
+            raise ValueError(
+                "Conflicting Azure credentials: connection_string cannot be "
+                f"combined with {', '.join(conflicting_fields)}."
+            )
+        return AzureBlobAuth(
+            connection_string=connection_string,
+            api_version=api_version,
+        )
 
     if account_name is None:
         raise MissingConnectorOption("account_name", "Azure")

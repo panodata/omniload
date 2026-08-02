@@ -53,6 +53,7 @@ class DockerService(AbstractService):
         lock_dir: Optional[Path] = None,
         shutdown: Optional[bool] = False,
         optional: bool = False,
+        connection_getter: Optional[Callable[[DockerContainer], str]] = None,
     ) -> None:
         super().__init__()
         self.id = id
@@ -65,6 +66,7 @@ class DockerService(AbstractService):
         # failing them. Reserved for flaky, non-product containers (SQL Server is a
         # source-only engine-version check); required containers must fail loudly.
         self.optional = optional
+        self.connection_getter = connection_getter
 
     def start(self) -> str:
         """Wait for the controller to spin up the container."""
@@ -208,6 +210,8 @@ class DockerService(AbstractService):
     def get_connection_url(self):
         if self.container is None:
             raise RuntimeError("Container is not initialized")
+        if self.connection_getter is not None:
+            return self.connection_getter(self.container)
         if isinstance(self.container, KafkaContainer):
             return self.container.get_bootstrap_server()
         elif isinstance(self.container, CouchbaseContainer):

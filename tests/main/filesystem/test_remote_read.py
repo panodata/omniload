@@ -1,3 +1,5 @@
+import base64
+import json
 import os
 import sys
 from dataclasses import dataclass
@@ -30,6 +32,16 @@ private_key_file = (assets_dir / "privatekey.pem").as_posix()
 private_key_fingerprint = (
     (assets_dir / "privatekey-fingerprint.txt").read_text().strip()
 )
+GCS_TEST_CREDENTIALS_BASE64 = base64.b64encode(
+    json.dumps(
+        {
+            "client_id": "foo",
+            "client_secret": "bar",
+            "refresh_token": "anything",
+        }
+    ).encode()
+).decode()
+
 
 # A collection of filesystem source URIs without table parameter.
 URIS = [
@@ -56,7 +68,7 @@ URIS = [
     # ),
     "gdrive://path/to/data.parquet?token=anon",
     "gs://table-bucket-name/path/to/data.parquet?credentials_path=/path/to/service-account.json",
-    "gs://table-bucket-name/path/to/data.parquet?credentials_base64=eyJjbGllbnRfaWQiOiAiZm9vIiwgImNsaWVudF9zZWNyZXQiOiAiYmFyIiwgInJlZnJlc2hfdG9rZW4iOiAiYW55dGhpbmcifQ==",
+    f"gs://table-bucket-name/path/to/data.parquet?credentials_base64={GCS_TEST_CREDENTIALS_BASE64}",
     Item(
         uri="hdfs://example.com:8020/path/to/data.parquet?user=test",
         table="",

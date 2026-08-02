@@ -5,6 +5,12 @@
 - Filesystem: Treat XLSX and ODS workbooks as multi-table sources by default,
   while preserving one-table loads through explicit worksheet selectors.
   Thanks, @hampsterx.
+- Filesystem: Refreshed S3 directory listings between repeated loads so
+  file-level incremental runs detect newly uploaded objects.
+- Connectors: Added Azure Storage destination support for connection-string
+  authentication and custom endpoints.
+- Connectors: Reject mixed Azure Storage credential modes instead of silently
+  ignoring extra fields in source and destination URIs.
 - Filesystem: Fail ingestion when a concrete source path matches no file while
   keeping unmatched glob selections valid. Thanks, @hampsterx.
 - Filesystem: Added rsync source connector. Thanks, @oferchen.

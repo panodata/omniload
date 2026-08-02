@@ -12,9 +12,68 @@ import sqlalchemy
 
 from omniload.target.clickhouse import ClickhouseDestination
 from tests.util.common import get_testdata_path
+from tests.warehouse.manager import get_remote_filesystem_services
 from tests.warehouse.settings import DESTINATIONS, SOURCES
 
 logger = logging.getLogger(__name__)
+
+
+def _explicit_test_targets(config) -> list[Path]:
+    """Return the collection paths resolved by pytest's argument parser."""
+    targets = []
+    for arg in config.args:
+        raw_path = arg.split("::", 1)[0]
+        path = Path(raw_path)
+        if not path.is_absolute():
+            normalized = raw_path.removeprefix("./")
+            if normalized.split("/", 1)[0] not in {"tests", "examples", "omniload"}:
+                continue
+            path = Path(config.rootpath) / normalized
+        targets.append(path.resolve())
+    return targets
+
+
+def _only_main_filesystem_tests(config) -> bool:
+    """Return whether every explicit pytest target is in main/filesystem."""
+    filesystem_root = (Path(config.rootpath) / "tests/main/filesystem").resolve()
+    targets = _explicit_test_targets(config)
+    return bool(targets) and all(
+        target == filesystem_root or filesystem_root in target.parents
+        for target in targets
+    )
+
+
+def _remote_filesystem_tests_selected(config) -> bool:
+    """Return whether the invocation can collect the remote emulator test module."""
+    if hasattr(config, "workerinput"):
+        return config.workerinput["remote_filesystem_tests_selected"]
+    if _integration_deselected(config):
+        return False
+    remote_tests = (
+        Path(config.rootpath) / "tests/main/filesystem/test_remote_integration.py"
+    ).resolve()
+    targets = _explicit_test_targets(config)
+    if not targets:
+        return True
+    return any(
+        target == remote_tests or target in remote_tests.parents for target in targets
+    )
+
+
+def _all_managed_containers(config):
+    containers = set(SOURCES.values()) | set(DESTINATIONS.values())
+    if _remote_filesystem_tests_selected(config):
+        containers |= set(get_remote_filesystem_services().values())
+    return containers
+
+
+def _managed_containers(config):
+    containers = set()
+    if not _only_main_filesystem_tests(config):
+        containers |= set(SOURCES.values()) | set(DESTINATIONS.values())
+    if _remote_filesystem_tests_selected(config):
+        containers |= set(get_remote_filesystem_services().values())
+    return containers
 
 
 def pytest_configure(config):
@@ -28,6 +87,9 @@ def pytest_configure(config):
 def pytest_configure_node(node):
     """xdist hook"""
     node.workerinput["shared_directory"] = node.config.shared_directory
+    node.workerinput["remote_filesystem_tests_selected"] = (
+        _remote_filesystem_tests_selected(node.config)
+    )
 
 
 def pytest_sessionstart(session):
@@ -68,6 +130,18 @@ def _integration_deselected(config):
     return (config.option.markexpr or "").strip() == "not integration"
 
 
+def pytest_ignore_collect(collection_path: Path, config) -> bool | None:
+    """Avoid importing emulator-only tests in the Docker-free fast lane."""
+    if not _integration_deselected(config):
+        return None
+    remote_tests = (
+        Path(config.rootpath) / "tests/main/filesystem/test_remote_integration.py"
+    ).resolve()
+    if collection_path.resolve() == remote_tests:
+        return True
+    return None
+
+
 def _skip_containers(config):
     return _integration_deselected(config) or not _docker_available()
 
@@ -100,8 +174,10 @@ def testdata_path() -> Path:
 
 @pytest.fixture(scope="session", autouse=True)
 def manage_containers(request, shared_directory):
-    unique_containers = set(SOURCES.values()) | set(DESTINATIONS.values())
-    for container in unique_containers:
+    # Set every lock directory on both controller and workers. Container boot is
+    # still filtered below, but fixture polling must not depend on both processes
+    # deriving exactly the same target set from their invocation arguments.
+    for container in _all_managed_containers(request.config):
         container.lock_dir = shared_directory  # ty: ignore[invalid-assignment, unresolved-attribute, unused-ignore-comment]
 
 
@@ -111,8 +187,7 @@ def start_containers(config):
     if is_worker(config):
         return
 
-    unique_containers = set(SOURCES.values()) | set(DESTINATIONS.values())
-    unique_containers = [x for x in unique_containers if x is not None]
+    unique_containers = [x for x in _managed_containers(config) if x is not None]
 
     for container in unique_containers:
         container.lock_dir = config.shared_directory  # ty: ignore[invalid-assignment, unresolved-attribute, unused-ignore-comment]
@@ -164,8 +239,7 @@ def stop_containers(config):
     if not should_manage_containers:
         return
 
-    unique_containers = set(SOURCES.values()) | set(DESTINATIONS.values())
-    unique_containers = [x for x in unique_containers if x is not None]
+    unique_containers = [x for x in _managed_containers(config) if x is not None]
 
     for container in unique_containers:
         try:

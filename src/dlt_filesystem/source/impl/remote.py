@@ -151,6 +151,9 @@ class S3CompatibleSource(FilesystemSource):
         fs_kwargs: dict = {
             "key": access_key_id[0],
             "secret": secret_access_key[0],
+            # S3FileSystem caches directory listings by default. Disable the cache so
+            # long-lived processes see objects created between incremental runs.
+            "use_listings_cache": False,
         }
         if endpoint_url:
             fs_kwargs["endpoint_url"] = endpoint_url[0]
@@ -293,7 +296,6 @@ class SFTPSource(FilesystemSource):
     """Access files on SFTP servers."""
 
     def dlt_source(self, uri: str, table: str, **kwargs):
-
         if kwargs.get("incremental_key"):
             raise ValueError(
                 "SFTP takes care of incrementality on its own, you should not provide incremental_key"

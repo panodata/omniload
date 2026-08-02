@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timezone
 from typing import Callable, Iterable
 from unittest.mock import patch
+from urllib.parse import quote
 
 import fsspec
 import pyarrow.csv
@@ -792,6 +793,21 @@ def test_azure_destination_write_through():
     assert any(c.get("account_key") == "a2V5" for c in captured)
 
 
+def test_azure_destination_connection_string_write_through():
+    """A connection string bypasses account fields and reaches adlfs intact."""
+    connection_string = (
+        "DefaultEndpointsProtocol=http;AccountName=acct;AccountKey=a2V5;"
+        "BlobEndpoint=http://127.0.0.1:10000/acct;"
+    )
+    result, container, captured = _write_to_azure(
+        f"connection_string={quote(connection_string, safe='')}&api_version=2025-11-05"
+    )
+    assert result.exit_code == 0
+    assert _azure_dest_parquet_rows(container) == 20
+    assert any(c.get("connection_string") == connection_string for c in captured)
+    assert all("api_version" not in kwargs for kwargs in captured)
+
+
 def test_azure_destination_service_principal_write_through():
     """A service-principal ``az://`` write lands rows and forwards the triplet."""
     result, container, captured = _write_to_azure(
@@ -890,6 +906,23 @@ def test_azure_destination_conflicting_auth():
             ),
             dest_table="container/test_table",
         )
+
+    connection_string = quote("UseDevelopmentStorage=true", safe="")
+    conflicting_fields = (
+        "account_name",
+        "account_key",
+        "sas_token",
+        "account_host",
+        "tenant_id",
+        "client_id",
+        "client_secret",
+    )
+    for field in conflicting_fields:
+        with pytest.raises(ValueError, match=rf"cannot be combined with {field}"):
+            AzureDestination().dlt_dest(
+                uri=f"az://?connection_string={connection_string}&{field}=conflict",
+                dest_table="container/test_table",
+            )
 
 
 def test_azure_destination_account_key_and_sas_conflict():

@@ -31,9 +31,10 @@ class GCSFakeServerContainer(DockerContainer):
 
             >>> import google.cloud.storage
             >>> from google.auth.credentials import AnonymousCredentials
-            >>> from testcontainers.gcs import GCSFakeServerContainer
+            >>> from tests.dlt_filesystem.gcs import GCSFakeServerContainer
 
-            >>> with GCSFakeServerContainer() as container:
+            >>> image = "docker.io/fsouza/fake-gcs-server:1.55.1"
+            >>> with GCSFakeServerContainer(image) as container:
             ...   endpoint_url = container.get_endpoint_url()
             ...   client = google.cloud.storage.Client(
             ...     credentials=AnonymousCredentials(),
@@ -48,7 +49,7 @@ class GCSFakeServerContainer(DockerContainer):
 
     def __init__(
         self,
-        image: str = "docker.io/fsouza/fake-gcs-server:latest",
+        image: str,
         *,
         service_port: int = 4443,
         **kwargs,
