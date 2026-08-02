@@ -24,13 +24,13 @@ from fsspec import AbstractFileSystem
 
 from dlt_filesystem.source.error import NoFilesFoundError
 from dlt_filesystem.source.format import readers as reader_functions
-from dlt_filesystem.source.format.readers import ReadersSource
 from dlt_filesystem.source.format.registry import (
     READER_REGISTRATIONS,
     ReaderRegistration,
 )
 from dlt_filesystem.source.lister import glob_files
 
+from .format.readers import ReadersSource
 from .model import FilesystemConfigurationResource
 
 

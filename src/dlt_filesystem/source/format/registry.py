@@ -23,6 +23,7 @@ BASE_READER_REGISTRATIONS = (
     ReaderRegistration("read_json", ("json",), transformer_order=4),
     ReaderRegistration("read_jsonl", ("jsonl",), transformer_order=5),
     ReaderRegistration("read_ods", ("ods",), transformer_order=3),
+    ReaderRegistration("read_orc", ("orc",), transformer_order=13),
     ReaderRegistration("read_parquet", ("parquet",), transformer_order=11),
     # bson is read-only: the file:// destination's WRITE_FORMATS is a separate tuple.
     ReaderRegistration("read_bson", ("bson",), transformer_order=6),
