@@ -52,8 +52,8 @@ def _polars_csv_symbols() -> Dict[str, Any]:
     }
 
 
-def _polars_orc_symbols() -> Dict[str, Any]:
-    """Symbols needed to resolve `polars.read_orc`'s type hints for casting reader hints."""
+def _pandas_orc_symbols() -> Dict[str, Any]:
+    """Symbols needed to resolve `pandas.read_orc`'s type hints for casting reader hints."""
 
     import fsspec
     import pyarrow
@@ -428,19 +428,13 @@ def read_orc(
 
     reader = pd.read_orc
 
-    kwargs = cast_kwargs_to_signature(reader, kwargs, symbols=_polars_orc_symbols())
+    kwargs = cast_kwargs_to_signature(reader, kwargs, symbols=_pandas_orc_symbols())
+    kwargs.setdefault("dtype_backend", "pyarrow")
 
     for file_obj in items:
         with file_obj.open() as f:
-            rec = reader(f, dtype_backend="pyarrow", **kwargs).to_records(index=False)
-            # Turn numpy recarray record into a Python dictionary.
-            # https://gist.github.com/rlabbe/d574eeac63fd126b2fcd1dc390cc3257
-            # https://stackoverflow.com/a/67324508
-            if rec.dtype is None or rec.dtype.names is None:
-                yield rec
-                return
-            result = {name: rec[name] for name in rec.dtype.names}
-            yield result
+            df = reader(f, **kwargs)
+            yield df.to_dict(orient="records")
 
 
 def read_jsonl(
