@@ -1,9 +1,65 @@
+import base64
+import json
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from dlt_filesystem.error import MissingConnectorOption
 
 AZURE_SERVICE_PRINCIPAL_FIELDS = ("tenant_id", "client_id", "client_secret")
+
+
+def _first(params: dict[str, list[str]], key: str) -> Optional[str]:
+    """Return the first query-parameter value, matching existing URI semantics."""
+    return params.get(key, [None])[0]
+
+
+def s3_filesystem_kwargs(
+    params: dict[str, list[str]], connector: str = "S3"
+) -> dict[str, Any]:
+    """Translate omniload S3 URI parameters into ``s3fs`` arguments."""
+    access_key_id = _first(params, "access_key_id")
+    if not access_key_id:
+        raise MissingConnectorOption("access_key_id", connector)
+
+    secret_access_key = _first(params, "secret_access_key")
+    if not secret_access_key:
+        raise MissingConnectorOption("secret_access_key", connector)
+
+    kwargs: dict[str, Any] = {
+        "key": access_key_id,
+        "secret": secret_access_key,
+        # S3FileSystem caches directory listings by default. Disable the cache so
+        # long-lived processes see objects created between incremental runs.
+        "use_listings_cache": False,
+    }
+    endpoint_url = _first(params, "endpoint_url")
+    if endpoint_url:
+        kwargs["endpoint_url"] = endpoint_url
+    return kwargs
+
+
+def gcs_filesystem_kwargs(
+    params: dict[str, list[str]], inherited: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Translate omniload GCS URI parameters into ``gcsfs`` arguments."""
+    kwargs = dict(inherited or {})
+    remaining = {key: list(values) for key, values in params.items()}
+    credentials_path = _first(remaining, "credentials_path")
+    credentials_base64 = _first(remaining, "credentials_base64")
+    remaining.pop("credentials_path", None)
+    remaining.pop("credentials_base64", None)
+
+    for key, values in remaining.items():
+        kwargs.setdefault(key, values[0])
+
+    if "token" not in kwargs:
+        if credentials_path:
+            kwargs["token"] = credentials_path
+        elif credentials_base64:
+            kwargs["token"] = json.loads(base64.b64decode(credentials_base64).decode())
+        else:
+            kwargs["token"] = "anon"  # noqa: S105 - gcsfs anonymous-access sentinel
+    return kwargs
 
 
 @dataclass
@@ -66,16 +122,15 @@ def parse_azure_blob_auth(params: dict) -> AzureBlobAuth:
             rather than silently picking one.
     """
 
-    def one(key: str) -> Optional[str]:
-        return params.get(key, [None])[0]
-
-    connection_string = one("connection_string")
-    api_version = one("api_version")
-    account_name = one("account_name")
-    account_key = one("account_key")
-    sas_token = one("sas_token")
-    sp_values = {field: one(field) for field in AZURE_SERVICE_PRINCIPAL_FIELDS}
-    account_host = one("account_host")
+    connection_string = _first(params, "connection_string")
+    api_version = _first(params, "api_version")
+    account_name = _first(params, "account_name")
+    account_key = _first(params, "account_key")
+    sas_token = _first(params, "sas_token")
+    sp_values = {
+        field: _first(params, field) for field in AZURE_SERVICE_PRINCIPAL_FIELDS
+    }
+    account_host = _first(params, "account_host")
 
     if connection_string is not None:
         conflicting_fields = [
@@ -139,3 +194,25 @@ def parse_azure_blob_auth(params: dict) -> AzureBlobAuth:
         api_version=api_version,
         **sp_values,
     )
+
+
+def azure_blob_filesystem_kwargs(auth: AzureBlobAuth) -> dict[str, Any]:
+    """Translate parsed Azure credentials into ``adlfs`` arguments."""
+    kwargs: dict[str, Any] = {"account_name": auth.account_name}
+    if auth.account_key is not None:
+        kwargs["account_key"] = auth.account_key
+    if auth.sas_token is not None:
+        kwargs["sas_token"] = auth.sas_token
+    if auth.tenant_id is not None:
+        kwargs["tenant_id"] = auth.tenant_id
+    if auth.client_id is not None:
+        kwargs["client_id"] = auth.client_id
+    if auth.client_secret is not None:
+        kwargs["client_secret"] = auth.client_secret
+    if auth.account_host is not None:
+        kwargs["account_host"] = auth.account_host
+    if auth.connection_string is not None:
+        kwargs["connection_string"] = auth.connection_string
+    if auth.api_version is not None:
+        kwargs["api_version"] = auth.api_version
+    return kwargs

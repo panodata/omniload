@@ -326,6 +326,18 @@ def test_touch_s3_filesystem_without_secret_access_key():
     assert exc_info.match("secret_access_key is required")
 
 
+def test_touch_s3_filesystem_without_bucket_or_credentials_reports_credentials():
+    """Credential validation keeps precedence for a doubly invalid S3 source."""
+    source_uri = "s3://"
+    factory = SourceDestinationFactory(source_uri, "file://")
+    source = factory.get_source()
+
+    with pytest.raises(MissingConnectorOption) as exc_info:
+        source.dlt_source(uri=source_uri, table="")
+
+    assert exc_info.match("access_key_id is required")
+
+
 @pytest.mark.parametrize(
     "source_uri", SCHEMES_WITH_HOST, ids=[str(item) for item in SCHEMES_WITH_HOST]
 )

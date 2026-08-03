@@ -16,13 +16,14 @@ inherited by [dlt]: `append`, `merge`, and `delete+insert`.
 
 We recommend using [uv](https://github.com/astral-sh/uv) to run `omniload`.
 
-```
+```bash
 pip install uv
 uvx omniload
 ```
 
 Alternatively, if you'd like to install it globally:
-```
+
+```bash
 uv pip install --system omniload
 ```
 
@@ -35,14 +36,14 @@ Check out the {ref}`Quickstart` guide to get started with omniload.
 ### License
 
 The project is licensed under the MIT License, see the [LICENSE] file for details.
-Some components are licensed under the Apache 2.0 license, see the [NOTICE] file for details.
+Some components are licensed under the Apache 2.0 license, see the [NOTICE]
+file for details.
 
 ### Acknowledgements
 
 This project would not have been possible without the amazing work by the
 authors and contributors to [SQLAlchemy], [dlt], and [ingestr], turtles all
 the way down. Kudos.
-
 
 ```{toctree}
 :caption: Commands and adapters
@@ -79,12 +80,12 @@ tutorials/*
 :maxdepth: 1
 :hidden:
 :glob:
+decisions/*
 sandbox
 changelog
 contributors
 backlog
 ```
-
 
 [dlt]: https://github.com/dlt-hub/dlt
 [ingestr]: https://bruin-data.github.io/ingestr/

@@ -93,6 +93,8 @@ class LoadRequest:
     loader_file_size: int = 100000
     schema_naming: SchemaNaming | str = SchemaNaming.default
     pipelines_dir: str | None = None
+    # Parent directory for run-scoped remote database staging directories.
+    remote_database_staging_root: str | None = None
     extract_parallelism: int = 5
     sql_reflection_level: SqlReflectionLevel | str = SqlReflectionLevel.full
     sql_limit: int | None = None

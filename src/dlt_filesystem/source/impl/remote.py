@@ -1,5 +1,3 @@
-import base64
-import json
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Type
 from urllib.parse import parse_qs, urlparse
@@ -16,7 +14,12 @@ from dlt_filesystem.source.router import (
     parse_uri,
     source_selects_single_file,
 )
-from dlt_filesystem.util.auth import AzureBlobAuth, parse_azure_blob_auth
+from dlt_filesystem.util.auth import (
+    azure_blob_filesystem_kwargs,
+    gcs_filesystem_kwargs,
+    parse_azure_blob_auth,
+    s3_filesystem_kwargs,
+)
 
 if TYPE_CHECKING:
     from fsspec import AbstractFileSystem
@@ -52,25 +55,7 @@ class GCSSource(FilesystemSource):
 
         bucket_url = f"gs://{bucket_name}"
 
-        credentials_path = params.pop("credentials_path", [None])[0]
-        credentials_base64 = params.pop("credentials_base64", [None])[0]
-
-        # Merge params into fs kwargs, without overriding kwargs already
-        # supplied by the caller (e.g. filesystem_incremental, column_types).
-        for key, value in params.items():
-            kwargs.setdefault(key, value[0])
-
-        if "token" not in kwargs:
-            credentials = None
-            if credentials_path:
-                credentials = credentials_path
-            elif credentials_base64:
-                credentials = json.loads(base64.b64decode(credentials_base64).decode())
-            else:
-                credentials = "anon"
-            kwargs["token"] = credentials
-
-        fs = self.fs_class(**kwargs)
+        fs = self.fs_class(**gcs_filesystem_kwargs(params, kwargs))
 
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
@@ -133,14 +118,7 @@ class S3CompatibleSource(FilesystemSource):
 
         parsed_uri = urlparse(uri)
         source_fields = parse_qs(parsed_uri.query)
-        access_key_id = source_fields.get("access_key_id")
-        if not access_key_id:
-            raise MissingConnectorOption("access_key_id", self.fs_name)
-
-        secret_access_key = source_fields.get("secret_access_key")
-        if not secret_access_key:
-            raise MissingConnectorOption("secret_access_key", self.fs_name)
-
+        fs_kwargs = s3_filesystem_kwargs(source_fields, self.fs_name)
         bucket_name, path_to_file = parse_uri(parsed_uri, table)
         if not bucket_name or not path_to_file:
             raise InvalidBlobTableError(self.fs_name)
@@ -148,15 +126,6 @@ class S3CompatibleSource(FilesystemSource):
         bucket_url = f"{self.fs_protocol}://{bucket_name}/"
 
         endpoint_url = source_fields.get("endpoint_url")
-        fs_kwargs: dict = {
-            "key": access_key_id[0],
-            "secret": secret_access_key[0],
-            # S3FileSystem caches directory listings by default. Disable the cache so
-            # long-lived processes see objects created between incremental runs.
-            "use_listings_cache": False,
-        }
-        if endpoint_url:
-            fs_kwargs["endpoint_url"] = endpoint_url[0]
 
         fs = self.fs_class(**fs_kwargs)
 
@@ -191,35 +160,6 @@ class S3Source(S3CompatibleSource):
     @property
     def fs_name(self) -> str:
         return "S3"
-
-
-def _azure_kwargs(auth: AzureBlobAuth):
-    """Return AzureBlobAuth information as dictionary.
-
-    The ingestr-style short names already match adlfs kwargs, so they pass
-    straight through; only the supplied ones are forwarded. ``adlfs`` is
-    imported lazily so the CLI ``--help`` and every non-Azure path never load
-    the Azure SDK (matching the s3fs/gcsfs deferred-import convention).
-    """
-
-    kwargs = {"account_name": auth.account_name}
-    if auth.account_key is not None:
-        kwargs["account_key"] = auth.account_key
-    if auth.sas_token is not None:
-        kwargs["sas_token"] = auth.sas_token
-    if auth.tenant_id is not None:
-        kwargs["tenant_id"] = auth.tenant_id
-    if auth.client_id is not None:
-        kwargs["client_id"] = auth.client_id
-    if auth.client_secret is not None:
-        kwargs["client_secret"] = auth.client_secret
-    if auth.account_host is not None:
-        kwargs["account_host"] = auth.account_host
-    if auth.connection_string is not None:
-        kwargs["connection_string"] = auth.connection_string
-    if auth.api_version is not None:
-        kwargs["api_version"] = auth.api_version
-    return kwargs
 
 
 class AzureSource(FilesystemSource):
@@ -259,7 +199,7 @@ class AzureSource(FilesystemSource):
 
         bucket_url = f"az://{bucket_name}"
 
-        kwargs.update(_azure_kwargs(auth))
+        kwargs.update(azure_blob_filesystem_kwargs(auth))
         fs = self.fs_class(**kwargs)
 
         try:

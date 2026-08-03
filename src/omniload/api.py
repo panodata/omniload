@@ -61,10 +61,52 @@ def run_ingest(**kwargs) -> LoadInfo | None:
 
     jr = LoadRequest(**kwargs)
     if jr.pipelines_dir is not None:
-        return _run_ingest(jr, jr.pipelines_dir, is_pipelines_dir_temp=False)
+        return _run_ingest_with_remote_database(
+            jr, jr.pipelines_dir, is_pipelines_dir_temp=False
+        )
 
     with tempfile.TemporaryDirectory() as pipelines_dir:
-        return _run_ingest(jr, pipelines_dir, is_pipelines_dir_temp=True)
+        return _run_ingest_with_remote_database(
+            jr, pipelines_dir, is_pipelines_dir_temp=True
+        )
+
+
+def _run_ingest_with_remote_database(
+    jr: LoadRequest, pipelines_dir: str, *, is_pipelines_dir_temp: bool
+) -> LoadInfo | None:
+    """Stage a remote SQLite/DuckDB source for the complete pipeline lifetime."""
+    import dataclasses
+
+    from omniload.source.sql_database.remote import (
+        dry_run_database_uri,
+        parse_remote_database_uri,
+        stage_remote_database,
+    )
+
+    remote_database = parse_remote_database_uri(jr.source_uri, jr.source_table or "")
+    if remote_database is None:
+        return _run_ingest(
+            jr, pipelines_dir, is_pipelines_dir_temp=is_pipelines_dir_temp
+        )
+
+    if jr.dry_run:
+        # Validate the SQL source the real run uses, without downloading anything.
+        return _run_ingest(
+            dataclasses.replace(jr, source_uri=dry_run_database_uri(remote_database)),
+            pipelines_dir,
+            is_pipelines_dir_temp=is_pipelines_dir_temp,
+        )
+
+    staging_root = jr.remote_database_staging_root or pipelines_dir
+    with stage_remote_database(
+        remote_database, staging_root=staging_root
+    ) as staged_source_uri:
+        staged_request = dataclasses.replace(jr, source_uri=staged_source_uri)
+        return _run_ingest(
+            staged_request,
+            pipelines_dir,
+            is_pipelines_dir_temp=is_pipelines_dir_temp,
+        )
 
 
 def _run_ingest(

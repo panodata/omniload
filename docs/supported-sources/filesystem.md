@@ -215,6 +215,52 @@ cloud blob destinations currently address one table path. They reject a plural
 workbook load. Select one worksheet or use a dataset-capable destination.
 :::
 
+(database-files)=
+
+## Database files
+
+An object whose name carries a database extension is a database, not a file to
+decode. omniload hands it to the SQL source instead of a reader, so
+`--source-table` selects a table inside the database and the usual SQL
+reflection, chunking, and type mapping apply:
+
+```sh
+omniload ingest \
+    --source-uri 's3://analytics/snapshots/events.duckdb?access_key_id=ACCESS&secret_access_key=SECRET' \
+    --source-table 'main.events' \
+    --dest-uri 'duckdb:///local.duckdb' \
+    --dest-table 'raw.events'
+```
+
+| Extension              | Engine                             |
+|:-----------------------|:-----------------------------------|
+| .db                    | SQLite or DuckDB, read from header |
+| .ddb, .duckdb          | DuckDB                             |
+| .sqlite, .sqlite3      | SQLite                             |
+
+The engine is read from the file header, so a mislabeled object still loads. An
+empty file falls back to its extension, and a `.db` file that is neither engine
+reports both candidates.
+
+Databases are read from `s3://`, `r2://`, `gs://`, `az://`, `adls://`, and
+`abfss://`. Credentials and storage options are the same query parameters the
+matching {ref}`filesystem source <filesystem-types>` takes. The URI names one
+object: globs, `#` fragments, and credentials in the authority are rejected
+rather than silently reinterpreted. The object path also has to ride
+`--source-uri`, because `--source-table` names a table inside the database
+rather than the object, unlike the split form the file sources accept.
+
+Local databases need no filesystem source. Address them with
+[DuckDB](duckdb.md) or [SQLite](sqlite.md) directly, as
+`duckdb:///path/to/events.duckdb`.
+
+:::{note}
+The object is downloaded whole into a run-scoped temporary directory before it
+is opened, so the database must fit on local disk. The copy is removed after
+success and after failure, and changes to it are never written back. Remote
+databases are sources only.
+:::
+
 (file-format-routing)=
 
 ## File format routing

@@ -1,11 +1,13 @@
 import gzip
 import io
 import json
+import sqlite3
 from collections.abc import Callable
+from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
-from urllib.parse import quote
+from urllib.parse import parse_qsl, quote, urlencode
 from uuid import uuid4
 
 import duckdb
@@ -16,6 +18,7 @@ from azure.storage.blob import BlobServiceClient
 from dlt.sources.filesystem import FileItemDict
 
 from dlt_filesystem.source.error import NoFilesFoundError
+from dlt_filesystem.staging import RemoteObjectNotFoundError
 from omniload import run_ingest
 from tests.util import invoke_ingest_command
 from tests.util.common import has_exception
@@ -32,8 +35,14 @@ FORMAT_MATRIX = [
     for backend in FAST_SOURCE_BACKENDS
     for file_format in ["csv", "jsonl", "parquet", "csv.gz"]
 ] + [pytest.param("gcs", "csv", id="gcs-csv")]
+DATABASE_MATRIX = [
+    pytest.param("s3", "duckdb", id="s3-duckdb"),
+    pytest.param("azure", "sqlite", id="azure-sqlite"),
+    pytest.param("gcs", "duckdb", id="gcs-duckdb"),
+]
 
 CSV_ROWS = b"name,value\nAlice,1\nBob,2\n"
+WIDGET_ROWS = [(1, "alpha"), (2, "beta"), (3, "gamma")]
 
 
 @dataclass(frozen=True)
@@ -49,6 +58,11 @@ class RemoteFilesystemEmulator:
 
     def source_table(self, path: str) -> str:
         return f"{self.namespace}/{path}"
+
+    def object_uri(self, path: str) -> str:
+        """Address one object by the URI its storage service already names it with."""
+        scheme, _, query = self.source_uri.partition("?")
+        return f"{scheme}{self.namespace}/{path}?{query}"
 
     def destination_table(self, prefix: str, table: str = "data") -> str:
         return f"{self.namespace}/{prefix}/{table}"
@@ -203,6 +217,21 @@ def format_payload(file_format: str) -> tuple[str, bytes]:
     raise ValueError(f"Unknown test format: {file_format}")
 
 
+def database_payload(engine: str, path: Path) -> bytes:
+    """Build a small single-table database and return it as uploadable bytes."""
+    if engine == "duckdb":
+        with duckdb.connect(path) as db:
+            db.execute("CREATE TABLE widgets (id INTEGER, name VARCHAR)")
+            db.executemany("INSERT INTO widgets VALUES (?, ?)", WIDGET_ROWS)
+    elif engine == "sqlite":
+        with closing(sqlite3.connect(path)) as db, db:
+            db.execute("CREATE TABLE widgets (id INTEGER, name TEXT)")
+            db.executemany("INSERT INTO widgets VALUES (?, ?)", WIDGET_ROWS)
+    else:
+        raise ValueError(f"Unknown test database engine: {engine}")
+    return path.read_bytes()
+
+
 def parquet_rows(objects: dict[str, bytes]) -> list[dict]:
     """Read all destination parquet data objects returned by an emulator SDK."""
     parquet_objects = {
@@ -301,6 +330,66 @@ def test_s3_missing_concrete_source_fails(s3_emulator, tmp_path, missing_bucket)
     assert has_exception(result.exception, NoFilesFoundError)
     assert f"s3://{bucket}/" in str(result.exception)
     assert "path/to/missing.csv" in str(result.exception)
+
+
+@pytest.mark.parametrize(
+    "remote_filesystem,engine", DATABASE_MATRIX, indirect=["remote_filesystem"]
+)
+def test_remote_database_source_stages_and_cleans_up(
+    remote_filesystem, engine, tmp_path
+):
+    """A remote database object loads through SQL extraction and leaves nothing staged.
+
+    The object keeps the URI its storage service names it with, so the extension
+    routes it to the SQL source and ``--source-table`` selects a table inside it.
+    """
+    key = f"databases/source.{engine}"
+    remote_filesystem.upload(
+        key, database_payload(engine, tmp_path / f"source.{engine}")
+    )
+
+    staging_root = tmp_path / "staging"
+    # The destination file name doubles as the DuckDB catalog name, so keep it
+    # distinct from the `remote` dataset the rows land in.
+    db_path = tmp_path / f"{remote_filesystem.backend}-remote.duckdb"
+    result = run_ingest(
+        source_uri=remote_filesystem.object_uri(key),
+        dest_uri=f"duckdb:///{db_path}",
+        source_table="main.widgets",
+        dest_table="remote.widgets",
+        remote_database_staging_root=str(staging_root),
+        progress="log",
+    )
+
+    assert result is not None
+    assert duckdb_table_cardinality(db_path, "remote.widgets") == 3
+    assert list(staging_root.iterdir()) == []
+
+
+def test_missing_remote_database_fails_and_removes_staging(s3_emulator, tmp_path):
+    """A missing object reports its safe location and leaves no staged files."""
+    staging_root = tmp_path / "staging"
+    options = dict(parse_qsl(s3_emulator.source_uri.partition("?")[2]))
+    options["secret_access_key"] = "do-not-report"  # noqa: S105 - leak canary
+    source_uri = (
+        f"s3://{s3_emulator.namespace}/databases/missing.duckdb?{urlencode(options)}"
+    )
+
+    with pytest.raises(RemoteObjectNotFoundError) as excinfo:
+        run_ingest(
+            source_uri=source_uri,
+            dest_uri=f"duckdb:///{tmp_path / 'missing.duckdb'}",
+            source_table="main.widgets",
+            dest_table="remote.widgets",
+            remote_database_staging_root=str(staging_root),
+            progress="log",
+        )
+
+    assert f"s3://{s3_emulator.namespace}/databases/missing.duckdb" in str(
+        excinfo.value
+    )
+    assert "do-not-report" not in str(excinfo.value)
+    assert list(staging_root.iterdir()) == []
 
 
 @pytest.mark.parametrize("remote_filesystem", DESTINATION_BACKENDS, indirect=True)

@@ -141,6 +141,37 @@ class SqlSourceTest(unittest.TestCase):
         self.assertIn("token:***", captured_uri)
         self.assertIn("hostname", captured_uri)
 
+    def test_motherduck_uri_rewrite_is_unchanged(self):
+        captured_uri = ""
+
+        def sql_table(credentials: ConnectionStringCredentials, **kwargs):
+            nonlocal captured_uri
+            captured_uri = credentials.to_native_representation()
+            return dlt.resource()
+
+        source = SqlSourceRouter(table_builder=sql_table)
+        source.dlt_source("md://analytics?token=secret", "main.widgets")
+
+        self.assertEqual(
+            captured_uri,
+            "duckdb:///md:analytics?motherduck_token=secret",
+        )
+
+    def test_cratedb_uri_rewrite_is_unchanged(self):
+        captured_uri = ""
+
+        def sql_table(credentials: ConnectionStringCredentials, **kwargs):
+            nonlocal captured_uri
+            captured_uri = credentials.to_native_representation()
+            return dlt.resource()
+
+        source = SqlSourceRouter(table_builder=sql_table)
+        source.dlt_source(
+            "cratedb://crate@localhost:4200/?sslmode=require", "doc.widgets"
+        )
+
+        self.assertEqual(captured_uri, "crate://crate@localhost:4200/?ssl=true")
+
 
 class MongoDbSourceTest(unittest.TestCase):
     def test_sql_source_requires_two_fields_in_table(self):
