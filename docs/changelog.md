@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Connectors: Added source and target adapters for the Delta Lake table format
+
 ## 2026/08/04 v0.9.0
 
 - Database: Load SQLite and DuckDB databases that live on a remote filesystem,
