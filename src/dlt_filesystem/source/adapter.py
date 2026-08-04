@@ -34,6 +34,7 @@ from dlt_filesystem.source.format.readers import (
     read_jsonl,
     read_msgpack,
     read_ods,
+    read_orc,
     read_parquet,
     read_xml,
     read_yaml,
@@ -77,6 +78,8 @@ def readers(
         | dlt.transformer(name="read_bson", max_table_nesting=0)(read_bson),
         filesystem_resource
         | dlt.transformer(name="read_msgpack", max_table_nesting=0)(read_msgpack),
+        filesystem_resource
+        | dlt.transformer(name="read_orc", max_table_nesting=0)(read_orc),
         filesystem_resource
         | dlt.transformer(name="read_cbor", max_table_nesting=0)(read_cbor),
         filesystem_resource

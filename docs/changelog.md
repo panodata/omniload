@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Filesystem: Added reader for ORC format
+
 ## 2026/08/04 v0.9.0
 
 - Database: Load SQLite and DuckDB databases that live on a remote filesystem,

@@ -52,6 +52,24 @@ def _polars_csv_symbols() -> Dict[str, Any]:
     }
 
 
+def _pandas_orc_symbols() -> Dict[str, Any]:
+    """Symbols needed to resolve `pandas.read_orc`'s type hints for casting reader hints."""
+
+    import fsspec
+    import pyarrow
+    from pandas import DataFrame
+    from pandas._typing import DtypeBackend, FilePath, ReadBuffer
+
+    return {
+        "DataFrame": DataFrame,
+        "DtypeBackend": DtypeBackend,
+        "FilePath": FilePath,
+        "fsspec": fsspec,
+        "pyarrow": pyarrow,
+        "ReadBuffer": ReadBuffer,
+    }
+
+
 def _polars_spreadsheet_symbols() -> Dict[str, Any]:
     """Symbols needed to cast reader hint values for `polars.read_excel` and `polars.read_ods`."""
     from typing import Sequence
@@ -400,6 +418,25 @@ def read_spreadsheet(
             yield dlt.mark.with_table_name(rows, sheet_name)
 
 
+def read_orc(
+    items: Iterator[FileItemDict],
+    **kwargs,
+) -> Iterator[TDataItems]:
+    """Reader for ORC files."""
+
+    import pandas as pd
+
+    reader = pd.read_orc
+
+    kwargs = cast_kwargs_to_signature(reader, kwargs, symbols=_pandas_orc_symbols())
+    kwargs.setdefault("dtype_backend", "pyarrow")
+
+    for file_obj in items:
+        with file_obj.open() as f:
+            df = reader(f, **kwargs)
+            yield df.to_dict(orient="records")
+
+
 def read_jsonl(
     items: Iterator[FileItemDict], chunksize: int = 1000
 ) -> Iterator[TDataItems]:
@@ -641,6 +678,10 @@ if TYPE_CHECKING:
         @copy_sig(read_msgpack)
         def read_msgpack(self) -> DltResource:
             """MessagePack reader resource."""
+
+        @copy_sig(read_orc)
+        def read_orc(self) -> DltResource:
+            """ORC reader resource (pyarrow)."""
 
         @copy_sig(read_cbor)
         def read_cbor(self) -> DltResource:
