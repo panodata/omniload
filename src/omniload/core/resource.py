@@ -17,7 +17,7 @@ def for_each(
         resource_names = list(source.selected_resources.keys())
         for res in resource_names:
             ex(
-                source.resources[  # ty: ignore[unresolved-attribute,invalid-argument-type]
+                source.resources[  # ty: ignore[unresolved-attribute]
                     res
                 ]
             )
