@@ -135,7 +135,7 @@ dependencies = [
   "tldextract<6",
   "toolz<2",
   "tqdm<5",
-  "trino[sqlalchemy]==0.338.0",
+  "trino[sqlalchemy]==0.339.0",
   "typer<0.28",
   "urllib3<2.8",
 ]
