@@ -1,5 +1,8 @@
+import logging
 from typing import Any, Optional
 from urllib.parse import parse_qs, urlparse
+
+logger = logging.getLogger(__name__)
 
 
 class MqBridgeSource:
@@ -38,6 +41,7 @@ class MqBridgeSource:
 
         from omniload.source.mqbridge.adapter import (
             endpoint_from_uri,
+            ensure_plugin,
             mqbridge_resource,
         )
 
@@ -69,6 +73,9 @@ class MqBridgeSource:
         # connection if a transform between here and the load raised. release/post_load see the
         # consumer via ``self._consumer``, which stays None until this runs.
         def open_consumer():
+            # Plugin endpoints (Pulsar) must register themselves with mq-bridge before it can
+            # build the consumer; built-in transports make this a no-op.
+            ensure_plugin(transport)
             self._consumer = Consumer.from_config(config)
             return self._consumer
 
@@ -84,20 +91,44 @@ class MqBridgeSource:
         )
 
     def post_load(self) -> None:
-        # Ack exactly the batches that made it into the load package, then close. Batches
-        # left un-acked (e.g. truncated by --yield-limit) stay outstanding and redeliver.
+        # Ack exactly the batches that made it into the load package, then hand back whatever is
+        # still outstanding — a batch truncated by --yield-limit — so it redelivers at once
+        # rather than after a visibility timeout. ``ack`` drops its token from mq-bridge's
+        # pending map, so the no-token nack can only reach batches we never acked.
         if self._consumer is not None:
             try:
                 for token in self._pending_batches:
                     self._consumer.ack(token)
+                self._nack_outstanding(self._consumer)
             finally:
                 self._pending_batches = []
                 self._consumer.close()
                 self._consumer = None
 
     def release(self) -> None:
-        # Close without acking, so the whole run's batches are redelivered.
+        # Nothing was acked, so nacking hands the whole run's messages back at once instead of
+        # waiting for the un-acked batches to expire.
         if self._consumer is not None:
-            self._pending_batches = []
-            self._consumer.close()
-            self._consumer = None
+            try:
+                self._nack_outstanding(self._consumer)
+            finally:
+                self._pending_batches = []
+                self._consumer.close()
+                self._consumer = None
+
+    @staticmethod
+    def _nack_outstanding(consumer: Any) -> None:
+        """Hand every still-outstanding batch back to the broker, best effort.
+
+        The no-token form covers batches that were polled but never recorded (one truncated
+        mid-yield), which ``_pending_batches`` does not track. On a transport with no
+        per-message nack — Kafka — this only leaves the offset unadvanced, so redelivery still
+        waits for the next run or rebalance. A broker that already dropped the connection
+        cannot be nacked at all, and closing is what frees the connection either way.
+        """
+        try:
+            consumer.nack()
+        except Exception as ex:
+            logger.warning(
+                "mq-bridge nack failed, falling back to redelivery on timeout: %s", ex
+            )

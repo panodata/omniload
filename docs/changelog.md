@@ -2,6 +2,26 @@
 
 ## in progress
 
+- mq-bridge: Require mq-bridge-py 0.4.7 (was 0.3.2) and add four transports:
+  Redis Streams (`redis-streams+mqb://`), Apache Pulsar (`pulsar+mqb://`), gRPC
+  (`grpc+mqb://`) and WebSocket (`websocket+mqb://`). Pulsar is not built into
+  mq-bridge but ships as a separate native plugin, installed via the new
+  `omniload[pulsar]` extra and registered on demand; it stays out of the base
+  install (and out of `omniload[full]`) because its wheels require glibc >= 2.34 on
+  x86_64, glibc >= 2.38 on aarch64, and omit Windows arm64, all narrower than
+  omniload's own platform floor. mq-bridge names its Redis endpoint
+  `redis_streams`, but a URI scheme cannot contain an underscore, so omniload
+  addresses it as `redis-streams+mqb://`. Note that a WebSocket *source* is a
+  server: mq-bridge binds the authority and ingests the frames clients push to it,
+  so `--source-table` names the HTTP path served and the run is bounded by
+  `max_messages`/`idle_timeout_ms` rather than by end-of-stream.
+- mq-bridge: Nack the batches left outstanding at the end of a run instead of only
+  closing the consumer, so the broker redelivers them immediately rather than
+  after a visibility timeout. This covers both a failed load and a `--yield-limit`
+  that truncated a batch mid-yield. On transports with no per-message nack --
+  Kafka -- this still only leaves the offset unadvanced, so redelivery waits for
+  the next run or rebalance as before. Delivery is unchanged otherwise -- still
+  at-least-once, deduplicated on `_mqb_id`.
 - Filesystem: build reader transformers from registration records instead of a
   second hand-written adapter list, and expose the DuckDB CSV reader through
   `#csv_duckdb` and `.csv_duckdb`.

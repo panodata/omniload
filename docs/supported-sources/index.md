@@ -224,6 +224,11 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>-</td>
     </tr>
     <tr>
+        <td>gRPC</td>
+        <td>✅</td>
+        <td>-</td>
+    </tr>
+    <tr>
         <td>IBM MQ</td>
         <td>✅</td>
         <td>-</td>
@@ -268,6 +273,16 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>✅</td>
         <td>-</td>
     </tr>
+    <tr>
+        <td>Pulsar</td>
+        <td>✅</td>
+        <td>-</td>
+    </tr>
+    <tr>
+        <td>Redis Streams</td>
+        <td>✅</td>
+        <td>-</td>
+    </tr>
      <tr>
         <td>S3</td>
         <td>✅</td>
@@ -305,6 +320,11 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
     </tr>
     <tr>
         <td>TikTok Ads</td>
+        <td>✅</td>
+        <td>-</td>
+    </tr>
+    <tr>
+        <td>WebSocket</td>
         <td>✅</td>
         <td>-</td>
     </tr>

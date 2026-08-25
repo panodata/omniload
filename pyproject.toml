@@ -99,7 +99,7 @@ dependencies = [
   "google-cloud-bigquery-storage<3",
   "google-cloud-spanner<4",
   "influxdb-client<2",
-  "mq-bridge-py>=0.3.2,<0.5,!=0.3.9",
+  "mq-bridge-py>=0.4.7,<0.5",
   "mysql-connector-python<27",
   "omniload[filesystem]",
   "oracledb<5",
@@ -188,6 +188,15 @@ optional-dependencies.odbc = [
 ]
 optional-dependencies.oracle = [
   "oracledb>=2.0.0",
+]
+# Apache Pulsar support for the mq-bridge source, shipped as a separate native plugin
+# (mq-bridge itself has no Pulsar dependency). Kept out of the base install -- and out of
+# [full] -- because its wheels are narrower than omniload's own platform floor: glibc >= 2.34
+# on x86_64 but >= 2.38 on aarch64, and no Windows arm64, all places where duckdb -- and
+# therefore omniload -- still installs fine. It publishes no sdist, so an unsupported platform
+# fails at resolve time rather than trying to build.
+optional-dependencies.pulsar = [
+  "mq-bridge-pulsar>=0.1.4,<0.2",
 ]
 optional-dependencies.release = [
   "build<2",

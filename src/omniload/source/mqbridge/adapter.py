@@ -1,3 +1,4 @@
+from importlib import import_module
 from typing import Any, Callable, Dict, Iterable, NamedTuple, Optional, Tuple
 from urllib.parse import ParseResult, parse_qs, urlparse
 
@@ -25,9 +26,23 @@ _INT_FIELDS = frozenset(
         "stream_max_bytes",
         "stream_max_messages",
         "wait_time_seconds",  # aws (SQS long-poll)
-        "internal_buffer_size",  # zeromq, ibmmq
+        "internal_buffer_size",  # zeromq, ibmmq, redis-streams
         "max_message_size",  # ibmmq
         "wait_timeout_ms",  # ibmmq (consumer poll timeout)
+        "block_ms",  # redis-streams (XREADGROUP block)
+        "redelivery_timeout_ms",  # redis-streams (PEL reclaim)
+        "maxlen",  # redis-streams (stream trim)
+        "reader_connections",  # redis-streams
+        "routed_queue_capacity",  # websocket
+        "backlog",  # websocket
+        "timeout_ms",  # grpc
+        "initial_stream_window_size",  # grpc
+        "initial_connection_window_size",  # grpc
+        "concurrency_limit_per_connection",  # grpc
+        "http2_keepalive_interval_ms",  # grpc
+        "http2_keepalive_timeout_ms",  # grpc
+        "max_decoding_message_size",  # grpc
+        "max_encoding_message_size",  # grpc
     }
 )
 _BOOL_FIELDS = frozenset(
@@ -45,6 +60,10 @@ _BOOL_FIELDS = frozenset(
         "binary_payload_mode",  # aws
         "bind",  # zeromq
         "disable_status_inq",  # ibmmq
+        "read_from_start",  # redis-streams
+        "approx_trim",  # redis-streams
+        "server_mode",  # grpc
+        "server_streaming",  # grpc
         "required",  # tls.required
         "accept_invalid_certs",  # tls.accept_invalid_certs
     }
@@ -61,11 +80,20 @@ class _Transport(NamedTuple):
 
     For memory, ``authority_field`` and ``table_field`` are the same slot (``url``/``topic`` are
     aliases), which makes "either the authority or ``?topic=``, not both" fall out for free.
+
+    ``config_key`` is the key mq-bridge itself uses, when it differs from the scheme. A URI scheme
+    cannot contain an underscore (RFC 3986), so ``redis_streams`` is addressed as
+    ``redis-streams+mqb://``. ``plugin`` names the Python module of a native endpoint plugin that
+    must register the endpoint before mq-bridge can build it, and ``extra`` the omniload extra
+    that installs it — the two need not match the scheme.
     """
 
     table_field: str
     authority_field: Optional[str] = None
     render: Optional[Callable[[ParseResult], str]] = None
+    config_key: Optional[str] = None
+    plugin: Optional[str] = None
+    extra: Optional[str] = None
 
 
 def _ibmmq_conn_name(parsed: ParseResult) -> str:
@@ -105,7 +133,41 @@ _TRANSPORTS: Dict[str, _Transport] = {
     ),  # SQS: queue_url is itself the URL, no connection url
     "ibmmq": _Transport("queue", "url", _ibmmq_conn_name),
     "memory": _Transport("topic", "topic", lambda p: f"{p.netloc}{p.path}"),
+    "redis-streams": _Transport(
+        "stream", "url", lambda p: f"redis://{p.netloc}", config_key="redis_streams"
+    ),
+    "websocket": _Transport("path", "url", lambda p: p.netloc),
+    "grpc": _Transport("topic", "url", lambda p: f"http://{p.netloc}"),
+    "pulsar": _Transport(
+        "topic",
+        "url",
+        lambda p: f"pulsar://{p.netloc}",
+        plugin="mq_bridge_pulsar",
+        extra="pulsar",
+    ),
 }
+
+
+def ensure_plugin(transport: str) -> None:
+    """Register the native endpoint plugin ``transport`` needs, if it needs one.
+
+    Pulsar is not built into mq-bridge; it ships as a separate wheel that registers itself at
+    runtime. Registering twice is a no-op, so calling this per consumer is safe.
+    """
+    spec = _TRANSPORTS.get(transport)
+    if spec is None or spec.plugin is None:
+        return
+    try:
+        module = import_module(spec.plugin)
+    except ImportError as ex:
+        # Chained, not suppressed: an installed plugin whose native library fails to load also
+        # raises ImportError, and "not installed" would be a lie without the original cause.
+        raise ValueError(
+            f"The {transport!r} transport needs the {spec.plugin} plugin, which is not "
+            f"installed (or failed to load: {ex}). Install it with "
+            f"`pip install 'omniload[{spec.extra}]'`."
+        ) from ex
+    module.register()
 
 
 def _coerce(key: str, value: str) -> Any:
@@ -142,7 +204,11 @@ def _assign(config: Dict[str, Any], key: str, value: str) -> None:
 
 
 def endpoint_from_uri(uri: str, table: str) -> Tuple[str, Dict[str, Dict[str, Any]]]:
-    """Translate a ``<transport>+mqb://`` URI into ``(transport, Consumer.from_config arg)``."""
+    """Translate a ``<transport>+mqb://`` URI into ``(transport, Consumer.from_config arg)``.
+
+    The returned transport is the scheme's name, which ``ensure_plugin`` keys off; the config is
+    keyed by the name mq-bridge itself uses, which differs for ``redis-streams``.
+    """
     parsed = urlparse(uri)
     scheme = parsed.scheme
     if not scheme.endswith("+mqb"):
@@ -171,7 +237,7 @@ def endpoint_from_uri(uri: str, table: str) -> Tuple[str, Dict[str, Dict[str, An
     if table and spec.table_field not in config:
         config[spec.table_field] = table
 
-    return transport, {transport: config}
+    return transport, {spec.config_key or transport: config}
 
 
 def mqbridge_resource(

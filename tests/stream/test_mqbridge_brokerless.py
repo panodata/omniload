@@ -1,14 +1,17 @@
 """Tests for the mq-bridge source connector.
 
-The end-to-end test runs brokerless over mq-bridge's in-memory transport, so it needs no
-Docker/services and stays out of the `integration` lane. The unit tests cover the
-``<transport>+mqb://`` URI -> endpoint-config mapping and need no mq-bridge install.
+The end-to-end tests run brokerless — over mq-bridge's in-memory transport, and over WebSocket,
+where mq-bridge is itself the server — so they need no Docker/services and stay out of the
+`integration` lane. The unit tests cover the ``<transport>+mqb://`` URI -> endpoint-config
+mapping and need no mq-bridge install.
 """
+
+import sys
 
 import duckdb
 import pytest
 
-from omniload.source.mqbridge.adapter import endpoint_from_uri
+from omniload.source.mqbridge.adapter import endpoint_from_uri, ensure_plugin
 
 
 def test_endpoint_from_uri_kafka_strips_scheme_for_broker_list():
@@ -161,6 +164,128 @@ def test_endpoint_from_uri_ibmmq_bare_host_and_empty_segment():
     assert config["ibmmq"]["url"] == "mqhost"
 
 
+def test_endpoint_from_uri_redis_streams_scheme_maps_to_underscored_config_key():
+    # A URI scheme cannot contain an underscore (RFC 3986), so mq-bridge's `redis_streams`
+    # endpoint is addressed as `redis-streams+mqb://` and translated back on the way in.
+    transport, config = endpoint_from_uri(
+        "redis-streams+mqb://localhost:6379?group=g&block_ms=500&read_from_start=true",
+        "events",
+    )
+    assert transport == "redis-streams"
+    assert config == {
+        "redis_streams": {
+            "url": "redis://localhost:6379",
+            "stream": "events",
+            "group": "g",
+            "block_ms": 500,  # int field coerced
+            "read_from_start": True,  # bool field coerced
+        }
+    }
+
+
+def test_endpoint_from_uri_websocket_authority_is_a_bare_listen_address():
+    # A websocket *input* is a server: mq-bridge binds the authority, so it carries no scheme,
+    # and --source-table names the HTTP path served rather than a topic.
+    _, config = endpoint_from_uri("websocket+mqb://0.0.0.0:8080?backlog=64", "/ingest")
+    assert config == {
+        "websocket": {"url": "0.0.0.0:8080", "path": "/ingest", "backlog": 64}
+    }
+
+
+def test_endpoint_from_uri_grpc_builds_http_url_and_coerces_grpc_fields():
+    _, config = endpoint_from_uri(
+        "grpc+mqb://localhost:50051?timeout_ms=5000&server_streaming=true", "orders"
+    )
+    assert config == {
+        "grpc": {
+            "url": "http://localhost:50051",
+            "topic": "orders",
+            "timeout_ms": 5000,
+            "server_streaming": True,
+        }
+    }
+
+
+def test_endpoint_from_uri_grpc_dynamic_mode_nests_the_json_request():
+    # Calling an arbitrary gRPC service needs a compiled protobuf descriptor plus the service,
+    # method and JSON request. `request` is an object, built here from dotted query keys.
+    _, config = endpoint_from_uri(
+        "grpc+mqb://grpc.example.com:443?url=https://grpc.example.com:443"
+        "&descriptor_set_path=proto/events.bin&service_name=events.EventService"
+        "&method_name=Tail&server_streaming=true&request.topic=audit",
+        "",
+    )
+    assert config == {
+        "grpc": {
+            "url": "https://grpc.example.com:443",  # explicit ?url= wins
+            "descriptor_set_path": "proto/events.bin",
+            "service_name": "events.EventService",
+            "method_name": "Tail",
+            "server_streaming": True,
+            "request": {"topic": "audit"},
+        }
+    }
+
+
+def test_endpoint_from_uri_pulsar_builds_pulsar_url():
+    transport, config = endpoint_from_uri(
+        "pulsar+mqb://localhost:6650?subscription=orders&initial_position=earliest",
+        "persistent://public/default/orders",
+    )
+    assert transport == "pulsar"
+    assert config == {
+        "pulsar": {
+            "url": "pulsar://localhost:6650",
+            "topic": "persistent://public/default/orders",
+            "subscription": "orders",
+            "initial_position": "earliest",
+        }
+    }
+
+
+def test_ensure_plugin_is_a_noop_for_built_in_transports():
+    # Only plugin-backed endpoints need registering; the built-ins must not try to import.
+    ensure_plugin("kafka")
+    ensure_plugin("redis-streams")
+
+
+def test_ensure_plugin_registers_the_pulsar_plugin(monkeypatch):
+    # The plugin wheel is not installed in CI (it is out of [full], since its wheels are
+    # narrower than omniload's platform floor), so stand in for it: what matters here is that
+    # ensure_plugin imports the module named by the transport and calls register() on it.
+    calls: list = []
+
+    class _FakePlugin:
+        @staticmethod
+        def register():
+            calls.append("registered")
+
+    monkeypatch.setitem(sys.modules, "mq_bridge_pulsar", _FakePlugin)
+    ensure_plugin("pulsar")
+    ensure_plugin("pulsar")  # registering twice is a no-op for mq-bridge
+    assert calls == ["registered", "registered"]
+
+
+def test_ensure_plugin_names_the_extra_when_the_pulsar_plugin_is_missing(monkeypatch):
+    monkeypatch.setitem(sys.modules, "mq_bridge_pulsar", None)  # forces ImportError
+    with pytest.raises(ValueError, match=r"omniload\[pulsar\]"):
+        ensure_plugin("pulsar")
+
+
+def test_ensure_plugin_keeps_the_underlying_import_error(monkeypatch):
+    # An installed plugin whose native library fails to load raises ImportError too, so the
+    # "not installed" message must not be the only thing the user gets.
+    def _broken(_name):
+        raise ImportError("libpulsar.so.3: cannot open shared object file")
+
+    monkeypatch.setattr(
+        "omniload.source.mqbridge.adapter.import_module", _broken, raising=True
+    )
+    with pytest.raises(ValueError, match="libpulsar") as excinfo:
+        ensure_plugin("pulsar")
+    assert isinstance(excinfo.value.__cause__, ImportError)
+
+
 def test_endpoint_from_uri_rejects_non_integer_query_param():
     # An int-typed field that can't be parsed fails loudly rather than being forwarded as junk.
     with pytest.raises(ValueError, match="integer"):
@@ -242,6 +367,7 @@ class _FakeConsumer:
         self._batches = batches
         self._i = 0
         self.acked: list = []
+        self.nacked: list = []
         self.closed = False
 
     @classmethod
@@ -258,6 +384,9 @@ class _FakeConsumer:
 
     def ack(self, token) -> None:
         self.acked.append(token)
+
+    def nack(self, token=None) -> None:
+        self.nacked.append(token)
 
     def close(self) -> None:
         self.closed = True
@@ -290,10 +419,11 @@ def test_post_load_acks_every_fully_drained_batch(monkeypatch):
     assert fake.closed
 
 
-def test_yield_limit_truncation_leaves_partial_batch_unacked(monkeypatch):
+def test_yield_limit_truncation_nacks_the_partial_batch(monkeypatch):
     # A --yield-limit stops iteration mid-batch: the first batch is never fully yielded, so its
     # token is not recorded and post_load acks nothing — the batch redelivers and dedups instead
-    # of silently losing the un-yielded remainder (the old bare commit() footgun).
+    # of silently losing the un-yielded remainder (the old bare commit() footgun). post_load
+    # nacks what is left outstanding, so that redelivery is immediate rather than a timeout away.
     src, fake = _wire_fake_consumer(
         monkeypatch,
         [[_FakeMessage("a", 1), _FakeMessage("b", 2)], [_FakeMessage("c", 3)]],
@@ -305,17 +435,67 @@ def test_yield_limit_truncation_leaves_partial_batch_unacked(monkeypatch):
 
     src.post_load()
     assert fake.acked == []  # nothing acked: whole batch redelivers next run
+    assert fake.nacked == [None]
     assert fake.closed
 
 
-def test_release_acks_nothing_even_after_a_full_batch(monkeypatch):
-    # A failure after batches were drained must not ack them: release closes without acking so the
-    # broker redelivers everything.
+def test_post_load_nacks_only_after_acking_the_loaded_batches(monkeypatch):
+    # Ordering matters: mq-bridge's ack drops the token from its pending map, so the no-token
+    # nack that follows can only reach batches that were never acked. Nacking first would hand
+    # back batches the load had already committed.
+    src, fake = _wire_fake_consumer(monkeypatch, [[_FakeMessage("a", 1)]])
+    calls: list = []
+    fake.ack = lambda token: calls.append(("ack", token))
+    fake.nack = lambda token=None: calls.append(("nack", token))
+
+    list(src.dlt_source("memory+mqb://?topic=t&batch_size=10", "t"))
+    src.post_load()
+
+    assert calls == [("ack", 0), ("nack", None)]
+
+
+def test_post_load_closes_even_when_the_broker_rejects_the_nack(monkeypatch):
+    # Same best-effort contract as release: the connection has to be freed regardless.
+    src, fake = _wire_fake_consumer(monkeypatch, [[_FakeMessage("a", 1)]])
+    resource = src.dlt_source("memory+mqb://?topic=t&batch_size=10", "t")
+    list(resource)
+
+    def _boom(token=None):
+        raise RuntimeError("connection reset")
+
+    fake.nack = _boom
+
+    src.post_load()
+    assert fake.acked == [0]  # the loaded batch is still acked
+    assert fake.closed
+
+
+def test_release_nacks_instead_of_acking_after_a_full_batch(monkeypatch):
+    # A failure after batches were drained must not ack them. release nacks every outstanding
+    # batch so the broker redelivers at once, rather than waiting out a visibility timeout.
     src, fake = _wire_fake_consumer(monkeypatch, [[_FakeMessage("a", 1)]])
     resource = src.dlt_source("memory+mqb://?topic=t&batch_size=10", "t")
 
     list(resource)
     assert list(src._pending_batches) == [0]  # recorded, but not yet acked
+
+    src.release()
+    assert fake.acked == []
+    assert fake.nacked == [None]  # the no-token form: every outstanding batch at once
+    assert fake.closed
+
+
+def test_release_closes_even_when_the_broker_rejects_the_nack(monkeypatch):
+    # A broker that already dropped the connection cannot be nacked; releasing the connection
+    # still has to happen, and redelivery falls back to the un-acked batches timing out.
+    src, fake = _wire_fake_consumer(monkeypatch, [[_FakeMessage("a", 1)]])
+    resource = src.dlt_source("memory+mqb://?topic=t&batch_size=10", "t")
+    list(resource)
+
+    def _boom(token=None):
+        raise RuntimeError("connection reset")
+
+    fake.nack = _boom
 
     src.release()
     assert fake.acked == []
@@ -405,3 +585,64 @@ def test_memory_transport_end_to_end(tmp_path):
 
     assert rows == [(0, 0), (1, 10), (2, 20), (3, 30), (4, 40)]
     assert distinct_ids == 5  # _mqb_id carried through as the merge key
+
+
+def test_websocket_transport_end_to_end(tmp_path):
+    """Push frames at the WebSocket source and ingest them into DuckDB via run_ingest.
+
+    Also brokerless: a WebSocket *source* is a server, so mq-bridge binds the port itself and
+    the test only has to be the client. That inverts the usual setup — the sender has to retry
+    until the ingest has bound, because the consumer opens lazily on the resource's first pull.
+    """
+    pytest.importorskip("mq_bridge")
+    import socket
+    import threading
+    import time
+
+    from mq_bridge import Publisher
+
+    from omniload import run_ingest
+
+    probe = socket.socket()
+    probe.bind(("127.0.0.1", 0))
+    port = probe.getsockname()[1]
+    probe.close()
+
+    sent: list = []
+
+    def push() -> None:
+        publisher = Publisher.from_config(
+            {"websocket": {"url": f"ws://127.0.0.1:{port}/ingest"}}
+        )
+        deadline = time.monotonic() + 30
+        for order_id in range(3):
+            while time.monotonic() < deadline:
+                try:
+                    publisher.send_json({"order_id": order_id})
+                    sent.append(order_id)
+                    break
+                except Exception:  # not listening yet
+                    time.sleep(0.1)
+
+    sender = threading.Thread(target=push, daemon=True)
+    sender.start()
+
+    dest = tmp_path / "warehouse.duckdb"
+    info = run_ingest(
+        source_uri=(
+            f"websocket+mqb://127.0.0.1:{port}?idle_timeout_ms=10000&max_messages=3"
+        ),
+        dest_uri=f"duckdb:///{dest}",
+        dest_table="out.orders",
+        source_table="/ingest",
+        loader_file_format="insert_values",
+    )
+    sender.join(timeout=10)
+    assert info is not None
+    assert sent == [0, 1, 2]
+
+    con = duckdb.connect(str(dest))
+    rows = con.sql("select order_id from out.orders order by order_id").fetchall()
+    con.close()
+
+    assert rows == [(0,), (1,), (2,)]

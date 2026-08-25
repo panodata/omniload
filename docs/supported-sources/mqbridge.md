@@ -2,8 +2,9 @@
 
 [mq-bridge](https://github.com/marcomq/mq-bridge) is a generic, transport-agnostic
 message broker binding. omniload uses it to consume messages from
-[AMQP](amqp.md), [AWS SQS](sqs.md), [IBM MQ](ibm-mq.md), [MQTT](mqtt.md),
-[NATS](nats.md), [ZeroMQ](zeromq.md), or an in-memory transport, and load
+[AMQP](amqp.md), [AWS SQS](sqs.md), [gRPC](grpc.md), [IBM MQ](ibm-mq.md), [MQTT](mqtt.md),
+[NATS](nats.md), [Apache Pulsar](pulsar.md), [Redis Streams](redis-streams.md),
+[WebSocket](websocket.md), [ZeroMQ](zeromq.md), or an in-memory transport, and load
 them into any omniload destination.
 
 omniload supports mq-bridge as a source.
@@ -20,8 +21,18 @@ needed:
 pip install omniload
 ```
 
-> **IBM MQ** is the one exception: it additionally requires the IBM MQ redistributable client to
-> be present at runtime. See [IBM MQ → Installation](ibm-mq.md#installation).
+Two transports need more than the base install:
+
+> **IBM MQ** additionally requires the IBM MQ redistributable client to be present at runtime.
+> See [IBM MQ → Installation](ibm-mq.md#installation).
+
+> **Apache Pulsar** is not built into mq-bridge; it ships as a separate native plugin. Install
+> it with `pip install 'omniload[pulsar]'`. See [Apache Pulsar → Installation](pulsar.md#installation).
+
+On **musl/Alpine and Windows arm64**, `mq-bridge-py` transparently installs a reduced wheel that
+omits Kafka, SQLx and gRPC; `kafka+mqb://` and `grpc+mqb://` fail there with a clear runtime
+error. (omniload does not currently support musl/Alpine anyway, because duckdb publishes no musl
+wheel.)
 
 ## URI format
 Each broker is addressed via a compound `<transport>+mqb://` scheme. The broker URL and the
@@ -41,6 +52,10 @@ query parameters.
 | ZeroMQ    | `zeromq+mqb://localhost:5555?socket_type=pull` | `topic` |
 | AWS SQS   | `aws+mqb://?region=us-east-1` (queue via `--source-table`) | `queue_url` |
 | IBM MQ    | `ibmmq+mqb://host:1414?queue_manager=QM1&channel=DEV.APP.SVRCONN` | `queue` |
+| Redis Streams | `redis-streams+mqb://localhost:6379?group=g` | `stream` |
+| Apache Pulsar | `pulsar+mqb://localhost:6650?subscription=s` | `topic` |
+| gRPC      | `grpc+mqb://localhost:50051`              | `topic` |
+| WebSocket | `websocket+mqb://0.0.0.0:8080` (server)   | `path` |
 | memory    | `memory+mqb://orders?capacity=4096`       | `topic` |
 
 The `--source-table` value supplies the topic-like field for the transport. An explicit
@@ -56,6 +71,18 @@ or `?region=`. **IBM MQ** addresses queue managers as `host(port)`, but you writ
 `host:port` authority (comma-separated for failover, e.g. `ibmmq+mqb://h1:1414,h2:1414`) and
 omniload translates it. `queue_manager` and `channel` are required query parameters;
 `--source-table` names the target queue, or pass `?topic=` to consume in pub/sub subscriber mode.
+
+**Redis Streams** is mq-bridge's `redis_streams` endpoint. A URI scheme cannot contain an
+underscore, so it is addressed as `redis-streams+mqb://` and the authority becomes a
+`redis://` URL — for TLS, pass the URL explicitly as `?url=rediss://host:6379`.
+**Apache Pulsar** needs the separate plugin (see Installation) and takes a
+`subscription`, which is the durable cursor — reusing one resumes from its committed position.
+**gRPC** connects as a client to `http://<authority>`; pass `?url=https://…` (or
+`?server_mode=true`) to change that. Note that it speaks mq-bridge's own `mqbridge.Bridge`
+protocol unless you supply a compiled protobuf descriptor — see [gRPC](grpc.md). **WebSocket is the odd one out: as a source it is a
+*server*.** mq-bridge binds the authority as a plain listen address (no scheme) and ingests the
+frames clients push to it, so `--source-table` names the HTTP path served rather than a topic,
+and the run ends on `max_messages`/`idle_timeout_ms` rather than on end-of-stream.
 
 #### memory: in-process & IPC channels
 The memory transport's `url`/`topic` are aliases for a single channel identifier, which may be:
@@ -80,6 +107,10 @@ coerced from their string form. The consumer-relevant fields per transport:
 | ZeroMQ | `socket_type` (`pull`/`sub`/`rep`/…), `bind` (bind vs connect), `topic` (SUB filter), `internal_buffer_size` |
 | AWS SQS | `region`, `access_key` / `secret_key` / `session_token`, `endpoint_url` (e.g. LocalStack), `wait_time_seconds` (long-poll), `binary_payload_mode` |
 | IBM MQ | `queue_manager` **(required)**, `channel` **(required)**, `username` / `password`, `cipher_spec`, `topic` (switch to pub/sub subscriber mode), `wait_timeout_ms`, `max_message_size`, `disable_status_inq` |
+| Redis Streams | `group`, `consumer_name`, `subscriber_mode` (fan-out), `block_ms`, `read_from_start`, `redelivery_timeout_ms` (PEL reclaim), `username` / `password`, `internal_buffer_size`, `reader_connections` |
+| Apache Pulsar | `subscription`, `initial_position` (`earliest`/`latest`, applied only when the subscription is created) |
+| gRPC | `consumer_id`, `timeout_ms`, `server_mode`, `server_streaming`, `shared`, `http2_keepalive_interval_ms`, `max_decoding_message_size`; plus `descriptor_set_path` / `service_name` / `method_name` / `request.*` to call an arbitrary service — see [gRPC](grpc.md#dynamic-mode-arbitrary-service), which **has no acks** |
+| WebSocket | `path`, `backlog`, `routed_queue_capacity`, `message_id_header`, `execution_mode` |
 | memory | `capacity`, `subscribe_mode` (fan-out vs queue), `enable_nack` |
 
 For the authoritative field list per transport, see mq-bridge's
@@ -125,14 +156,21 @@ Each message is stored as a row. The decoded payload becomes the top-level colum
 
 ## Delivery semantics
 Delivery is **at-least-once**: each batch's offset is acked only **after** the dlt load has
-durably committed. If the load fails, nothing is acked and the broker redelivers the batch on
-the next run. Because the resource merges on `_mqb_id`, redelivered messages are deduplicated —
-effectively-once.
+durably committed. If the load fails, nothing is acked. Because the resource merges on
+`_mqb_id`, redelivered messages are deduplicated — effectively-once.
 
 Acks are per-batch (via mq-bridge's `poll_batch`/`ack` tokens), so only batches that were fully
 handed to the load package are acked. `--yield-limit` is therefore safe: a limit that stops
-mid-batch leaves that batch un-acked, so it is redelivered on the next run and deduplicated on
-`_mqb_id` rather than being silently dropped.
+mid-batch leaves that batch un-acked, so it is redelivered and deduplicated on `_mqb_id` rather
+than being silently dropped.
+
+Whatever is still outstanding when the run ends — everything, after a failed load; the truncated
+batch, after a `--yield-limit` — is **nacked** before the consumer closes, so the broker hands it
+back straight away instead of waiting out a visibility timeout. Two caveats: on transports with
+no per-message nack (**Kafka**) this only leaves the offset unadvanced, so redelivery still waits
+for the next run or rebalance; and a broker that has already dropped the connection cannot be
+nacked at all. Both fall back to the same timeout-based redelivery as before, so the guarantee
+does not depend on the nack succeeding — only the latency does.
 
 mq-bridge owns both keys behind this guarantee, so two flags are rejected rather than silently
 honored: `--incremental-key` (mq-bridge manages incrementality itself) and `--primary-key`
