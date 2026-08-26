@@ -224,11 +224,6 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>-</td>
     </tr>
     <tr>
-        <td>gRPC</td>
-        <td>✅</td>
-        <td>-</td>
-    </tr>
-    <tr>
         <td>IBM MQ</td>
         <td>✅</td>
         <td>-</td>

@@ -2,7 +2,7 @@
 
 [mq-bridge](https://github.com/marcomq/mq-bridge) is a generic, transport-agnostic
 message broker binding. omniload uses it to consume messages from
-[AMQP](amqp.md), [AWS SQS](sqs.md), [gRPC](grpc.md), [IBM MQ](ibm-mq.md), [MQTT](mqtt.md),
+[AMQP](amqp.md), [AWS SQS](sqs.md), [IBM MQ](ibm-mq.md), [MQTT](mqtt.md),
 [NATS](nats.md), [Apache Pulsar](pulsar.md), [Redis Streams](redis-streams.md),
 [WebSocket](websocket.md), [ZeroMQ](zeromq.md), or an in-memory transport, and load
 them into any omniload destination.
@@ -30,9 +30,8 @@ Two transports need more than the base install:
 > it with `pip install 'omniload[pulsar]'`. See [Apache Pulsar → Installation](pulsar.md#installation).
 
 On **musl/Alpine and Windows arm64**, `mq-bridge-py` transparently installs a reduced wheel that
-omits Kafka, SQLx and gRPC; `kafka+mqb://` and `grpc+mqb://` fail there with a clear runtime
-error. (omniload does not currently support musl/Alpine anyway, because duckdb publishes no musl
-wheel.)
+omits Kafka and SQLx; `kafka+mqb://` fails there with a clear runtime error. (omniload does not
+currently support musl/Alpine anyway, because duckdb publishes no musl wheel.)
 
 ## URI format
 Each broker is addressed via a compound `<transport>+mqb://` scheme. The broker URL and the
@@ -54,7 +53,6 @@ query parameters.
 | IBM MQ    | `ibmmq+mqb://host:1414?queue_manager=QM1&channel=DEV.APP.SVRCONN` | `queue` |
 | Redis Streams | `redis-streams+mqb://localhost:6379?group=g` | `stream` |
 | Apache Pulsar | `pulsar+mqb://localhost:6650?subscription=s` | `topic` |
-| gRPC      | `grpc+mqb://localhost:50051`              | `topic` |
 | WebSocket | `websocket+mqb://0.0.0.0:8080` (server)   | `path` |
 | memory    | `memory+mqb://orders?capacity=4096`       | `topic` |
 
@@ -77,9 +75,7 @@ underscore, so it is addressed as `redis-streams+mqb://` and the authority becom
 `redis://` URL — for TLS, pass the URL explicitly as `?url=rediss://host:6379`.
 **Apache Pulsar** needs the separate plugin (see Installation) and takes a
 `subscription`, which is the durable cursor — reusing one resumes from its committed position.
-**gRPC** connects as a client to `http://<authority>`; pass `?url=https://…` (or
-`?server_mode=true`) to change that. Note that it speaks mq-bridge's own `mqbridge.Bridge`
-protocol unless you supply a compiled protobuf descriptor — see [gRPC](grpc.md). **WebSocket is the odd one out: as a source it is a
+**WebSocket is the odd one out: as a source it is a
 *server*.** mq-bridge binds the authority as a plain listen address (no scheme) and ingests the
 frames clients push to it, so `--source-table` names the HTTP path served rather than a topic,
 and the run ends on `max_messages`/`idle_timeout_ms` rather than on end-of-stream.
@@ -109,7 +105,6 @@ coerced from their string form. The consumer-relevant fields per transport:
 | IBM MQ | `queue_manager` **(required)**, `channel` **(required)**, `username` / `password`, `cipher_spec`, `topic` (switch to pub/sub subscriber mode), `wait_timeout_ms`, `max_message_size`, `disable_status_inq` |
 | Redis Streams | `group`, `consumer_name`, `subscriber_mode` (fan-out), `block_ms`, `read_from_start`, `redelivery_timeout_ms` (PEL reclaim), `username` / `password`, `internal_buffer_size`, `reader_connections` |
 | Apache Pulsar | `subscription`, `initial_position` (`earliest`/`latest`, applied only when the subscription is created) |
-| gRPC | `consumer_id`, `timeout_ms`, `server_mode`, `server_streaming`, `shared`, `http2_keepalive_interval_ms`, `max_decoding_message_size`; plus `descriptor_set_path` / `service_name` / `method_name` / `request.*` to call an arbitrary service — see [gRPC](grpc.md#dynamic-mode-arbitrary-service), which **has no acks** |
 | WebSocket | `path`, `backlog`, `routed_queue_capacity`, `message_id_header`, `execution_mode` |
 | memory | `capacity`, `subscribe_mode` (fan-out vs queue), `enable_nack` |
 

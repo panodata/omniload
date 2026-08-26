@@ -35,14 +35,6 @@ _INT_FIELDS = frozenset(
         "reader_connections",  # redis-streams
         "routed_queue_capacity",  # websocket
         "backlog",  # websocket
-        "timeout_ms",  # grpc
-        "initial_stream_window_size",  # grpc
-        "initial_connection_window_size",  # grpc
-        "concurrency_limit_per_connection",  # grpc
-        "http2_keepalive_interval_ms",  # grpc
-        "http2_keepalive_timeout_ms",  # grpc
-        "max_decoding_message_size",  # grpc
-        "max_encoding_message_size",  # grpc
     }
 )
 _BOOL_FIELDS = frozenset(
@@ -62,8 +54,6 @@ _BOOL_FIELDS = frozenset(
         "disable_status_inq",  # ibmmq
         "read_from_start",  # redis-streams
         "approx_trim",  # redis-streams
-        "server_mode",  # grpc
-        "server_streaming",  # grpc
         "required",  # tls.required
         "accept_invalid_certs",  # tls.accept_invalid_certs
     }
@@ -137,7 +127,6 @@ _TRANSPORTS: Dict[str, _Transport] = {
         "stream", "url", lambda p: f"redis://{p.netloc}", config_key="redis_streams"
     ),
     "websocket": _Transport("path", "url", lambda p: p.netloc),
-    "grpc": _Transport("topic", "url", lambda p: f"http://{p.netloc}"),
     "pulsar": _Transport(
         "topic",
         "url",

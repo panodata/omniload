@@ -2,9 +2,9 @@
 
 ## in progress
 
-- mq-bridge: Require mq-bridge-py 0.4.7 (was 0.3.2) and add four transports:
-  Redis Streams (`redis-streams+mqb://`), Apache Pulsar (`pulsar+mqb://`), gRPC
-  (`grpc+mqb://`) and WebSocket (`websocket+mqb://`). Pulsar is not built into
+- mq-bridge: Require mq-bridge-py 0.4.7 (was 0.3.2) and add three transports:
+  Redis Streams (`redis-streams+mqb://`), Apache Pulsar (`pulsar+mqb://`) and
+  WebSocket (`websocket+mqb://`). Pulsar is not built into
   mq-bridge but ships as a separate native plugin, installed via the new
   `omniload[pulsar]` extra and registered on demand; it stays out of the base
   install (and out of `omniload[full]`) because its wheels require glibc >= 2.34 on

@@ -192,41 +192,6 @@ def test_endpoint_from_uri_websocket_authority_is_a_bare_listen_address():
     }
 
 
-def test_endpoint_from_uri_grpc_builds_http_url_and_coerces_grpc_fields():
-    _, config = endpoint_from_uri(
-        "grpc+mqb://localhost:50051?timeout_ms=5000&server_streaming=true", "orders"
-    )
-    assert config == {
-        "grpc": {
-            "url": "http://localhost:50051",
-            "topic": "orders",
-            "timeout_ms": 5000,
-            "server_streaming": True,
-        }
-    }
-
-
-def test_endpoint_from_uri_grpc_dynamic_mode_nests_the_json_request():
-    # Calling an arbitrary gRPC service needs a compiled protobuf descriptor plus the service,
-    # method and JSON request. `request` is an object, built here from dotted query keys.
-    _, config = endpoint_from_uri(
-        "grpc+mqb://grpc.example.com:443?url=https://grpc.example.com:443"
-        "&descriptor_set_path=proto/events.bin&service_name=events.EventService"
-        "&method_name=Tail&server_streaming=true&request.topic=audit",
-        "",
-    )
-    assert config == {
-        "grpc": {
-            "url": "https://grpc.example.com:443",  # explicit ?url= wins
-            "descriptor_set_path": "proto/events.bin",
-            "service_name": "events.EventService",
-            "method_name": "Tail",
-            "server_streaming": True,
-            "request": {"topic": "audit"},
-        }
-    }
-
-
 def test_endpoint_from_uri_pulsar_builds_pulsar_url():
     transport, config = endpoint_from_uri(
         "pulsar+mqb://localhost:6650?subscription=orders&initial_position=earliest",

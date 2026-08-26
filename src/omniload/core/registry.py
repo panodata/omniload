@@ -92,7 +92,6 @@ sources: LazyRegistry = LazyRegistry(
         "googleads": "omniload.source.google_ads.api:GoogleAdsSource",
         "googleanalytics": "omniload.source.google_analytics.api:GoogleAnalyticsSource",
         "gorgias": "omniload.source.gorgias.api:GorgiasSource",
-        "grpc+mqb": "omniload.source.mqbridge.api:MqBridgeSource",
         "gs": "dlt_filesystem.source.impl.remote:GCSSource",
         "gsheets": "omniload.source.google_sheets.api:GoogleSheetsSource",
         "hdfs": "dlt_filesystem.source.fsspec.hdfs:HDFSSource",
