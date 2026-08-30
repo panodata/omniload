@@ -39,6 +39,11 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>✅</td>
     </tr>
     <tr>
+        <td>Delta Lake</td>
+        <td>✅</td>
+        <td>✅</td>
+    </tr>
+    <tr>
         <td>IBM Db2</td>
         <td>✅</td>
         <td>-</td>
