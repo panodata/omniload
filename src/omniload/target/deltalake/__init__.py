@@ -5,6 +5,8 @@ from omniload.target.model import GenericSqlDestination
 
 
 class DeltaLakeDestination(GenericSqlDestination):
+    """Destination adapter for writing to Delta Lake tables."""
+
     def dlt_dest(self, uri: str, **kwargs):
         kwargs.pop("dest_table", None)
         kwargs.pop("staging_bucket", None)

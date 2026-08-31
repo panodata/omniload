@@ -1,4 +1,6 @@
 class DeltaLakeSource:
+    """Source adapter for reading from Delta Lake tables."""
+
     def handles_incrementality(self) -> bool:
         return True
 
@@ -7,7 +9,7 @@ class DeltaLakeSource:
         uri = uri.replace("+delta://", "://")
 
         # TODO: Review!
-        if kwargs.get("incremental_key"):
+        if kwargs.get("requested_incremental_key"):
             raise ValueError(
                 "DeltaLake takes care of incrementality on its own, "
                 "you should not provide incremental_key"
