@@ -219,6 +219,40 @@ class AzureDestination(BlobStorageDestination):
         return {"connection_string": auth.connection_string}
 
 
+#: Blob protocols whose URI query parameters dlt models as typed credentials.
+#: Every other protocol reaches its fsspec backend as plain constructor arguments.
+_CREDENTIAL_BUILDERS: dict[str, type[BlobStorageDestination]] = {
+    "az": AzureDestination,
+    "gs": GCSDestination,
+    "s3": S3Destination,
+}
+
+
+def blob_destination_options(protocol: str, params: dict) -> dict:
+    """Build the dlt filesystem options a blob protocol derives from URI query params.
+
+    ``params`` is the ``urllib.parse.parse_qs`` output. The return value carries
+    ``credentials``, and ``kwargs`` where the protocol forwards anything dlt does
+    not model, ready to splat into a filesystem destination.
+
+    An empty query returns no options, so the caller omits ``credentials`` and dlt
+    resolves them from the environment as it does for a bare bucket URL. A
+    non-empty query is built strictly instead: a partial credential set raises
+    ``MissingConnectorOption`` naming the missing option, because a URI that
+    carries half a credential asked for that credential to be used.
+    """
+    builder_class = _CREDENTIAL_BUILDERS.get(protocol)
+    if builder_class is None or not params:
+        return {}
+
+    builder = builder_class()
+    options: dict = {"credentials": builder.credentials(params)}
+    filesystem_kwargs = builder.filesystem_kwargs(params)
+    if filesystem_kwargs:
+        options["kwargs"] = filesystem_kwargs
+    return options
+
+
 class BlobFSClient(dlt.destinations.impl.filesystem.filesystem.FilesystemClient):
     @property
     def dataset_path(self):

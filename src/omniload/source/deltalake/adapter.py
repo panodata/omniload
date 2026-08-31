@@ -5,12 +5,40 @@ import polars as pl
 from dlt.extract import DltResource
 from yarl import URL
 
+from omniload.core.tablename import two_level
+from omniload.error import ValidationError
+
+#: A storage-backed catalog addresses a table as ``<schema>.<table>``, and those two
+#: components are the path below the catalog root. Parsing them with the project's
+#: shared grammar keeps a quoted component that contains a dot readable here, as it
+#: already is on the destination side.
+TABLE_CAPABILITY = two_level("Delta Lake")
+
+DEFAULT_BATCH_SIZE = 75_000
+
+
+def _path_component(value: str, label: str) -> str:
+    """Reject an identifier that would address more than one directory.
+
+    The shared grammar validates SQL identifiers, where a quoted component may
+    hold any character. Here each component becomes one directory below the
+    catalog root, so a separator or a parent reference would silently widen the
+    address, `".."` most of all.
+    """
+    if value in {".", ".."} or "/" in value or "\\" in value:
+        raise ValidationError(
+            f"The Delta Lake {label} {value!r} is not a single directory name. "
+            "Each component addresses one directory below the catalog root, so "
+            "it cannot contain a path separator or name a parent directory."
+        )
+    return value
+
 
 @dlt.source(name="deltalake", max_table_nesting=0)
 def deltalake_source(
     uri: str,
     table: str,
-    batch_size: Optional[int] = 75_000,
+    batch_size: Optional[int] = DEFAULT_BATCH_SIZE,
 ) -> Iterable[DltResource]:
     """
     Read from Delta Lake tables.
@@ -30,25 +58,26 @@ def deltalake_source(
     url = url.with_query(None)
 
     if url.scheme != "uc":
-        table_fields = table.split(".")
-        if len(table_fields) != 2:
-            raise ValueError("Table name must be in the format <schema>.<table>")
-        url = url.joinpath(table_fields[-2], table_fields[-1])
+        parsed = TABLE_CAPABILITY.parse(table)
+        if parsed.schema is None:
+            raise TABLE_CAPABILITY.unresolved_schema_error(table)
+        url = url.joinpath(
+            _path_component(parsed.schema, "schema"),
+            _path_component(parsed.table, "table"),
+        )
 
     uri = str(url)
+    chunk_size = batch_size or DEFAULT_BATCH_SIZE
 
-    with pl.Config(streaming_chunk_size=batch_size):
+    def reader():
+        frame = pl.scan_delta(uri, storage_options=storage_options)
+        yield from frame.collect_batches(engine="streaming", chunk_size=chunk_size)
 
-        def reader():
-            frame = pl.scan_delta(uri, storage_options=storage_options)
-            for batch in frame.collect_batches(
-                engine="streaming", chunk_size=batch_size
-            ):
-                yield batch
-
-        return dlt.resource(
-            reader,
-            name=table,
-            # TODO: Are other write dispositions possible?
-            write_disposition="replace",
-        )()
+    return dlt.resource(
+        reader,
+        name=table,
+        # Every run reads the whole table, so the resource replaces what it loaded
+        # last time. `DeltaLakeSource.honours_run_disposition` lets an explicit
+        # `--incremental-strategy append` override this at run level.
+        write_disposition="replace",
+    )()

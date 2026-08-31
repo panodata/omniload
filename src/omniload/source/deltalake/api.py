@@ -4,11 +4,19 @@ class DeltaLakeSource:
     def handles_incrementality(self) -> bool:
         return True
 
-    def dlt_source(self, uri: str, table: str, **kwargs):
+    def honours_run_disposition(self) -> bool:
+        """Accept an explicit run-level `--incremental-strategy`.
 
+        The resource carries `replace`, which stands when no strategy is given.
+        An explicit `append` or `replace` overrides it; the key-dependent
+        strategies are rejected by `run_ingest`, because a full-table read
+        exposes no incremental or merge key to build them from.
+        """
+        return True
+
+    def dlt_source(self, uri: str, table: str, **kwargs):
         uri = uri.replace("+delta://", "://")
 
-        # TODO: Review!
         if kwargs.get("requested_incremental_key"):
             raise ValueError(
                 "DeltaLake takes care of incrementality on its own, "
@@ -17,4 +25,6 @@ class DeltaLakeSource:
 
         from omniload.source.deltalake.adapter import deltalake_source
 
-        return deltalake_source(uri, table)
+        # `--page-size` always arrives with a value, so this is what sets the
+        # batch size in a CLI run; the adapter's own default covers a direct call.
+        return deltalake_source(uri, table, batch_size=kwargs.get("page_size"))

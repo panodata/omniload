@@ -413,12 +413,13 @@ def _run_ingest(
     requested_incremental_key = jr.incremental_key
     if source.handles_incrementality():
         jr.incremental_key = None
-        # Filesystem-family sources cannot derive a row-level incremental or merge key.
-        # Unlike SaaS/streaming sources, they hold no resource-level write disposition,
-        # so a run-level one is safe to apply. Honour an
-        # explicit --incremental-strategy append/replace for them; otherwise fall back to
-        # `none` and let the source/platform own the write. `honours_run_disposition` is
-        # absent on sources that set their own disposition, so getattr defaults to False.
+        # Filesystem-family and Delta Lake sources cannot derive a row-level incremental
+        # or merge key. Unlike SaaS/streaming sources, a run-level disposition is safe to
+        # apply to them: the filesystem family holds no resource-level one at all, and
+        # Delta Lake's is a plain `replace` that an explicit request may override. Honour
+        # an explicit --incremental-strategy append/replace for them; otherwise fall back
+        # to `none` and let the source/platform own the write. `honours_run_disposition`
+        # is absent on sources that set their own disposition, so getattr defaults to False.
         honours_disposition = getattr(
             source, "honours_run_disposition", lambda: False
         )()
@@ -436,8 +437,9 @@ def _run_ingest(
             ):
                 raise ValidationError(
                     f"Incremental strategy '{original_incremental_strategy.value}' needs an "
-                    "incremental or merge key, which filesystem sources do not expose. Use "
-                    "'append' or 'replace', or '--full-refresh' to reset the destination."
+                    f"incremental or merge key, which the '{factory.source_scheme}' source "
+                    "does not expose. Use 'append' or 'replace', or '--full-refresh' to "
+                    "reset the destination."
                 )
             else:  # explicit 'none'
                 incremental_strategy = IncrementalStrategy.none

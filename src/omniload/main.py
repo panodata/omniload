@@ -184,7 +184,8 @@ def ingest(
     page_size: Annotated[
         int,
         typer.Option(
-            help="The page size to be used when fetching data from SQL sources",
+            help="The page size to be used when fetching data from SQL and "
+            "Delta Lake sources",
             envvar=["PAGE_SIZE", "OMNILOAD_PAGE_SIZE"],
         ),
     ] = 50000,

@@ -133,7 +133,7 @@ def test_filesystem_key_strategies_are_rejected(tmp_path, strategy):
     sources can't supply the incremental/merge key these need."""
     src = _write_people(tmp_path)
     dest = tmp_path / "wh.duckdb"
-    with pytest.raises(ValidationError, match="filesystem sources do not expose"):
+    with pytest.raises(ValidationError, match="the 'file' source does not expose"):
         run_ingest(
             source_uri=f"file://{src}",
             dest_uri=f"duckdb:///{dest}",
