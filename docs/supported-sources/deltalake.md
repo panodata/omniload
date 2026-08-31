@@ -80,14 +80,18 @@ For source reads, `omniload` passes URI query parameters to
 [`polars.scan_delta`] as storage options. Use the storage options that apply to
 your storage system and authentication method.
 
-For destination writes, `omniload` passes the URI and its query parameters to
-the dlt filesystem destination. See the relevant storage guide for
-authentication details:
+For destination writes to S3, Google Cloud Storage and Azure Storage, `omniload`
+builds storage credentials from the URI query parameters and passes the
+query-free URI to the dlt filesystem destination. Supply the options your storage
+system requires, or supply none of them and let the environment provide the
+credentials. See the relevant storage guide for the option names:
 
 - {ref}`s3`
 - {ref}`gcs`
 - {ref}`azure-storage`
-- {ref}`hdfs`
+
+`hdfs+delta://` and `lakefs+delta://` destinations take no options from the
+query; see Limitations.
 
 ## Table layout
 
@@ -103,6 +107,15 @@ A storage-backed Delta Lake catalog uses this layout.
 
 The `_delta_log` directory is required. Do not use a Parquet directory that
 does not contain this directory as a Delta Lake table.
+
+:::{note}
+On write, dlt normalizes the schema and table names before it builds the
+directory layout. `analytics.events` writes to `analytics/events`, and
+`delta-schema.delta-table` writes to `delta_schema/delta_table`. The source does
+not normalize; it reads the directory the table name spells. Names that survive
+normalization therefore address the same directory on both sides, and a catalog
+`omniload` wrote is read back by its normalized name.
+:::
 
 ## Read a Delta Lake table
 
@@ -176,22 +189,30 @@ Use a Unity Catalog URI and authentication options that
 
 ## Incremental loading
 
-Do not specify `--incremental-key` for a Delta Lake source. The Delta Lake
-source manages its own incremental behavior.
+The Delta Lake source reads the whole table on every run, so there is no cursor
+for `--incremental-key` to advance and the source rejects it.
 
 ```text
 DeltaLake takes care of incrementality on its own, you should not provide incremental_key
 ```
 
-The connector reads source data in streaming batches. The default batch size is
-75,000 rows.
+Each run of a Delta Lake source replaces the destination table with what it
+read. Use `--incremental-strategy append` to add the rows to the destination
+instead.
+
+The connector reads source data in streaming batches. `--page-size` sets the
+batch size.
 
 ## Limitations
 
-- A storage-backed source table name must use exactly `<schema>.<table>`.
-- `uc+delta://` is not available as a destination.
-- Delta Lake merge, delete-and-insert, truncate-and-insert, and SCD2 strategies
-  are not supported.
+- A storage-backed table name must name both a schema and a table. Quote a
+  component that contains a dot, as in `"my.schema".events`.
+- `uc+delta://` is not available as a destination. As a source it addresses the
+  table in the URI, so `--source-table` only names the dlt resource.
+- The `lakefs+delta://` and `hdfs+delta://` destinations take no storage options
+  from the URI query, because dlt models no credentials for those protocols.
+- The merge, delete-and-insert, and SCD2 strategies need an incremental or merge
+  key, which a whole-table read does not expose.
 
 [Delta Lake]: https://delta.io/
 [`polars.scan_delta`]: https://docs.pola.rs/api/python/stable/reference/api/polars.scan_delta.html
