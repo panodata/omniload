@@ -41,6 +41,11 @@ def frankfurter_test_cases() -> Iterable[Callable]:
         assert "Interval-end cannot be before interval-start." in str(result.exception)
 
     def interval_start_can_equal_interval_end(dest_uri):
+        if dest_uri.startswith("cratedb://"):
+            pytest.skip(
+                "Fails on CrateDB with `DestinationSchemaTampered`, see "
+                "https://github.com/crate/dlt-cratedb/issues/14"
+            )
         schema = f"testschema_frankfurter_{get_random_string(5)}"
         dest_table = f"{schema}.frankfurter_{get_random_string(5)}"
         result = invoke_ingest_command(
@@ -89,6 +94,11 @@ def frankfurter_test_cases() -> Iterable[Callable]:
         assert "Interval-end cannot be in the future." in str(result.exception)
 
     def exchange_rate_on_specific_date(dest_uri):
+        if dest_uri.startswith("cratedb://"):
+            pytest.skip(
+                "Fails on CrateDB with `DestinationSchemaTampered`, see "
+                "https://github.com/crate/dlt-cratedb/issues/14"
+            )
         schema = f"testschema_frankfurter_{get_random_string(5)}"
         dest_table = f"{schema}.frankfurter_{get_random_string(5)}"
         start_date = "2025-01-03"

@@ -126,6 +126,12 @@ def test_arrow_mmap_to_db_delete_insert(dest):
 
     dest_uri = dest.start()
 
+    if dest_uri.startswith("cratedb://"):
+        pytest.skip(
+            "Fails on CrateDB with `DestinationSchemaTampered`, see "
+            "https://github.com/crate/dlt-cratedb/issues/14"
+        )
+
     # let's start with a basic dataframe
     row_count = 1000
     df = pd.DataFrame(
@@ -264,6 +270,12 @@ def test_arrow_mmap_to_db_merge_without_incremental(dest):
             return res
 
     dest_uri = dest.start()
+
+    if dest_uri.startswith("cratedb://"):
+        pytest.skip(
+            "Fails on CrateDB with `DestinationSchemaTampered`, see "
+            "https://github.com/crate/dlt-cratedb/issues/14"
+        )
 
     # let's start with a basic dataframe
     row_count = 1000

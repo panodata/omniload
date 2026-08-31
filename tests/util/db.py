@@ -8,6 +8,12 @@ def dbquery(
 ) -> Union[Sequence[Union[sa.Row[Any], sa.RowMapping]], None]:
     """Query database using SQLAlchemy and optionally return results."""
 
+    # CrateDB needs a relaxed SQLAlchemy dialect for querying.
+    # It will not support advanced features of CrateDB,
+    # but that's okay in this case.
+    if uri.startswith("cratedb://"):
+        uri = uri.replace("cratedb://", "postgresql+psycopg_relaxed://")
+
     engine = sa.create_engine(uri, poolclass=sa.NullPool)
     response = None
     with engine.connect() as conn:
