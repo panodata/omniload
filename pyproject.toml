@@ -147,7 +147,7 @@ optional-dependencies.develop = [
   "pyproject-fmt<3",
   "pytest-repeat<1",
   "ruff==0.16.*",
-  "ty==0.0.77",
+  "ty==0.0.78",
   "validate-pyproject<1",
 ]
 optional-dependencies.filesystem = [
