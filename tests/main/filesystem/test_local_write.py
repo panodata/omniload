@@ -121,15 +121,22 @@ def test_column_missing_from_first_row_survives(tmp_path, out_format):
     assert note == "hi"
 
 
-def test_nested_destination_dir_is_created(tmp_path):
-    """A destination path with non-existent parent directories is created on write."""
+@pytest.mark.parametrize("scheme", ["file", "csv"])
+def test_nested_destination_dir_is_created(tmp_path, scheme):
+    """A destination path with non-existent parent directories is created on write.
+
+    One inherited `post_load()` serves both schemes, so running both is a guard against
+    a future `CsvDestination` override rather than two implementations under test. It is
+    here because the replaced CSV destination did carry its own `os.makedirs` call, and
+    both doc pages still promise the behaviour.
+    """
     _write_source_files(tmp_path)
-    out_path = tmp_path / "nested" / "deeper" / "out.csv"
+    out_path = tmp_path / "nested" / "deeper" / f"out-{scheme}.csv"
 
     result = invoke_ingest_command(
         f"file://{tmp_path / 'people.csv'}",
         "people",
-        f"file://{out_path}",
+        f"{scheme}://{out_path}",
         "public.people",
     )
     assert result.exit_code == 0, result.output
@@ -210,7 +217,18 @@ def test_csv_destination_writes_every_rotated_load_file(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "dest", ["out.jsonl", "out.parquet", "out.dat#jsonl", "out.dat#parquet"]
+    "dest",
+    [
+        "out.jsonl",
+        "out.parquet",
+        "out.dat#jsonl",
+        "out.dat#parquet",
+        # `json` is a registered read format, so it names a format even though the write
+        # side cannot produce it. Naming it is an error rather than a CSV file wearing a
+        # `.json` extension.
+        "out.json",
+        "out.dat#csv_duckdb",
+    ],
 )
 def test_csv_destination_rejects_a_non_csv_output(tmp_path, dest):
     """The scheme names the format, so naming a different one is an error rather than a
