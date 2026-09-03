@@ -78,7 +78,10 @@ seven things:
   empty field and so always produced null.
 - **A rerun appends.** With no `--incremental-strategy`, a second load of the
   same file adds a second copy rather than replacing the first. Pass
-  `--incremental-strategy replace` for the old behaviour.
+  `--incremental-strategy replace` for the old behaviour. A destination that does
+  not implement append rejects the load outright rather than duplicating rows;
+  the MongoDB destination is one, so a `csv://` to MongoDB command now needs the
+  explicit `--incremental-strategy replace`.
 - **`merge`, `delete+insert` and `scd2` are rejected.** They need an
   incremental or merge key, which the shared reader does not expose. Use a
   source that does, or `--full-refresh` to reset the destination.

@@ -13,7 +13,9 @@
   both produced null), and the path grammar gains globs, gzip, split form,
   Windows drive and UNC paths, and `#csv_headless` / `#csv_duckdb` hints.
   A rerun with no `--incremental-strategy` now **appends** rather than replacing;
-  pass `--incremental-strategy replace` for the previous behaviour. `merge`,
+  pass `--incremental-strategy replace` for the previous behaviour, which a
+  destination that implements no append disposition now requires rather than
+  merely recommends (MongoDB is one, and rejects the load without it). `merge`,
   `delete+insert` and `scd2` are rejected, because the shared reader exposes no
   incremental or merge key, and `--incremental-key` is rejected for the same
   reason: the row cursor it drove compared raw strings against parsed datetimes

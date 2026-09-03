@@ -39,6 +39,9 @@ def mongodb_test_cases():
             "raw.input",
             mongo.get_connection_url(),
             collection,
+            # Explicit, because the MongoDB destination implements only `merge` and
+            # `replace`. A filesystem source defaults to append, which it rejects.
+            "replace",
         )
         assert result.exit_code == 0
 
