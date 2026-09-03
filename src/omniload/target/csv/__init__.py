@@ -1,138 +1,44 @@
-import csv
-import os
-import shutil
-import tempfile
+"""``csv://``: a CSV-only compatibility spelling of the local ``file://`` destination.
 
-import dlt.destinations
+The scheme predates the filesystem family and is kept so existing commands resolve.
+Staging and writing come from
+:class:`~dlt_filesystem.target.local.LocalFilesystemDestination`, which reads every
+staged file of a load in a stable order and always clears its temp directory. See #301.
+"""
 
-from dlt_filesystem.util.loader import load_dlt_file
+from dlt_filesystem.target.local import LocalFilesystemDestination
 from omniload.core.tablename import two_level
-from omniload.target.model import GenericSqlDestination
 
 
-class CustomCsvDestination(dlt.destinations.filesystem):
-    """Filesystem destination subclass used as the temporary CSV staging target."""
+class CsvDestination(LocalFilesystemDestination):
+    """Write a dlt load result into a single local CSV file.
 
-    pass
+    Two things separate it from the ``file://`` destination it inherits:
 
+    - the output format is pinned to CSV, so ``csv://out.jsonl`` and ``#parquet`` are
+      rejected before staging while an extensionless ``csv://report`` still writes CSV;
+    - the destination table keeps the quote-aware ``<schema>.<table>`` parser it was
+      given in #300, rather than ``file://``'s plain split and URI-stem default.
+    """
 
-class CsvDestination(GenericSqlDestination):
-    """Write a dlt load result into a single local CSV file."""
-
-    temp_path: str
-    actual_path: str
-    uri: str
-    dataset_name: str
-    table_name: str
+    pinned_output_format = "csv"
     table_capability = two_level("csv")
 
-    def supports_multiple_tables(self) -> bool:
-        """A single CSV output file cannot represent several worksheet tables."""
-        return False
-
     def dlt_run_params(self, uri: str, table: str, **kwargs) -> dict:
-        """Record table metadata needed to locate the staged dlt output."""
-        res = super().dlt_run_params(uri, table, **kwargs)
+        """Decode dataset and table name from a qualified ``--dest-table``.
 
-        self.dataset_name = res["dataset_name"]
-        self.table_name = res["table_name"]
-        self.uri = uri
+        A dot inside a quoted identifier is one component, and a name that resolves no
+        schema says so rather than restating the format. The shared ``post_load()``
+        locates dlt's staged output by these two names, so they are recorded on the
+        instance as well as returned.
+        """
+        parsed = self.table_capability.parse(table)
+        if parsed.schema is None:
+            raise self.table_capability.unresolved_schema_error(table)
 
-        return res
-
-    def dlt_dest(self, uri: str, **kwargs):
-        """Create a temporary filesystem destination for dlt's CSV output."""
-        if uri.startswith("csv://"):
-            uri = uri.replace("csv://", "file://")
-
-        temp_path = tempfile.mkdtemp()
-        self.actual_path = uri
-        self.temp_path = temp_path
-        return CustomCsvDestination(bucket_url=f"file://{temp_path}", **kwargs)
-
-    # I dislike this implementation quite a bit since it ties the implementation to some internal details on how dlt works
-    # I would prefer a custom destination that allows me to do this easily but dlt seems to have a lot of internal details that are not documented
-    # I tried to make it work with a nicer destination implementation but I couldn't, so I decided to go with this hack to experiment
-    # if anyone has a better idea on how to do this, I am open to contributions or suggestions
-    def post_load(self):
-        """Rewrite dlt's staged rows into the requested CSV file path."""
-
-        def find_first_file(path):
-            """Return the first regular file directly under a directory."""
-            for entry in os.listdir(path):
-                full_path = os.path.join(path, entry)
-                if os.path.isfile(full_path):
-                    return full_path
-
-            return None
-
-        def filter_keys(dictionary):
-            """Remove dlt metadata columns from an output row."""
-            return {
-                key: value
-                for key, value in dictionary.items()
-                if not key.startswith("_dlt_")
-            }
-
-        first_file_path = find_first_file(
-            f"{self.temp_path}/{self.dataset_name}/{self.table_name}"
-        )
-
-        output_path = self.uri.split("://")[1]
-        if output_path.count("/") > 1:
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
-        def _rewrite_csv_with_fieldnames(path, fieldnames):
-            """Rewrite an existing CSV file with an expanded field order."""
-            tmp_fd, tmp_path = tempfile.mkstemp(
-                suffix=".csv", dir=os.path.dirname(path) or "."
-            )
-            try:
-                os.close(tmp_fd)
-                with (
-                    open(path, "r", newline="") as old,
-                    open(tmp_path, "w", newline="") as new,
-                ):
-                    reader = csv.DictReader(old)
-                    writer = csv.DictWriter(new, fieldnames=fieldnames, restval="")
-                    writer.writeheader()
-                    for r in reader:
-                        writer.writerow(r)
-                os.replace(tmp_path, path)
-            except BaseException:
-                os.unlink(tmp_path)
-                raise
-
-        fieldnames = {}
-        csv_writer = None
-        csv_file = None
-
-        try:
-            for row in load_dlt_file(first_file_path):
-                row = filter_keys(row)
-                new_fields = False
-                for key in row:
-                    if key not in fieldnames:
-                        fieldnames[key] = None
-                        new_fields = True
-
-                if csv_writer is None:
-                    csv_file = open(output_path, "w", newline="")
-                    csv_writer = csv.DictWriter(
-                        csv_file, fieldnames=fieldnames, restval=""
-                    )
-                    csv_writer.writeheader()
-                elif new_fields:
-                    if csv_file is not None:
-                        csv_file.close()
-                    _rewrite_csv_with_fieldnames(output_path, list(fieldnames))
-                    csv_file = open(output_path, "a", newline="")
-                    csv_writer = csv.DictWriter(
-                        csv_file, fieldnames=fieldnames, restval=""
-                    )
-
-                csv_writer.writerow(row)
-        finally:
-            if csv_file:
-                csv_file.close()
-        shutil.rmtree(self.temp_path)
+        self.dataset_name = parsed.schema
+        self.table_name = parsed.table
+        return {
+            "dataset_name": self.dataset_name,
+            "table_name": self.table_name,
+        }

@@ -11,9 +11,12 @@ dlt's filesystem destination writes a directory layout
 (``{dataset}/{table}/{load_id}.{ext}``), not a single named file, so this class
 loads into a temp directory and, in ``post_load()``, reads the produced data back
 through the format-agnostic ``load_dlt_file`` helper and re-emits it as one clean file
-at the requested path (dropping dlt's bookkeeping ``_dlt_*`` columns). This is the
-same shape as ``omniload.target.csv`` ``CsvDestination``, generalized from CSV-only to
-CSV / JSONL / Parquet.
+at the requested path (dropping dlt's bookkeeping ``_dlt_*`` columns). A load dlt split
+across several files is read in full, in a stable filename order.
+
+``omniload.target.csv`` ``CsvDestination`` (the ``csv://`` scheme) is this class with
+``pinned_output_format`` set to ``csv``; it contributes only that restriction and its own
+table-name parser.
 """
 
 import os
@@ -41,6 +44,11 @@ class LocalFilesystemDestination:
     dataset_name: str
     table_name: str
 
+    #: Format this destination writes regardless of the path, for a compatibility scheme
+    #: that names its format in the scheme (``csv://``). ``None`` here takes the format
+    #: from the path or ``#hint`` and accepts every registered write format.
+    pinned_output_format: str | None = None
+
     def supports_multiple_tables(self) -> bool:
         """A single output file cannot represent several worksheet tables."""
         return False
@@ -49,7 +57,11 @@ class LocalFilesystemDestination:
 
         import dlt.destinations
 
-        self.output_path, self.output_format = _resolve_output_target(uri)
+        # Resolved (and so validated) before the temp directory exists, so a rejected
+        # destination leaves nothing behind to clean up.
+        self.output_path, self.output_format = _resolve_output_target(
+            uri, self.pinned_output_format
+        )
         self.temp_path = tempfile.mkdtemp()
         # dlt writes its layout under this temp bucket; post_load() reassembles the single
         # output file from it. Its own loader_file_format is irrelevant, load_dlt_file

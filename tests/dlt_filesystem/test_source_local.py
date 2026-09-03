@@ -172,6 +172,45 @@ def test_handles_incrementality_is_true():
     assert LocalFilesystemSource().handles_incrementality() is True
 
 
+@pytest.mark.parametrize(
+    ("uri", "reader"),
+    [
+        ("file://x.csv", "read_csv"),
+        ("file://x.jsonl", "read_jsonl"),
+        ("file://book.xlsx", "read_excel"),
+        ("file://x.bin", None),
+    ],
+)
+def test_validate_reader_sees_the_resolved_reader(uri, reader):
+    """The hook a format-restricted scheme overrides (``csv://``, see the omniload
+    package) is handed the reader the selection resolved to, or ``None`` when it named
+    no known format. Both probes call it, and neither calls it from inside the
+    ``except`` block that swallows endpoint errors, so an override's rejection reaches
+    the caller instead of being reported later as an unrelated mismatch.
+    """
+    seen: list = []
+
+    class Restricted(LocalFilesystemSource):
+        def validate_reader(self, reader_name):
+            seen.append(reader_name)
+            raise RuntimeError("restricted")
+
+    for probe, argument in (
+        (Restricted().produces_multiple_tables, (uri, "")),
+        (Restricted().dlt_source, (uri, "")),
+    ):
+        with pytest.raises(RuntimeError, match="restricted"):
+            probe(*argument)
+
+    assert seen == [reader, reader]
+
+
+def test_validate_reader_defaults_to_accepting_everything():
+    """``file://`` is unchanged by the hook's presence."""
+    assert LocalFilesystemSource().validate_reader("read_excel") is None
+    assert LocalFilesystemSource().validate_reader(None) is None
+
+
 def test_empty_path_raises():
     with pytest.raises(MissingConnectorOption):
         LocalFilesystemSource().dlt_source("file://", "")

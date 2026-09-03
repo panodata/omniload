@@ -5,6 +5,7 @@ from dlt_filesystem.source.format.registry import FORMAT_TO_READER
 from dlt_filesystem.source.impl.util import _is_absolute_local, _url_path_to_local
 from dlt_filesystem.target.registry import (
     WRITE_FORMATS,
+    pinned_write_format_message,
     supported_write_format_message,
 )
 
@@ -27,12 +28,20 @@ def _split_format_hint(spec: str) -> tuple[str, str | None]:
     return spec, None
 
 
-def _resolve_output_target(dest_uri: str) -> tuple[str, str]:
+def _resolve_output_target(
+    dest_uri: str, pinned_format: str | None = None
+) -> tuple[str, str]:
     """Resolve a ``file://`` destination URI into ``(local_path, format)``.
 
     Format precedence matches the source: an explicit ``#format`` hint wins, otherwise it
     is inferred from the file extension. Unsupported/absent formats raise a ``ValueError``
     listing the supported set.
+
+    ``pinned_format`` is for a compatibility scheme that names its format in the scheme
+    itself (``csv://``). The path then need not carry one, so ``csv://report`` and
+    ``csv://out.dat`` keep writing CSV as they always have. Only a path or hint naming a
+    *different known* format is an error, because that asks the scheme for a format it
+    does not write.
     """
     spec = dest_uri.split("://", 1)[1] if "://" in dest_uri else dest_uri
     spec = spec.strip()
@@ -55,6 +64,14 @@ def _resolve_output_target(dest_uri: str) -> tuple[str, str]:
         file_format = path.rsplit(".", 1)[-1].lower()
     else:
         file_format = None
+
+    if pinned_format is not None:
+        # A known format other than the pinned one is a real conflict; anything else
+        # (no extension, or one that names no format at all) falls back to the pin.
+        if file_format not in (None, pinned_format) and file_format in FORMAT_TO_READER:
+            raise ValueError(pinned_write_format_message(pinned_format, file_format))
+        file_format = pinned_format
+
     if file_format not in WRITE_FORMATS:
         raise ValueError(supported_write_format_message(file_format))
 

@@ -121,7 +121,7 @@ string and passing it as the destination URI.
 
 ```sh
 omniload ingest \
-    --source-uri 'csv:///local/users.csv' \
+    --source-uri 'file:///local/users.csv' \
     --source-table 'users' \
     --dest-uri 'az://?connection_string=<url_encoded_connection_string>' \
     --dest-table 'my-container/users'

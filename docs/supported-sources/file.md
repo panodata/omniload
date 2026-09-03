@@ -29,8 +29,8 @@ file://<path>
 :::{tip}
 `file://` intentionally treats the first path segment as part of the path, not
 as an RFC-8089 host. This is what makes the two-slash form `file://data/x.csv`
-(relative to the working directory) work, matching how `csv://` already behaves.
-Use the three-slash form `file:///abs/x.csv` for absolute paths.
+(relative to the working directory) work. Use the three-slash form
+`file:///abs/x.csv` for absolute paths.
 :::
 
 :::{note}
@@ -94,11 +94,11 @@ and are not supported when writing.
 
 ## Relationship to `csv://`
 
-The [`csv://`](csv.md) scheme still exists and is unchanged: it reads and writes
-a single local CSV file. `file://` is the broader local path, covering JSONL and
-Parquet as well as CSV, plus (on read) globbing and gzip decompression. Prefer
-`file://` for local files; use `csv://` only when you specifically want the
-standalone CSV reader.
+[`csv://`](csv.md) is the same connector with the file format pinned to CSV. It
+shares these readers, this writer and this path grammar, and differs only in
+rejecting every non-CSV format. `file://` is the canonical spelling for local
+files, covering JSONL, Parquet and workbooks as well as CSV; `csv://` is kept so
+existing commands keep working.
 
 ## Examples
 

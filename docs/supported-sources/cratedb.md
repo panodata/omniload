@@ -107,7 +107,7 @@ wget -O input.csv https://github.com/panodata/omniload/raw/refs/heads/main/tests
 ```
 ```shell
 omniload ingest \
-   --source-uri 'csv://input.csv' \
+   --source-uri 'file://input.csv' \
    --source-table 'sample' \
    --dest-uri 'cratedb://crate:@localhost:5432/?sslmode=disable' \
    --dest-table 'doc.sample'

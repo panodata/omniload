@@ -147,7 +147,7 @@ def test_csv_to_elasticsearch(elasticsearch_container, tmp_path):
 
         # Invoke ingest command
         result = invoke_ingest_command(
-            f"csv://{csv_path}",
+            f"file://{csv_path}",
             "test_data",
             f"elasticsearch://{netloc}?secure={secure}",
             "test_index",
@@ -201,7 +201,7 @@ def test_csv_to_elasticsearch_with_auth(elasticsearch_container_with_auth, tmp_p
 
         # Invoke ingest command with auth
         result = invoke_ingest_command(
-            f"csv://{csv_path}",
+            f"file://{csv_path}",
             "test_data",
             f"elasticsearch://elastic:testpass123@{netloc}?secure={secure}",
             "test_auth_index",
@@ -267,7 +267,7 @@ NewData2,300
         secure = "true" if parsed.scheme == "https" else "false"
 
         result = invoke_ingest_command(
-            f"csv://{csv_path}",
+            f"file://{csv_path}",
             "test_data",
             f"elasticsearch://{netloc}?secure={secure}",
             index_name,
@@ -328,7 +328,7 @@ def test_csv_to_elasticsearch_cloud(tmp_path):
 
         # Invoke ingest command with Elasticsearch Cloud
         result = invoke_ingest_command(
-            f"csv://{csv_path}",
+            f"file://{csv_path}",
             "test_data",
             es_cloud_url,
             "OMNILOAD_test_cloud_index",

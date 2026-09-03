@@ -425,7 +425,7 @@ def test_remote_destination_writes_native_parquet(remote_filesystem):
     """S3 and Azure destinations write data readable through their native SDKs."""
     prefix = "destination"
     result = run_ingest(
-        source_uri="csv://tests/assets/create_replace.csv",
+        source_uri="file://tests/assets/create_replace.csv",
         dest_uri=remote_filesystem.destination_uri,
         source_table="stocks",
         dest_table=remote_filesystem.destination_table(prefix, "stocks"),

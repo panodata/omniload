@@ -1,4 +1,5 @@
 import json
+import re
 import unittest
 from abc import abstractmethod
 from typing import Any, Type
@@ -471,3 +472,35 @@ def test_a_bare_name_with_no_default_schema_says_so_rather_than_restating_the_fo
 )
 def test_opaque_destinations_preserve_dotted_names(destination, table):
     assert destination.dlt_run_params("", table) == {"table_name": table}
+
+
+@pytest.mark.parametrize(
+    ("table", "expected"),
+    [
+        ("analytics.customers", {"schema": "analytics", "table": "customers"}),
+        # a dot inside a quoted identifier is one component, not a separator (#300)
+        ('analytics."order.items"', {"schema": "analytics", "table": "order.items"}),
+        ("[my schema].[my table]", {"schema": "my schema", "table": "my table"}),
+    ],
+)
+def test_csv_destination_keeps_its_quote_aware_table_parser(table, expected):
+    """The ``csv://`` destination shares the ``file://`` writer (#301) but not its plain
+    ``str.split('.')``: it keeps the parser it was given in #300, so a quoted dotted
+    component survives convergence."""
+    destination = CsvDestination()
+    assert destination.dlt_run_params("csv:///tmp/out.csv", table) == {
+        "dataset_name": expected["schema"],
+        "table_name": expected["table"],
+    }
+    # post_load() locates dlt's staged output by these, so they are recorded too.
+    assert (destination.dataset_name, destination.table_name) == (
+        expected["schema"],
+        expected["table"],
+    )
+
+
+@pytest.mark.parametrize("table", ["customers", "", "a.b.c"])
+def test_csv_destination_still_requires_a_qualified_table(table):
+    """Unlike ``file://``, which defaults an omitted table from the URI stem."""
+    with pytest.raises(ValueError, match=re.escape("<schema>.<table>")):
+        CsvDestination().dlt_run_params("csv:///tmp/out.csv", table)

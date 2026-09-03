@@ -25,9 +25,9 @@ def _write_csv(path, name: str, mtime: int) -> None:
     os.utime(path, (mtime, mtime))
 
 
-def _load(source, dest, *, dest_uri: str | None = None, **kwargs):
+def _load(source, dest, *, dest_uri: str | None = None, scheme: str = "file", **kwargs):
     return run_ingest(
-        source_uri=f"file://{source}",
+        source_uri=f"{scheme}://{source}",
         dest_uri=dest_uri or f"duckdb:///{dest}",
         source_table="people",
         dest_table="out.people",
@@ -35,6 +35,11 @@ def _load(source, dest, *, dest_uri: str | None = None, **kwargs):
         progress="log",
         **kwargs,
     )
+
+
+def _load_csv(source, dest, **kwargs):
+    """Same load through the ``csv://`` compatibility spelling."""
+    return _load(source, dest, scheme="csv", **kwargs)
 
 
 def _names(dest) -> list[str]:
@@ -383,7 +388,7 @@ def test_persistent_pipeline_dir_carries_cursor_without_destination_state_sync(
     assert opened == ["b.csv"]
 
 
-def test_replace_and_non_filesystem_sources_are_rejected(tmp_path):
+def test_replace_is_rejected(tmp_path):
     source = tmp_path / "source"
     dest = tmp_path / "warehouse.duckdb"
     _write_csv(source / "a.csv", "Alice", 1_700_000_000)
@@ -391,15 +396,48 @@ def test_replace_and_non_filesystem_sources_are_rejected(tmp_path):
     with pytest.raises(ValidationError, match="requires append loading"):
         _load(source / "*.csv", dest, incremental_strategy="replace")
 
+
+def test_non_filesystem_sources_are_rejected(tmp_path):
+    """A source that reports no file-level modification time cannot select by one.
+    This case used to be spelled with ``csv://``, which is a filesystem source now."""
+    dest = tmp_path / "warehouse.duckdb"
+
     with pytest.raises(ValidationError, match="does not support the"):
         run_ingest(
-            source_uri="csv://tests/assets/create_replace.csv",
+            source_uri="sqlite:///does-not-matter.db",
             dest_uri=f"duckdb:///{dest}",
             source_table="people",
             dest_table="out.people",
             filesystem_incremental=True,
             progress="log",
         )
+
+
+def test_csv_scheme_selects_files_by_modification_time(tmp_path, monkeypatch):
+    """``csv://`` inherits file-level incrementality, so the second run skips the
+    unchanged file through the same destination-state synchronization ``file://`` uses.
+    The pairing needs a destination that supports dlt state sync: ``csv://`` and
+    ``file://`` destinations are rejected outright (see
+    ``test_single_file_destinations_are_rejected``) because they rewrite one output file
+    from the rows of the current run only."""
+    source = tmp_path / "source"
+    dest = tmp_path / "warehouse.duckdb"
+    _write_csv(source / "a.csv", "Alice", 1_700_000_000)
+    opened = _record_file_opens(monkeypatch)
+
+    _load_csv(source / "*.csv", dest)
+    assert opened == ["a.csv"]
+    assert _names(dest) == ["Alice"]
+
+    opened.clear()
+    _load_csv(source / "*.csv", dest)
+    assert opened == []
+    assert _names(dest) == ["Alice"]
+
+    _write_csv(source / "b.csv", "Bob", 1_700_000_100)
+    _load_csv(source / "*.csv", dest)
+    assert opened == ["b.csv"]
+    assert _names(dest) == ["Alice", "Bob"]
 
 
 @pytest.mark.parametrize("dest_scheme", ["csv", "file"])

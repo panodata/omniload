@@ -306,7 +306,7 @@ SCD2 compares rows by a hash that dlt computes only for row-oriented data, so it
 
 The filesystem-family sources manage their own incrementality, so omniload's per-key strategies above do not apply to them; they append by default and support an explicit `append` or `replace`. This covers the local source and every remote transport:
 
-- `file://` (local files)
+- `file://` (local files), and `csv://`, its CSV-only alias
 - `az://`, `abfss://`, `adls://` (Azure Blob Storage / ADLS Gen2)
 - `gs://` (Google Cloud Storage)
 - `s3://` (Amazon S3)
@@ -318,7 +318,7 @@ After the URI is parsed they all converge on the same reader, so their loading b
 
 Each of these sources declares (via `handles_incrementality()`) that omniload should not apply its own incremental logic. omniload responds by disabling that logic and leaving the write disposition unset, so dlt's default applies: **every run appends the source rows to the destination table.** Running the same command a second time adds another copy of the data rather than replacing it.
 
-omniload's per-key incremental logic stays disabled, so `--incremental-key` does not drive loading: the local `file://` source rejects an explicit key with an error, while the remote transports ignore it. `--incremental-strategy` is honoured only for the two dispositions these sources can support, described next.
+omniload's per-key incremental logic stays disabled, so `--incremental-key` does not drive loading: the local `file://` and `csv://` sources reject an explicit key with an error, while the remote transports ignore it. `--incremental-strategy` is honoured only for the two dispositions these sources can support, described next.
 
 ### Opt in to file-level incremental loading
 

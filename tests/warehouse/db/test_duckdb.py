@@ -1,8 +1,10 @@
 import csv
 import os
+import sqlite3
 import tempfile
 
 import duckdb
+import pytest
 import sqlalchemy
 from sqlalchemy.pool import NullPool
 
@@ -12,12 +14,46 @@ from tests.util.container.impl.duckdb import EphemeralDuckDb
 from tests.warehouse.db.util import assert_output_equals_to_csv
 
 
-def test_create_replace_csv_to_duckdb(testdata_path, tmp_path):
+def _sqlite_table_from_csv(db_path, csv_path, table: str = "input") -> None:
+    """(Re)build a TEXT-typed SQLite table from a CSV fixture.
 
-    abs_db_path = tmp_path / "test_create_replace_csv.db"
+    The merge and delete+insert cases below need a source they can *change* between
+    runs, which is what proves a destination strategy rather than a single load. They
+    also compare the destination against the fixture's raw strings
+    (``assert_output_equals_to_csv``), so every column is TEXT and keeps the CSV's own
+    column names.
+    """
+    with open(csv_path, newline="") as handle:
+        reader = csv.reader(handle, delimiter=",", quotechar='"')
+        columns = next(reader)
+        rows = list(reader)
+
+    definitions = ", ".join(f'"{column}" TEXT' for column in columns)
+    placeholders = ", ".join("?" * len(columns))
+    conn = sqlite3.connect(str(db_path))
+    try:
+        conn.execute(f"DROP TABLE IF EXISTS {table}")
+        conn.execute(f"CREATE TABLE {table} ({definitions})")
+        conn.executemany(f"INSERT INTO {table} VALUES ({placeholders})", rows)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+@pytest.mark.parametrize("scheme", ["file", "csv"])
+def test_create_replace_local_csv_to_duckdb(testdata_path, tmp_path, scheme):
+    """A local CSV loads the same through both spellings (#301).
+
+    Values are the shared reader's, not the standalone parser's: polars infers
+    ``isEnabled`` as a boolean, so ``is_enabled`` arrives as DuckDB ``BOOLEAN true``
+    rather than the string ``'True'``. ``date`` stays a string because ``read_csv``
+    leaves polars' ``try_parse_dates`` at its ``False`` default, and a quoted empty
+    field stays an empty string rather than becoming NULL.
+    """
+    abs_db_path = tmp_path / f"test_create_replace_{scheme}.db"
 
     result = invoke_ingest_command(
-        "csv://tests/assets/create_replace.csv",
+        f"{scheme}://tests/assets/create_replace.csv",
         "testschema.input",
         f"duckdb:///{abs_db_path}",
         "testschema.output",
@@ -36,18 +72,26 @@ def test_create_replace_csv_to_duckdb(testdata_path, tmp_path):
     with open(testdata_path / "create_replace.csv", "r") as f:
         reader = csv.reader(f, delimiter=",", quotechar='"')
         next(reader, None)
-        for row in reader:
-            actual_rows.append([None if v.strip() == "" else v for v in row])
+        for symbol, date, is_enabled, name in reader:
+            actual_rows.append((symbol, date, is_enabled == "True", name))
 
     # compare the CSV file with the DuckDB table
     assert len(res) == len(actual_rows)
     for i, row in enumerate(actual_rows):
-        assert res[i] == tuple(row)
+        assert res[i] == row
 
 
-def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):
+def test_merge_with_primary_key_to_duckdb(testdata_path, tmp_path):
+    """The DuckDB ``merge`` strategy across repeated loads from a changing source.
 
-    abs_db_path = tmp_path / "test_merge_with_primary_key_csv.db"
+    The source is SQLite rather than ``csv://``: the local CSV schemes converged on the
+    filesystem source (#301), which exposes no row-level incremental or merge key and
+    rejects ``merge`` outright. The assertions are the originals, and they pin dlt's
+    row-level incremental behaviour as much as the destination strategy, so the
+    per-load-id counts matter as much as the final rows.
+    """
+    abs_db_path = tmp_path / "test_merge_with_primary_key.db"
+    src_db_path = tmp_path / "merge_source.db"
     uri = f"duckdb:///{abs_db_path}"
 
     # DuckDB is sensitive about multiple connections to the same database file.
@@ -55,15 +99,20 @@ def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):
     # different configuration than existing connections
     # conn = duckdb.connect(abs_db_path)
 
-    def run(source: str):
+    def run(fixture: str):
+        _sqlite_table_from_csv(src_db_path, testdata_path / fixture)
         res = invoke_ingest_command(
-            source,
-            "whatever",  # table name doesnt matter for CSV
+            f"sqlite:///{src_db_path}",
+            "main.input",
             uri,
             "testschema_merge.output",
             "merge",
             "date",
             "symbol",
+            # Row-wise, like the CSV source these cases used to read. The default
+            # backend yields Arrow, where dlt omits `_dlt_load_id`, and the
+            # per-load-id counts below are half of what they assert.
+            sql_backend="sqlalchemy",
         )
         assert res.exit_code == 0
         return res
@@ -77,7 +126,7 @@ def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):
         conn.close()
         return results
 
-    run("csv://tests/assets/merge_part1.csv")
+    run("merge_part1.csv")
     assert_output_equals_to_csv(get_output_rows(), testdata_path / "merge_part1.csv")
 
     conn = duckdb.connect(abs_db_path)
@@ -88,7 +137,7 @@ def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):
 
     ##############################
     # we'll run again, we don't expect any changes since the data hasn't changed
-    run("csv://tests/assets/merge_part1.csv")
+    run("merge_part1.csv")
     assert_output_equals_to_csv(get_output_rows(), testdata_path / "merge_part1.csv")
 
     # we also ensure that the other rows were not touched
@@ -105,7 +154,7 @@ def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):
     ##############################
     # now we'll run the same ingestion but with a different file this time
 
-    run("csv://tests/assets/merge_part2.csv")
+    run("merge_part2.csv")
     assert_output_equals_to_csv(get_output_rows(), testdata_path / "merge_expected.csv")
 
     # let's check the runs
@@ -126,21 +175,25 @@ def test_merge_with_primary_key_csv_to_duckdb(testdata_path, tmp_path):
     assert count_by_run_id[1][1] == 3
 
 
-def test_delete_insert_without_primary_key_csv_to_duckdb(testdata_path, tmp_path):
-
-    abs_db_path = tmp_path / "test_delete_insert_without_primary_key_csv.db"
+def test_delete_insert_without_primary_key_to_duckdb(testdata_path, tmp_path):
+    """The DuckDB ``delete+insert`` strategy across repeated loads from a changing
+    source. On SQLite for the same reason as the merge case above."""
+    abs_db_path = tmp_path / "test_delete_insert_without_primary_key.db"
+    src_db_path = tmp_path / "delete_insert_source.db"
     uri = f"duckdb:///{abs_db_path}"
 
     conn = duckdb.connect(abs_db_path)
 
-    def run(source: str):
+    def run(fixture: str):
+        _sqlite_table_from_csv(src_db_path, testdata_path / fixture)
         res = invoke_ingest_command(
-            source,
-            "whatever",  # table name doesnt matter for CSV
+            f"sqlite:///{src_db_path}",
+            "main.input",
             uri,
             "testschema.output",
             "delete+insert",
             "date",
+            sql_backend="sqlalchemy",  # row-wise, so `_dlt_load_id` is written
         )
         assert res.exit_code == 0
         return res
@@ -151,7 +204,7 @@ def test_delete_insert_without_primary_key_csv_to_duckdb(testdata_path, tmp_path
             "select symbol, date, is_enabled, name from testschema.output order by symbol asc"
         ).fetchall()
 
-    run("csv://tests/assets/delete_insert_part1.csv")
+    run("delete_insert_part1.csv")
     assert_output_equals_to_csv(
         get_output_rows(), testdata_path / "delete_insert_part1.csv"
     )
@@ -164,7 +217,7 @@ def test_delete_insert_without_primary_key_csv_to_duckdb(testdata_path, tmp_path
     # we'll run again, we expect the data to be the same, but a new load_id to exist
     # this is due to the fact that the old data won't be touched, but the ones with the
     # latest value will be rewritten
-    run("csv://tests/assets/delete_insert_part1.csv")
+    run("delete_insert_part1.csv")
     assert_output_equals_to_csv(
         get_output_rows(), testdata_path / "delete_insert_part1.csv"
     )
@@ -183,7 +236,7 @@ def test_delete_insert_without_primary_key_csv_to_duckdb(testdata_path, tmp_path
     ##############################
     # now we'll run the same ingestion but with a different file this time
 
-    run("csv://tests/assets/delete_insert_part2.csv")
+    run("delete_insert_part2.csv")
     assert_output_equals_to_csv(
         get_output_rows(), testdata_path / "delete_insert_expected.csv"
     )

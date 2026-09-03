@@ -55,7 +55,7 @@ For the details around the incremental key and the various strategies, please re
 
 ```bash
 omniload ingest \
-   --source-uri 'csv://input.csv' \
+   --source-uri 'file://input.csv' \
    --source-table 'sample' \
    --dest-uri 'duckdb://output.duckdb'
 ```

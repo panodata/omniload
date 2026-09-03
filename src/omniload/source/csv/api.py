@@ -1,80 +1,44 @@
-import csv
-from typing import Any, Dict, Optional
+"""``csv://``: a CSV-only compatibility spelling of the local ``file://`` source.
 
-from dlt.extract import Incremental as dlt_incremental
+The scheme predates the filesystem family and is kept so existing commands resolve.
+It routes through the shared local reader, so ``csv://x.csv`` and ``file://x.csv``
+load identically, and the only behaviour this module adds is the format restriction:
+the scheme names a format, so it reads CSV and nothing else. See #301.
+"""
+
+from typing import Optional
+
+from dlt_filesystem.source.format.registry import reader_for_format
+from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
+from omniload.error import ValidationError
+
+# Every CSV-family reader the shared registry exposes. The scheme restricts the file
+# format, not the parsing route, so the header-less and DuckDB CSV readers stay
+# reachable through ``#csv_headless`` and ``#csv_duckdb``.
+CSV_FORMATS = ("csv", "csv_headless", "csv_duckdb")
+CSV_READERS = frozenset(reader_for_format(file_format) for file_format in CSV_FORMATS)
 
 
-class LocalCsvSource:
-    def handles_incrementality(self) -> bool:
-        return False
+class LocalCsvSource(LocalFilesystemSource):
+    """Read local CSV files through the shared filesystem readers.
 
-    def dlt_source(self, uri: str, table: str, **kwargs):
-        def csv_file(
-            incremental: Optional[dlt_incremental[Any]] = None,
-        ):
-            file_path = uri.split("://")[1]
-            myFile = open(file_path, "r")
-            reader = csv.DictReader(myFile)
-            if not reader.fieldnames:
-                raise RuntimeError(
-                    "failed to extract headers from the CSV, are you sure the given file contains a header row?"
-                )
+    Everything but the format restriction is inherited: path grammar (split form,
+    relative and absolute paths, Windows drive and UNC paths), globs, gzip, ``#format``
+    and ``#key=value`` reader hints, column typing, and file-level incrementality by
+    modification time. Row-level ``--incremental-key`` is rejected here exactly as it is
+    on ``file://``; the old string-versus-datetime cursor is gone.
+    """
 
-            incremental_key = kwargs.get("incremental_key")
-            if incremental_key and incremental_key not in reader.fieldnames:
-                raise ValueError(
-                    f"incremental_key '{incremental_key}' not found in the CSV file"
-                )
-
-            page_size = 1000
-            page = []
-            current_items = 0
-            for dictionary in reader:
-                # Skip rows where all values are None or empty/whitespace
-                if all(
-                    v is None or (isinstance(v, str) and v.strip() == "")
-                    for v in dictionary.values()
-                ):
-                    continue
-
-                # Skip rows based on incremental key if specified
-                if incremental_key and incremental and incremental.start_value:
-                    inc_value = dictionary.get(incremental_key)
-                    if inc_value is None:
-                        raise ValueError(
-                            f"incremental_key '{incremental_key}' not found in the CSV file"
-                        )
-
-                    if inc_value < incremental.start_value:
-                        continue
-
-                dictionary = self.remove_empty_columns(dictionary)
-                page.append(dictionary)
-                current_items += 1
-
-                # Yield page when it reaches page_size
-                if current_items >= page_size:
-                    yield page
-                    page = []
-                    current_items = 0
-
-            if page:
-                yield page
-
-        from dlt import resource
-
-        return resource(  # ty: ignore[no-matching-overload]
-            csv_file,
-            merge_key=kwargs.get("merge_key"),
-        )(
-            incremental=dlt_incremental(
-                kwargs.get("incremental_key", ""),
-                initial_value=kwargs.get("interval_start"),
-                end_value=kwargs.get("interval_end"),
-                range_end="closed",
-                range_start="closed",
-            )
+    def validate_reader(self, reader_name: Optional[str]) -> None:
+        """Reject any selection that resolves to a reader outside the CSV family."""
+        if reader_name in CSV_READERS:
+            return
+        resolved = (
+            f"resolves to the '{reader_name}' reader"
+            if reader_name
+            else "names no known file format"
         )
-
-    def remove_empty_columns(self, row: Dict[str, str]) -> Dict[str, str]:
-        return {k: v for k, v in row.items() if v.strip() != ""}
+        raise ValidationError(
+            f"The 'csv' source only reads CSV ({', '.join(CSV_FORMATS)}); this "
+            f"selection {resolved}. Use a 'file://' source to read other formats."
+        )

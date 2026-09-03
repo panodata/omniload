@@ -124,7 +124,7 @@ def test_run_ingest_without_tables_invalid_destination_table(tmp_path):
     dest = tmp_path / "warehouse.duckdb"
     with pytest.raises(ValueError) as excinfo:
         run_ingest(
-            source_uri="csv://tests/assets/create_replace.csv",
+            source_uri="file://tests/assets/create_replace.csv",
             dest_uri=f"duckdb://{dest}",
         )
     assert excinfo.match(
@@ -214,7 +214,7 @@ def test_defaulted_dest_table_counts_quoted_components_not_dots(tmp_path):
     """A dot inside a quoted identifier is one component, so the name still defaults."""
     dest = tmp_path / "warehouse.duckdb"
     result = run_ingest(
-        source_uri="csv://tests/assets/create_replace.csv",
+        source_uri="file://tests/assets/create_replace.csv",
         dest_uri=f"duckdb:///{dest}",
         source_table='public."order.items"',
         dry_run=True,

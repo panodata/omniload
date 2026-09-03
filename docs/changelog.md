@@ -3,6 +3,28 @@
 ## in progress
 
 - Verified compatibility with Polars 2
+- **CSV: `csv://` now shares the `file://` implementation.** It stays a CSV-only
+  scheme, and every existing command still resolves, but reading and writing are
+  the local filesystem connector's, so the behaviour changes. On read: values are
+  typed rather than all-string (numbers and booleans are inferred; ISO date
+  strings stay strings), a row whose fields are all empty is kept as a row of
+  nulls instead of being dropped, and the path grammar gains globs, gzip, split
+  form, Windows drive and UNC paths, and `#csv_headless` / `#csv_duckdb` hints.
+  A rerun with no `--incremental-strategy` now **appends** rather than replacing;
+  pass `--incremental-strategy replace` for the previous behaviour. `merge`,
+  `delete+insert` and `scd2` are rejected, because the shared reader exposes no
+  incremental or merge key, and `--incremental-key` is rejected for the same
+  reason: the row cursor it drove compared raw strings against parsed datetimes
+  and crashed when given an interval, so it is removed rather than ported.
+  File-level selection by modification time is available through
+  `--filesystem-incremental`. A non-CSV selection (`csv://data.jsonl`,
+  `csv://feed.dat#parquet`, `csv://book.xlsx`) is now rejected before any file is
+  read; use `file://` for those. On write, a load that dlt split across several
+  files wrote only the first of them and still exited zero, silently dropping the
+  rest; every row now reaches the output file, in a deterministic but not
+  necessarily source order. A destination path naming a different known format
+  (`csv://out.jsonl`, `#parquet`) is rejected, while an extensionless or
+  unrecognised-extension path (`csv://report`, `csv://out.dat`) still writes CSV.
 
 ## 2026/09/01 v0.14.0
 

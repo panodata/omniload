@@ -60,7 +60,7 @@ Cloud Elasticsearch instances typically use HTTPS (port 443). The `secure` param
 
 ```bash
 omniload ingest \
-  --source-uri "csv:///path/to/data.csv" \
+  --source-uri "file:///path/to/data.csv" \
   --source-table "data" \
   --dest-uri "elasticsearch://elastic:changeme@localhost:9200?secure=false" \
   --dest-table "myindex"
@@ -70,7 +70,7 @@ omniload ingest \
 
 ```bash
 omniload ingest \
-  --source-uri "csv:///path/to/data.csv" \
+  --source-uri "file:///path/to/data.csv" \
   --source-table "data" \
   --dest-uri "elasticsearch://localhost:9200?secure=false" \
   --dest-table "myindex"

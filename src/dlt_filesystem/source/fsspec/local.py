@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 from dlt_filesystem.error import MissingConnectorOption
 from dlt_filesystem.source.base import FilesystemSource
@@ -32,6 +33,18 @@ class LocalFilesystemSource(FilesystemSource):
     See #106 for the URI-semantics discussion.
     """
 
+    def validate_reader(self, reader_name: Optional[str]) -> None:
+        """Accept every registered reader, and every selection that resolves to none.
+
+        A compatibility scheme that pins one file format (``csv://``) overrides this to
+        reject the readers it does not expose; ``None`` means the selection named no
+        known format, which such a scheme reports against its own format list rather
+        than against the full one. Both endpoint probes call it, and neither calls it
+        from inside their ``except (UnsupportedEndpointError, ValueError)`` *try* block:
+        a restriction raised there would be swallowed and reported later as an unrelated
+        mismatch.
+        """
+
     def produces_multiple_tables(self, uri: str, table: str) -> bool:
         """Return whether the local source selects worksheet tables."""
         from dlt_filesystem.source.format.readers import (
@@ -44,7 +57,9 @@ class LocalFilesystemSource(FilesystemSource):
         try:
             endpoint = determine_endpoint(spec, path)
         except (UnsupportedEndpointError, ValueError):
+            self.validate_reader(None)
             return False
+        self.validate_reader(endpoint)
         return endpoint in {
             "read_excel",
             "read_ods",
@@ -85,7 +100,9 @@ class LocalFilesystemSource(FilesystemSource):
         try:
             endpoint = determine_endpoint(spec, path)
         except (UnsupportedEndpointError, ValueError):
+            self.validate_reader(None)
             raise ValueError(supported_file_format_message("Local file")) from None
+        self.validate_reader(endpoint)
 
         local = _url_path_to_local(path)
         if not _is_absolute_local(local):

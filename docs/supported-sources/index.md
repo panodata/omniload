@@ -69,7 +69,7 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>-</td>
     </tr>
     <tr>
-        <td>Local CSV file</td>
+        <td>Local CSV file (CSV-only alias of the local file connector)</td>
         <td>✅</td>
         <td>✅</td>
     </tr>

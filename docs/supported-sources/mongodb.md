@@ -209,7 +209,7 @@ When using MongoDB Atlas as a destination, ensure your IP address is whitelisted
 
 ```bash
 omniload ingest \
-  --source-uri "csv:///path/to/data.csv" \
+  --source-uri "file:///path/to/data.csv" \
   --source-table "data" \
   --dest-uri "mongodb://username:password@localhost:27017/?authSource=admin" \
   --dest-table "mydb.mycollection"
@@ -219,7 +219,7 @@ omniload ingest \
 
 ```bash
 omniload ingest \
-  --source-uri "csv:///path/to/data.csv" \
+  --source-uri "file:///path/to/data.csv" \
   --source-table "data" \
   --dest-uri "mongodb://localhost:27017" \
   --dest-table "mydb.mycollection"

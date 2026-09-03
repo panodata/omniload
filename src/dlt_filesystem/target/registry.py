@@ -27,3 +27,11 @@ def supported_write_format_message(file_format: str | None = None) -> str:
     return (
         f"Local file Destination only supports file formats: {WRITE_FORMATS_TEXT}{got}"
     )
+
+
+def pinned_write_format_message(pinned_format: str, file_format: str) -> str:
+    """Build the error for a destination whose scheme already names its format."""
+    return (
+        f"A '{pinned_format}' destination only writes {pinned_format} files, and this "
+        f"one names '{file_format}'. Use a 'file://' destination for other formats."
+    )

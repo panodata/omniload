@@ -51,15 +51,24 @@ def _count(dest, table):
 
 
 # --- filesystem source: default append, explicit append/replace ---
+#
+# Every case runs through both local spellings. `csv://` is a CSV-only compatibility
+# alias for `file://` (#301), and the disposition contract is the part of the
+# convergence a user feels first: the standalone CSV source reported
+# `handles_incrementality() is False`, so an unqualified rerun used to *replace*.
 
 
-def test_filesystem_default_appends_on_rerun(tmp_path):
+LOCAL_SCHEMES = ["file", "csv"]
+
+
+@pytest.mark.parametrize("scheme", LOCAL_SCHEMES)
+def test_filesystem_default_appends_on_rerun(tmp_path, scheme):
     """No --incremental-strategy: the file source appends a second copy on re-run."""
     src = _write_people(tmp_path)
     dest = tmp_path / "wh.duckdb"
     for _ in range(2):
         run_ingest(
-            source_uri=f"file://{src}",
+            source_uri=f"{scheme}://{src}",
             dest_uri=f"duckdb:///{dest}",
             source_table="people",
             dest_table="out.people",
@@ -68,13 +77,14 @@ def test_filesystem_default_appends_on_rerun(tmp_path):
     assert _count(dest, "out.people") == 6
 
 
-def test_filesystem_explicit_append_accumulates(tmp_path):
+@pytest.mark.parametrize("scheme", LOCAL_SCHEMES)
+def test_filesystem_explicit_append_accumulates(tmp_path, scheme):
     """Explicit append matches the default behaviour (accumulates), now stated intent."""
     src = _write_people(tmp_path)
     dest = tmp_path / "wh.duckdb"
     for _ in range(2):
         run_ingest(
-            source_uri=f"file://{src}",
+            source_uri=f"{scheme}://{src}",
             dest_uri=f"duckdb:///{dest}",
             source_table="people",
             dest_table="out.people",
@@ -84,14 +94,15 @@ def test_filesystem_explicit_append_accumulates(tmp_path):
     assert _count(dest, "out.people") == 6
 
 
-def test_filesystem_explicit_replace_resets_on_rerun(tmp_path):
+@pytest.mark.parametrize("scheme", LOCAL_SCHEMES)
+def test_filesystem_explicit_replace_resets_on_rerun(tmp_path, scheme):
     """Explicit replace resets the destination instead of appending (issue #188)."""
     src = _write_people(tmp_path)
     dest = tmp_path / "wh.duckdb"
 
     # A default run first populates the table.
     run_ingest(
-        source_uri=f"file://{src}",
+        source_uri=f"{scheme}://{src}",
         dest_uri=f"duckdb:///{dest}",
         source_table="people",
         dest_table="out.people",
@@ -101,7 +112,7 @@ def test_filesystem_explicit_replace_resets_on_rerun(tmp_path):
 
     # An explicit replace resets rather than appending a second copy.
     run_ingest(
-        source_uri=f"file://{src}",
+        source_uri=f"{scheme}://{src}",
         dest_uri=f"duckdb:///{dest}",
         source_table="people",
         dest_table="out.people",
@@ -111,13 +122,14 @@ def test_filesystem_explicit_replace_resets_on_rerun(tmp_path):
     assert _count(dest, "out.people") == 3
 
 
-def test_filesystem_explicit_none_appends(tmp_path):
+@pytest.mark.parametrize("scheme", LOCAL_SCHEMES)
+def test_filesystem_explicit_none_appends(tmp_path, scheme):
     """Explicit 'none' on a filesystem source falls back to the append default."""
     src = _write_people(tmp_path)
     dest = tmp_path / "wh.duckdb"
     for _ in range(2):
         run_ingest(
-            source_uri=f"file://{src}",
+            source_uri=f"{scheme}://{src}",
             dest_uri=f"duckdb:///{dest}",
             source_table="people",
             dest_table="out.people",
@@ -127,15 +139,17 @@ def test_filesystem_explicit_none_appends(tmp_path):
     assert _count(dest, "out.people") == 6
 
 
+@pytest.mark.parametrize("scheme", LOCAL_SCHEMES)
 @pytest.mark.parametrize("strategy", ["merge", "scd2", "delete+insert"])
-def test_filesystem_key_strategies_are_rejected(tmp_path, strategy):
+def test_filesystem_key_strategies_are_rejected(tmp_path, strategy, scheme):
     """Key-dependent strategies error clearly instead of silently appending: filesystem
-    sources can't supply the incremental/merge key these need."""
+    sources can't supply the incremental/merge key these need. The message names the
+    scheme the user wrote, so `csv://` says 'csv'."""
     src = _write_people(tmp_path)
     dest = tmp_path / "wh.duckdb"
-    with pytest.raises(ValidationError, match="the 'file' source does not expose"):
+    with pytest.raises(ValidationError, match=f"the '{scheme}' source does not expose"):
         run_ingest(
-            source_uri=f"file://{src}",
+            source_uri=f"{scheme}://{src}",
             dest_uri=f"duckdb:///{dest}",
             source_table="people",
             dest_table="out.people",
