@@ -21,12 +21,19 @@ from dlt.common import json
 from dlt.common.typing import copy_sig
 from dlt.sources import DltResource, DltSource, TDataItems
 from dlt.sources.filesystem import FileItemDict
+from verlib2 import Version
 
 from dlt_filesystem.source.error import WorksheetNameCollisionError, _safe_location
 from dlt_filesystem.source.format.helpers import fetch_arrow, fetch_json
 from dlt_filesystem.source.format.iterable_codec import read_via_iterable
 from dlt_filesystem.source.format.settings import DEFAULT_CHUNK_SIZE
 from dlt_filesystem.util.python import asbool, cast_kwargs_to_signature
+
+
+def POLARS_2() -> bool:
+    import polars
+
+    return Version(polars.__version__) >= Version("2rc")
 
 
 def _polars_csv_symbols() -> Dict[str, Any]:
@@ -122,14 +129,23 @@ def read_csv(
     Returns:
         TDataItem: The file content
     """
+
+    # Apply defaults.
+    kwargs.setdefault("batch_size", chunksize)
+
+    # pl.read_csv is now dispatched to pl.scan_csv(...).collect().
+    # It loses n_threads, batch_size, sample_size, and rechunk,
+    # which have no equivalent in the lazy reader.
+    # https://docs.pola.rs/releases/upgrade/2/#plread_csv-is-now-dispatched-to-plscan_csvcollect
+    # TODO: Also apply relevant changes to the documentation or other validators?
+    if POLARS_2():
+        kwargs.pop("batch_size", None)
+
     import polars as pl
 
     kwargs = cast_kwargs_to_signature(
         pl.read_csv, kwargs, symbols=_polars_csv_symbols()
     )
-
-    # Apply defaults.
-    kwargs.setdefault("batch_size", chunksize)
 
     for file_obj in items:
         # Read the file in chunks to avoid loading the whole file into memory.
@@ -180,6 +196,14 @@ def read_csv_headless(
                 **{"has_header": False, "new_columns": names, "batch_size": chunksize},
                 **polars_kwargs,
             }
+
+            # pl.read_csv is now dispatched to pl.scan_csv(...).collect().
+            # It loses n_threads, batch_size, sample_size, and rechunk,
+            # which have no equivalent in the lazy reader.
+            # https://docs.pola.rs/releases/upgrade/2/#plread_csv-is-now-dispatched-to-plscan_csvcollect
+            # TODO: Also apply relevant changes to the documentation or other validators?
+            if POLARS_2():
+                kwargs.pop("batch_size", None)
 
             df = pl.read_csv(file, **kwargs)
             yield df.to_dicts()
