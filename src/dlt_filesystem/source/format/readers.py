@@ -38,9 +38,9 @@ def POLARS_2() -> bool:
 
 def _polars_csv_symbols() -> Dict[str, Any]:
     """Symbols needed to resolve `polars.read_csv`'s type hints for casting reader hints."""
-    from typing import Mapping
+    from typing import Callable, Mapping
 
-    from polars import DataFrame
+    from polars import CredentialProvider, CredentialProviderFunction, DataFrame
     from polars._typing import (  # noqa: F401
         CsvEncoding,
         PolarsDataType,
@@ -50,12 +50,15 @@ def _polars_csv_symbols() -> Dict[str, Any]:
     from polars.datatypes import DataType, DataTypeClass  # noqa: F401
 
     return {
+        "CredentialProvider": CredentialProvider,
+        "CredentialProviderFunction": CredentialProviderFunction,
         "CsvEncoding": CsvEncoding,
         "PolarsDataType": PolarsDataType,
         "SchemaDict": SchemaDict,
         "StorageOptionsDict": StorageOptionsDict,
         "DataType": DataType,
         "DataTypeClass": DataTypeClass,
+        "Callable": Callable,
         "Mapping": Mapping,
         "DataFrame": DataFrame,
     }
