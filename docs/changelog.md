@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Verified compatibility with Polars 2
+
 ## 2026/09/01 v0.14.0
 
 - Filesystem: Give the Arrow-backed filesystems (`file://`, `s3://`, `r2://`, `az://`,
