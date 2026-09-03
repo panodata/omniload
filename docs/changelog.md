@@ -8,8 +8,10 @@
   the local filesystem connector's, so the behaviour changes. On read: values are
   typed rather than all-string (numbers and booleans are inferred; ISO date
   strings stay strings), a row whose fields are all empty is kept as a row of
-  nulls instead of being dropped, and the path grammar gains globs, gzip, split
-  form, Windows drive and UNC paths, and `#csv_headless` / `#csv_duckdb` hints.
+  nulls instead of being dropped, an empty field loads as null when unquoted and
+  as an empty string when quoted (the old reader dropped every empty field, so
+  both produced null), and the path grammar gains globs, gzip, split form,
+  Windows drive and UNC paths, and `#csv_headless` / `#csv_duckdb` hints.
   A rerun with no `--incremental-strategy` now **appends** rather than replacing;
   pass `--incremental-strategy replace` for the previous behaviour. `merge`,
   `delete+insert` and `scd2` are rejected, because the shared reader exposes no

@@ -109,6 +109,18 @@ def test_csv_and_file_read_identical_records_and_types(tmp_path):
     assert len(via_csv) == 3
 
 
+def test_an_empty_field_keeps_its_quoting(tmp_path):
+    """The replaced reader dropped every empty-string cell from its row dict, so an
+    empty field always reached the destination as NULL. The shared reader distinguishes
+    the two spellings, which is a documented behaviour change."""
+    path = tmp_path / "empties.csv"
+    path.write_text('"a","b","c"\n"x","",\n"y","z","w"\n')
+
+    rows = list(LocalCsvSource().dlt_source(f"csv://{path}", ""))
+    assert rows[0] == {"a": "x", "b": "", "c": None}
+    assert rows[1] == {"a": "y", "b": "z", "c": "w"}
+
+
 def test_csv_reads_a_gzipped_file(tmp_path):
     """`.csv.gz` is a path feature of the shared reader, not a format the scheme bars."""
     path = tmp_path / "mixed.csv.gz"

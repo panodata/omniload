@@ -1,9 +1,9 @@
 # CSV
 
-`csv://` reads and writes a single local CSV file. It is a CSV-only spelling of
-the {ref}`file:// <file>` connector: same readers, same writer, same path
-grammar, same rerun behaviour. Prefer `file://` for new work, and reach for
-`csv://` only to keep an existing command working.
+`csv://` reads local CSV files and writes one. It is a CSV-only spelling of the
+{ref}`file:// <file>` connector: same readers, same writer, same path grammar,
+same rerun behaviour. Prefer `file://` for new work, and reach for `csv://` only
+to keep an existing command working.
 
 ## URI format
 
@@ -66,13 +66,16 @@ Rows are written in a deterministic order, but not necessarily source order.
 ## Behaviour changes
 
 This release moves `csv://` onto the `file://` reader and writer, which changes
-six things:
+seven things:
 
 - **Values are typed.** The reader infers column types, so a numeric column
   arrives as a number and `true`/`false` as a boolean, where the old reader
   yielded every value as a string. ISO date strings stay strings.
 - **Empty rows are preserved.** A row whose fields are all empty is loaded as a
   row of nulls instead of being dropped.
+- **An empty field keeps its quoting.** An unquoted empty field loads as null
+  and a quoted one (`""`) as an empty string, where the old reader dropped every
+  empty field and so always produced null.
 - **A rerun appends.** With no `--incremental-strategy`, a second load of the
   same file adds a second copy rather than replacing the first. Pass
   `--incremental-strategy replace` for the old behaviour.
