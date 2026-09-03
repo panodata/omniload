@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from dlt_filesystem.source.format.readers import POLARS_2
+from dlt_filesystem.util.python import is_polars_2
 from tests.util import invoke_ingest_command
 
 
@@ -97,7 +97,7 @@ def test_csv_source_without_header(csv_testfile, tmp_path):
 
     # Validate output file content.
     content = csv_outfile.read_text().splitlines()
-    if POLARS_2():
+    if is_polars_2():
         assert content[0] == "column_0,column_1,column_2,column_3"
     else:
         assert content[0] == "column_1,column_2,column_3,column_4"

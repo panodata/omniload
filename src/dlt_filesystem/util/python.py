@@ -6,6 +6,8 @@ import typing
 from json import JSONDecodeError
 from typing import Any, Callable, Dict, List, Optional
 
+from verlib2 import Version
+
 _TRUE_VALUES = {"true", "1", "yes", "on", "t", "y"}
 _FALSE_VALUES = {"false", "0", "no", "off", "f", "n"}
 
@@ -188,3 +190,9 @@ def apply_alias(data: Dict[str, Any], name: str, effective_name: str) -> Dict[st
     if name in data:
         data[effective_name] = data.pop(name)
     return data
+
+
+def is_polars_2() -> bool:
+    import polars
+
+    return Version(polars.__version__) >= Version("2rc")

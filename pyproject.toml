@@ -105,7 +105,7 @@ dependencies = [
   "oracledb<5",
   "orjson<4",
   "pendulum>=3,<4",
-  "polars[excel]==2.0.0rc1",
+  "polars[excel]>=1.34,<3",
   "psycopg2-binary<3",
   "py-machineid<2",
   "pyairtable<4",
