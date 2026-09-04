@@ -292,7 +292,7 @@ decoding.
 
 | Format              | Library                 | Description                        |
 |:--------------------|:------------------------|:-----------------------------------|
-| CSV (`#csv`), JSONL, Parquet | `polars` / `pyarrow`    | Built-ins.                         |
+| CSV (`#csv`), JSONL          | `polars` / `pyarrow`    | Built-ins.                         |
 | CSV (`#csv_duckdb`)          | `duckdb`                | DuckDB-backed CSV reader.          |
 | BSON                | Dedicated in-tree codec | Needs extended-type normalization. |
 | CBOR                | `cbor`                  | Whole-file format.                 |
@@ -300,6 +300,7 @@ decoding.
 | MessagePack         | `iterabledata`          | Streamed record-by-record.         |
 | ODS                 | `polars`                | Whole-file format.                 |
 | ORC                 | `pyarrow`               | Striped reader and writer.         |
+| Parquet             | `polars` / `pyarrow`    | Whole-file format.                 |
 | XML                 | `lxml`                  | Whole-file parse, hardened.        |
 | XLSX                | `polars`                | Whole-file format.                 |
 | YAML                | `yaml`                  | Whole-file decode, safe.           |
