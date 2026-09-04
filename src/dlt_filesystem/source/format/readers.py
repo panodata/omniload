@@ -57,24 +57,6 @@ def _polars_csv_symbols() -> Dict[str, Any]:
     }
 
 
-def _pandas_orc_symbols() -> Dict[str, Any]:
-    """Symbols needed to resolve `pandas.read_orc`'s type hints for casting reader hints."""
-
-    import fsspec
-    import pyarrow
-    from pandas import DataFrame
-    from pandas._typing import DtypeBackend, FilePath, ReadBuffer
-
-    return {
-        "DataFrame": DataFrame,
-        "DtypeBackend": DtypeBackend,
-        "FilePath": FilePath,
-        "fsspec": fsspec,
-        "pyarrow": pyarrow,
-        "ReadBuffer": ReadBuffer,
-    }
-
-
 def _polars_spreadsheet_symbols() -> Dict[str, Any]:
     """Symbols needed to cast reader hint values for `polars.read_excel` and `polars.read_ods`."""
     from typing import Sequence
@@ -446,19 +428,26 @@ def read_orc(
     items: Iterator[FileItemDict],
     **kwargs,
 ) -> Iterator[TDataItems]:
-    """Reader for ORC files."""
+    """Reader for ORC files that yields one stripe at a time."""
+    from pyarrow import orc
 
-    import pandas as pd
+    # `columns` applies to `read_stripe`, not the ORCFile constructor. Reader
+    # hints arrive as strings, so decode the JSON-list representation that
+    # `pandas.read_orc` previously accepted through signature casting.
+    columns = kwargs.pop("columns", None)
+    if isinstance(columns, str):
+        columns = json.loads(columns)
 
-    reader = pd.read_orc
-
-    kwargs = cast_kwargs_to_signature(reader, kwargs, symbols=_pandas_orc_symbols())
-    kwargs.setdefault("dtype_backend", "pyarrow")
+    # This option only controls pandas DataFrame dtypes. Arrow records have no
+    # equivalent DataFrame backend.
+    kwargs.pop("dtype_backend", None)
+    kwargs = cast_kwargs_to_signature(orc.ORCFile, kwargs)
 
     for file_obj in items:
         with file_obj.open() as f:
-            df = reader(f, **kwargs)
-            yield df.to_dict(orient="records")
+            orc_file = orc.ORCFile(f, **kwargs)
+            for stripe_index in range(orc_file.nstripes):
+                yield orc_file.read_stripe(stripe_index, columns=columns).to_pylist()
 
 
 def read_jsonl(
