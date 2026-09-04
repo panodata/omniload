@@ -10,8 +10,8 @@ ORC is currently supported for read operations only.
 
 ## Installation
 
-ORC support is included in the base installation. The reader uses
-[`pandas.read_orc`][pandas-read-orc] with PyArrow.
+ORC support is included in the base installation. The reader uses PyArrow's
+[`pyarrow.orc.ORCFile`][pyarrow.orc.ORCFile].
 
 ```sh
 pip install omniload
@@ -107,5 +107,6 @@ An empty or malformed ORC file does not load rows. PyArrow reports an error
 when it cannot read the file. Validate files before loading if a partial load
 would cause problems.
 
+
 [ORC]: https://orc.apache.org/
-[pandas-read-orc]: https://pandas.pydata.org/docs/reference/api/pandas.read_orc.html
+[pyarrow.orc.ORCFile]: https://arrow.apache.org/docs/python/generated/pyarrow.orc.ORCFile.html
