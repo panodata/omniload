@@ -36,7 +36,7 @@ URI does not include file extensions.
 | [JSONL]          | Newline-delimited JSON                          | .jsonl     | #jsonl        | ✅   | ✅    |
 | {ref}`msgpack`   | Efficient binary serialization format           | .msgpack   | #msgpack      | ✅   | ❌    |
 | {ref}`ods`       | OpenDocument spreadsheet format                 | .ods       | #ods          | ✅   | ❌    |
-| [Parquet]        | Apache Parquet format                           | .parquet   | #parquet      | ✅   | ✅    |
+| {ref}`parquet`   | Apache Parquet format                           | .parquet   | #parquet      | ✅   | ✅    |
 | {ref}`xlsx`      | Excel spreadsheet format                        | .xlsx      | #xlsx         | ✅   | ❌    |
 | {ref}`xml`       | XML format                                      | .xml       | #xml          | ✅   | ❌    |
 | {ref}`yaml`      | YAML format                                     | .yaml      | #yaml         | ✅   | ❌    |
@@ -403,6 +403,5 @@ guarantee you get.
 [iterabledata]: https://pypi.org/project/iterabledata/
 [JSON]: https://en.wikipedia.org/wiki/JSON
 [JSONL]: https://en.wikipedia.org/wiki/JSON_streaming#JSONL
-[Parquet]: https://en.wikipedia.org/wiki/Apache_Parquet
 [polars.read_csv]: https://docs.pola.rs/api/python/stable/reference/api/polars.read_csv.html
 [polars.read_excel]: https://docs.pola.rs/api/python/stable/reference/api/polars.read_excel.html
