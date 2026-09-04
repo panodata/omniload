@@ -17,6 +17,22 @@ def _read_via_source(path):
 # --- end-to-end reader (fsspec, no Docker) ---
 
 
+@pytest.mark.skip(
+    "ArrowNotImplementedError: Only ORC files with a top-level struct can be handled"
+)
+def test_read_orcfile(tmp_path):
+    """Read an ORC file from https://github.com/apache/orc/tree/main/examples.
+
+    FIXME: pyarrow.lib.ArrowNotImplementedError: Only ORC files with a top-level struct can be handled
+    """
+    path = "tests/assets/TestOrcFile.testTimestamp.orc"
+    data = _read_via_source(path)
+    assert len(data) == 3
+    assert isinstance(data[0]["TIMESTAMP"], datetime.datetime), (
+        "TIMESTAMP should be a datetime"
+    )
+
+
 def test_reads_single_top_level_object(tmp_path):
     """A single top-level ORC map loads as one record."""
     data = pd.DataFrame.from_records([{"id": 1, "name": "alice"}])

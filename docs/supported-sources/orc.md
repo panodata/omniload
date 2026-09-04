@@ -83,6 +83,16 @@ dates, timestamps, decimals, lists, maps, and structs pass through the
 PyArrow and pandas conversion. UTC timestamp values remain timezone-aware.
 Decimal values remain decimals.
 
+ORC `TIMESTAMP` values have no time zone. The reader returns them as
+timezone-naive datetime values.
+
+ORC `TIMESTAMP_INSTANT` values represent fixed instants. The PyArrow conversion
+returns these values with time-zone information when the source file provides
+it.
+
+`DataFrame.to_orc()` does not preserve pandas time-zone metadata. Tests that
+cover timestamp behavior use externally generated ORC fixtures.
+
 The destination can impose additional type restrictions. For example, a
 JSON-based destination cannot serialize every value that an ORC file can
 contain. Use a SQL or Parquet destination when the source uses decimals,
