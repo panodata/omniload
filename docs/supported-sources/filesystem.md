@@ -36,6 +36,7 @@ URI does not include file extensions.
 | [JSONL]          | Newline-delimited JSON                          | .jsonl     | #jsonl        | ✅   | ✅    |
 | {ref}`msgpack`   | Efficient binary serialization format           | .msgpack   | #msgpack      | ✅   | ❌    |
 | {ref}`ods`       | OpenDocument spreadsheet format                 | .ods       | #ods          | ✅   | ❌    |
+| {ref}`orc`       | Apache ORC format                               | .orc       | #orc          | ✅   | ❌    |
 | [Parquet]        | Apache Parquet format                           | .parquet   | #parquet      | ✅   | ✅    |
 | {ref}`xlsx`      | Excel spreadsheet format                        | .xlsx      | #xlsx         | ✅   | ❌    |
 | {ref}`xml`       | XML format                                      | .xml       | #xml          | ✅   | ❌    |
