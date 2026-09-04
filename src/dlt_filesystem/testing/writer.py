@@ -1,9 +1,3 @@
-import typing
-
-if typing.TYPE_CHECKING:
-    import pandas as pd
-
-
 def write_bson(path, docs):
     """Write BSON documents concatenated into a single file (on-disk mongodump form)."""
     import bson
@@ -33,9 +27,13 @@ def write_msgpack(path, rows, **packb_kwargs):
     return path
 
 
-def write_orc(path, df: "pd.DataFrame"):
-    """Write dataframe to ORC file."""
-    df.to_orc(path)
+def write_orc(path, value):
+    """Write data or dataframe to ORC file."""
+    import pandas as pd
+
+    if not isinstance(value, pd.DataFrame):
+        value = pd.DataFrame.from_records(value)
+    value.to_orc(path)
     return path
 
 
