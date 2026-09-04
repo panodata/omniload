@@ -441,11 +441,11 @@ def read_orc(
     # This option only controls pandas DataFrame dtypes. Arrow records have no
     # equivalent DataFrame backend.
     kwargs.pop("dtype_backend", None)
-    kwargs = cast_kwargs_to_signature(orc.ORCFile, kwargs)
+    kwargs.clear()
 
     for file_obj in items:
         with file_obj.open() as f:
-            orc_file = orc.ORCFile(f, **kwargs)
+            orc_file = orc.ORCFile(f)
             for stripe_index in range(orc_file.nstripes):
                 yield orc_file.read_stripe(stripe_index, columns=columns).to_pylist()
 

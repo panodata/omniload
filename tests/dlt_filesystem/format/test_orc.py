@@ -59,6 +59,17 @@ def test_extension_and_format_hint_both_resolve(tmp_path):
     assert len(rows) == 3
 
 
+def test_ignores_unsupported_reader_hints(tmp_path):
+    """Unused ORC reader hints do not reach `pyarrow.orc.ORCFile`."""
+    path = write_orc(tmp_path / "hint.orc", [{"id": 1}])
+
+    rows = list(
+        LocalFilesystemSource().dlt_source(f"file://{path}#filesystem=ignored", "")
+    )
+
+    assert rows == [{"id": 1}]
+
+
 def test_adversarial_values_are_normalized(tmp_path):
     """Adversarial record: raw bytes, a tz-aware datetime, a Decimal, and
     a nested map with a nested bytes value. bytes -> base64, an unknown tag -> {"tag","value"};
