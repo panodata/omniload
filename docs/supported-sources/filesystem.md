@@ -36,6 +36,7 @@ URI does not include file extensions.
 | [JSONL]          | Newline-delimited JSON                          | .jsonl     | #jsonl        | ✅   | ✅    |
 | {ref}`msgpack`   | Efficient binary serialization format           | .msgpack   | #msgpack      | ✅   | ❌    |
 | {ref}`ods`       | OpenDocument spreadsheet format                 | .ods       | #ods          | ✅   | ❌    |
+| {ref}`orc`       | Apache ORC format                               | .orc       | #orc          | ✅   | ❌    |
 | [Parquet]        | Apache Parquet format                           | .parquet   | #parquet      | ✅   | ✅    |
 | {ref}`xlsx`      | Excel spreadsheet format                        | .xlsx      | #xlsx         | ✅   | ❌    |
 | {ref}`xml`       | XML format                                      | .xml       | #xml          | ✅   | ❌    |
@@ -298,6 +299,7 @@ decoding.
 | JSON                | `orjson`                | Whole-document parse.              |
 | MessagePack         | `iterabledata`          | Streamed record-by-record.         |
 | ODS                 | `polars`                | Whole-file format.                 |
+| ORC                 | `pyarrow`               | Striped reader.                    |
 | XML                 | `lxml`                  | Whole-file parse, hardened.        |
 | XLSX                | `polars`                | Whole-file format.                 |
 | YAML                | `yaml`                  | Whole-file decode, safe.           |

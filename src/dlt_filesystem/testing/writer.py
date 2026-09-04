@@ -27,6 +27,16 @@ def write_msgpack(path, rows, **packb_kwargs):
     return path
 
 
+def write_orc(path, value):
+    """Write data or dataframe to ORC file."""
+    import pandas as pd
+
+    if not isinstance(value, pd.DataFrame):
+        value = pd.DataFrame.from_records(value)
+    value.to_orc(path)
+    return path
+
+
 def write_xml(path, text):
     """Write raw XML ``text`` to ``path`` as UTF-8 bytes."""
     with open(path, "wb") as f:

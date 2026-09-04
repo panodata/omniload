@@ -424,6 +424,32 @@ def read_spreadsheet(
             yield dlt.mark.with_table_name(rows, sheet_name)
 
 
+def read_orc(
+    items: Iterator[FileItemDict],
+    **kwargs,
+) -> Iterator[TDataItems]:
+    """Reader for ORC files that yields one stripe at a time."""
+    from pyarrow import orc
+
+    # `columns` applies to `read_stripe`, not the ORCFile constructor. Reader
+    # hints arrive as strings, so decode the JSON-list representation that
+    # `pandas.read_orc` previously accepted through signature casting.
+    columns = kwargs.pop("columns", None)
+    if isinstance(columns, str):
+        columns = json.loads(columns)
+
+    # This option only controls pandas DataFrame dtypes. Arrow records have no
+    # equivalent DataFrame backend.
+    kwargs.pop("dtype_backend", None)
+    kwargs.clear()
+
+    for file_obj in items:
+        with file_obj.open() as f:
+            orc_file = orc.ORCFile(f)
+            for stripe_index in range(orc_file.nstripes):
+                yield orc_file.read_stripe(stripe_index, columns=columns).to_pylist()
+
+
 def read_jsonl(
     items: Iterator[FileItemDict], chunksize: int = 1000
 ) -> Iterator[TDataItems]:
@@ -747,6 +773,10 @@ if TYPE_CHECKING:
         @copy_sig(read_msgpack)
         def read_msgpack(self) -> DltResource:
             """MessagePack reader resource."""
+
+        @copy_sig(read_orc)
+        def read_orc(self) -> DltResource:
+            """ORC reader resource (pyarrow)."""
 
         @copy_sig(read_cbor)
         def read_cbor(self) -> DltResource:
