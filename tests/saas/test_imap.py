@@ -1,7 +1,8 @@
+import datetime as dt
 import imaplib
 import os
 import time
-from email.message import Message
+from email.message import EmailMessage
 
 import duckdb
 import pytest
@@ -55,19 +56,22 @@ def dovecot_with_message(dovecot):
     imap = imaplib.IMAP4_SSL(host=dovecot, port=993)
     imap.login("hotzenplotz", "secret")
 
-    new_message = Message()
+    new_message = EmailMessage()
     new_message["From"] = "hello@example.org"
     new_message["Subject"] = "Test mail."
     new_message["Date"] = "Thu, 20 Aug 2026 11:35:19 +0200"
-    new_message.set_payload("This is the message.")
+    new_message.set_content("This is the main message.")
+
+    # Error: Column 'message_uid' is declared non-nullable but contains nulls.
+    # new_message.add_attachment(b"This is the first attachment.", maintype="text", subtype='plain', filename="intro.txt")
 
     # TODO: Alternatively use given mailbox name than just `INBOX`.
     # imap.create("testdrive")
     imap.append(
         "INBOX",
         "",
-        imaplib.Time2Internaldate(time.time()),
-        str(new_message).encode("utf-8"),
+        dt.datetime.now(tz=dt.timezone.utc),
+        new_message.as_string().encode("utf-8"),
     )
     imap.logout()
     yield dovecot
