@@ -21,6 +21,7 @@ EXPECTED_FORMAT_TO_READER = {
     "json": "read_json",
     "jsonl": "read_jsonl",
     "ods": "read_ods",
+    "orc": "read_orc",
     "parquet": "read_parquet",
     "bson": "read_bson",
     "xlsx": "read_excel",
@@ -45,6 +46,7 @@ EXPECTED_READER_NAMES = (
     "read_yaml",
     "read_parquet",
     "read_csv_duckdb",
+    "read_orc",
 )
 
 
