@@ -299,6 +299,7 @@ decoding.
 | JSON                | `orjson`                | Whole-document parse.              |
 | MessagePack         | `iterabledata`          | Streamed record-by-record.         |
 | ODS                 | `polars`                | Whole-file format.                 |
+| ORC                 | `pyarrow`               | Whole-file format.                 |
 | XML                 | `lxml`                  | Whole-file parse, hardened.        |
 | XLSX                | `polars`                | Whole-file format.                 |
 | YAML                | `yaml`                  | Whole-file decode, safe.           |
