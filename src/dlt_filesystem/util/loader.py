@@ -19,6 +19,8 @@ def load_dlt_file(filepath: str) -> Generator:
     load_dlt_file reads dlt loader files. It handles different loader file formats
     automatically. It returns a generator that yield data items as a python dict
     """
+    # FIXME: This is brittle across operating systems,
+    #        and might not work on Windows at all.
     result = subprocess.run(  # noqa: S603
         ["file", "-b", filepath],  # noqa: S607
         check=True,
@@ -32,8 +34,11 @@ def load_dlt_file(filepath: str) -> Generator:
 
 
 def factory(filetype: str, filepath: str):
-    # ???(turtledev): can dlt produce non-gizpped jsonl files?
     if filetype.startswith("gzip"):
+        return jsonlfile(filepath, with_gzip=True)
+    elif filetype.startswith("JSON data"):
+        return jsonlfile(filepath)
+    elif filetype.startswith("New Line Delimited JSON text data"):
         return jsonlfile(filepath)
     elif filetype.startswith("CSV") or filetype.startswith("ASCII text"):
         return csvfile(filepath)
@@ -44,13 +49,17 @@ def factory(filetype: str, filepath: str):
 
 
 @contextmanager
-def jsonlfile(filepath: str):
+def jsonlfile(filepath: str, with_gzip: bool = False) -> Generator:
     def reader(fd):
         for line in fd:
             yield json.loads(line.decode().strip())
 
-    with gzip.open(filepath) as fd:
-        yield reader(fd)
+    if with_gzip:
+        with gzip.open(filepath) as fd:
+            yield reader(fd)
+    else:
+        with open(filepath, "rb") as fd:
+            yield reader(fd)
 
 
 @contextmanager
