@@ -6,7 +6,8 @@
 columnar format for analytical data. An ORC file has a schema and contains zero
 or more rows.
 
-ORC is currently supported for read operations only.
+ORC is supported for reads on shared filesystem sources and for writes through
+the local `file://` destination.
 
 ## Where it works
 
@@ -60,6 +61,20 @@ omniload ingest \
     --dest-uri duckdb:///local.duckdb \
     --dest-table 'public.events'
 ```
+
+### Write a source table to a local ORC file
+
+```sh
+omniload ingest \
+    --source-uri 'postgres://user:password@host:5432/db' \
+    --source-table 'public.events' \
+    --dest-uri 'file://export/events.orc' \
+    --dest-table 'public.events'
+```
+
+ORC output uses PyArrow and is available through the local `file://`
+destination. Columns that are absent from an individual source row are written
+as null values.
 
 ## Extended-type handling
 

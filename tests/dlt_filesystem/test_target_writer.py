@@ -147,13 +147,36 @@ def test_write_yaml_without_pyyaml_names_the_install(tmp_path, monkeypatch):
     assert "omniload[iterable]" in str(exc.value)
 
 
+def test_write_orc_preserves_sparse_rows_and_column_order(tmp_path):
+    from pyarrow import orc
+
+    path = tmp_path / "out.orc"
+    writer_for_format("orc")(str(path), ROWS)
+
+    table = orc.ORCFile(path).read()
+    assert table.column_names == ["id", "name", "note"]
+    assert table.to_pylist() == [
+        {"id": 1, "name": "Zoë", "note": None},
+        {"id": 2, "name": "Ōtautahi", "note": "late column"},
+    ]
+
+
+def test_write_orc_of_no_rows_is_valid(tmp_path):
+    from pyarrow import orc
+
+    path = tmp_path / "empty.orc"
+    writer_for_format("orc")(str(path), [])
+
+    assert orc.ORCFile(path).read().num_rows == 0
+
+
 def test_writers_emit_utf8_whatever_the_locale(tmp_path):
     """The readers decode as UTF-8 unconditionally (`json.loadb` accepts nothing else,
     Polars defaults to it), so a locale-encoded export would not read back on the
     machine that wrote it. A text handle's encoding is fixed at interpreter startup, so
     forcing a non-UTF-8 default needs a child process rather than a monkeypatch.
     """
-    text_formats = [f for f in WRITE_FORMATS if f != "parquet"]
+    text_formats = [f for f in WRITE_FORMATS if f not in {"orc", "parquet"}]
     child = subprocess.run(  # noqa: S603  # trusted: sys.executable + a fixed code string
         [
             sys.executable,

@@ -79,13 +79,14 @@ omniload ingest \
 | `file://out.csv` | CSV written to `<cwd>/out.csv` |
 | `file:///srv/out.jsonl` | JSONL written to `/srv/out.jsonl` |
 | `file://export/users.json` | JSON written to `<cwd>/export/users.json` |
+| `file://export/users.orc` | ORC written to `<cwd>/export/users.orc` |
 | `file://export/users.parquet` | Parquet written to `<cwd>/export/users.parquet` |
 | `file://export/users.yaml` | YAML written to `<cwd>/export/users.yaml` (`.yml` too) |
 | `file://feed.dat#csv` | CSV written to `<cwd>/feed.dat` |
 
 The path grammar is identical to the source (relative-to-cwd, absolute,
 Windows drive and UNC forms all resolve the same way). Supported output formats
-are `csv`, `json`, `jsonl`, `parquet` and `yaml`; any other extension (or none)
+are `csv`, `json`, `jsonl`, `orc`, `parquet` and `yaml`; any other extension (or none)
 is rejected with the supported-format list. `--dest-table` must be
 `<dataset>.<table>`; it only names the intermediate layout, the output file is
 the URI path.
@@ -99,7 +100,7 @@ and are not supported when writing.
 [`csv://`](csv.md) is the same connector with the file format pinned to CSV. It
 shares these readers, this writer and this path grammar, and differs only in
 rejecting every non-CSV format. `file://` is the canonical spelling for local
-files, covering JSONL, Parquet and workbooks as well as CSV; `csv://` is kept so
+files, covering JSONL, ORC, Parquet and workbooks as well as CSV; `csv://` is kept so
 existing commands keep working.
 
 ## Examples
