@@ -61,6 +61,16 @@ def write_jsonl(path: str, rows: list[dict]) -> None:
             handle.write(json.dumpb(row) + b"\n")
 
 
+def write_orc(path: str, rows: list[dict]) -> None:
+    """Write rows as an ORC file with PyArrow."""
+    import pyarrow as pa
+    from pyarrow import orc
+
+    fieldnames = _column_union(rows)
+    columns = {name: [row.get(name) for row in rows] for name in fieldnames}
+    orc.write_table(pa.table(columns), path)
+
+
 def write_parquet(path: str, rows: list[dict]) -> None:
     """Parquet writer using pyarrow"""
     import pyarrow as pa

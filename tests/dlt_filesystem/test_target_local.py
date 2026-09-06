@@ -1,13 +1,16 @@
 import os
 import re
+from pathlib import Path
 
 import pytest
 
 from dlt_filesystem.error import MissingConnectorOption
+from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
 from dlt_filesystem.target.local import LocalFilesystemDestination
 from dlt_filesystem.target.model import DEFAULT_DATASET_NAME
 from dlt_filesystem.target.registry import WRITE_FORMATS_TEXT
 from dlt_filesystem.target.util import _resolve_output_target
+from dlt_filesystem.target.writer import write_jsonl
 
 # Asserted against the registry rather than typed out, so registering a writer cannot
 # leave these three expectations naming a set the code no longer has.
@@ -24,6 +27,7 @@ CWD = os.getcwd().replace(os.sep, "/")
 resolve_cases = [
     ("file:///data/out.csv", "/data/out.csv", "csv"),
     ("file:///data/out.jsonl", "/data/out.jsonl", "jsonl"),
+    ("file:///data/out.orc", "/data/out.orc", "orc"),
     ("file:///data/out.parquet", "/data/out.parquet", "parquet"),
     # Windows drive and UNC, same handling as the source
     ("file:///C:/data/out.csv", "C:/data/out.csv", "csv"),
@@ -32,6 +36,7 @@ resolve_cases = [
     # #format hint wins over (or supplies) the format; the path keeps the hinted-off name
     ("file:///data/out.dat#jsonl", "/data/out.dat", "jsonl"),
     ("file:///data/feed#csv", "/data/feed", "csv"),
+    ("file:///data/feed#orc", "/data/feed", "orc"),
     # literal '#' in the path (suffix is not a known format) stays part of the path,
     # so the format falls back to the extension
     ("file:///data/v#1/out.csv", "/data/v#1/out.csv", "csv"),
@@ -172,3 +177,23 @@ def test_temp_directory_is_cleared_when_the_write_fails(tmp_path, monkeypatch):
         destination.post_load()
 
     assert not os.path.exists(temp_path)
+
+
+def test_orc_destination_round_trips_without_dlt_columns(tmp_path):
+    destination = LocalFilesystemDestination()
+    output_path = tmp_path / "out.orc"
+    destination.dlt_dest(f"file://{output_path}")
+    destination.dataset_name, destination.table_name = "public", "rows"
+    table_dir = Path(destination.temp_path) / "public" / "rows"
+    table_dir.mkdir(parents=True)
+    rows = [
+        {"id": 1, "name": "alice", "_dlt_id": "internal"},
+        {"id": 2, "name": "bob", "note": "later", "_dlt_load_id": "internal"},
+    ]
+    write_jsonl(str(table_dir / "load.jsonl"), rows)
+    destination.post_load()
+
+    assert list(LocalFilesystemSource().dlt_source(f"file://{output_path}", "")) == [
+        {"id": 1, "name": "alice", "note": None},
+        {"id": 2, "name": "bob", "note": "later"},
+    ]

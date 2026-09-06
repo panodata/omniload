@@ -41,6 +41,8 @@
   (`csv://out.jsonl`, `#parquet`) is rejected, while an extensionless or
   unrecognized-extension path (`csv://report`, `csv://out.dat`) still writes CSV.
 - Filesystem: added a reader for Apache ORC files.
+- Filesystem: added local ORC output through `file://`, implemented with PyArrow and
+  preserving columns first encountered in later rows.
 
 ## 2026/09/01 v0.14.0
 

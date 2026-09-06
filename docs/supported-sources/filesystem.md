@@ -36,14 +36,14 @@ URI does not include file extensions.
 | [JSONL]          | Newline-delimited JSON                          | .jsonl     | #jsonl        | ✅   | ✅    |
 | {ref}`msgpack`   | Efficient binary serialization format           | .msgpack   | #msgpack      | ✅   | ❌    |
 | {ref}`ods`       | OpenDocument spreadsheet format                 | .ods       | #ods          | ✅   | ❌    |
-| {ref}`orc`       | Apache ORC format                               | .orc       | #orc          | ✅   | ❌    |
+| {ref}`orc`       | Apache ORC format                               | .orc       | #orc          | ✅   | ✅    |
 | [Parquet]        | Apache Parquet format                           | .parquet   | #parquet      | ✅   | ✅    |
 | {ref}`xlsx`      | Excel spreadsheet format                        | .xlsx      | #xlsx         | ✅   | ❌    |
 | {ref}`xml`       | XML format                                      | .xml       | #xml          | ✅   | ❌    |
 | {ref}`yaml`      | YAML format                                     | .yaml      | #yaml         | ✅   | ❌    |
 
 :::{note}
-Supported formats for write operations are currently CSV, JSON, JSONL, and Parquet.
+Supported formats for write operations are currently CSV, JSON, JSONL, ORC, and Parquet.
 :::
 
 (filesystem-types)=
@@ -299,7 +299,7 @@ decoding.
 | JSON                | `orjson`                | Whole-document parse.              |
 | MessagePack         | `iterabledata`          | Streamed record-by-record.         |
 | ODS                 | `polars`                | Whole-file format.                 |
-| ORC                 | `pyarrow`               | Striped reader.                    |
+| ORC                 | `pyarrow`               | Striped reader and writer.         |
 | XML                 | `lxml`                  | Whole-file parse, hardened.        |
 | XLSX                | `polars`                | Whole-file format.                 |
 | YAML                | `yaml`                  | Whole-file decode, safe.           |

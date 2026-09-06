@@ -5,6 +5,7 @@ from dlt_filesystem.target.writer import (
     write_csv,
     write_json,
     write_jsonl,
+    write_orc,
     write_parquet,
 )
 
@@ -38,6 +39,7 @@ WRITER_REGISTRATIONS: tuple[WriterRegistration, ...] = (
     # split the readers already make: a `.json` file is read as a single document.
     WriterRegistration(write_json, ("json",)),
     WriterRegistration(write_jsonl, ("jsonl",)),
+    WriterRegistration(write_orc, ("orc",)),
     WriterRegistration(write_parquet, ("parquet",)),
 )
 
