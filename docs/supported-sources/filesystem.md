@@ -391,6 +391,9 @@ documentation page under "Extended-type handling".
 The read mechanism determines how a damaged file behaves, and it is worth knowing which
 guarantee you get.
 
+- **Empty files** raise reader errors for CSV, Parquet, and ORC. Empty JSON and
+  JSONL files yield no rows.
+
 - **Whole-file decode (CBOR, XML, YAML)** raises on a corrupt or malformed file rather than
   loading partial data. CBOR additionally must be a *single* top-level value; files that
   concatenate several top-level objects are read only up to the first, a decoder limitation that

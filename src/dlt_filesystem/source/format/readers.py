@@ -444,8 +444,10 @@ def read_orc(
 
     try:
         chunksize = int(chunksize)
-    except ValueError:
+    except (TypeError, ValueError):
         raise TypeError(f"chunksize must be an integer, not {chunksize}")
+    if chunksize < 1:
+        raise ValueError(f"chunksize must be greater than zero, not {chunksize}")
 
     # `columns` applies to `read_stripe`, not the ORCFile constructor. Reader
     # hints arrive as strings, so decode the JSON-list representation that
