@@ -67,6 +67,8 @@ def write_orc(path: str, rows: list[dict]) -> None:
     from pyarrow import orc
 
     fieldnames = _column_union(rows)
+    if rows and not fieldnames:
+        raise ValueError("ORC output requires at least one column for nonempty rows")
     columns = {name: [row.get(name) for row in rows] for name in fieldnames}
     orc.write_table(pa.table(columns), path)
 

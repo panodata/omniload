@@ -4,7 +4,6 @@ import json
 import re
 from pathlib import Path
 
-import pyarrow as pa
 import pytest
 from dlt.extract.exceptions import ResourceExtractionError
 
@@ -25,19 +24,22 @@ def _read_via_source(path):
 # --- end-to-end reader (fsspec, no Docker) ---
 
 
-def test_read_external_apache_timestamp_fixture_hits_pyarrow_limit():
-    """Pin the PyArrow limitation on an ORC file from https://github.com/apache/orc/tree/main/examples.
+@pytest.mark.xfail(
+    raises=ResourceExtractionError,
+    reason="PyArrow only handles ORC files with a top-level struct",
+    strict=True,
+)
+def test_read_external_apache_timestamp_fixture():
+    """Read an ORC file from https://github.com/apache/orc/tree/main/examples.
 
-    PyArrow reads only ORC files whose top level is a struct, and this fixture's is not,
-    so the read fails rather than yielding its three rows. Asserting the wrapped cause
-    rather than `ResourceExtractionError` alone keeps an unrelated extraction regression
-    from passing as this known limitation. The day PyArrow gains support the assertion
-    fails, and the test becomes `len(data) == 3` with `TIMESTAMP` read as a datetime.
+    FIXME: pyarrow.lib.ArrowNotImplementedError: Only ORC files with a top-level struct can be handled
     """
     path = "tests/assets/TestOrcFile.testTimestamp.orc"
-    with pytest.raises(ResourceExtractionError) as excinfo:
-        _read_via_source(path)
-    assert isinstance(excinfo.value.__cause__, pa.ArrowNotImplementedError)
+    data = _read_via_source(path)
+    assert len(data) == 3
+    assert isinstance(data[0]["TIMESTAMP"], datetime.datetime), (
+        "TIMESTAMP should be a datetime"
+    )
 
 
 def test_read_single_row(tmp_path):
@@ -198,6 +200,16 @@ def test_write_of_no_rows_is_valid(tmp_path):
     writer_for_format("orc")(str(path), [])
 
     assert orc.ORCFile(path).read().num_rows == 0
+
+
+def test_write_rejects_nonempty_fieldless_rows(tmp_path):
+    """Nonempty fieldless rows cannot be represented in ORC."""
+    output = tmp_path / "fieldless.orc"
+
+    with pytest.raises(ValueError, match="requires at least one column"):
+        writer_for_format("orc")(str(output), [{}, {}])
+
+    assert not output.exists()
 
 
 def test_write_destination_round_trips_without_dlt_columns(tmp_path):
