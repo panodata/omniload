@@ -45,8 +45,8 @@
   rest; every row now reaches the output file, in a deterministic but not
   necessarily source order. A destination path naming a different known format
   (`csv://out.jsonl`, `#parquet`) is rejected, while an extensionless or
-  unrecognised-extension path (`csv://report`, `csv://out.dat`) still writes CSV. 
-- Filesystem: Added reader for ORC format
+  unrecognized-extension path (`csv://report`, `csv://out.dat`) still writes CSV.
+- Filesystem: added a reader for Apache ORC files.
 
 ## 2026/09/01 v0.14.0
 

@@ -86,9 +86,9 @@ Decimal values remain decimals.
 ORC `TIMESTAMP` values have no time zone. The reader returns them as
 timezone-naive datetime values.
 
-ORC `TIMESTAMP_INSTANT` values represent fixed instants. The PyArrow conversion
-returns these values with time-zone information when the source file provides
-it.
+ORC `TIMESTAMP_INSTANT` values represent fixed instants and remain
+timezone-aware. The PyArrow conversion returns these values with
+time-zone information when the source file provides it.
 
 `DataFrame.to_orc()` does not preserve pandas time-zone metadata. Tests that
 cover timestamp behavior use externally generated ORC fixtures.
