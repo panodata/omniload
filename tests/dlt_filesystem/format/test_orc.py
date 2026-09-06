@@ -4,6 +4,7 @@ import json
 import re
 from pathlib import Path
 
+import pyarrow as pa
 import pytest
 from dlt.extract.exceptions import ResourceExtractionError
 
@@ -24,22 +25,19 @@ def _read_via_source(path):
 # --- end-to-end reader (fsspec, no Docker) ---
 
 
-@pytest.mark.xfail(
-    raises=ResourceExtractionError,
-    reason="PyArrow only handles ORC files with a top-level struct",
-    strict=True,
-)
-def test_read_external_apache_timestamp_fixture():
-    """Read an ORC file from https://github.com/apache/orc/tree/main/examples.
+def test_read_external_apache_timestamp_fixture_hits_pyarrow_limit():
+    """Pin the PyArrow limitation on an ORC file from https://github.com/apache/orc/tree/main/examples.
 
-    FIXME: pyarrow.lib.ArrowNotImplementedError: Only ORC files with a top-level struct can be handled
+    PyArrow reads only ORC files whose top level is a struct, and this fixture's is not,
+    so the read fails rather than yielding its three rows. Asserting the wrapped cause
+    rather than `ResourceExtractionError` alone keeps an unrelated extraction regression
+    from passing as this known limitation. The day PyArrow gains support the assertion
+    fails, and the test becomes `len(data) == 3` with `TIMESTAMP` read as a datetime.
     """
     path = "tests/assets/TestOrcFile.testTimestamp.orc"
-    data = _read_via_source(path)
-    assert len(data) == 3
-    assert isinstance(data[0]["TIMESTAMP"], datetime.datetime), (
-        "TIMESTAMP should be a datetime"
-    )
+    with pytest.raises(ResourceExtractionError) as excinfo:
+        _read_via_source(path)
+    assert isinstance(excinfo.value.__cause__, pa.ArrowNotImplementedError)
 
 
 def test_read_single_row(tmp_path):
