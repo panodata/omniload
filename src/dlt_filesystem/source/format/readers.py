@@ -439,7 +439,7 @@ def read_orc(
     chunksize: int = 1000,
     columns: Optional[Union[list[str], str]] = None,
 ) -> Iterator[TDataItems]:
-    """Reader for ORC files that yields one stripe at a time."""
+    """Reader for ORC files that yields chunked stripe output."""
     from pyarrow import orc
 
     try:

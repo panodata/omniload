@@ -172,15 +172,22 @@ def _read_back(path, out_format):
     if out_format == "csv":
         with open(path, newline="", encoding="utf-8") as f:
             return list(csv.DictReader(f))
-    if out_format == "jsonl":
+    elif out_format == "jsonl":
         with open(path, encoding="utf-8") as f:
             return [json.loads(line) for line in f if line.strip()]
-    if out_format == "json":
+    elif out_format == "json":
         with open(path, encoding="utf-8") as f:
             return json.load(f)
-    import pyarrow.parquet as pq
+    elif out_format == "orc":
+        import pyarrow.orc as po
 
-    return pq.read_table(path).to_pylist()
+        return po.read_table(path).to_pylist()
+    elif out_format == "parquet":
+        import pyarrow.parquet as pq
+
+        return pq.read_table(path).to_pylist()
+    else:
+        raise NotImplementedError(f"Unknown output format: {out_format}")
 
 
 @pytest.mark.parametrize("out_format", WRITE_FORMATS)

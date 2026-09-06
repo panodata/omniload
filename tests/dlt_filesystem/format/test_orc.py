@@ -2,12 +2,16 @@ import datetime
 import decimal
 import json
 import re
+from pathlib import Path
 
 import pytest
 from dlt.extract.exceptions import ResourceExtractionError
 
 from dlt_filesystem.source.format.readers import read_orc
 from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
+from dlt_filesystem.target.local import LocalFilesystemDestination
+from dlt_filesystem.target.registry import writer_for_format
+from dlt_filesystem.target.writer import write_jsonl
 from dlt_filesystem.testing.stub import FileItemStub
 from dlt_filesystem.testing.writer import write_orc
 
@@ -168,3 +172,51 @@ def test_read_empty_orc_file_raises_resource_extraction_error(tmp_path):
     with pytest.raises(ResourceExtractionError) as excinfo:
         _read_via_source(path)
     assert excinfo.match("File size too small")
+
+
+def test_write_preserves_sparse_rows_and_column_order(tmp_path):
+    from pyarrow import orc
+
+    ROWS = [
+        {"id": 1, "name": "Zoë"},
+        {"id": 2, "name": "Ōtautahi", "note": "late column"},
+    ]
+
+    path = tmp_path / "out.orc"
+    writer_for_format("orc")(str(path), ROWS)
+
+    table = orc.ORCFile(path).read()
+    assert table.column_names == ["id", "name", "note"]
+    assert table.to_pylist() == [
+        {"id": 1, "name": "Zoë", "note": None},
+        {"id": 2, "name": "Ōtautahi", "note": "late column"},
+    ]
+
+
+def test_write_of_no_rows_is_valid(tmp_path):
+    from pyarrow import orc
+
+    path = tmp_path / "empty.orc"
+    writer_for_format("orc")(str(path), [])
+
+    assert orc.ORCFile(path).read().num_rows == 0
+
+
+def test_write_destination_round_trips_without_dlt_columns(tmp_path):
+    destination = LocalFilesystemDestination()
+    output_path = tmp_path / "out.orc"
+    destination.dlt_dest(f"file://{output_path}")
+    destination.dataset_name, destination.table_name = "public", "rows"
+    table_dir = Path(destination.temp_path) / "public" / "rows"
+    table_dir.mkdir(parents=True)
+    rows = [
+        {"id": 1, "name": "alice", "_dlt_id": "internal"},
+        {"id": 2, "name": "bob", "note": "later", "_dlt_load_id": "internal"},
+    ]
+    write_jsonl(str(table_dir / "load.jsonl"), rows)
+    destination.post_load()
+
+    assert list(LocalFilesystemSource().dlt_source(f"file://{output_path}", "")) == [
+        {"id": 1, "name": "alice", "note": None},
+        {"id": 2, "name": "bob", "note": "later"},
+    ]

@@ -46,29 +46,6 @@ def test_write_json_of_no_rows_is_an_empty_array(tmp_path):
     assert path.read_text(encoding="utf-8") == "[]"
 
 
-def test_write_orc_preserves_sparse_rows_and_column_order(tmp_path):
-    from pyarrow import orc
-
-    path = tmp_path / "out.orc"
-    writer_for_format("orc")(str(path), ROWS)
-
-    table = orc.ORCFile(path).read()
-    assert table.column_names == ["id", "name", "note"]
-    assert table.to_pylist() == [
-        {"id": 1, "name": "Zoë", "note": None},
-        {"id": 2, "name": "Ōtautahi", "note": "late column"},
-    ]
-
-
-def test_write_orc_of_no_rows_is_valid(tmp_path):
-    from pyarrow import orc
-
-    path = tmp_path / "empty.orc"
-    writer_for_format("orc")(str(path), [])
-
-    assert orc.ORCFile(path).read().num_rows == 0
-
-
 def test_writers_emit_utf8_whatever_the_locale(tmp_path):
     """The readers decode as UTF-8 unconditionally (`json.loadb` accepts nothing else,
     Polars defaults to it), so a locale-encoded export would not read back on the
