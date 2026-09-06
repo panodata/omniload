@@ -17,8 +17,7 @@ ORC support is included in the base installation. The reader uses PyArrow's
 pip install omniload
 ```
 
-`omniload` uses PyArrow-backed pandas dtypes by default. You can override this
-with a reader hint when your workflow requires a different pandas dtype backend.
+`omniload` uses PyArrow for reading ORC files.
 
 ## Where it works
 
@@ -75,12 +74,11 @@ omniload ingest \
 
 ## Data types
 
-The reader converts each ORC file to a pandas DataFrame. It then loads the
-DataFrame rows into the destination.
+The reader uses PyArrow's `ORCFile.read_stripe(...).to_pylist()` to load data.
 
 Common ORC types such as strings, integers, floating-point values, booleans,
 dates, timestamps, decimals, lists, maps, and structs pass through the
-PyArrow and pandas conversion. UTC timestamp values remain timezone-aware.
+PyArrow conversion. UTC timestamp values remain timezone-aware.
 Decimal values remain decimals.
 
 ORC `TIMESTAMP` values have no time zone. The reader returns them as
@@ -90,18 +88,12 @@ ORC `TIMESTAMP_INSTANT` values represent fixed instants and remain
 timezone-aware. The PyArrow conversion returns these values with
 time-zone information when the source file provides it.
 
-`DataFrame.to_orc()` does not preserve pandas time-zone metadata. Tests that
-cover timestamp behavior use externally generated ORC fixtures.
-
 The destination can impose additional type restrictions. For example, a
 JSON-based destination cannot serialize every value that an ORC file can
 contain. Use a SQL or Parquet destination when the source uses decimals,
 timestamps, or nested values.
 
 ## Limits and errors
-
-The reader loads one ORC file into a pandas DataFrame before it yields that
-file's rows. For large data sets, split the input into multiple ORC files.
 
 An empty or malformed ORC file does not load rows. PyArrow reports an error
 when it cannot read the file. Validate files before loading if a partial load
