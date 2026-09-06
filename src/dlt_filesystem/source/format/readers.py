@@ -14,7 +14,17 @@
 
 import codecs
 import io
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Mapping, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Union,
+)
 
 import dlt
 from dlt.common import json
@@ -426,28 +436,36 @@ def read_spreadsheet(
 
 def read_orc(
     items: Iterator[FileItemDict],
-    **kwargs,
+    chunksize: int = 1000,
+    columns: Optional[Union[list[str], str]] = None,
 ) -> Iterator[TDataItems]:
     """Reader for ORC files that yields one stripe at a time."""
     from pyarrow import orc
 
+    try:
+        chunksize = int(chunksize)
+    except ValueError:
+        raise TypeError(f"chunksize must be an integer, not {chunksize}")
+
     # `columns` applies to `read_stripe`, not the ORCFile constructor. Reader
     # hints arrive as strings, so decode the JSON-list representation that
     # `pandas.read_orc` previously accepted through signature casting.
-    columns = kwargs.pop("columns", None)
+    # Also handle single-column spelling `#columns=id` well.
     if isinstance(columns, str):
-        columns = json.loads(columns)
-
-    # This option only controls pandas DataFrame dtypes. Arrow records have no
-    # equivalent DataFrame backend.
-    kwargs.pop("dtype_backend", None)
-    kwargs.clear()
+        try:
+            columns = json.loads(columns)
+        except (ValueError, TypeError):
+            columns = [columns]
+        if not isinstance(columns, list):
+            columns = [columns]
 
     for file_obj in items:
         with file_obj.open() as f:
             orc_file = orc.ORCFile(f)
             for stripe_index in range(orc_file.nstripes):
-                yield orc_file.read_stripe(stripe_index, columns=columns).to_pylist()
+                stripe = orc_file.read_stripe(stripe_index, columns=columns)
+                for offset in range(0, stripe.num_rows, chunksize):
+                    yield stripe.slice(offset, chunksize).to_pylist()
 
 
 def read_jsonl(

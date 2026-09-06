@@ -1,5 +1,6 @@
 import datetime
 import decimal
+import json
 
 import pandas as pd
 import pytest
@@ -59,15 +60,23 @@ def test_extension_and_format_hint_both_resolve(tmp_path):
     assert len(rows) == 3
 
 
-def test_ignores_unsupported_reader_hints(tmp_path):
-    """Unused ORC reader hints do not reach `pyarrow.orc.ORCFile`."""
-    path = write_orc(tmp_path / "hint.orc", [{"id": 1}])
+def test_with_columns_single(tmp_path):
+    """Read with column filtering: Use a single column."""
+    data = pd.DataFrame.from_records([{"id": 1, "name": "alice", "age": 44}])
+    path = write_orc(tmp_path / "one.orc", data)
+    rows = list(LocalFilesystemSource().dlt_source(f"file://{path}#columns=name", ""))
+    assert rows == [{"name": "alice"}]
 
+
+def test_with_columns_json(tmp_path):
+    """Read with column filtering: Use multiple columns."""
+    data = pd.DataFrame.from_records([{"id": 1, "name": "alice", "age": 44}])
+    path = write_orc(tmp_path / "one.orc", data)
+    columns = json.dumps(["id", "name"])
     rows = list(
-        LocalFilesystemSource().dlt_source(f"file://{path}#filesystem=ignored", "")
+        LocalFilesystemSource().dlt_source(f"file://{path}#columns={columns}", "")
     )
-
-    assert rows == [{"id": 1}]
+    assert rows == [{"id": 1, "name": "alice"}]
 
 
 def test_adversarial_values_are_normalized(tmp_path):
