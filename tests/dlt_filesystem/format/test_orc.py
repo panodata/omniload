@@ -3,7 +3,6 @@ import decimal
 import json
 import re
 
-import pyarrow
 import pytest
 from dlt.extract.exceptions import ResourceExtractionError
 
@@ -22,7 +21,7 @@ def _read_via_source(path):
 
 
 @pytest.mark.xfail(
-    raises=pyarrow.lib.ArrowNotImplementedError,
+    raises=ResourceExtractionError,
     reason="PyArrow only handles ORC files with a top-level struct",
     strict=True,
 )
