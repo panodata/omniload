@@ -8,17 +8,6 @@ or more rows.
 
 ORC is currently supported for read operations only.
 
-## Installation
-
-ORC support is included in the base installation. The reader uses PyArrow's
-[`pyarrow.orc.ORCFile`][pyarrow.orc.ORCFile].
-
-```sh
-pip install omniload
-```
-
-`omniload` uses PyArrow for reading ORC files.
-
 ## Where it works
 
 ORC is available on every source that uses the shared file readers:
@@ -72,9 +61,11 @@ omniload ingest \
     --dest-table 'public.events'
 ```
 
-## Data types
+## Extended-type handling
 
-The reader uses PyArrow's `ORCFile.read_stripe(...).to_pylist()` to load data.
+The reader uses PyArrow's `ORCFile.read_stripe()` and converts each record batch
+to Python rows. Large stripes are sliced into batches according to the
+`chunksize` format hint.
 
 Common ORC types such as strings, integers, floating-point values, booleans,
 dates, timestamps, decimals, lists, maps, and structs pass through the
@@ -88,17 +79,4 @@ ORC `TIMESTAMP_INSTANT` values represent fixed instants and remain
 timezone-aware. The PyArrow conversion returns these values with
 time-zone information when the source file provides it.
 
-The destination can impose additional type restrictions. For example, a
-JSON-based destination cannot serialize every value that an ORC file can
-contain. Use a SQL or Parquet destination when the source uses decimals,
-timestamps, or nested values.
-
-## Limits and errors
-
-An empty or malformed ORC file does not load rows. PyArrow reports an error
-when it cannot read the file. Validate files before loading if a partial load
-would cause problems.
-
-
 [ORC]: https://orc.apache.org/
-[pyarrow.orc.ORCFile]: https://arrow.apache.org/docs/python/generated/pyarrow.orc.ORCFile.html
