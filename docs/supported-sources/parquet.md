@@ -131,9 +131,8 @@ collects all loaded rows before it writes the Parquet table. This makes a
 single-file output reliable, but it is not suitable for data that cannot fit in
 memory.
 
-The `file://` destination supports only `csv`, `jsonl`, and `parquet` output.
-It does not accept glob patterns. See {ref}`file-destination` for the complete
-URI and destination-table rules.
+See {ref}`file-destination` for the complete URI and destination-table rules
+for the `file://` destination.
 
 ## Parquet files and Parquet loader files
 
