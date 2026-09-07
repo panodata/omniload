@@ -283,8 +283,8 @@ databases are sources only.
 
 omniload reads each file format through the best available path rather than
 one generic reader. This section explains how that routing works, so the
-individual per-format pages (BSON, CBOR, MessagePack, XML, YAML) can stay
-focused on how to use each format.
+individual per-format pages (BSON, CBOR, MessagePack, ORC, Parquet, XML,
+YAML) can stay focused on how to use each format.
 
 In general, omniload builds mostly upon the excellent fsspec, polars and
 iterabledata packages for local and remote filesystem access and format
@@ -300,7 +300,7 @@ decoding.
 | MessagePack         | `iterabledata`          | Streamed record-by-record.         |
 | ODS                 | `polars`                | Whole-file format.                 |
 | ORC                 | `pyarrow`               | Striped reader and writer.         |
-| Parquet             | `polars` / `pyarrow`    | Whole-file format.                 |
+| Parquet             | `pyarrow`               | Whole-file format.                 |
 | XML                 | `lxml`                  | Whole-file parse, hardened.        |
 | XLSX                | `polars`                | Whole-file format.                 |
 | YAML                | `yaml`                  | Whole-file decode, safe.           |
