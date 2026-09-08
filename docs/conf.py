@@ -97,6 +97,7 @@ linkcheck_ignore = [
     r"https://images.minimus.io/",
     r"https://medium.com/",
     r"https://www.ibm.com/",
+    r"https://developers.hubspot.com/",
 ]
 linkcheck_anchors_ignore_for_url = [
     r"https://developers.zoom.us/",
