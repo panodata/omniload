@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,23 +18,18 @@ etc. to the database"""
 from typing import Any, Dict, Generator, Iterable, List, Optional
 
 import dlt
-import pendulum
-from dlt.common.time import ensure_pendulum_datetime_utc
 from dlt.sources import DltResource
 
-from .client import FreshdeskClient
+from .freshdesk_client import FreshdeskClient
 from .settings import DEFAULT_ENDPOINTS
 
 
 @dlt.source()
 def freshdesk_source(
-    domain: str,
-    api_secret_key: str,
-    start_date: pendulum.DateTime,
-    end_date: Optional[pendulum.DateTime] = None,
-    per_page: int = 100,
     endpoints: Optional[List[str]] = None,
-    query: Optional[str] = None,
+    per_page: int = 100,
+    domain: str = dlt.secrets.value,
+    api_secret_key: str = dlt.secrets.value,
 ) -> Iterable[DltResource]:
     """
     Retrieves data from specified Freshdesk API endpoints.
@@ -58,11 +53,7 @@ def freshdesk_source(
     def incremental_resource(
         endpoint: str,
         updated_at: Optional[Any] = dlt.sources.incremental(
-            "updated_at",
-            initial_value=start_date.isoformat(),
-            end_value=end_date.isoformat() if end_date else None,
-            range_start="closed",
-            range_end="closed",
+            "updated_at", initial_value="2022-01-01T00:00:00Z"
         ),
     ) -> Generator[Dict[Any, Any], Any, None]:
         """
@@ -71,22 +62,19 @@ def freshdesk_source(
         to ensure incremental loading.
         """
 
-        effective_start_date = start_date
-        if updated_at is not None and updated_at.last_value is not None:
-            effective_start_date = ensure_pendulum_datetime_utc(updated_at.last_value)
+        # Retrieve the last updated timestamp to fetch only new or updated records.
+        updated_at = updated_at.last_value
 
-        if updated_at is not None and updated_at.end_value is not None:
-            end_date = ensure_pendulum_datetime_utc(updated_at.end_value)
-        else:
-            end_date = pendulum.now(tz="UTC")
+        # Endpoint and last updated timestamp.
+        print(
+            f"Fetching data from endpoint: {endpoint} and the last `updated_at` is: {updated_at}"
+        )
 
         # Use the FreshdeskClient instance to fetch paginated responses
         yield from freshdesk.paginated_response(
             endpoint=endpoint,
             per_page=per_page,
-            start_date=effective_start_date,
-            end_date=end_date,
-            query=query,
+            updated_at=updated_at,
         )
 
     # Set default endpoints if not provided
