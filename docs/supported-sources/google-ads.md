@@ -44,7 +44,7 @@ parameter, unless you're integrating omniload into another system.
 
 #### Option 1: Service Account
 
-You can use the [Google Cloud IAM Console](https://docs.cloud.google.com/iam/docs) to create a service account for ingesting data from Google Ads. Make sure to enable Google Ads API in your console.
+You can use the [Google Cloud IAM Console](https://docs.cloud.google.com/iam/docs/overview) to create a service account for ingesting data from Google Ads. Make sure to enable Google Ads API in your console.
 
 Next, you need to add your [service account] user to your Google Ads account.
 
