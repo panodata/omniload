@@ -78,8 +78,9 @@ def infer_resource(
     Args:
         fs: The filesystem the connector built from its own connection arguments.
         locator: The parsed source URI.
-        options: The resource options omniload's run contributes, as split out by
-            `split_run_options`. Omitted by callers that have none, which reads the
+        options: The resource options a `dlt_source` implementation declares by
+            name in its own signature (`filesystem_incremental`, `column_types`,
+            `reader_hints`). Omitted by callers that have none, which reads the
             same as a run that enabled nothing.
     """
 

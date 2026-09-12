@@ -37,7 +37,7 @@ from dlt_filesystem.source.core import infer_resource
 from dlt_filesystem.source.model import (
     FilesystemLocator,
     QueryMode,
-    split_run_options,
+    ResourceOptions,
 )
 from dlt_filesystem.util.python import cast_to_bool, cast_to_dict, cast_to_int
 from dlt_filesystem.util.web import requote_uri
@@ -290,15 +290,16 @@ class HttpFilesystemSource(FilesystemSource):
         """Return whether HTTP can select files by their modification time."""
         return True
 
-    def dlt_source(self, uri: str, table: str, **kwargs):
-        # `run_ingest` nulls `incremental_key` before calling any source that manages
-        # its own incrementality, and preserves the request as
-        # `requested_incremental_key`. Reading only the nulled one would accept
-        # `--incremental-key` from the CLI and ignore it, so both are read.
-        if kwargs.get("requested_incremental_key") or kwargs.get("incremental_key"):
-            raise ValueError(
-                "HTTP takes care of incrementality on its own, you should not provide incremental_key"
-            )
+    def dlt_source(
+        self,
+        uri: str,
+        table: str,
+        *,
+        filesystem_incremental: bool = False,
+        column_types: Optional[Dict[str, Any]] = None,
+        reader_hints: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ):
         # A programmatic caller may name the format and the reader's chunk size
         # directly. Both are reader arguments rather than connection arguments, so
         # they are translated into the channels the family reads them from and
@@ -317,12 +318,19 @@ class HttpFilesystemSource(FilesystemSource):
             query_mode=QueryMode.ADDRESS,
         )
 
-        resource_options, connector_kwargs = split_run_options(kwargs)
+        resource_options = ResourceOptions(
+            filesystem_incremental=filesystem_incremental,
+            column_types=column_types,
+            reader_hints=reader_hints,
+        )
         if chunksize is not None:
-            resource_options.reader_hints = {"chunksize": int(chunksize)}
+            resource_options.reader_hints = {
+                **(resource_options.reader_hints or {}),
+                "chunksize": int(chunksize),
+            }
 
         fs_kwargs = locator.options.fs_kwargs
-        fs_kwargs.update(connector_kwargs)
+        fs_kwargs.update(kwargs)
         cast_to_bool(fs_kwargs, ["simple_links", "same_scheme"])
         cast_to_dict(fs_kwargs, ["headers", "client_kwargs"])
         cast_to_int(fs_kwargs, ["block_size"])

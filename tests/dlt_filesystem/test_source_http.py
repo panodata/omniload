@@ -752,20 +752,16 @@ def test_incremental_cursor_identity_survives_signed_query_rotation(
     ) == [("alpha", 1), ("bravo", 1)]
 
 
-def test_incremental_key_is_refused(range_server):
-    """Consistent with the rest of the family: the source owns incrementality."""
-    with pytest.raises(ValueError, match="should not provide incremental_key"):
-        HttpFilesystemSource().dlt_source(
-            range_server.url("people.csv"), "", incremental_key="modified_at"
-        )
-
-
 def test_incremental_key_is_refused_through_a_run(range_server, tmp_path):
-    """The path a user actually takes, which the direct call cannot stand in for.
-
-    `run_ingest` nulls `incremental_key` before calling a source that manages its
-    own incrementality, keeping the request in `requested_incremental_key`, so a
-    source reading only the first one accepts the option and ignores it.
+    """The only path that still rejects it: the check is centralized in
+    `omniload.api` (Phase 3 of GH-316's extraction prep), keyed on the source's
+    declared `consumed_run_options()` rather than on a per-source guard reading
+    `incremental_key` or `requested_incremental_key` out of `**kwargs`. A direct
+    `HttpFilesystemSource().dlt_source(..., incremental_key=...)` call no longer
+    raises: the name is not part of the declared signature, so it lands in
+    `**kwargs` and merges into the fsspec constructor untouched, which is the
+    same fate any other undeclared run option now has (see
+    `tests/dlt_filesystem/test_source_option_ownership.py`).
     """
     with pytest.raises(ValueError, match="should not provide incremental_key"):
         load(range_server, "people.csv", tmp_path, incremental_key="modified_at")

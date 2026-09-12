@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 from urllib.parse import parse_qs, urlparse
 
 from fsspec import AbstractFileSystem
@@ -8,7 +8,7 @@ from dlt_filesystem.error import InvalidBlobTableError, MissingConnectorOption
 from dlt_filesystem.source.base import FilesystemSource
 from dlt_filesystem.source.error import UnsupportedEndpointError
 from dlt_filesystem.source.format.registry import supported_file_format_message
-from dlt_filesystem.source.model import split_run_options, strip_run_options
+from dlt_filesystem.source.model import strip_run_options
 from dlt_filesystem.source.router import (
     blob_hints,
     determine_endpoint,
@@ -84,12 +84,16 @@ class GCSSource(FilesystemSource):
 
         return GCSFileSystem
 
-    def dlt_source(self, uri: str, table: str, **kwargs):
-        if kwargs.get("incremental_key"):
-            raise ValueError(
-                "GCS takes care of incrementality on its own, you should not provide incremental_key"
-            )
-
+    def dlt_source(
+        self,
+        uri: str,
+        table: str,
+        *,
+        filesystem_incremental: bool = False,
+        column_types: Optional[Dict[str, Any]] = None,
+        reader_hints: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ):
         parsed_uri = urlparse(uri)
         params = parse_qs(parsed_uri.query)
 
@@ -102,10 +106,7 @@ class GCSSource(FilesystemSource):
         # gcsfs takes the caller's own keyword arguments as the baseline it merges the
         # URI parameters into, and this connector merges the query string wholesale, so
         # both carriers get filtered before they reach the constructor.
-        resource_options, connector_kwargs = split_run_options(kwargs)
-        fs = self.fs_class(
-            **gcs_filesystem_kwargs(strip_run_options(params), connector_kwargs)
-        )
+        fs = self.fs_class(**gcs_filesystem_kwargs(strip_run_options(params), kwargs))
 
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
@@ -126,10 +127,10 @@ class GCSSource(FilesystemSource):
                 file_glob=path_to_file,
                 reader_name=endpoint,
                 storage_namespace="gcs",
-                filesystem_incremental=resource_options.filesystem_incremental,
+                filesystem_incremental=filesystem_incremental,
                 require_file_match=source_selects_single_file(uri, table),
-                hints=blob_hints(parsed_uri, table),
-                column_types=resource_options.column_types,
+                hints={**(reader_hints or {}), **blob_hints(parsed_uri, table)},
+                column_types=column_types,
             )
         )
 
@@ -161,13 +162,16 @@ class S3CompatibleSource(FilesystemSource):
         )
         return wrapper(arrow_fs)
 
-    def dlt_source(self, uri: str, table: str, **kwargs):
-        if kwargs.get("incremental_key"):
-            raise ValueError(
-                f"{self.fs_name} takes care of incrementality on its own, "
-                f"you should not provide incremental_key"
-            )
-
+    def dlt_source(
+        self,
+        uri: str,
+        table: str,
+        *,
+        filesystem_incremental: bool = False,
+        column_types: Optional[Dict[str, Any]] = None,
+        reader_hints: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ):
         parsed_uri = urlparse(uri)
         source_fields = parse_qs(parsed_uri.query)
         fs_kwargs = s3_arrow_filesystem_kwargs(source_fields, self.fs_name)
@@ -200,10 +204,10 @@ class S3CompatibleSource(FilesystemSource):
                 file_glob=path_to_file,
                 reader_name=endpoint,
                 storage_namespace=f"s3:{self.endpoint_namespace(endpoint_url[0] if endpoint_url else None, 'aws')}",
-                filesystem_incremental=kwargs.get("filesystem_incremental", False),
+                filesystem_incremental=filesystem_incremental,
                 require_file_match=source_selects_single_file(uri, table),
-                hints=blob_hints(parsed_uri, table),
-                column_types=kwargs.get("column_types"),
+                hints={**(reader_hints or {}), **blob_hints(parsed_uri, table)},
+                column_types=column_types,
             )
         )
 
@@ -233,12 +237,16 @@ class AzureSource(FilesystemSource):
         """Wrap the native client, which does not speak the fsspec contract."""
         return _AzureArrowFSWrapper(self.fs_class(**fs_kwargs))
 
-    def dlt_source(self, uri: str, table: str, **kwargs):
-        if kwargs.get("incremental_key"):
-            raise ValueError(
-                "Azure takes care of incrementality on its own, you should not provide incremental_key"
-            )
-
+    def dlt_source(
+        self,
+        uri: str,
+        table: str,
+        *,
+        filesystem_incremental: bool = False,
+        column_types: Optional[Dict[str, Any]] = None,
+        reader_hints: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ):
         parsed_uri = urlparse(uri)
         params = parse_qs(parsed_uri.query)
 
@@ -250,9 +258,8 @@ class AzureSource(FilesystemSource):
 
         bucket_url = f"az://{bucket_name}"
 
-        resource_options, connector_kwargs = split_run_options(kwargs)
-        connector_kwargs.update(azure_arrow_filesystem_kwargs(auth))
-        fs = self._filesystem(connector_kwargs)
+        kwargs.update(azure_arrow_filesystem_kwargs(auth))
+        fs = self._filesystem(kwargs)
 
         try:
             endpoint: str = determine_endpoint(table, path_to_file)
@@ -276,10 +283,10 @@ class AzureSource(FilesystemSource):
                     f"azure:{(auth.account_name or '').lower()}:"
                     f"{self.endpoint_namespace(auth.account_host, 'azure-public')}"
                 ),
-                filesystem_incremental=resource_options.filesystem_incremental,
+                filesystem_incremental=filesystem_incremental,
                 require_file_match=source_selects_single_file(uri, table),
-                hints=blob_hints(parsed_uri, table),
-                column_types=resource_options.column_types,
+                hints={**(reader_hints or {}), **blob_hints(parsed_uri, table)},
+                column_types=column_types,
             )
         )
 
@@ -287,12 +294,16 @@ class AzureSource(FilesystemSource):
 class SFTPSource(FilesystemSource):
     """Access files on SFTP servers."""
 
-    def dlt_source(self, uri: str, table: str, **kwargs):
-        if kwargs.get("incremental_key"):
-            raise ValueError(
-                "SFTP takes care of incrementality on its own, you should not provide incremental_key"
-            )
-
+    def dlt_source(
+        self,
+        uri: str,
+        table: str,
+        *,
+        filesystem_incremental: bool = False,
+        column_types: Optional[Dict[str, Any]] = None,
+        reader_hints: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ):
         parsed_uri = urlparse(uri)
         host = parsed_uri.hostname
         if not host:
@@ -344,9 +355,9 @@ class SFTPSource(FilesystemSource):
                 file_glob=path_to_file,
                 reader_name=endpoint,
                 storage_namespace=(f"sftp:{host.lower()}:{port}:{username or ''}"),
-                filesystem_incremental=kwargs.get("filesystem_incremental", False),
+                filesystem_incremental=filesystem_incremental,
                 require_file_match=source_selects_single_file(uri, table),
-                hints=blob_hints(parsed_uri, table),
-                column_types=kwargs.get("column_types"),
+                hints={**(reader_hints or {}), **blob_hints(parsed_uri, table)},
+                column_types=column_types,
             )
         )

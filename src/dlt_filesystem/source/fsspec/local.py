@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from dlt_filesystem.error import MissingConnectorOption
 from dlt_filesystem.source.base import FilesystemSource
@@ -65,19 +65,16 @@ class LocalFilesystemSource(FilesystemSource):
             "read_ods",
         } and spreadsheet_selection_is_plural(hints)
 
-    def dlt_source(self, uri: str, table: str, **kwargs):
-        # The shared filesystem adapter cannot use a caller-supplied row-level
-        # incremental key, even though it supports opt-in file selection by
-        # modification time. run_ingest()
-        # nulls kwargs["incremental_key"] before calling us (because
-        # handles_incrementality() is True), so check requested_incremental_key, which
-        # preserves what the user actually asked for.
-        if kwargs.get("requested_incremental_key"):
-            raise ValueError(
-                "Local file source takes care of incrementality on its own, "
-                "you should not provide incremental_key"
-            )
-
+    def dlt_source(
+        self,
+        uri: str,
+        table: str,
+        *,
+        filesystem_incremental: bool = False,
+        column_types: Optional[Dict[str, Any]] = None,
+        reader_hints: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ):
         # Everything after file:// is the path spec; fall back to the source table for
         # the blob/sftp-style split form (--source-uri file:// --source-table x.csv).
         spec = uri.split("://", 1)[1] if "://" in uri else uri
@@ -134,9 +131,9 @@ class LocalFilesystemSource(FilesystemSource):
                 file_glob=file_glob,
                 reader_name=endpoint,
                 storage_namespace="file",
-                filesystem_incremental=kwargs.get("filesystem_incremental", False),
+                filesystem_incremental=filesystem_incremental,
                 require_file_match=source_selects_single_file("", spec),
-                hints=hints,
-                column_types=kwargs.get("column_types"),
+                hints={**(reader_hints or {}), **hints},
+                column_types=column_types,
             )
         )

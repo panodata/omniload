@@ -2,6 +2,17 @@
 
 ## in progress
 
+- **Filesystem: a `dlt_source` implementation now declares the run options it
+  consumes, instead of the run subtracting its own vocabulary from every call.**
+  `filesystem_incremental` and `column_types` are named parameters on every
+  reader in the family now, not names read out of `**kwargs`, so a caller
+  passing something else in omniload's own run vocabulary (`page_size`, say)
+  gets it forwarded straight to the fsspec/Arrow constructor rather than
+  silently dropped. Most backends ignore an unknown keyword; at least one
+  (WebDAV) raises. A row-level `--incremental-key` against one of these sources
+  now raises for every scheme in the family (some silently accepted it before,
+  since the guard was keyed on a value the caller had already cleared).
+
 ## 2026/09/10 v0.16.0
 
 - **Filesystem: `filesystem()` and `readers()` accept every keyword dlt's own accept.**

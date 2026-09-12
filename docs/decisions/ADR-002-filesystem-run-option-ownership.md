@@ -1,6 +1,7 @@
 # ADR-002: Own filesystem run options at one boundary
 
-**Status**: Proposed
+**Status**: Superseded (2026-09-13, by GH-316's extraction-prep Phase 3; see
+Update below)
 **Date**: 2026-08-11
 
 ## Context
@@ -115,3 +116,32 @@ fallback for `column_types` does not reach them.
 - Connectors that build their filesystem explicitly do not call the boundary.
   They forward nothing, so they cannot leak, but they also do not learn about a
   new resource option automatically.
+
+## Update (2026-09-13): the boundary inverted, as part of preparing
+`dlt_filesystem` for extraction (GH-316)
+
+The subtractive design above meant the package's own vocabulary was defined by
+*omniload's* fifteen-name run vocabulary, minus a subtraction. A package meant
+to stand alone as `dlt-filesystem` cannot depend on knowing omniload's full run
+parameter list, so the direction reversed: the package now declares the two
+names it consumes (`FilesystemSource.consumed_run_options()`, `source/base.py`),
+and every `dlt_source` implementation takes them as named keyword-only
+parameters rather than reading them out of `**kwargs`. `omniload.api` filters
+its own `RUN_OPTION_KEYS` down to a source's declared subset before the call;
+a source that does not declare the hook (the ~90 outside this family) keeps
+receiving everything, unchanged.
+
+`RUN_OPTION_KEYS` and `split_run_options` moved out of the package entirely
+(`RUN_OPTION_KEYS` is now `omniload.api`'s own constant, beside the call site
+that produces it); `strip_run_options` stayed, narrowed to the package's own
+three-name vocabulary (`filesystem_incremental`, `column_types`,
+`reader_hints`) for the query-string carrier.
+
+**One consequence this ADR's "Consequences" section did not anticipate**: a
+name in omniload's own vocabulary that this package does not declare (`page_size`,
+say) is no longer this package's business to strip, on either carrier. Before,
+it was silently dropped wherever it arrived. Now it reaches the connector
+untouched, same as any other unrecognized keyword: most backends ignore it,
+at least one (WebDAV's `webdav4` client) raises `TypeError`. Named as a
+behaviour change rather than shipped quietly; see
+`tests/dlt_filesystem/test_source_option_ownership.py::test_webdav_rejects_an_omniload_run_option_it_does_not_declare`.

@@ -34,44 +34,37 @@ class FilesystemConfigurationResource(FilesystemConfiguration):
         ]
 
 
-#: Run-level parameters omniload passes into every source's ``dlt_source``.
-#:
-#: These name the run, not the storage service: they arrive from CLI flags and
-#: `run_ingest` arguments rather than from the source URI. Keeping them in one place
-#: is what lets `split_run_options` subtract them; the set must stay in step with the
-#: keywords `omniload.api` actually passes, or a new run parameter starts leaking
-#: silently, so a test compares the two.
-RUN_OPTION_KEYS: frozenset = frozenset(
-    {
-        "column_types",
-        "data_item_format",
-        "extract_parallelism",
-        "filesystem_incremental",
-        "incremental_key",
-        "interval_end",
-        "interval_start",
-        "merge_key",
-        "page_size",
-        "requested_incremental_key",
-        "requested_primary_key",
-        "sql_backend",
-        "sql_exclude_columns",
-        "sql_limit",
-        "sql_reflection_level",
-    }
+#: This package's own run-option vocabulary: the names a `dlt_source`
+#: implementation here declares by name in its own signature, and the only names
+#: `consumed_run_options()` (`source/base.py`) reports back to omniload. Every
+#: other name in omniload's own run vocabulary is omniload's business, not this
+#: package's, and is filtered out before a `dlt_source` call is ever made
+#: (`omniload/api.py`), so it never reaches this module at all. This set exists
+#: for `strip_run_options` below, which has to apply the same ownership rule to
+#: the query-string carrier.
+PACKAGE_OPTION_KEYS: frozenset = frozenset(
+    {"filesystem_incremental", "column_types", "reader_hints"}
 )
 
 
 def strip_run_options(options: Dict[str, Any]) -> Dict[str, Any]:
-    """Return ``options`` without any name omniload owns.
+    """Return ``options`` without any name this package declares.
 
-    The query string is the second carrier a run option can arrive on, so it gets the
-    same ownership rule `split_run_options` applies to the run itself: a name in
-    `RUN_OPTION_KEYS` never reaches a filesystem constructor, whichever carrier it
-    came in on. `column_types` remains readable from `FilesystemOptions.params`,
-    which is where the reference picks it up.
+    The query string is the second carrier one of this package's own option names
+    can arrive on (``?filesystem_incremental=true``), so it gets the same
+    ownership rule the constructor signature applies to keyword arguments: a name
+    in `PACKAGE_OPTION_KEYS` never reaches a filesystem constructor, whichever
+    carrier it came in on. `column_types` remains readable from
+    `FilesystemOptions.params`, which is where the reference picks it up.
+
+    A name from omniload's own run vocabulary that this package does not declare
+    is not this function's concern: it never reaches here, because omniload
+    filters it out before the call whenever the source declares
+    `consumed_run_options()`.
     """
-    return {key: value for key, value in options.items() if key not in RUN_OPTION_KEYS}
+    return {
+        key: value for key, value in options.items() if key not in PACKAGE_OPTION_KEYS
+    }
 
 
 class QueryMode(str, Enum):
@@ -131,46 +124,6 @@ class ResourceOptions:
     #: fragment, e.g. a programmatic `chunksize=`. Merged over `locator.hints`,
     #: so a per-URI hint stays the more specific of the two.
     reader_hints: Optional[Dict[str, Any]] = None
-
-
-def split_run_options(kwargs: Dict[str, Any]) -> tuple[ResourceOptions, Dict[str, Any]]:
-    """Separate omniload's run options from the connector's own keyword arguments.
-
-    This is the ownership boundary for the filesystem family. `filesystem_incremental`
-    and `column_types` are **resource** options: they configure how the reader
-    resource is built and must reach `FilesystemReference`. Every other member of
-    `RUN_OPTION_KEYS` is consumed elsewhere in the pipeline and is meaningless to a
-    filesystem. Neither group is a **connector** option, so none of them may reach an
-    fsspec constructor: an unknown keyword there fragments fsspec's instance cache
-    (its key is built from the constructor arguments) and a backend that forwards
-    unknown keywords into a client library, as `SFTPFileSystem` does into
-    `paramiko.SSHClient.connect`, rejects them outright.
-
-    The split is **subtractive**: it removes the pinned omniload keys and returns
-    everything else untouched. A whitelist would be wrong, because a programmatic
-    caller may legitimately pass connector keywords straight through, which GCS
-    supports today by honouring a caller-supplied ``token``.
-
-    S3 (`s3_filesystem_kwargs`), SFTP (its explicit ``params`` dict) and the local
-    source already build their constructor arguments explicitly and take nothing from
-    the run; this generalizes that shape to the connectors that merged the run
-    parameters wholesale instead.
-
-    Args:
-        kwargs: The keyword arguments a `dlt_source` implementation received.
-
-    Returns:
-        The resource options to thread into `FilesystemReference`, and the remaining
-        keyword arguments, which are safe to pass to a filesystem constructor.
-    """
-    resource_options = ResourceOptions(
-        filesystem_incremental=kwargs.get("filesystem_incremental", False),
-        column_types=kwargs.get("column_types"),
-    )
-    connector_kwargs = {
-        key: value for key, value in kwargs.items() if key not in RUN_OPTION_KEYS
-    }
-    return resource_options, connector_kwargs
 
 
 @dataclass
@@ -333,7 +286,8 @@ class FilesystemReference:
         filesystem_incremental (bool): Whether to filter files using their
             modification time and persistent dlt resource state. A **resource**
             option owned by this reference, never an fsspec constructor argument;
-            see `split_run_options` for the boundary that keeps it here.
+            every `dlt_source` implementation in this family declares it by name
+            in its own signature, which is the boundary that keeps it here.
         require_file_match (bool): Whether extraction must fail when the concrete
             source selection matches no file.
         hints (dict[str, str]): Free-form per-URI reader hints parsed from the

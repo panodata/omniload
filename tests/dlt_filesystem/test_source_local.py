@@ -156,16 +156,11 @@ def test_unsupported_extension_reports_supported_formats(uri):
     assert str(exc.value) == supported_file_format_message("Local file")
 
 
-def test_requested_incremental_key_is_rejected():
-    # run_ingest nulls incremental_key before calling us (handles_incrementality True),
-    # so the rejection must key off requested_incremental_key, not incremental_key.
-    with pytest.raises(ValueError, match="incrementality on its own"):
-        LocalFilesystemSource().dlt_source(
-            "file://tests/assets/create_replace.csv",
-            "",
-            incremental_key=None,
-            requested_incremental_key="date",
-        )
+# A row-level incremental key is rejected in `omniload.api`, not here: the source
+# no longer declares `incremental_key` / `requested_incremental_key` in its own
+# signature at all (`consumed_run_options()` is `{"filesystem_incremental",
+# "column_types"}`), so the check has nothing left to key off inside the package.
+# See `tests/main/filesystem/test_local_read.py::test_local_rejects_a_row_level_incremental_key`.
 
 
 def test_handles_incrementality_is_true():

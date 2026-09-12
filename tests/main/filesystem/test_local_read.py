@@ -13,6 +13,7 @@ import pytest
 
 from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
 from dlt_filesystem.source.model import FilesystemReference
+from omniload.api import _reject_unconsumed_incremental_key
 from omniload.core.factory import SourceDestinationFactory
 from omniload.error import ValidationError
 from omniload.source.csv.api import LocalCsvSource
@@ -178,17 +179,20 @@ def test_file_scheme_still_accepts_every_reader():
     assert capture_reader_args(source, "file://a.jsonl")["reader_name"] == "read_jsonl"
 
 
-def test_csv_rejects_a_row_level_incremental_key():
+def test_local_rejects_a_row_level_incremental_key():
     """The standalone reader compared `DictReader` strings against CLI-parsed datetimes.
     The shared source has no row cursor at all and says so, identically for both
-    spellings."""
+    spellings.
+
+    The rejection is centralized in `omniload.api` (Phase 3 of GH-316's extraction
+    prep): the source itself no longer declares `incremental_key` in its own
+    signature, so this is the boundary that actually raises for both `file://`
+    and `csv://` -- the same call `run_ingest` makes before `dlt_source`.
+    """
     with pytest.raises(ValueError, match="incrementality on its own"):
-        LocalCsvSource().dlt_source(
-            "csv://tests/assets/create_replace.csv",
-            "",
-            incremental_key=None,
-            requested_incremental_key="date",
-        )
+        _reject_unconsumed_incremental_key(LocalFilesystemSource(), "file", "date")
+    with pytest.raises(ValueError, match="incrementality on its own"):
+        _reject_unconsumed_incremental_key(LocalCsvSource(), "csv", "date")
 
 
 def test_csv_inherits_the_filesystem_disposition_contract():

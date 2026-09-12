@@ -25,6 +25,18 @@ class FilesystemSource:
     def honours_run_disposition(self) -> bool:
         return True
 
+    def consumed_run_options(self) -> frozenset:
+        """Return the run options this source's ``dlt_source`` accepts by name.
+
+        Every other name in omniload's run vocabulary is filtered out before the
+        call, so it never reaches an fsspec or Arrow constructor as a stray
+        keyword. The two named here are resource options, not connector ones:
+        they configure how the reader resource is built (``FilesystemReference``)
+        and every ``dlt_source`` implementation in this family declares them
+        explicitly rather than reading them out of ``**kwargs``.
+        """
+        return frozenset({"filesystem_incremental", "column_types"})
+
     def supports_filesystem_incremental(self) -> bool:
         """Return whether the source supports file-level mtime selection."""
         return True

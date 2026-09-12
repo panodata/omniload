@@ -35,12 +35,72 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+#: Run-level keyword arguments `run_ingest` passes into every source's
+#: ``dlt_source``. A source may optionally declare ``consumed_run_options()``
+#: (see ``core.model.SourceProtocol``) to narrow this to the subset it actually
+#: accepts; every name below is filtered against that declared subset before the
+#: call, so an unfiltered source keeps receiving all fifteen unchanged. Kept in
+#: step with the keywords the call site below actually passes by
+#: ``tests/dlt_filesystem/test_source_option_ownership.py::test_run_option_keys_match_the_api_call_site``.
+RUN_OPTION_KEYS: frozenset[str] = frozenset(
+    {
+        "column_types",
+        "data_item_format",
+        "extract_parallelism",
+        "filesystem_incremental",
+        "incremental_key",
+        "interval_end",
+        "interval_start",
+        "merge_key",
+        "page_size",
+        "requested_incremental_key",
+        "requested_primary_key",
+        "sql_backend",
+        "sql_exclude_columns",
+        "sql_limit",
+        "sql_reflection_level",
+    }
+)
+
 
 def _coerce(value, enum_cls):
     """Accept either an enum member or its string value (the CLI form)."""
     if value is None or isinstance(value, enum_cls):
         return value
     return enum_cls(value)
+
+
+def _reject_unconsumed_incremental_key(
+    source, scheme: str, requested_incremental_key
+) -> None:
+    """Raise if a source that owns its option vocabulary was asked for a key it
+    does not consume.
+
+    A source that declares ``consumed_run_options()`` has told us its full run
+    vocabulary, so a requested row-level ``incremental_key`` reaching it is a
+    user error *provided the source did not itself ask for one of the two
+    incremental-key names* -- the hook's contract is "names I accept", not "I
+    own incrementality", and a future source could legitimately declare one of
+    them. Every current declarer happens not to, which is what lets this reuse
+    one check for every filesystem-family source (and anything else that
+    declares the hook): they used to carry it themselves, keyed on the nulled
+    ``incremental_key`` for most of them (dead, since it is always ``None`` by
+    the time ``dlt_source`` would see it) and on ``requested_incremental_key``
+    for the rest (live). A source that does not declare the hook (Delta Lake,
+    mq-bridge) keeps its own guard, unaffected.
+    """
+    consumed_run_options = getattr(source, "consumed_run_options", lambda: None)()
+    if (
+        consumed_run_options is not None
+        and requested_incremental_key
+        and {"incremental_key", "requested_incremental_key"}.isdisjoint(
+            consumed_run_options
+        )
+    ):
+        raise ValueError(
+            f"{scheme} takes care of incrementality on its own, "
+            "you should not provide incremental_key"
+        )
 
 
 def run_ingest(**kwargs) -> LoadInfo | None:
@@ -411,6 +471,9 @@ def _run_ingest(
     # incrementality themselves (e.g. mq-bridge) need to see what was asked for so they can
     # reject conflicting flags, rather than silently ignoring them.
     requested_incremental_key = jr.incremental_key
+    _reject_unconsumed_incremental_key(
+        source, factory.source_scheme, requested_incremental_key
+    )
     if source.handles_incrementality():
         jr.incremental_key = None
         # Filesystem-family and Delta Lake sources cannot derive a row-level incremental
@@ -592,24 +655,38 @@ def _run_ingest(
     if sql_backend == SqlBackend.default:
         sql_backend = SqlBackend.pyarrow
 
+    run_options = {
+        "incremental_key": jr.incremental_key,
+        "requested_incremental_key": requested_incremental_key,
+        "requested_primary_key": jr.primary_key,
+        "merge_key": merge_key,
+        "interval_start": jr.interval_start,
+        "interval_end": jr.interval_end,
+        "sql_backend": sql_backend.value,
+        "page_size": jr.page_size,
+        "sql_reflection_level": sql_reflection_level.value,
+        "sql_limit": jr.sql_limit,
+        "sql_exclude_columns": sql_exclude_columns,
+        "extract_parallelism": jr.extract_parallelism,
+        "column_types": column_types,
+        "filesystem_incremental": jr.filesystem_incremental,
+        "data_item_format": data_item_format,
+    }
+    # A source that declared `consumed_run_options()` gets only the subset it
+    # named; the ~90 that never define the hook keep receiving everything, which
+    # is the current behaviour preserved for them.
+    consumed_run_options = getattr(source, "consumed_run_options", lambda: None)()
+    if consumed_run_options is not None:
+        run_options = {
+            key: value
+            for key, value in run_options.items()
+            if key in consumed_run_options
+        }
+
     dlt_source = source.dlt_source(
         uri=jr.source_uri,
         table=source_table,
-        incremental_key=jr.incremental_key,
-        requested_incremental_key=requested_incremental_key,
-        requested_primary_key=jr.primary_key,
-        merge_key=merge_key,
-        interval_start=jr.interval_start,
-        interval_end=jr.interval_end,
-        sql_backend=sql_backend.value,
-        page_size=jr.page_size,
-        sql_reflection_level=sql_reflection_level.value,
-        sql_limit=jr.sql_limit,
-        sql_exclude_columns=sql_exclude_columns,
-        extract_parallelism=jr.extract_parallelism,
-        column_types=column_types,
-        filesystem_incremental=jr.filesystem_incremental,
-        data_item_format=data_item_format,
+        **run_options,
     )
 
     resource.for_each(dlt_source, lambda x: x.add_map(cast_set_to_list))

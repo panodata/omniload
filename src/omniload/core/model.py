@@ -27,6 +27,14 @@ class SourceProtocol(Protocol):
 
     Sources that may dispatch several tables can optionally define
     ``produces_multiple_tables(uri, table) -> bool``. It defaults to False when absent.
+
+    A source may optionally define ``consumed_run_options(self) -> frozenset[str]``,
+    naming the subset of omniload's run vocabulary its ``dlt_source`` actually accepts.
+    When present, run_ingest filters the run options it passes down to that subset
+    before expanding them as keyword arguments, so a name the source does not declare
+    never reaches a connector constructor as a stray keyword. Absent means the source
+    receives every run option, unfiltered, which is the default for the ~90 sources
+    that never subtract from it themselves.
     """  # noqa: E501
 
     def dlt_source(self, uri: str, table: str, **kwargs):

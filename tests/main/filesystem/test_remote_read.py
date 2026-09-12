@@ -11,6 +11,7 @@ import pytest
 from fsspec.implementations.memory import MemoryFileSystem
 
 from dlt_filesystem.error import MissingConnectorOption
+from omniload.api import _reject_unconsumed_incremental_key
 from omniload.core.factory import SourceDestinationFactory
 
 
@@ -277,8 +278,18 @@ def test_touch_filesystems_unknown_format(source_uri, fsspec_mock):
 
 @pytest.mark.parametrize("source_uri", URIS, ids=[str(item) for item in URIS])
 def test_touch_filesystems_incremental_key(source_uri, fsspec_mock):
-    """Using the `incremental_key` kwarg should raise an error."""
-    # source_uri = "az://schrott@acme.dfs.core.windows.net/path/to/data.parquet?account_name=acme&account_key=secret"
+    """A row-level `--incremental-key` is rejected for every registered scheme.
+
+    Centralized in `omniload.api` (Phase 3 of GH-316's extraction prep): the
+    rejection is keyed off the source declaring `consumed_run_options()`, not off
+    a per-source guard reading `incremental_key` out of its own `**kwargs`, so
+    driving it here means calling the same check `run_ingest` calls rather than
+    `dlt_source` itself -- a direct `dlt_source(..., incremental_key=...)` call no
+    longer raises for most schemes (the name is simply not declared, so it lands
+    in `**kwargs` and merges into the connector untouched) and raises the wrong
+    exception type for the rest (a backend's own `TypeError` on an unexpected
+    keyword, not this family's `ValueError`).
+    """
     parsed_uri, uri, table = decode_uri(source_uri)
 
     # Testing a few modules has problems on Windows.
@@ -286,15 +297,8 @@ def test_touch_filesystems_incremental_key(source_uri, fsspec_mock):
 
     factory = SourceDestinationFactory(uri, "file://")
     source = factory.get_source()
-    with pytest.raises(ValueError) as exc_info:
-        source.dlt_source(
-            uri=uri,
-            # TODO: Make `table` argument optional.
-            #       AzureSource.dlt_source() missing 1 required positional argument: 'table'
-            table=table,
-            incremental_key="foobar",
-        )
-    assert exc_info.match("you should not provide incremental_key")
+    with pytest.raises(ValueError, match="you should not provide incremental_key"):
+        _reject_unconsumed_incremental_key(source, factory.source_scheme, "foobar")
 
 
 def test_touch_unknown_filesystem():

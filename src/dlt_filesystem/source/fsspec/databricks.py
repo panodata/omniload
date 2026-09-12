@@ -1,10 +1,10 @@
-from typing import Type
+from typing import Any, Dict, Optional, Type
 
 from fsspec import AbstractFileSystem
 
 from dlt_filesystem.source.base import FilesystemSource
 from dlt_filesystem.source.core import infer_resource
-from dlt_filesystem.source.model import FilesystemLocator, split_run_options
+from dlt_filesystem.source.model import FilesystemLocator, ResourceOptions
 from dlt_filesystem.util.python import (
     cast_to_bool,
     cast_to_int,
@@ -23,14 +23,16 @@ class DatabricksSource(FilesystemSource):
 
         return DatabricksFileSystem
 
-    def dlt_source(self, uri: str, table: str, **kwargs):
-
-        # TODO: It looks like this is generic code that could be refactored already
-        #       if it's common amongst different implementations.
-        if kwargs.get("incremental_key"):
-            raise ValueError(
-                "Databricks takes care of incrementality on its own, you should not provide incremental_key"
-            )
+    def dlt_source(
+        self,
+        uri: str,
+        table: str,
+        *,
+        filesystem_incremental: bool = False,
+        column_types: Optional[Dict[str, Any]] = None,
+        reader_hints: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ):
 
         # Bundle essential information to infer filesystem wrapper.
         locator = FilesystemLocator(
@@ -43,9 +45,13 @@ class DatabricksSource(FilesystemSource):
         )
 
         # Decode individual options (type casting, default values, sanity checks).
-        resource_options, connector_kwargs = split_run_options(kwargs)
+        resource_options = ResourceOptions(
+            filesystem_incremental=filesystem_incremental,
+            column_types=column_types,
+            reader_hints=reader_hints,
+        )
         fs_kwargs = locator.options.fs_kwargs
-        fs_kwargs.update(connector_kwargs)
+        fs_kwargs.update(kwargs)
         cast_to_int(
             fs_kwargs,
             [
