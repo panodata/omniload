@@ -2,6 +2,24 @@
 
 ## in progress
 
+- **SQL sources: an `adbcbridge` backend, ADBC over ODBC.** `--sql-backend
+  adbcbridge` reads a SQL source through the database's ODBC driver via
+  [adbcBridge](https://github.com/singhpratech/adbcbridge) and yields Arrow record
+  batches straight from the driver, with no Python row in between. SQLAlchemy
+  still reflects the table and compiles the query, so `--incremental-key`,
+  `--sql-limit`, `--sql-exclude-columns` and the `append` and `merge` strategies
+  work as with the other backends. The ODBC connection string is derived from the
+  source URI for PostgreSQL, Microsoft SQL Server, CrateDB (over its PostgreSQL
+  wire protocol) and MySQL; `--sql-odbc-uri` gives it explicitly for anything
+  else, and `OMNILOAD_ODBC_DRIVER_<FAMILY>` renames a driver. Column types arrive
+  at the precision the column declares (a PostgreSQL `TIMESTAMP(0)` as seconds).
+  Installed with the `adbcbridge` extra (adbcBridge 0.1.3 or later, which keeps
+  `timestamptz` instants on a server whose session zone is not UTC), part of
+  `full`; the container image
+  already ships unixODBC with the PostgreSQL and SQL Server drivers it needs.
+  `scd2` rejects it, as it does the other Arrow backends. Thanks, @amotl, for the
+  suggestion in #138.
+
 - **Filesystem: the Parquet writer no longer emits an integer column its own
   reader cannot open.** Polars widens an integer past the signed 64-bit range to
   a 128-bit one, which Parquet has no type for: such a column was written as an

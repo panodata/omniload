@@ -44,6 +44,7 @@ class SqlBackend(str, Enum):
     sqlalchemy = "sqlalchemy"
     pyarrow = "pyarrow"
     connectorx = "connectorx"
+    adbcbridge = "adbcbridge"
 
 
 class Progress(str, Enum):
@@ -99,6 +100,9 @@ class LoadRequest:
     sql_reflection_level: SqlReflectionLevel | str = SqlReflectionLevel.full
     sql_limit: int | None = None
     sql_exclude_columns: list[str] | None = None
+    # ODBC connection string for the `adbcbridge` SQL backend; derived from the
+    # source URI when not given (see `source/sql_database/adbcbridge.py`).
+    sql_odbc_uri: str | None = None
     columns: list[str] | None = None
     yield_limit: int | None = None
     staging_bucket: str | None = None

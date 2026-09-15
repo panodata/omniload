@@ -247,6 +247,16 @@ def ingest(
             envvar=["SQL_EXCLUDE_COLUMNS", "OMNILOAD_SQL_EXCLUDE_COLUMNS"],
         ),
     ] = None,
+    sql_odbc_uri: Annotated[
+        Optional[str],
+        typer.Option(
+            help="ODBC connection string for the 'adbcbridge' SQL backend, e.g. "
+            "'Driver={PostgreSQL Unicode};Server=host;Port=5432;Database=db;"
+            "Uid=u;Pwd=p;'. Derived from the source URI when omitted "
+            "(PostgreSQL, SQL Server, CrateDB, MySQL)",
+            envvar=["SQL_ODBC_URI", "OMNILOAD_SQL_ODBC_URI"],
+        ),
+    ] = None,
     columns: Annotated[
         Optional[list[str]],
         typer.Option(
@@ -317,6 +327,7 @@ def ingest(
             sql_reflection_level=sql_reflection_level,
             sql_limit=sql_limit,
             sql_exclude_columns=sql_exclude_columns,
+            sql_odbc_uri=sql_odbc_uri,
             columns=columns,
             yield_limit=yield_limit,
             staging_bucket=staging_bucket,

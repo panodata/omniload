@@ -286,6 +286,16 @@ class SqlSourceRouter:
 
         defer_table_reflect = False
         sql_backend = kwargs.get("sql_backend", "sqlalchemy")
+        backend_kwargs: Dict[str, Any] | None = None
+        if sql_backend == "adbcbridge":
+            # ADBC over ODBC through adbcBridge: SQLAlchemy reflects and compiles,
+            # the ODBC driver reads, Arrow batches come out. Registered with dlt on
+            # first use so the optional dependency is only needed when selected.
+            from omniload.source.sql_database.adbcbridge import register
+
+            register()
+            if kwargs.get("sql_odbc_uri"):
+                backend_kwargs = {"odbc_uri": kwargs["sql_odbc_uri"]}
         if table.startswith("query:"):
             if kwargs.get("sql_limit"):
                 raise ValueError(
@@ -431,6 +441,7 @@ class SqlSourceRouter:
             table=table_fields.table,
             incremental=incremental,
             backend=sql_backend,
+            backend_kwargs=backend_kwargs,
             chunk_size=kwargs.get("page_size", None),
             reflection_level=kwargs.get("sql_reflection_level", None),
             query_adapter_callback=chained_query_adapter_callback(query_adapters),

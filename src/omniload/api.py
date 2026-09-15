@@ -58,6 +58,7 @@ RUN_OPTION_KEYS: frozenset[str] = frozenset(
         "sql_backend",
         "sql_exclude_columns",
         "sql_limit",
+        "sql_odbc_uri",
         "sql_reflection_level",
     }
 )
@@ -574,7 +575,11 @@ def _run_ingest(
         if factory.source_scheme in SQL_SOURCE_SCHEMES and not is_custom_query:
             if sql_backend == SqlBackend.default:
                 sql_backend = SqlBackend.sqlalchemy
-            elif sql_backend in (SqlBackend.pyarrow, SqlBackend.connectorx):
+            elif sql_backend in (
+                SqlBackend.pyarrow,
+                SqlBackend.connectorx,
+                SqlBackend.adbcbridge,
+            ):
                 raise ValidationError(
                     f"Incremental strategy 'scd2' cannot use the '{sql_backend.value}' SQL "
                     "backend: it yields Arrow tables, for which dlt does not compute the "
@@ -667,6 +672,7 @@ def _run_ingest(
         "sql_reflection_level": sql_reflection_level.value,
         "sql_limit": jr.sql_limit,
         "sql_exclude_columns": sql_exclude_columns,
+        "sql_odbc_uri": jr.sql_odbc_uri,
         "extract_parallelism": jr.extract_parallelism,
         "column_types": column_types,
         "filesystem_incremental": jr.filesystem_incremental,

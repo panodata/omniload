@@ -20,3 +20,7 @@ URI parameters:
 - `sslmode`: optional, the SSL mode to use when connecting to the database
 
 The same URI structure can be used both for sources and destinations. You can read more about SQLAlchemy's PostgreSQL dialect [here](https://docs.sqlalchemy.org/en/14/dialects/postgresql.html).
+
+As a source, PostgreSQL can also be read through its ODBC driver with
+`--sql-backend adbcbridge`, which yields Arrow batches straight from the driver;
+see {ref}`sql-backends`.
