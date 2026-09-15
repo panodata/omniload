@@ -138,7 +138,7 @@ dependencies = [
   "tqdm<5",
   "trino[sqlalchemy]==0.339.0",
   "typer<0.28",
-  "urllib3<2.8",
+  "urllib3<2.9",
   "yarl<2",
 ]
 optional-dependencies.develop = [
