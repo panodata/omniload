@@ -5,7 +5,9 @@ massive amounts of data in near real-time, even with complex queries. It is
 PostgreSQL-compatible, and based on Lucene.
 
 omniload supports CrateDB as a source and destination database, using different
-adapters and protocols (HTTP vs. PostgreSQL, see below).
+adapters and protocols (HTTP vs. PostgreSQL, see below). As a source, the table can
+also be read over the PostgreSQL wire protocol through psqlodbc with
+`--sql-backend adbcbridge`; see {ref}`sql-backends`.
 
 ## Source
 

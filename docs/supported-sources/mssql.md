@@ -25,6 +25,10 @@ URI parameters:
 - `port`: the port of the SQL Server instance
 - `dbname`: the name of the database to connect to
 - `driver`: the ODBC driver to use to connect to the SQL Server instance
+
+The same `driver` serves `--sql-backend adbcbridge`, which reads the table as Arrow
+batches straight from the ODBC driver instead of row by row through pyodbc; see
+{ref}`sql-backends`.
 - `TrustServerCertificate`: whether to trust the server certificate
 
 The same URI structure can be used both for sources and destinations. You can read more about SQLAlchemy's SQL Server dialect [here](https://docs.sqlalchemy.org/en/20/core/engines.html#microsoft-sql-server).
