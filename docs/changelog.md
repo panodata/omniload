@@ -2,6 +2,17 @@
 
 ## in progress
 
+- **Filesystem: an HTTP block size of `0` reads the body whole instead of
+  handing back a file that cannot seek.** fsspec's streaming file reports
+  `seekable()` as `True` and then raises on the first seek, so `block_size=0`
+  broke every reader that seeks (Parquet, ORC, Feather, JSONL, and a headerless
+  CSV given no column names to use) while CSV, JSON, BSON, MessagePack, CBOR and
+  Avro went on working, so the failure read as format-specific rather than as a
+  broken handle. It applies to the effective block
+  size, so `FSSPEC_HTTP_BLOCK_SIZE=0` in the environment is covered as well as
+  the keyword argument, which is what makes this reachable from `omniload
+  ingest` rather than only from a source built in Python.
+
 - **Filesystem: a `dlt_source` implementation now declares the run options it
   consumes, instead of the run subtracting its own vocabulary from every call.**
   `filesystem_incremental` and `column_types` are named parameters on every

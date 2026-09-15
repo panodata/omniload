@@ -834,18 +834,112 @@ def test_a_url_that_carries_its_own_query_keeps_it(range_server):
     assert "X-Amz-Signature" not in encoded
 
 
-def test_block_size_zero_streams_without_probing(range_server):
-    """An explicit ask for the streaming interface is honoured as asked.
+def test_block_size_zero_reads_the_body_whole(range_server):
+    """A block size of 0 is answered with the body, not with fsspec's stream.
 
-    No range probe is issued, because nothing about range support would change the
-    answer: the caller has already said it wants a stream.
+    fsspec's streaming file cannot seek and reports `seekable()` as True anyway, so
+    a reader that asks the handle first and seeks second fails at the seek: Parquet,
+    ORC, Feather, JSONL and a headerless CSV all do. Reading the body whole is the
+    answer this method already gives a server that cannot serve ranges, and every
+    reader here can work with it.
+
+    No range probe is issued either way, because nothing about range support would
+    change the answer.
     """
     filesystem = HttpFileSystem()
 
     with filesystem.open(range_server.url("people.csv"), block_size=0) as file:
         assert file.read() == range_server.body("people.csv")
+        assert file.seekable(), "a reader that seeks has something to seek on"
+        file.seek(0)
+        assert file.read() == range_server.body("people.csv")
 
     assert [request.range_header for request in range_server.ranged()] == []
+
+
+@contextmanager
+def zero_block_size_in_the_environment(monkeypatch):
+    """Set fsspec's own `FSSPEC_HTTP_BLOCK_SIZE=0` for the duration.
+
+    fsspec reads its environment once, at import, into `fsspec.config.conf`, so
+    setting the variable alone changes nothing in a process that is already
+    running. Re-reading it there is what makes this the same route an `omniload
+    ingest` run takes: fsspec's metaclass merges that dict into the constructor's
+    keyword arguments on every construction, which is where `self.block_size`
+    comes from. No cache to clear, this class setting `cachable = False`.
+    """
+    import fsspec.config
+
+    monkeypatch.setenv("FSSPEC_HTTP_BLOCK_SIZE", "0")
+    previous = dict(fsspec.config.conf)
+    fsspec.config.conf.clear()
+    fsspec.config.set_conf_env(fsspec.config.conf)
+    try:
+        yield
+    finally:
+        fsspec.config.conf.clear()
+        fsspec.config.conf.update(previous)
+
+
+@pytest.mark.parametrize("document", ["people.parquet", "people.jsonl"])
+def test_a_zero_block_size_reaches_a_reader_that_seeks(
+    range_server, tmp_path, monkeypatch, document
+):
+    """The readers a streaming handle used to break, over both routes that set one.
+
+    The keyword is the documented route; `FSSPEC_HTTP_BLOCK_SIZE` is fsspec's own
+    configuration channel, which reaches this filesystem's constructor from an
+    `omniload ingest` run too, so the setting is not library-only.
+
+    The environment half asserts the wire shape rather than the rows, and that is
+    the point of it: this server honours ranges, so these documents load through
+    the ordinary ranged path too. Row equality alone would go on passing if the
+    variable stopped reaching the constructor at all, which is exactly the claim
+    the page makes.
+    """
+    loaded = load(
+        range_server, document, tmp_path, column_types=TYPED_COLUMNS, block_size=0
+    )
+    assert rows(loaded) == EXPECTED
+
+    from_environment = tmp_path / "env"
+    from_environment.mkdir()
+    range_server.clear()
+    with zero_block_size_in_the_environment(monkeypatch):
+        loaded = load(
+            range_server, document, from_environment, column_types=TYPED_COLUMNS
+        )
+        assert rows(loaded) == EXPECTED
+    assert range_server.ranged() == [], (
+        "the reader ranged over the document, so the environment never reached "
+        "the filesystem constructor"
+    )
+
+
+def test_a_zero_block_size_reaches_the_headerless_csv_rewind(range_server, tmp_path):
+    """The third seeking reader, and the only one whose seek is conditional.
+
+    `read_csv_headless` sniffs the first row for a column count and rewinds, but
+    only when it has no `column_types` keys to name the columns from. Supplying
+    them is the documented way to load one of these, and it takes the seek out,
+    so this case has to omit them to reach the path at all: with them, the load
+    survives a streaming handle and pins nothing.
+    """
+    destination = load(
+        range_server,
+        "people-no-header.csv",
+        tmp_path,
+        table="people-no-header.csv#csv_headless",
+        block_size=0,
+    )
+
+    assert (
+        rows(
+            destination,
+            "select unknown_col_0, unknown_col_1 from out.people order by unknown_col_0",
+        )
+        == EXPECTED
+    )
 
 
 def test_probe_answers_no_ranges_when_the_server_cannot_be_reached(range_server):
