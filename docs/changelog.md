@@ -20,6 +20,17 @@
   `scd2` rejects it, as it does the other Arrow backends. Thanks, @amotl, for the
   suggestion in #138.
 
+- **Filesystem: an HTTP block size of `0` reads the body whole instead of
+  handing back a file that cannot seek.** fsspec's streaming file reports
+  `seekable()` as `True` and then raises on the first seek, so `block_size=0`
+  broke every reader that seeks (Parquet, ORC, Feather, JSONL, and a headerless
+  CSV given no column names to use) while CSV, JSON, BSON, MessagePack, CBOR and
+  Avro went on working, so the failure read as format-specific rather than as a
+  broken handle. It applies to the effective block
+  size, so `FSSPEC_HTTP_BLOCK_SIZE=0` in the environment is covered as well as
+  the keyword argument, which is what makes this reachable from `omniload
+  ingest` rather than only from a source built in Python.
+
 - **Filesystem: the Parquet writer no longer emits an integer column its own
   reader cannot open.** Polars widens an integer past the signed 64-bit range to
   a 128-bit one, which Parquet has no type for: such a column was written as an

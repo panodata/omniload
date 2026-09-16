@@ -47,7 +47,20 @@ source = HttpFilesystemSource().dlt_source(
 )
 ```
 
-`omniload ingest` and `run_ingest` have no channel for them.
+`omniload ingest` and `run_ingest` take no option of their own for these, but
+fsspec's own environment configuration reaches the same constructor from either:
+`FSSPEC_HTTP_BLOCK_SIZE=65536` for a scalar, or `FSSPEC_HTTP` holding a JSON
+object for anything structured. `client_kwargs` is the one exception, because
+this source always passes its own.
+
+A block size of `0` is answered with the whole body in one request rather than
+with fsspec's streaming file, whichever route sets it. That file cannot seek and
+reports `seekable()` as `True` anyway, so the readers that seek (Parquet, ORC,
+Feather, JSONL and a headerless CSV) failed on it rather than on the open. The
+cost is memory, and only for BSON and MessagePack: they were the two readers
+that worked on the streaming handle by reading it forward in pieces, and they
+now hold the whole body instead. Every other reader either seeks or reads the
+body in one call already.
 :::
 
 ## Authentication

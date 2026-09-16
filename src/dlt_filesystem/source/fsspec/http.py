@@ -137,18 +137,14 @@ class HttpFileSystem(HTTPFileSystem):
         because the whole body was downloaded every time; reading them whole here
         keeps that true while everything else gains streaming.
         """
-        if block_size == 0:
-            # An explicit ask for the streaming interface; nothing to second-guess.
-            return super()._open(
-                path,
-                mode=mode,
-                block_size=block_size,
-                autocommit=autocommit,
-                cache_type=cache_type,
-                cache_options=cache_options,
-                size=size,
-                **kwargs,
-            )
+        effective_block_size = self.block_size if block_size is None else block_size
+        if effective_block_size == 0:
+            # A block size of 0 asks fsspec for its streaming file, which cannot seek
+            # and reports `seekable()` as True anyway, so a reader that trusts the
+            # answer fails on the first seek rather than on the open. Reading the body
+            # whole is the same answer this method already gives a server that cannot
+            # serve ranges, and it is what every reader here can work with.
+            return io.BytesIO(self._read_whole(path))
         range_size = self._range_size(path)
         if range_size is not None:
             # Hand the size along: `HTTPFileSystem._open` would otherwise ask the
