@@ -83,7 +83,7 @@ def _sample_table(engine, schema):
             f"""
             INSERT INTO {schema}.input VALUES
               (1, 1.5, 'héllo wörld', 12.34, true, '2024-02-29', '2024-02-29 13:45:10',
-               '2024-02-29 13:45:10.123+00', '2022-01-01 00:00:00'),
+               '2024-02-29 15:45:10.123+02:00', '2022-01-01 00:00:00'),
               (2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2022-01-02 00:00:00'),
               (3, 3.25, 'plain', 0.01, false, '1999-12-31', '1999-12-31 23:59:59',
                '1999-12-31 23:59:59.999+00', '2022-01-03 00:00:00')
@@ -104,8 +104,26 @@ def test_postgresql_reads_the_same_rows_as_the_pyarrow_backend(dest, tmp_path):
     schema = f"adbcbridge_diff_{get_random_string(5)}"
     engine = sqlalchemy.create_engine(source_uri)
     _sample_table(engine, schema)
+    # The adbcBridge pin (0.1.3) exists because psqlodbc rendered `timestamptz`
+    # in the session's zone and an earlier release took that as UTC.  Give every
+    # new session a non-UTC default so that regression is what this test sees;
+    # the `+02:00` instant in the sample row is 13:45:10.123 UTC either way.
+    dbname = sqlalchemy.engine.make_url(source_uri).database
+    with engine.begin() as conn:
+        conn.exec_driver_sql(
+            f"ALTER DATABASE \"{dbname}\" SET timezone TO 'America/New_York'"
+        )
     engine.dispose()
+    try:
+        _differential(source_uri, dest_uri, schema, tmp_path)
+    finally:
+        engine = sqlalchemy.create_engine(source_uri)
+        with engine.begin() as conn:
+            conn.exec_driver_sql(f'ALTER DATABASE "{dbname}" RESET timezone')
+        engine.dispose()
 
+
+def _differential(source_uri, dest_uri, schema, tmp_path):
     for backend in ("pyarrow", "adbcbridge"):
         run_ingest(
             source_uri=source_uri,
@@ -123,6 +141,12 @@ def test_postgresql_reads_the_same_rows_as_the_pyarrow_backend(dest, tmp_path):
     assert len(odbc_rows) == 3
     assert odbc_rows == arrow_rows
     assert odbc_rows[0][2] == "héllo wörld"
+    # The instant, not a session-zone wall clock: 15:45:10.123+02:00 is
+    # 13:45:10.123Z.  Read as epoch milliseconds so the check does not depend on
+    # the zone DuckDB renders `timestamptz` in either.
+    assert _rows(
+        dest_uri, f"select epoch_ms(seen_tz) from {schema}.out_adbcbridge where id = 1"
+    ) == [(1709214310123,)]
 
 
 @needs_psqlodbc
@@ -244,7 +268,6 @@ def test_postgresql_small_pages_and_a_limit(tmp_path):
     assert _rows(dest_uri, f"select count(*) from {schema}.limited") == [(25,)]
 
 
-@needs_psqlodbc
 def test_postgresql_custom_query_still_uses_sqlalchemy():
     """A `query:` source is row-oriented by design, whatever backend is named.
 

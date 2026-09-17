@@ -26,9 +26,9 @@ URI parameters:
 - `dbname`: the name of the database to connect to
 - `driver`: the ODBC driver to use to connect to the SQL Server instance
 
-The same `driver` serves `--sql-backend adbcbridge`, which reads the table as Arrow
-batches straight from the ODBC driver instead of row by row through pyodbc; see
-{ref}`sql-backends`.
+  The same `driver` serves `--sql-backend adbcbridge`, which reads the table as Arrow
+  batches straight from the ODBC driver instead of row by row through pyodbc; see
+  {ref}`sql-backends`.
 - `TrustServerCertificate`: whether to trust the server certificate
 
 The same URI structure can be used both for sources and destinations. You can read more about SQLAlchemy's SQL Server dialect [here](https://docs.sqlalchemy.org/en/20/core/engines.html#microsoft-sql-server).
@@ -38,6 +38,10 @@ The same URI structure can be used both for sources and destinations. You can re
 If you're using Azure SQL Server, you can use `az cli` to generate access tokens to connect to SQL server. 
 
 Set the password to your token and the `Authentication` parameter to `ActiveDirectoryAccessToken`
+
+This token flow works with the default backend only: `--sql-backend adbcbridge` builds
+its own ODBC connection string and does not carry the `Authentication` parameter, so use a
+SQL login (or pass a complete string with `--sql-odbc-uri`) when reading through adbcBridge.
 ::: code-group
 
 ```sh [token-auth-example.sh]

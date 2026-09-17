@@ -92,6 +92,9 @@ omniload ingest \
   precision the column declares: a PostgreSQL `TIMESTAMP(0)` arrives as a
   second-precision timestamp, `TIMESTAMPTZ(3)` as milliseconds with a UTC zone.
 - `--page-size` sets the Arrow batch size the driver hands back.
+- An ODBC driver the driver manager cannot find fails before the first row,
+  with a message naming `OMNILOAD_ODBC_DRIVER_<FAMILY>` and `--sql-odbc-uri`;
+  register the driver in `odbcinst.ini` or point either of those at its library.
 - `scd2` is rejected with this backend, as with `pyarrow` and `connectorx`:
   dlt computes the row hash SCD2 needs only for Python rows. A `query:` source
   is read with `sqlalchemy` whatever backend is named.

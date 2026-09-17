@@ -188,7 +188,35 @@ class AdbcBridgeTableLoader(BaseTableLoader):
         if self.chunk_size:
             options["batch_size"] = int(self.chunk_size)
         options.update(kwargs)
-        with adbcbridge.connect(uri=odbc_uri, autocommit=True, **options) as conn:
+        try:
+            conn = adbcbridge.connect(uri=odbc_uri, autocommit=True, **options)
+        except Exception as exc:
+            if not _looks_like_missing_driver(exc):
+                raise
+            family = _family(self.engine.url) or "<FAMILY>"
+            raise ValidationError(
+                "The ODBC driver manager could not load the driver for this source "
+                f"({exc}). Register it in odbcinst.ini, point "
+                f"OMNILOAD_ODBC_DRIVER_{family.upper()} at its library, or pass a "
+                "complete connection string with --sql-odbc-uri / OMNILOAD_SQL_ODBC_URI."
+            ) from exc
+        with conn:
             with conn.cursor() as cur:
                 cur.execute(query)
                 yield from cur.fetch_record_batch()
+
+
+# unixODBC answers IM002 ("Data source name not found and no default driver
+# specified") for an unknown Driver= name, 01000 "Can't open lib" for a library
+# path that does not load; iODBC on macOS uses the same SQLSTATEs.
+_MISSING_DRIVER_MARKERS = (
+    "IM002",
+    "Can't open lib",
+    "can't open lib",
+    "no default driver",
+)
+
+
+def _looks_like_missing_driver(exc: BaseException) -> bool:
+    text = str(exc)
+    return any(marker in text for marker in _MISSING_DRIVER_MARKERS)
