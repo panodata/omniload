@@ -154,7 +154,7 @@ optional-dependencies.filesystem = [
   "adlfs",
   "azure-storage-blob",
   "dropboxdrivefs",
-  "fsspec>=2024.6,<2026.8",
+  "fsspec>=2024.6,<2026.10",
   "fsspec-databricks>=0.1.10",
   "gcsfs",
   "gdrive-fsspec",
