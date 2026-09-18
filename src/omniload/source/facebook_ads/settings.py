@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -111,23 +111,6 @@ DEFAULT_INSIGHT_FIELDS = (
     "action_values",
     "cost_per_action_type",
     "website_ctr",
-    "account_currency",
-    "ad_click_actions",
-    "ad_name",
-    "adset_name",
-    "campaign_name",
-    "country",
-    "dma",
-    "full_view_impressions",
-    "full_view_reach",
-    "inline_link_click_ctr",
-    "outbound_clicks",
-    "reach",
-    "social_spend",
-    "spend",
-    "website_ctr",
-    "conversions",
-    "video_thruplay_watched_actions",
 )
 
 TInsightsLevels = Literal["account", "campaign", "adset", "ad"]

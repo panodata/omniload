@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,13 +17,42 @@
 from typing import Dict, Iterator, List, Optional
 
 import dlt
+from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
 
 from .helpers.client import NotionClient
 from .helpers.database import NotionDatabase
 
 
-@dlt.source(max_table_nesting=1)
+@dlt.resource
+def notion_pages(
+    page_ids: Optional[List[str]] = None, api_key: str = dlt.secrets.value
+) -> Iterator[TDataItems]:
+    """
+    Retrieves pages from Notion.
+
+    Args:
+        page_ids (Optional[List[str]]): A list of page ids.
+            Defaults to None. If None, the function will generate all pages
+            in the workspace that are accessible to the integration.
+        api_key (str): The Notion API secret key.
+
+    Yields:
+        Iterator[TDataItems]: Pages from Notion.
+    """
+    client = NotionClient(api_key)
+    pages = client.search(filter_criteria={"value": "page", "property": "object"})
+
+    for page in pages:
+        blocks = client.fetch_resource("blocks", page["id"], "children")["results"]
+        if page_ids and page["id"] not in page_ids:
+            continue
+
+        if blocks:
+            yield blocks
+
+
+@dlt.source
 def notion_databases(
     database_ids: Optional[List[Dict[str, str]]] = None,
     api_key: str = dlt.secrets.value,
