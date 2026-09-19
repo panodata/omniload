@@ -141,6 +141,9 @@ dependencies = [
   "urllib3<2.9",
   "yarl<2",
 ]
+optional-dependencies.adbcbridge = [
+  "adbcbridge>=0.1.3,<0.2",
+]
 optional-dependencies.develop = [
   "pkginfo<2",
   "poethepoet<1",
@@ -169,9 +172,6 @@ optional-dependencies.filesystem = [
   "smbprotocol[kerberos]; platform_system!='Linux'",
   "verlib2",
   "webdav4[fsspec]",
-]
-optional-dependencies.adbcbridge = [
-  "adbcbridge>=0.1.3,<0.2",
 ]
 optional-dependencies.full = [ "omniload[adbcbridge,ibm-db,iterable,odbc,oracle,reshape]" ]
 optional-dependencies.ibm-db = [

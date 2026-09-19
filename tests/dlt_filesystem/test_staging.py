@@ -1,5 +1,4 @@
 import logging
-from typing import Any, ClassVar
 from urllib.parse import quote
 
 import pytest
@@ -16,8 +15,6 @@ from dlt_filesystem.staging import (
 
 class _IsolatedMemoryFileSystem(MemoryFileSystem):
     """Keep staging-test objects out of fsspec's process-global memory store."""
-
-    store: ClassVar[dict[str, Any]] = {}
 
     def __init__(self) -> None:
         super().__init__()

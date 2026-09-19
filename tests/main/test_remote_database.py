@@ -1,6 +1,5 @@
 import sqlite3
 from pathlib import Path
-from typing import Any, ClassVar
 from urllib.parse import urlencode
 
 import duckdb
@@ -20,8 +19,6 @@ from omniload.source.sql_database.remote import (
 
 class _IsolatedMemoryFileSystem(MemoryFileSystem):
     """Keep remote-database fixtures out of fsspec's shared memory store."""
-
-    store: ClassVar[dict[str, Any]] = {}
 
     def __init__(self) -> None:
         super().__init__()
