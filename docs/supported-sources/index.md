@@ -74,7 +74,7 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>✅</td>
     </tr>
     <tr>
-        <td>Local files (CSV, Feather, JSON, JSONL, ORC, Parquet and YAML written; more formats read only)</td>
+        <td>Local files (CSV, Feather, JSON, JSONL, ORC, Parquet, Vortex and YAML written; more formats read only)</td>
         <td>✅</td>
         <td>✅</td>
     </tr>

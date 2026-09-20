@@ -7,6 +7,8 @@ read back on the machine that wrote it.
 """
 
 import decimal
+from pathlib import Path
+from typing import Union
 
 from dlt_filesystem.source.error import MissingDecoderError
 
@@ -346,6 +348,16 @@ def write_parquet(path: str, rows: list[dict]) -> None:
     libraries.
     """
     _narrow_wide_integers(_frame(rows)).write_parquet(path, compression="snappy")
+
+
+def write_vortex(path: Union[Path, str], rows: list[dict]) -> None:
+    """Vortex writer."""
+
+    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
+    import vortex.io as vxio  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
+
+    path = Path(path)
+    vxio.write(vx.array(rows), str(path))
 
 
 def write_yaml(path: str, rows: list[dict]) -> None:

@@ -8,6 +8,7 @@ from dlt_filesystem.target.writer import (
     write_jsonl,
     write_orc,
     write_parquet,
+    write_vortex,
     write_yaml,
 )
 
@@ -49,6 +50,7 @@ WRITER_REGISTRATIONS: tuple[WriterRegistration, ...] = (
     WriterRegistration(write_jsonl, ("jsonl",)),
     WriterRegistration(write_orc, ("orc",)),
     WriterRegistration(write_parquet, ("parquet",)),
+    WriterRegistration(write_vortex, ("vortex",)),
     # `yaml` is registered unconditionally, where the *reader* lists it under the
     # optional `iterable` extra. PyYAML is not actually optional in this dependency
     # set: `dlt` and `google-ads` both require it outright, so it arrives with any

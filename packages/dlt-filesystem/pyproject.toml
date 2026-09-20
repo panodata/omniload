@@ -61,6 +61,7 @@ dependencies = [
   "smbprotocol; platform_system=='Linux'",
   "smbprotocol[kerberos]; platform_system!='Linux'",
   "verlib2",
+  "vortex-data<1",
   "webdav4[fsspec]",
 ]
 # Long-tail file formats (MessagePack via iterabledata; CBOR via cbor2, XML via lxml, YAML via

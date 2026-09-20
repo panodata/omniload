@@ -87,7 +87,7 @@ omniload ingest \
 
 The path grammar is identical to the source (relative-to-cwd, absolute,
 Windows drive and UNC forms all resolve the same way). Supported output formats
-are `csv`, `feather`, `json`, `jsonl`, `orc`, `parquet` and `yaml`; any other extension
+are `csv`, `feather`, `json`, `jsonl`, `orc`, `parquet`, `vortex`, and `yaml`; any other extension
 (or none) is rejected with the supported-format list. `--dest-table` must be
 `<dataset>.<table>`; it only names the intermediate layout, the output file is
 the URI path.

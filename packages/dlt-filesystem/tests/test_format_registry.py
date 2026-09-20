@@ -35,6 +35,7 @@ EXPECTED_FORMAT_TO_READER = {
     "arrow": "read_feather",
     "ipc": "read_feather",
     "avro": "read_avro",
+    "vortex": "read_vortex",
     "cbor": "read_cbor",
     "msgpack": "read_msgpack",
     "xml": "read_xml",
@@ -58,6 +59,7 @@ EXPECTED_READER_NAMES = (
     "read_orc",
     "read_feather",
     "read_avro",
+    "read_vortex",
 )
 
 

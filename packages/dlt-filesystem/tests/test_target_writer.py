@@ -155,7 +155,7 @@ def test_writers_emit_utf8_whatever_the_locale(tmp_path):
     machine that wrote it. A text handle's encoding is fixed at interpreter startup, so
     forcing a non-UTF-8 default needs a child process rather than a monkeypatch.
     """
-    binary_formats = {"arrow", "feather", "ipc", "orc", "parquet"}
+    binary_formats = {"arrow", "feather", "ipc", "orc", "parquet", "vortex"}
     text_formats = [f for f in WRITE_FORMATS if f not in binary_formats]
     child = subprocess.run(  # noqa: S603  # trusted: sys.executable + a fixed code string
         [

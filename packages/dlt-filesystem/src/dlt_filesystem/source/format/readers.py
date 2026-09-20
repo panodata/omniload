@@ -900,6 +900,31 @@ def read_parquet(
                 yield rows.to_pylist()
 
 
+def read_vortex(
+    items: Iterator[FileItemDict],
+    chunksize: int = 5000,
+) -> Iterator[TDataItems]:
+    """Vortex reader using pyarrow.
+
+    Args:
+        chunksize (int, optional): The number of rows to read at once. Defaults to 5000.
+
+    Returns:
+        TDataItem: The file content
+    """
+    chunksize = _validated_chunksize(chunksize)
+    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
+
+    for file_obj in items:
+        if isinstance(file_obj, FileItemDict):
+            path = file_obj.local_file_path
+        elif hasattr(file_obj, "_path"):
+            path = file_obj._path
+        for batch in vx.open(str(path)).scan().to_arrow():
+            for offset in range(0, batch.num_rows, chunksize):
+                yield batch.slice(offset, chunksize).to_pylist()
+
+
 def read_csv_duckdb(
     items: Iterator[FileItemDict],
     chunk_size: Optional[int] = DEFAULT_CHUNK_SIZE,

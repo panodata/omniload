@@ -22,6 +22,8 @@
   separates what fsspec provides from what the shim injects. The shim itself is unchanged
   and stays, because the supported floor is `fsspec>=2024.6`.
 
+- Added Vortex file format (high-performance columnar)
+
 ## 2026/09/17 v0.17.0
 
 - **SQL sources: an `adbcbridge` backend, ADBC over ODBC.** `--sql-backend

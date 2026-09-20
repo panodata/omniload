@@ -38,6 +38,7 @@ BASE_READER_REGISTRATIONS = (
         "read_feather", ("feather", "arrow", "ipc"), transformer_order=14
     ),
     ReaderRegistration("read_avro", ("avro",), transformer_order=15),
+    ReaderRegistration("read_vortex", ("vortex",), transformer_order=16),
 )
 
 # Readers backed by the optional `iterable` extra (msgpack via iterabledata; cbor, xml and yaml
