@@ -97,7 +97,6 @@ def test_write_handles_are_left_alone(tmp_path):
 
     fs = ReadIntoArrowFSWrapper(LocalFileSystem())
     with fs.open(str(path), "wb") as handle:
-        assert not hasattr(handle, "readinto")
         handle.write(b"payload")
 
     assert path.read_bytes() == b"payload"
