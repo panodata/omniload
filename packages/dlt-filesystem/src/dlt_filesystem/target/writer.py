@@ -353,11 +353,12 @@ def write_parquet(path: str, rows: list[dict]) -> None:
 def write_vortex(path: Union[Path, str], rows: list[dict]) -> None:
     """Vortex writer."""
 
+    import pyarrow as pa
     import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
     import vortex.io as vxio  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
 
     path = Path(path)
-    vxio.write(vx.array(rows), str(path))
+    vxio.write(vx.array(rows) if rows else pa.table({}), str(path))
 
 
 def write_yaml(path: str, rows: list[dict]) -> None:

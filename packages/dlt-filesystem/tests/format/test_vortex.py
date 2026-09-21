@@ -44,7 +44,7 @@ def test_read_multiple_rows(tmp_path):
 def test_read_sparse_rows(tmp_path):
     """A column missing from a row is a `["null", T]` union, and loads as null."""
     path = tmp_path / "sparse.vortex"
-    write_vortex(path, [{"id": 1, "note": "here"}, {"id": 2, "note": None}])
+    write_vortex(path, [{"id": 1, "note": "here"}, {"id": 2}])
     assert _read_via_source(path) == [
         {"id": 1, "note": "here"},
         {"id": 2, "note": None},
@@ -159,15 +159,16 @@ def test_write_preserves_sparse_rows_and_column_order(tmp_path):
     ]
 
 
-def test_write_no_rows_failure(tmp_path):
-    """Empty rows cannot be represented in Vortex."""
+def test_write_no_rows_success(tmp_path):
+    """Empty rows are written as a zero-column Vortex table."""
+    import vortex as vx
+
     path = tmp_path / "empty.vortex"
-    with pytest.raises(
-        RuntimeError,
-        match="Cannot convert an Arrow NullArray into a non-nullable Vortex array",
-    ):
-        writer_for_format("vortex")(str(path), [])
-    assert not path.exists()
+    writer_for_format("vortex")(str(path), [])
+
+    table = vx.open(str(path)).to_dataset().to_table()
+    assert table.column_names == []
+    assert table.to_pylist() == []
 
 
 def test_write_nonempty_fieldless_rows_success(tmp_path):
