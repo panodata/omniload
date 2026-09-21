@@ -5,7 +5,9 @@ import sys
 
 import pytest
 from dlt.extract.exceptions import ResourceExtractionError
+from fsspec.implementations.memory import MemoryFileSystem
 
+from dlt_filesystem.source.adapter import readers
 from dlt_filesystem.source.format.readers import read_vortex
 from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
 from dlt_filesystem.target.registry import writer_for_format
@@ -70,6 +72,24 @@ def test_read_multiple_files(tmp_path):
     write_vortex(tmp_path / "b.vortex", [{"id": 4}, {"id": 5}])
     rows = list(LocalFilesystemSource().dlt_source(f"file://{tmp_path}/*.vortex", ""))
     assert sorted(row["id"] for row in rows) == [1, 2, 3, 4, 5]
+
+
+def test_read_remote_filesystem(tmp_path):
+    path = tmp_path / "remote.vortex"
+    rows = [{"id": 1, "name": "alice"}, {"id": 2, "name": "bob"}]
+    write_vortex(path, rows)
+
+    filesystem = MemoryFileSystem()
+    remote_dir = tmp_path.name
+    remote_path = f"/{remote_dir}/{path.name}"
+    filesystem.pipe_file(remote_path, path.read_bytes())
+    try:
+        source = readers(
+            f"memory://{remote_dir}", filesystem, file_glob=path.name
+        ).with_resources("read_vortex")
+        assert list(source) == rows
+    finally:
+        filesystem.rm(remote_path)
 
 
 # --- reader hints ---

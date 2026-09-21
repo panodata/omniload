@@ -14,6 +14,9 @@
 
 import codecs
 import io
+import shutil
+import tempfile
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -917,7 +920,18 @@ def read_vortex(
 
     for file_obj in items:
         if isinstance(file_obj, FileItemDict):
-            path = file_obj.local_file_path
+            if "file" in file_obj.fsspec.protocol:
+                path = file_obj.local_file_path
+            else:
+                with file_obj.open(compression="disable") as source_file:
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        path = Path(temp_dir) / "remote.vortex"
+                        with path.open("wb") as staged_file:
+                            shutil.copyfileobj(source_file, staged_file)
+                        for batch in vx.open(str(path)).scan().to_arrow():
+                            for offset in range(0, batch.num_rows, chunksize):
+                                yield batch.slice(offset, chunksize).to_pylist()
+                continue
         elif hasattr(file_obj, "_path"):
             path = file_obj._path
         for batch in vx.open(str(path)).scan().to_arrow():
