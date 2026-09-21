@@ -160,6 +160,9 @@ def test_nested_destination_dir_is_created(tmp_path, scheme):
 def test_empty_source_writes_a_file_without_crashing(tmp_path, out_format):
     """A header-only source (zero data rows) still produces an output file."""
 
+    if out_format == "vortex" and sys.version_info < (3, 11):
+        pytest.skip("Vortex files only supported on Python 3.11 and newer")
+
     (tmp_path / "empty.csv").write_text("name,age\n")
     out_path = tmp_path / f"out.{out_format}"
 
