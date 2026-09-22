@@ -306,7 +306,7 @@ decoding.
 | ODS                 | `polars`                | Whole-file format.                 |
 | ORC                 | `pyarrow`               | Striped reader and writer.         |
 | Parquet             | `pyarrow`               | Batched reader.                    |
-| Vortex              | `vortex-data`           | Batched reader.                    |
+| Vortex              | `vortex-data`           | Batched reader and writer.         |
 | XML                 | `lxml`                  | Whole-file parse, hardened.        |
 | XLSX                | `polars`                | Whole-file format.                 |
 | YAML                | `yaml`                  | Whole-file decode, safe.           |
@@ -327,6 +327,12 @@ Amazon S3, Azure Blob Storage, Google Cloud Storage, or SFTP works transparently
 Where using iterabledata is not applicable, for example to enhance error handling,
 or applying stronger security policies, omniload directly uses relevant low-level
 decoder libraries.
+
+Vortex needs the `vortex` extra, which requires Python 3.11 or newer.
+
+```sh
+pip install 'omniload[vortex]'
+```
 
 ## File format notes
 

@@ -8,6 +8,19 @@ extensible columnar data format considered faster than Parquet.
 Vortex is supported for reads on shared filesystem sources and for writes
 through the local `file://` destination.
 
+## Installation
+
+Vortex support ships in the optional `vortex` extra, which needs Python 3.11 or
+newer, so it is not part of the base install:
+
+```sh
+pip install 'omniload[vortex]'
+```
+
+The `full` extra includes it. If a Vortex file is read or written without the
+extra installed, `omniload` fails with an error naming the exact `pip install`
+to run.
+
 ## Where it works
 
 Vortex is available on every source that uses the shared file readers:
@@ -18,9 +31,15 @@ Vortex is available on every source that uses the shared file readers:
 Remote reads use the source's existing fsspec handle. They use its existing
 authentication. No separate Vortex storage configuration is required.
 
-A file is read as Vortex when its extension is `.vortex`.
-You can also append the `#vortex` {ref}`format hint <format-hint>` to a
-file with a different extension.
+A file is read as Vortex when its extension is `.vortex` (optionally
+`.vortex.gz`). You can also append the `#vortex` {ref}`format hint <format-hint>`
+to a file with a different extension. Gzipped files are decompressed
+automatically.
+
+The Vortex library opens files by path only, so a remote or gzipped file is
+first copied to a local temporary file, which needs enough free disk space to
+hold it. The file is then scanned in batches, and `#chunksize=` sets how many
+rows are handed downstream at a time.
 
 For details about format selection, see {ref}`file-format-routing`.
 
@@ -36,7 +55,7 @@ omniload ingest \
     --dest-table 'public.events'
 ```
 
-### Load an Vortex file from S3
+### Load a Vortex file from S3
 
 Use `#vortex` if the object name does not end in `.vortex`.
 
@@ -70,9 +89,17 @@ omniload ingest \
     --dest-table 'public.events'
 ```
 
-Vortex output uses PyArrow and is available through the local `file://`
-destination. Columns that are absent from an individual source row are written
-as null values.
+Vortex output is available through the local `file://` destination. Columns
+that are absent from an individual source row are written as null values. A
+timestamp carrying a fixed UTC offset, such as `+12:00`, is written as the same
+instant in UTC.
+
+:::{note}
+dlt stages the rows between the source and the writer, and the staging format
+decides what the writer receives: a load to a local `file://` destination
+writes a timestamp or a decimal as text unless `--loader-file-format parquet`
+is passed. See {ref}`file-load-types`.
+:::
 
 
 [Vortex]: https://vortex.dev/
