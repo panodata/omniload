@@ -8,6 +8,7 @@ read back on the machine that wrote it.
 
 import datetime
 import decimal
+import functools
 
 from dlt_filesystem.source.error import MissingDecoderError
 
@@ -379,10 +380,11 @@ def _utc_unnamed_zones(value, _cache: dict | None = None):
     Vortex looks a timestamp's zone up by the name Arrow gives its ``tzinfo``, and
     panics when that is not a zone it knows: a fixed offset (``+12:00``, from
     ``datetime.timezone``, dateutil's ``tzoffset`` or pendulum's ``FixedTimezone``), a
-    custom name, or a ``tzinfo`` Arrow cannot name at all. So a zone is kept only when
-    its Arrow name resolves as an IANA zone that gives the same offset at that instant
-    (a fixed offset labelled with a zone name would otherwise be written as that
-    zone's wall time), and anything else is converted to UTC, which keeps the instant.
+    custom name, a system-only zone, or a ``tzinfo`` Arrow cannot name at all. So a
+    zone is kept only when its Arrow name is an IANA zone that gives the same offset
+    at that instant (a fixed offset labelled with a zone name would otherwise be
+    written as that zone's wall time), and anything else is converted to UTC, which
+    keeps the instant.
 
     Walks dicts, lists and tuples, and builds new containers only where it has to, so
     the caller's rows are never modified.
@@ -416,15 +418,30 @@ def _utc_unnamed_zones(value, _cache: dict | None = None):
 
 
 def _named_zone(tz: datetime.tzinfo):
-    """The IANA zone Arrow names ``tz`` as, or ``None`` if the name resolves to none."""
+    """The IANA zone Arrow names ``tz`` as, or ``None`` if Vortex cannot know it.
+
+    Checked against ``available_timezones()`` rather than by constructing a
+    ``ZoneInfo``: the constructor also loads system-only entries such as ``right/UTC``
+    and ``posix/...``, which Vortex does not carry and panics on.
+    """
     import zoneinfo
 
     import pyarrow as pa
 
     try:
-        return zoneinfo.ZoneInfo(pa.lib.tzinfo_to_string(tz))
+        name = pa.lib.tzinfo_to_string(tz)
     except Exception:
         return None
+    if name not in _available_zone_names():
+        return None
+    return zoneinfo.ZoneInfo(name)
+
+
+@functools.cache
+def _available_zone_names() -> frozenset:
+    import zoneinfo
+
+    return frozenset(zoneinfo.available_timezones())
 
 
 def write_yaml(path: str, rows: list[dict]) -> None:

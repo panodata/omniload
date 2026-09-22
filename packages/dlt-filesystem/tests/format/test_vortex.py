@@ -25,6 +25,14 @@ if importlib.util.find_spec("vortex") is None:
     )
 
 
+def _system_zone(name):
+    """A zone only the system tz database loads (Vortex does not carry it), or None."""
+    try:
+        return zoneinfo.ZoneInfo(name)
+    except (zoneinfo.ZoneInfoNotFoundError, ValueError):
+        return None
+
+
 def _read_via_source(path, suffix=""):
     """Read a local Vortex file end-to-end through the shared filesystem reader."""
     return list(LocalFilesystemSource().dlt_source(f"file://{path}{suffix}", ""))
@@ -266,6 +274,14 @@ def test_read_with_invalid_option(tmp_path):
         pendulum.FixedTimezone(12 * 3600),
         dateutil.tz.tzoffset("CUSTOM", 12 * 3600),
         dateutil.tz.tzoffset("America/New_York", 12 * 3600),
+        pytest.param(
+            _system_zone("right/UTC"),
+            marks=pytest.mark.skipif(
+                _system_zone("right/UTC") is None,
+                reason="no system tz database with right/ zones",
+            ),
+            id="system-only-zone",
+        ),
         zoneinfo.ZoneInfo("Pacific/Auckland"),
     ],
     ids=[
@@ -276,6 +292,7 @@ def test_read_with_invalid_option(tmp_path):
         "pendulum-offset",
         "custom-named-offset",
         "offset-labelled-as-a-zone",
+        "system-only-zone",
         "named-zone",
     ],
 )
@@ -283,8 +300,8 @@ def test_read_adversarial_values_are_normalized(tmp_path, tz):
     """A timezone-aware datetime keeps its instant, and a Decimal passes through.
 
     A fixed offset is the case that matters: Vortex looks a timezone up by name, has
-    none for `+12:00` or a custom name, and panics, so the writer stores the same
-    instant in UTC. A named zone keeps its zone.
+    none for `+12:00`, a custom name or a system-only zone such as `right/UTC`, and
+    panics, so the writer stores the same instant in UTC. A named zone keeps its zone.
     """
     doc = {
         "when": datetime.datetime(2020, 1, 2, 3, 4, 5, tzinfo=tz),
@@ -294,7 +311,7 @@ def test_read_adversarial_values_are_normalized(tmp_path, tz):
     write_vortex(str(path), [doc])
     row = _read_via_source(path)[0]
     assert row["when"] == doc["when"]
-    if isinstance(tz, zoneinfo.ZoneInfo):
+    if isinstance(tz, zoneinfo.ZoneInfo) and tz.key in zoneinfo.available_timezones():
         assert str(row["when"].tzinfo) == tz.key
     else:
         assert row["when"].utcoffset() == datetime.timedelta(0)
