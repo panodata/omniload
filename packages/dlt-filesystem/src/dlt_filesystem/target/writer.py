@@ -8,7 +8,6 @@ read back on the machine that wrote it.
 
 import datetime
 import decimal
-import re
 
 from dlt_filesystem.source.error import MissingDecoderError
 
@@ -354,10 +353,10 @@ def write_vortex(path: str, rows: list[dict]) -> None:
     """Vortex writer.
 
     Zero rows are written as a zero-column table, since ``vortex.array`` cannot infer
-    a schema from an empty list. A datetime carrying a fixed UTC offset is written as
-    the same instant in UTC: Vortex resolves a timezone by name, has no entry for an
-    offset such as ``+12:00``, and aborts with a Rust panic that ``except Exception``
-    does not catch, after truncating the destination.
+    a schema from an empty list. A datetime whose zone Vortex cannot name, such as a
+    fixed offset, is written as the same instant in UTC: Vortex resolves a timezone by
+    name, has no entry for ``+12:00``, and aborts with a Rust panic that
+    ``except Exception`` does not catch, after truncating the destination.
     """
     try:
         import pyarrow as pa
@@ -370,18 +369,20 @@ def write_vortex(path: str, rows: list[dict]) -> None:
             "Install it with: pip install 'dlt-filesystem[vortex]'"
         ) from e
 
-    data = vx.array(_utc_fixed_offsets(rows)) if rows else pa.table({})
+    data = vx.array(_utc_unnamed_zones(rows)) if rows else pa.table({})
     vxio.write(data, path)
 
 
-def _utc_fixed_offsets(value, _cache: dict | None = None):
-    """Return ``value`` with every fixed-offset datetime converted to UTC.
+def _utc_unnamed_zones(value, _cache: dict | None = None):
+    """Return ``value`` with every datetime Vortex cannot name converted to UTC.
 
-    Decided by the timezone name Arrow gives the ``tzinfo``, which is the name Vortex
-    looks up: a named zone (``zoneinfo``, ``pytz``, ``dateutil``, ``pendulum``) keeps
-    it, and a fixed offset from any of those libraries is named ``+HH:MM``. Walks dicts,
-    lists and tuples, and builds new containers only where it has to, so the caller's
-    rows are never modified.
+    Vortex looks a timestamp's zone up by the name Arrow gives its ``tzinfo``, and
+    panics when that is not a zone it knows: a fixed offset (``+12:00``, from
+    ``datetime.timezone``, dateutil's ``tzoffset`` or pendulum's ``FixedTimezone``), a
+    custom name, or a ``tzinfo`` Arrow cannot name at all. So a zone is kept only when
+    its Arrow name resolves as an IANA zone, and anything else is converted to UTC,
+    which keeps the instant. Walks dicts, lists and tuples, and builds new containers
+    only where it has to, so the caller's rows are never modified.
     """
     if _cache is None:
         _cache = {}
@@ -393,25 +394,32 @@ def _utc_fixed_offsets(value, _cache: dict | None = None):
         # classes (dateutil, pendulum) are unhashable.
         entry = _cache.get(id(tz))
         if entry is None:
-            import pyarrow as pa
-
-            fixed = _FIXED_OFFSET.match(pa.lib.tzinfo_to_string(tz)) is not None
-            entry = _cache[id(tz)] = (tz, fixed)
-        return value.astimezone(datetime.timezone.utc) if entry[1] else value
+            entry = _cache[id(tz)] = (tz, _is_named_zone(tz))
+        return value if entry[1] else value.astimezone(datetime.timezone.utc)
     if isinstance(value, dict):
         converted = {
-            key: _utc_fixed_offsets(item, _cache) for key, item in value.items()
+            key: _utc_unnamed_zones(item, _cache) for key, item in value.items()
         }
         return value if all(converted[k] is value[k] for k in value) else converted
     if isinstance(value, (list, tuple)):
-        items = [_utc_fixed_offsets(item, _cache) for item in value]
+        items = [_utc_unnamed_zones(item, _cache) for item in value]
         if all(a is b for a, b in zip(items, value)):
             return value
         return items if isinstance(value, list) else tuple(items)
     return value
 
 
-_FIXED_OFFSET = re.compile(r"^[+-]\d{2}:\d{2}$")
+def _is_named_zone(tz: datetime.tzinfo) -> bool:
+    """Whether Arrow names ``tz`` as a zone the IANA database resolves."""
+    import zoneinfo
+
+    import pyarrow as pa
+
+    try:
+        zoneinfo.ZoneInfo(pa.lib.tzinfo_to_string(tz))
+    except Exception:
+        return False
+    return True
 
 
 def write_yaml(path: str, rows: list[dict]) -> None:

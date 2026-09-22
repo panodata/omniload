@@ -264,6 +264,7 @@ def test_read_with_invalid_option(tmp_path):
         datetime.timezone(datetime.timedelta(hours=-5, minutes=-30)),
         dateutil.tz.tzoffset(None, 12 * 3600),
         pendulum.FixedTimezone(12 * 3600),
+        dateutil.tz.tzoffset("CUSTOM", 12 * 3600),
         zoneinfo.ZoneInfo("Pacific/Auckland"),
     ],
     ids=[
@@ -272,6 +273,7 @@ def test_read_with_invalid_option(tmp_path):
         "fixed-offset-west",
         "dateutil-offset",
         "pendulum-offset",
+        "custom-named-offset",
         "named-zone",
     ],
 )
@@ -279,8 +281,8 @@ def test_read_adversarial_values_are_normalized(tmp_path, tz):
     """A timezone-aware datetime keeps its instant, and a Decimal passes through.
 
     A fixed offset is the case that matters: Vortex looks a timezone up by name, has
-    none for `+12:00`, and panics, so the writer stores the same instant in UTC. A
-    named zone keeps its zone.
+    none for `+12:00` or a custom name, and panics, so the writer stores the same
+    instant in UTC. A named zone keeps its zone.
     """
     doc = {
         "when": datetime.datetime(2020, 1, 2, 3, 4, 5, tzinfo=tz),
@@ -290,7 +292,9 @@ def test_read_adversarial_values_are_normalized(tmp_path, tz):
     write_vortex(str(path), [doc])
     row = _read_via_source(path)[0]
     assert row["when"] == doc["when"]
-    if not isinstance(tz, zoneinfo.ZoneInfo):
+    if isinstance(tz, zoneinfo.ZoneInfo):
+        assert str(row["when"].tzinfo) == tz.key
+    else:
         assert row["when"].utcoffset() == datetime.timedelta(0)
     assert row["amt"] == decimal.Decimal("3.14")
 
@@ -306,11 +310,11 @@ def test_write_fixed_offset_leaves_the_callers_rows_alone(tmp_path):
 
 
 def test_fixed_offsets_are_converted_inside_nested_values():
-    from dlt_filesystem.target.writer import _utc_fixed_offsets
+    from dlt_filesystem.target.writer import _utc_unnamed_zones
 
     east = datetime.timezone(datetime.timedelta(hours=12))
     when = datetime.datetime(2020, 1, 2, tzinfo=east)
-    converted = _utc_fixed_offsets([{"a": {"b": [when]}, "c": (when,)}])
+    converted = _utc_unnamed_zones([{"a": {"b": [when]}, "c": (when,)}])
     assert converted[0]["a"]["b"][0].tzinfo is datetime.timezone.utc
     assert converted[0]["c"][0].tzinfo is datetime.timezone.utc
     assert converted[0]["a"]["b"][0] == when

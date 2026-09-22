@@ -90,8 +90,8 @@ omniload ingest \
 
 Vortex output is available through the local `file://` destination. Columns
 that are absent from an individual source row are written as null values. A
-timestamp carrying a fixed UTC offset, such as `+12:00`, is written as the same
-instant in UTC.
+timestamp whose zone is not a named IANA zone, such as a fixed `+12:00` offset,
+is written as the same instant in UTC.
 
 :::{note}
 dlt stages the rows between the source and the writer, and the staging format
