@@ -354,10 +354,10 @@ def write_vortex(path: str, rows: list[dict]) -> None:
     """Vortex writer.
 
     Zero rows are written as a zero-column table, since ``vortex.array`` cannot infer
-    a schema from an empty list. A datetime whose zone Vortex cannot name, such as a
-    fixed offset, is written as the same instant in UTC: Vortex resolves a timezone by
-    name, has no entry for ``+12:00``, and aborts with a Rust panic that
-    ``except Exception`` does not catch, after truncating the destination.
+    a schema from an empty list. A datetime whose zone is not an IANA zone matching its
+    offset, such as a fixed offset, is written as the same instant in UTC: Vortex
+    resolves a timezone by name, has no entry for ``+12:00``, and aborts with a Rust
+    panic that ``except Exception`` does not catch, after truncating the destination.
     """
     try:
         import pyarrow as pa
