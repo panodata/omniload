@@ -265,6 +265,7 @@ def test_read_with_invalid_option(tmp_path):
         dateutil.tz.tzoffset(None, 12 * 3600),
         pendulum.FixedTimezone(12 * 3600),
         dateutil.tz.tzoffset("CUSTOM", 12 * 3600),
+        dateutil.tz.tzoffset("America/New_York", 12 * 3600),
         zoneinfo.ZoneInfo("Pacific/Auckland"),
     ],
     ids=[
@@ -274,6 +275,7 @@ def test_read_with_invalid_option(tmp_path):
         "dateutil-offset",
         "pendulum-offset",
         "custom-named-offset",
+        "offset-labelled-as-a-zone",
         "named-zone",
     ],
 )

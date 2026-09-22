@@ -380,9 +380,12 @@ def _utc_unnamed_zones(value, _cache: dict | None = None):
     panics when that is not a zone it knows: a fixed offset (``+12:00``, from
     ``datetime.timezone``, dateutil's ``tzoffset`` or pendulum's ``FixedTimezone``), a
     custom name, or a ``tzinfo`` Arrow cannot name at all. So a zone is kept only when
-    its Arrow name resolves as an IANA zone, and anything else is converted to UTC,
-    which keeps the instant. Walks dicts, lists and tuples, and builds new containers
-    only where it has to, so the caller's rows are never modified.
+    its Arrow name resolves as an IANA zone that gives the same offset at that instant
+    (a fixed offset labelled with a zone name would otherwise be written as that
+    zone's wall time), and anything else is converted to UTC, which keeps the instant.
+
+    Walks dicts, lists and tuples, and builds new containers only where it has to, so
+    the caller's rows are never modified.
     """
     if _cache is None:
         _cache = {}
@@ -394,8 +397,11 @@ def _utc_unnamed_zones(value, _cache: dict | None = None):
         # classes (dateutil, pendulum) are unhashable.
         entry = _cache.get(id(tz))
         if entry is None:
-            entry = _cache[id(tz)] = (tz, _is_named_zone(tz))
-        return value if entry[1] else value.astimezone(datetime.timezone.utc)
+            entry = _cache[id(tz)] = (tz, _named_zone(tz))
+        zone = entry[1]
+        if zone is not None and value.astimezone(zone).utcoffset() == value.utcoffset():
+            return value
+        return value.astimezone(datetime.timezone.utc)
     if isinstance(value, dict):
         converted = {
             key: _utc_unnamed_zones(item, _cache) for key, item in value.items()
@@ -409,17 +415,16 @@ def _utc_unnamed_zones(value, _cache: dict | None = None):
     return value
 
 
-def _is_named_zone(tz: datetime.tzinfo) -> bool:
-    """Whether Arrow names ``tz`` as a zone the IANA database resolves."""
+def _named_zone(tz: datetime.tzinfo):
+    """The IANA zone Arrow names ``tz`` as, or ``None`` if the name resolves to none."""
     import zoneinfo
 
     import pyarrow as pa
 
     try:
-        zoneinfo.ZoneInfo(pa.lib.tzinfo_to_string(tz))
+        return zoneinfo.ZoneInfo(pa.lib.tzinfo_to_string(tz))
     except Exception:
-        return False
-    return True
+        return None
 
 
 def write_yaml(path: str, rows: list[dict]) -> None:
