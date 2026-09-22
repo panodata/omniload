@@ -354,15 +354,17 @@ def write_vortex(path: str, rows: list[dict]) -> None:
     """Vortex writer.
 
     Zero rows are written as a zero-column table, since ``vortex.array`` cannot infer
-    a schema from an empty list. A datetime whose zone is not an IANA zone matching its
-    offset, such as a fixed offset, is written as the same instant in UTC: Vortex
-    resolves a timezone by name, has no entry for ``+12:00``, and aborts with a Rust
-    panic that ``except Exception`` does not catch, after truncating the destination.
+    a schema from an empty list. A datetime is written in its own zone only when that
+    is an IANA zone matching its offset and one Vortex's compiled-in zone database
+    carries; anything else, such as a fixed offset, is written as the same instant in
+    UTC. Vortex resolves a timezone by name, has no entry for ``+12:00``, and aborts
+    with a Rust panic that ``except Exception`` does not catch, after truncating the
+    destination.
     """
     try:
         import pyarrow as pa
-        import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment]
-        import vortex.io as vxio  # ty: ignore[unresolved-import,unused-ignore-comment]
+        import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
+        import vortex.io as vxio  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
     except ImportError as e:
         raise MissingDecoderError(
             "Writing Vortex files needs the vortex-data package, which requires "
@@ -380,11 +382,11 @@ def _utc_unnamed_zones(value, _cache: dict | None = None):
     Vortex looks a timestamp's zone up by the name Arrow gives its ``tzinfo``, and
     panics when that is not a zone it knows: a fixed offset (``+12:00``, from
     ``datetime.timezone``, dateutil's ``tzoffset`` or pendulum's ``FixedTimezone``), a
-    custom name, a system-only zone, or a ``tzinfo`` Arrow cannot name at all. So a
-    zone is kept only when its Arrow name is an IANA zone that gives the same offset
-    at that instant (a fixed offset labelled with a zone name would otherwise be
-    written as that zone's wall time), and anything else is converted to UTC, which
-    keeps the instant.
+    custom name, a system-only zone, a zone newer than Vortex's own zone database, or
+    a ``tzinfo`` Arrow cannot name at all. So a zone is kept only when its Arrow name
+    is an IANA zone Vortex writes and that gives the same offset at that instant (a
+    fixed offset labelled with a zone name would otherwise be written as that zone's
+    wall time), and anything else is converted to UTC, which keeps the instant.
 
     Walks dicts, lists and tuples, and builds new containers only where it has to, so
     the caller's rows are never modified.
@@ -456,13 +458,11 @@ def _vortex_writes_zone(name: str) -> bool:
     """
     import zoneinfo
 
-    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment]
+    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
 
     probe = [{"t": datetime.datetime(2000, 1, 1, tzinfo=zoneinfo.ZoneInfo(name))}]
     try:
         vx.compress(vx.array(probe))
-    except Exception:
-        return False
     except BaseException as e:
         if type(e).__name__ == "PanicException":
             return False

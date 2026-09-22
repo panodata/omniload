@@ -161,7 +161,7 @@ def test_read_chunks_never_exceed_chunksize(tmp_path, monkeypatch):
     vortex-data 0.86 honours `batch_size` exactly, so the scan is made to return one
     oversized batch here; otherwise the cap would never be exercised.
     """
-    import vortex as vx
+    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
 
     path = tmp_path / "data.vortex"
     write_vortex(str(path), [{"id": 0}])
@@ -186,7 +186,7 @@ def test_read_chunks_never_exceed_chunksize(tmp_path, monkeypatch):
 def test_read_passes_chunksize_to_the_scan(tmp_path, monkeypatch):
     """The scan batches at `chunksize` itself, so the slice loop is a cap, not the
     mechanism."""
-    import vortex as vx
+    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
 
     path = tmp_path / "data.vortex"
     write_vortex(str(path), [{"id": i} for i in range(5)])
@@ -351,6 +351,26 @@ def test_a_zone_the_host_knows_but_vortex_does_not_is_written_as_utc(
     assert row["when"].utcoffset() == datetime.timedelta(0)
 
 
+def test_a_failed_zone_probe_propagates_and_is_not_cached(monkeypatch):
+    """Only Vortex's panic means "unknown zone". Any other failure is raised, and
+    leaves nothing cached that would demote the zone to UTC for the rest of the run."""
+    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
+
+    import dlt_filesystem.target.writer as writer
+
+    writer._vortex_writes_zone.cache_clear()
+    real_compress = vx.compress
+
+    def failing_compress(*args, **kwargs):
+        raise MemoryError("transient")
+
+    monkeypatch.setattr(vx, "compress", failing_compress)
+    with pytest.raises(MemoryError):
+        writer._vortex_writes_zone("Pacific/Auckland")
+    monkeypatch.setattr(vx, "compress", real_compress)
+    assert writer._vortex_writes_zone("Pacific/Auckland") is True
+
+
 def test_fixed_offsets_are_converted_inside_nested_values():
     from dlt_filesystem.target.writer import _utc_unnamed_zones
 
@@ -363,7 +383,7 @@ def test_fixed_offsets_are_converted_inside_nested_values():
 
 
 def test_write_preserves_sparse_rows_and_column_order(tmp_path):
-    import vortex as vx
+    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
 
     ROWS = [
         {"id": 1, "name": "Zoë"},
@@ -383,7 +403,7 @@ def test_write_preserves_sparse_rows_and_column_order(tmp_path):
 
 def test_write_no_rows_success(tmp_path):
     """Empty rows are written as a zero-column Vortex table."""
-    import vortex as vx
+    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
 
     path = tmp_path / "empty.vortex"
     writer_for_format("vortex")(str(path), [])
@@ -395,7 +415,7 @@ def test_write_no_rows_success(tmp_path):
 
 def test_write_nonempty_fieldless_rows_success(tmp_path):
     """Nonempty fieldless rows can be represented in Vortex."""
-    import vortex as vx
+    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
 
     path = tmp_path / "fieldless.vortex"
     writer_for_format("vortex")(str(path), [{}, {}])
@@ -432,7 +452,7 @@ def test_write_u64_too_large(tmp_path):
 
 def test_write_nested(tmp_path):
     """dlt keeps a nested column as one JSON column, so this is how the value arrives."""
-    import vortex as vx
+    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
 
     path = tmp_path / "nested.vortex"
     write_vortex(str(path), [{"s": {"n": 42}}])
@@ -451,7 +471,7 @@ def test_write_extended_types(tmp_path):
     `binary_view` Arrow type. A `timedelta` is not writable: vortex-data has no array
     encoding for an Arrow duration.
     """
-    import vortex as vx
+    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
 
     path = tmp_path / "all-types.vortex"
     row = {
