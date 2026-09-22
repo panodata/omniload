@@ -328,6 +328,29 @@ def test_write_fixed_offset_leaves_the_callers_rows_alone(tmp_path):
     assert rows[0]["when"].tzinfo is when.tzinfo
 
 
+def test_a_zone_the_host_knows_but_vortex_does_not_is_written_as_utc(
+    tmp_path, monkeypatch
+):
+    """The host's zone list and Vortex's compiled-in one can disagree: a zone newer than
+    Vortex's copy is on the list and panics on write. `right/UTC` stands in for one,
+    listed here as available, since Vortex rejects it the same way."""
+    import dlt_filesystem.target.writer as writer
+
+    zone = _system_zone("right/UTC")
+    if zone is None:
+        pytest.skip("no system tz database with right/ zones")
+    listed = writer._available_zone_names() | {"right/UTC"}
+    monkeypatch.setattr(writer, "_available_zone_names", lambda: listed)
+    writer._vortex_writes_zone.cache_clear()
+
+    when = datetime.datetime(2020, 1, 2, 3, 4, 5, tzinfo=zone)
+    path = tmp_path / "unknown-zone.vortex"
+    write_vortex(str(path), [{"when": when}])
+    row = _read_via_source(path)[0]
+    assert row["when"] == when
+    assert row["when"].utcoffset() == datetime.timedelta(0)
+
+
 def test_fixed_offsets_are_converted_inside_nested_values():
     from dlt_filesystem.target.writer import _utc_unnamed_zones
 

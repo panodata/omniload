@@ -418,11 +418,12 @@ def _utc_unnamed_zones(value, _cache: dict | None = None):
 
 
 def _named_zone(tz: datetime.tzinfo):
-    """The IANA zone Arrow names ``tz`` as, or ``None`` if Vortex cannot know it.
+    """The IANA zone Arrow names ``tz`` as, or ``None`` if Vortex cannot write it.
 
-    Checked against ``available_timezones()`` rather than by constructing a
-    ``ZoneInfo``: the constructor also loads system-only entries such as ``right/UTC``
-    and ``posix/...``, which Vortex does not carry and panics on.
+    ``available_timezones()`` filters out names ``ZoneInfo`` loads but no IANA release
+    carries, such as ``right/UTC``. It reflects the host's zone database, though, and
+    Vortex compiles in its own, so a zone newer than that copy would still pass. The
+    final word is Vortex's, asked once per name.
     """
     import zoneinfo
 
@@ -432,7 +433,7 @@ def _named_zone(tz: datetime.tzinfo):
         name = pa.lib.tzinfo_to_string(tz)
     except Exception:
         return None
-    if name not in _available_zone_names():
+    if name not in _available_zone_names() or not _vortex_writes_zone(name):
         return None
     return zoneinfo.ZoneInfo(name)
 
@@ -442,6 +443,31 @@ def _available_zone_names() -> frozenset:
     import zoneinfo
 
     return frozenset(zoneinfo.available_timezones())
+
+
+@functools.cache
+def _vortex_writes_zone(name: str) -> bool:
+    """Whether Vortex writes a timestamp in zone ``name``, tried in memory.
+
+    Vortex fails on an unknown zone with a Rust panic, which surfaces as
+    ``pyo3_runtime.PanicException`` and derives from ``BaseException``, so it is
+    caught by type name; anything else propagates. ``compress`` is the step that
+    ``vortex.io.write`` runs, and where an unknown zone name fails.
+    """
+    import zoneinfo
+
+    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment]
+
+    probe = [{"t": datetime.datetime(2000, 1, 1, tzinfo=zoneinfo.ZoneInfo(name))}]
+    try:
+        vx.compress(vx.array(probe))
+    except Exception:
+        return False
+    except BaseException as e:
+        if type(e).__name__ == "PanicException":
+            return False
+        raise
+    return True
 
 
 def write_yaml(path: str, rows: list[dict]) -> None:
