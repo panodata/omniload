@@ -189,3 +189,19 @@ def test_the_pages_that_stopped_naming_the_write_set_have_not_regrown_it():
         if stale.search(page.read_text())
     ]
     assert offenders == []
+
+
+def test_vortex_writer_without_the_extra_names_the_install(monkeypatch, tmp_path):
+    """`vortex` stays advertised on the write side, like `yaml`, so a missing package
+    has to surface as an install hint rather than a bare `ModuleNotFoundError`."""
+    import sys
+
+    from dlt_filesystem.source.error import MissingDecoderError
+
+    for name in [m for m in sys.modules if m == "vortex" or m.startswith("vortex.")]:
+        monkeypatch.delitem(sys.modules, name)
+    monkeypatch.setitem(sys.modules, "vortex", None)
+    with pytest.raises(
+        MissingDecoderError, match=r"pip install 'dlt-filesystem\[vortex\]'"
+    ):
+        writer_for_format("vortex")(str(tmp_path / "out.vortex"), [{"id": 1}])

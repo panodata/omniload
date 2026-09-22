@@ -6,9 +6,8 @@ rejects anything else, and Polars defaults to it), so a locale-encoded export wo
 read back on the machine that wrote it.
 """
 
+import datetime
 import decimal
-from pathlib import Path
-from typing import Union
 
 from dlt_filesystem.source.error import MissingDecoderError
 
@@ -350,15 +349,49 @@ def write_parquet(path: str, rows: list[dict]) -> None:
     _narrow_wide_integers(_frame(rows)).write_parquet(path, compression="snappy")
 
 
-def write_vortex(path: Union[Path, str], rows: list[dict]) -> None:
-    """Vortex writer."""
+def write_vortex(path: str, rows: list[dict]) -> None:
+    """Vortex writer.
 
-    import pyarrow as pa
-    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
-    import vortex.io as vxio  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
+    Zero rows are written as a zero-column table, since ``vortex.array`` cannot infer
+    a schema from an empty list. A datetime carrying a fixed UTC offset is written as
+    the same instant in UTC: Vortex resolves a timezone by name, has no entry for an
+    offset such as ``+12:00``, and aborts with a Rust panic that ``except Exception``
+    does not catch, after truncating the destination.
+    """
+    try:
+        import pyarrow as pa
+        import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment]
+        import vortex.io as vxio  # ty: ignore[unresolved-import,unused-ignore-comment]
+    except ImportError as e:
+        raise MissingDecoderError(
+            "Writing Vortex files needs the vortex-data package, which requires "
+            "Python 3.11 or newer. "
+            "Install it with: pip install 'dlt-filesystem[vortex]'"
+        ) from e
 
-    path = Path(path)
-    vxio.write(vx.array(rows) if rows else pa.table({}), str(path))
+    data = vx.array(_utc_fixed_offsets(rows)) if rows else pa.table({})
+    vxio.write(data, path)
+
+
+def _utc_fixed_offsets(value):
+    """Return ``value`` with every fixed-offset datetime converted to UTC.
+
+    Walks dicts and lists, and builds new containers only where it has to, so the
+    caller's rows are never modified. A named zone (``zoneinfo``) and a naive datetime
+    are left alone, since Vortex handles both.
+    """
+    if isinstance(value, datetime.datetime):
+        tz = value.tzinfo
+        if isinstance(tz, datetime.timezone) and tz is not datetime.timezone.utc:
+            return value.astimezone(datetime.timezone.utc)
+        return value
+    if isinstance(value, dict):
+        converted = {key: _utc_fixed_offsets(item) for key, item in value.items()}
+        return value if all(converted[k] is value[k] for k in value) else converted
+    if isinstance(value, list):
+        converted = [_utc_fixed_offsets(item) for item in value]
+        return value if all(a is b for a, b in zip(converted, value)) else converted
+    return value
 
 
 def write_yaml(path: str, rows: list[dict]) -> None:

@@ -176,3 +176,61 @@ def test_unresolvable_reader_name_is_rejected_when_source_builds():
         ),
     ):
         _reader_source()
+
+
+def test_every_registered_reader_has_a_typing_stub_entry():
+    """`ReadersSource` is a hand-written `TYPE_CHECKING` stub, so nothing ties it to the
+    registry at runtime. A reader missing from it has no signature for a type checker,
+    which reads it as an attribute that does not exist."""
+    import ast
+
+    from dlt_filesystem.source.format import readers as readers_module
+
+    tree = ast.parse(inspect.getsource(readers_module))
+    stub = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ClassDef) and node.name == "ReadersSource"
+    )
+    stubbed = {node.name for node in stub.body if isinstance(node, ast.FunctionDef)}
+    registered = {registration.reader_name for registration in READER_REGISTRATIONS}
+    assert registered - stubbed == set()
+
+
+def _without_vortex(monkeypatch):
+    """Make `vortex` unimportable and invisible to `find_spec`, as on Python 3.10 or an
+    install without the extra."""
+    import importlib.util
+    import sys
+
+    real_find_spec = importlib.util.find_spec
+
+    def fake_find_spec(name, *args, **kwargs):
+        if name == "vortex" or name.startswith("vortex."):
+            return None
+        return real_find_spec(name, *args, **kwargs)
+
+    monkeypatch.setattr(importlib.util, "find_spec", fake_find_spec)
+    for name in [m for m in sys.modules if m == "vortex" or m.startswith("vortex.")]:
+        monkeypatch.delitem(sys.modules, name)
+    monkeypatch.setitem(sys.modules, "vortex", None)
+
+
+def test_vortex_is_advertised_only_when_installed(monkeypatch):
+    """The format stays routable without its package, so the reader can raise the
+    install hint, but a supported-formats message must not claim it."""
+    _without_vortex(monkeypatch)
+    assert "vortex" not in advertised_file_formats()
+    assert FORMAT_TO_READER["vortex"] == "read_vortex"
+    assert "vortex" in ADVERTISED_FILE_FORMATS
+
+
+def test_vortex_reader_without_the_extra_names_the_install(monkeypatch):
+    from dlt_filesystem.source.error import MissingDecoderError
+    from dlt_filesystem.source.format.readers import read_vortex
+
+    _without_vortex(monkeypatch)
+    with pytest.raises(
+        MissingDecoderError, match=r"pip install 'dlt-filesystem\[vortex\]'"
+    ):
+        list(read_vortex(iter([])))

@@ -159,7 +159,7 @@ optional-dependencies.develop = [
 optional-dependencies.filesystem = [
   "dlt-filesystem",
 ]
-optional-dependencies.full = [ "omniload[adbcbridge,ibm-db,iterable,odbc,oracle,reshape]" ]
+optional-dependencies.full = [ "omniload[adbcbridge,ibm-db,iterable,odbc,oracle,reshape,vortex]" ]
 optional-dependencies.ibm-db = [
   "ibm-db<4; platform_machine!='aarch64'",
   "ibm-db-sa<0.5; platform_machine!='aarch64'",
@@ -211,6 +211,11 @@ optional-dependencies.test = [
   "testcontainers[azurite,mysql,postgres]>=4.9.1,<4.16",
   "types-requests<3",
   "xlsxwriter<4",
+]
+# Vortex columnar files, Python 3.11+. Declared by the distribution that imports it;
+# see `packages/dlt-filesystem/pyproject.toml`.
+optional-dependencies.vortex = [
+  "dlt-filesystem[vortex]",
 ]
 urls.Changelog = "https://omniload.readthedocs.io/changelog.html"
 urls.Documentation = "https://omniload.readthedocs.io/"

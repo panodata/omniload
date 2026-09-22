@@ -16,6 +16,7 @@ import codecs
 import io
 import shutil
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -35,7 +36,11 @@ from dlt.common.typing import copy_sig
 from dlt.sources import DltResource, DltSource, TDataItems
 from dlt.sources.filesystem import FileItemDict
 
-from dlt_filesystem.source.error import WorksheetNameCollisionError, _safe_location
+from dlt_filesystem.source.error import (
+    MissingDecoderError,
+    WorksheetNameCollisionError,
+    _safe_location,
+)
 from dlt_filesystem.source.format.helpers import fetch_arrow, fetch_json
 from dlt_filesystem.source.format.iterable_codec import read_via_iterable
 from dlt_filesystem.source.format.settings import DEFAULT_CHUNK_SIZE
@@ -907,36 +912,66 @@ def read_vortex(
     items: Iterator[FileItemDict],
     chunksize: int = 5000,
 ) -> Iterator[TDataItems]:
-    """Vortex reader using pyarrow.
+    """Vortex reader.
+
+    The file is scanned in batches of ``chunksize`` rows, and no chunk handed downstream
+    is larger than that.
 
     Args:
-        chunksize (int, optional): The number of rows to read at once. Defaults to 5000.
+        chunksize (int, optional): The number of rows to yield at once. Defaults to 5000.
 
     Returns:
         TDataItem: The file content
     """
     chunksize = _validated_chunksize(chunksize)
-    import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
+    vx = _import_vortex("Reading")
 
     for file_obj in items:
+        with _vortex_local_path(file_obj) as path:
+            for batch in vx.open(path).scan(batch_size=chunksize).to_arrow():
+                for offset in range(0, batch.num_rows, chunksize):
+                    yield batch.slice(offset, chunksize).to_pylist()
+
+
+def _import_vortex(action: str) -> Any:
+    """Import ``vortex``, or raise the install hint the other optional formats give."""
+    try:
+        import vortex  # ty: ignore[unresolved-import,unused-ignore-comment]
+    except ImportError as e:
+        raise MissingDecoderError(
+            f"{action} Vortex files needs the vortex-data package, which requires "
+            "Python 3.11 or newer. Install it with: pip install 'dlt-filesystem[vortex]'"
+        ) from e
+    return vortex
+
+
+@contextmanager
+def _vortex_local_path(file_obj: Any) -> Iterator[str]:
+    """Yield a local path for ``file_obj`` that ``vortex.open`` can read.
+
+    ``vortex.open`` takes a path string only, not a file handle. A plain local file is
+    read in place. Anything else, a remote object or a gzipped file on any filesystem,
+    is copied through the item's own ``open()`` into a temporary file first, which is
+    what decompresses it and what reuses the source's authentication. The source handle
+    is closed once the copy is done.
+    """
+    if (
+        isinstance(file_obj, FileItemDict)
+        and "file" in file_obj.fsspec.protocol
+        and file_obj.get("encoding") != "gzip"
+    ):
+        yield file_obj.local_file_path
+        return
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        path = Path(temp_dir) / "staged.vortex"
         if isinstance(file_obj, FileItemDict):
-            if "file" in file_obj.fsspec.protocol:
-                path = file_obj.local_file_path
-            else:
-                with file_obj.open(compression="disable") as source_file:
-                    with tempfile.TemporaryDirectory() as temp_dir:
-                        path = Path(temp_dir) / "remote.vortex"
-                        with path.open("wb") as staged_file:
-                            shutil.copyfileobj(source_file, staged_file)
-                        for batch in vx.open(str(path)).scan().to_arrow():
-                            for offset in range(0, batch.num_rows, chunksize):
-                                yield batch.slice(offset, chunksize).to_pylist()
-                continue
-        elif hasattr(file_obj, "_path"):
-            path = file_obj._path
-        for batch in vx.open(str(path)).scan().to_arrow():
-            for offset in range(0, batch.num_rows, chunksize):
-                yield batch.slice(offset, chunksize).to_pylist()
+            source = file_obj.open(compression="auto")
+        else:
+            source = file_obj.open()
+        with source as source_file, path.open("wb") as staged_file:
+            shutil.copyfileobj(source_file, staged_file)
+        yield str(path)
 
 
 def read_csv_duckdb(
@@ -1038,6 +1073,10 @@ if TYPE_CHECKING:
         @copy_sig(read_parquet)
         def read_parquet(self) -> DltResource:
             """Parquet reader resource (pyarrow)."""
+
+        @copy_sig(read_vortex)
+        def read_vortex(self) -> DltResource:
+            """Vortex reader resource (vortex-data)."""
 
         @copy_sig(read_csv_duckdb)
         def read_csv_duckdb(self) -> DltResource:
