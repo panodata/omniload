@@ -3,7 +3,10 @@ import decimal
 import gzip
 import importlib.util
 import re
+import zoneinfo
 
+import dateutil.tz
+import pendulum
 import pyarrow as pa
 import pytest
 from dlt.extract.exceptions import ResourceExtractionError
@@ -155,6 +158,43 @@ def test_read_chunks_never_exceed_chunksize(tmp_path):
     assert sum(len(chunk) for chunk in chunks) == 50_000
 
 
+def test_read_passes_chunksize_to_the_scan(tmp_path, monkeypatch):
+    """The scan batches at `chunksize` itself, so the slice loop is a cap, not the
+    mechanism."""
+    import vortex as vx
+
+    path = tmp_path / "data.vortex"
+    write_vortex(str(path), [{"id": i} for i in range(5)])
+    requested = []
+    real_open = vx.open
+
+    class Spy:
+        def __init__(self, inner):
+            self._inner = inner
+
+        def scan(self, *args, **kwargs):
+            requested.append(kwargs.get("batch_size"))
+            return self._inner.scan(*args, **kwargs)
+
+    monkeypatch.setattr(vx, "open", lambda *a, **k: Spy(real_open(*a, **k)))
+    list(read_vortex(iter([FileItemStub(path)]), chunksize=2))  # ty: ignore[invalid-argument-type]
+    assert requested == [2]
+
+
+def test_read_local_file_in_place(tmp_path, monkeypatch):
+    """A plain local file is opened where it is, with no staged copy."""
+    import tempfile
+
+    path = tmp_path / "local.vortex"
+    write_vortex(str(path), [{"id": 1}])
+
+    def no_staging(*args, **kwargs):
+        raise AssertionError("a plain local file was staged")
+
+    monkeypatch.setattr(tempfile, "TemporaryDirectory", no_staging)
+    assert _read_via_source(path) == [{"id": 1}]
+
+
 def test_read_an_item_without_a_path_raises(tmp_path):
     """An item the reader cannot open fails loudly, rather than re-reading the file before it."""
     path = tmp_path / "one.vortex"
@@ -205,14 +245,25 @@ def test_read_with_invalid_option(tmp_path):
         datetime.timezone.utc,
         datetime.timezone(datetime.timedelta(hours=12)),
         datetime.timezone(datetime.timedelta(hours=-5, minutes=-30)),
+        dateutil.tz.tzoffset(None, 12 * 3600),
+        pendulum.FixedTimezone(12 * 3600),
+        zoneinfo.ZoneInfo("Pacific/Auckland"),
     ],
-    ids=["utc", "fixed-offset-east", "fixed-offset-west"],
+    ids=[
+        "utc",
+        "fixed-offset-east",
+        "fixed-offset-west",
+        "dateutil-offset",
+        "pendulum-offset",
+        "named-zone",
+    ],
 )
 def test_read_adversarial_values_are_normalized(tmp_path, tz):
     """A timezone-aware datetime keeps its instant, and a Decimal passes through.
 
     A fixed offset is the case that matters: Vortex looks a timezone up by name, has
-    none for `+12:00`, and panics, so the writer stores the same instant in UTC.
+    none for `+12:00`, and panics, so the writer stores the same instant in UTC. A
+    named zone keeps its zone.
     """
     doc = {
         "when": datetime.datetime(2020, 1, 2, 3, 4, 5, tzinfo=tz),
@@ -222,7 +273,8 @@ def test_read_adversarial_values_are_normalized(tmp_path, tz):
     write_vortex(str(path), [doc])
     row = _read_via_source(path)[0]
     assert row["when"] == doc["when"]
-    assert row["when"].utcoffset() == datetime.timedelta(0)
+    if not isinstance(tz, zoneinfo.ZoneInfo):
+        assert row["when"].utcoffset() == datetime.timedelta(0)
     assert row["amt"] == decimal.Decimal("3.14")
 
 
@@ -230,10 +282,21 @@ def test_write_fixed_offset_leaves_the_callers_rows_alone(tmp_path):
     when = datetime.datetime(
         2020, 1, 2, tzinfo=datetime.timezone(datetime.timedelta(hours=12))
     )
-    rows = [{"when": when, "nested": {"at": [when]}}]
+    rows = [{"when": when, "nested": {"at": [when], "pair": (when, 1)}}]
     write_vortex(str(tmp_path / "out.vortex"), rows)
-    assert rows == [{"when": when, "nested": {"at": [when]}}]
+    assert rows == [{"when": when, "nested": {"at": [when], "pair": (when, 1)}}]
     assert rows[0]["when"].tzinfo is when.tzinfo
+
+
+def test_fixed_offsets_are_converted_inside_nested_values():
+    from dlt_filesystem.target.writer import _utc_fixed_offsets
+
+    east = datetime.timezone(datetime.timedelta(hours=12))
+    when = datetime.datetime(2020, 1, 2, tzinfo=east)
+    converted = _utc_fixed_offsets([{"a": {"b": [when]}, "c": (when,)}])
+    assert converted[0]["a"]["b"][0].tzinfo is datetime.timezone.utc
+    assert converted[0]["c"][0].tzinfo is datetime.timezone.utc
+    assert converted[0]["a"]["b"][0] == when
 
 
 def test_write_preserves_sparse_rows_and_column_order(tmp_path):

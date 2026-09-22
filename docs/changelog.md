@@ -23,9 +23,9 @@
   and stays, because the supported floor is `fsspec>=2024.6`.
 
 - **Filesystem: Vortex files, read and write.** `.vortex` (and `.vortex.gz`) files
-  read on every filesystem source, staged to a local temporary file first because
-  the Vortex library opens files by path only, and the local `file://` destination
-  writes them. Opt-in through the new `vortex` extra, which needs Python 3.11 or
+  read on every filesystem source, and the local `file://` destination writes them.
+  A remote or gzipped file is staged to a local temporary file first, because the
+  Vortex library opens files by path only. Opt-in through the new `vortex` extra, which needs Python 3.11 or
   newer and is included in `full`.
 
 ## 2026/09/17 v0.17.0

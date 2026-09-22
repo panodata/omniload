@@ -954,10 +954,14 @@ def _vortex_local_path(file_obj: Any) -> Iterator[str]:
     is copied through the item's own ``open()`` into a temporary file first, which is
     what decompresses it and what reuses the source's authentication. The source handle
     is closed once the copy is done.
+
+    "Local" is decided by the item's ``file_url`` scheme, which is what
+    ``FileItemDict.local_file_path`` converts, rather than by the filesystem's
+    protocol: the local source's wrapper reports ``local``, not ``file``.
     """
     if (
         isinstance(file_obj, FileItemDict)
-        and "file" in file_obj.fsspec.protocol
+        and str(file_obj.get("file_url", "")).startswith("file://")
         and file_obj.get("encoding") != "gzip"
     ):
         yield file_obj.local_file_path

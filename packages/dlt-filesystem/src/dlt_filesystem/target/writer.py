@@ -8,6 +8,7 @@ read back on the machine that wrote it.
 
 import datetime
 import decimal
+import re
 
 from dlt_filesystem.source.error import MissingDecoderError
 
@@ -373,25 +374,44 @@ def write_vortex(path: str, rows: list[dict]) -> None:
     vxio.write(data, path)
 
 
-def _utc_fixed_offsets(value):
+def _utc_fixed_offsets(value, _cache: dict | None = None):
     """Return ``value`` with every fixed-offset datetime converted to UTC.
 
-    Walks dicts and lists, and builds new containers only where it has to, so the
-    caller's rows are never modified. A named zone (``zoneinfo``) and a naive datetime
-    are left alone, since Vortex handles both.
+    Decided by the timezone name Arrow gives the ``tzinfo``, which is the name Vortex
+    looks up: a named zone (``zoneinfo``, ``pytz``, ``dateutil``, ``pendulum``) keeps
+    it, and a fixed offset from any of those libraries is named ``+HH:MM``. Walks dicts,
+    lists and tuples, and builds new containers only where it has to, so the caller's
+    rows are never modified.
     """
+    if _cache is None:
+        _cache = {}
     if isinstance(value, datetime.datetime):
         tz = value.tzinfo
-        if isinstance(tz, datetime.timezone) and tz is not datetime.timezone.utc:
-            return value.astimezone(datetime.timezone.utc)
-        return value
+        if tz is None:
+            return value
+        # Keyed by identity, holding the tzinfo so the id stays valid: several tzinfo
+        # classes (dateutil, pendulum) are unhashable.
+        entry = _cache.get(id(tz))
+        if entry is None:
+            import pyarrow as pa
+
+            fixed = _FIXED_OFFSET.match(pa.lib.tzinfo_to_string(tz)) is not None
+            entry = _cache[id(tz)] = (tz, fixed)
+        return value.astimezone(datetime.timezone.utc) if entry[1] else value
     if isinstance(value, dict):
-        converted = {key: _utc_fixed_offsets(item) for key, item in value.items()}
+        converted = {
+            key: _utc_fixed_offsets(item, _cache) for key, item in value.items()
+        }
         return value if all(converted[k] is value[k] for k in value) else converted
-    if isinstance(value, list):
-        converted = [_utc_fixed_offsets(item) for item in value]
-        return value if all(a is b for a, b in zip(converted, value)) else converted
+    if isinstance(value, (list, tuple)):
+        items = [_utc_fixed_offsets(item, _cache) for item in value]
+        if all(a is b for a, b in zip(items, value)):
+            return value
+        return items if isinstance(value, list) else tuple(items)
     return value
+
+
+_FIXED_OFFSET = re.compile(r"^[+-]\d{2}:\d{2}$")
 
 
 def write_yaml(path: str, rows: list[dict]) -> None:
