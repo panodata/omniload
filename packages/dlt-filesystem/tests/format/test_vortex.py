@@ -147,15 +147,32 @@ def test_read_with_chunksize_flushes_each_file_remainder(tmp_path):
     assert [[row["id"] for row in chunk] for chunk in chunks] == [[1, 2], [3], [4, 5]]
 
 
-def test_read_chunks_never_exceed_chunksize(tmp_path):
-    """Vortex's own batching is a hint; the reader caps every chunk itself."""
-    path = tmp_path / "many.vortex"
-    write_vortex(str(path), [{"id": i} for i in range(50_000)])
+def test_read_chunks_never_exceed_chunksize(tmp_path, monkeypatch):
+    """The reader caps every chunk itself, whatever batch size the scan returns.
+
+    vortex-data 0.86 honours `batch_size` exactly, so the scan is made to return one
+    oversized batch here; otherwise the cap would never be exercised.
+    """
+    import vortex as vx
+
+    path = tmp_path / "data.vortex"
+    write_vortex(str(path), [{"id": 0}])
+    oversized = pa.RecordBatch.from_pylist([{"id": i} for i in range(7)])
+
+    class OneBigBatch:
+        def scan(self, *args, **kwargs):
+            class Batches:
+                def to_arrow(self):
+                    return iter([oversized])
+
+            return Batches()
+
+    monkeypatch.setattr(vx, "open", lambda *a, **k: OneBigBatch())
     chunks = list(
-        read_vortex(iter([FileItemStub(path)]), chunksize=3000)  # ty: ignore[invalid-argument-type]
+        read_vortex(iter([FileItemStub(path)]), chunksize=3)  # ty: ignore[invalid-argument-type]
     )
-    assert max(len(chunk) for chunk in chunks) <= 3000
-    assert sum(len(chunk) for chunk in chunks) == 50_000
+    assert [len(chunk) for chunk in chunks] == [3, 3, 1]
+    assert [row["id"] for chunk in chunks for row in chunk] == list(range(7))
 
 
 def test_read_passes_chunksize_to_the_scan(tmp_path, monkeypatch):

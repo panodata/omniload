@@ -102,17 +102,19 @@ def _advertised_formats(
     return tuple(registration.format_keys[0] for registration in registrations)
 
 
-# `BASE_FILE_FORMATS` stood here and was read only by `advertised_file_formats()`, which
-# now reads `ADVERTISED_FILE_FORMATS` instead. It is dropped rather than left as a name
-# with no reader; the per-tier maps it was one of are still built where they are used.
+# `BASE_FILE_FORMATS` stood here and was read only by `advertised_file_formats()`. It is
+# dropped rather than left as a name with no reader; the per-tier maps it was one of are
+# still built where they are used.
 ITERABLE_FILE_FORMATS = _build_format_map(ITERABLE_READER_REGISTRATIONS)
 FORMAT_TO_READER = _build_format_map(
     BASE_READER_REGISTRATIONS + ITERABLE_READER_REGISTRATIONS
 )
 SUPPORTED_FILE_FORMATS = tuple(FORMAT_TO_READER)
 
-#: What the base half of the "supported formats" message names: one entry per base
-#: reader, aliases excluded. Every key still routes -- see ``FORMAT_TO_READER``.
+#: One entry per base reader, aliases excluded, whether or not a reader's ``requires``
+#: package is installed. The "supported formats" message names the installed subset of
+#: this, which ``advertised_file_formats()`` computes per call. Every key still routes --
+#: see ``FORMAT_TO_READER``.
 ADVERTISED_FILE_FORMATS = _advertised_formats(BASE_READER_REGISTRATIONS)
 
 
@@ -139,13 +141,13 @@ def advertised_file_formats() -> tuple[str, ...]:
         installed_iterable_formats,
     )
 
-    base = tuple(
-        registration.format_keys[0]
+    installed = tuple(
+        registration
         for registration in BASE_READER_REGISTRATIONS
         if registration.requires is None
         or importlib.util.find_spec(registration.requires) is not None
     )
-    return base + installed_iterable_formats()
+    return _advertised_formats(installed) + installed_iterable_formats()
 
 
 def supported_file_format_message(source_name: str) -> str:

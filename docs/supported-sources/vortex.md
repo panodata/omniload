@@ -18,8 +18,7 @@ pip install 'omniload[vortex]'
 ```
 
 The `full` extra includes it. If a Vortex file is read or written without the
-extra installed, `omniload` fails with an error naming the exact `pip install`
-to run.
+extra installed, `omniload` fails with an error naming the extra to install.
 
 ## Where it works
 
