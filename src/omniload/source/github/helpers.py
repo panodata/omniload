@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterator, List, Optional, Tuple, cast
+from typing import Iterator, List, Optional, Tuple
 
 from dlt.common.typing import DictStrAny, StrAny
 from dlt.common.utils import chunks
@@ -117,11 +117,11 @@ def get_reactions_data(
 
 
 def _extract_top_connection(data: StrAny, node_type: str) -> StrAny:
-    assert isinstance(data, dict) and len(data) == 1, (  # noqa: S101
+    assert isinstance(data, dict) and len(data) == 1, (
         f"The data with list of {node_type} must be a dictionary and contain only one element"
     )
-    data = cast(StrAny, next(iter(data.values())))
-    return data[node_type]
+    data = next(iter(data.values()))
+    return data[node_type]  # type: ignore
 
 
 def _extract_nested_nodes(item: DictStrAny) -> DictStrAny:
@@ -159,11 +159,7 @@ def _run_graphql_query(
 
 
 def _get_graphql_pages(
-    access_token: str,
-    query: str,
-    variables: DictStrAny,
-    node_type: str,
-    max_items: Optional[int] = None,
+    access_token: str, query: str, variables: DictStrAny, node_type: str, max_items: int
 ) -> Iterator[List[DictStrAny]]:
     items_count = 0
     while True:
@@ -186,7 +182,7 @@ def _get_graphql_pages(
         variables["page_after"] = _extract_top_connection(data, node_type)["pageInfo"][
             "endCursor"
         ]
-        if max_items is not None and items_count >= max_items:
+        if max_items and items_count >= max_items:
             print(f"Max items limit reached: {items_count} >= {max_items}")
             return
 

@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,32 +14,31 @@
 
 """Reads messages from Kinesis queue."""
 
-from typing import Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import dlt
 from dlt.common import json, pendulum
 from dlt.common.configuration.specs import AwsCredentials
-from dlt.common.time import ensure_pendulum_datetime_utc
+from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import StrStr, TAnyDateTime, TDataItem
 from dlt.common.utils import digest128
 
-from .helpers import get_shard_iterator, get_stream_address, max_sequence_by_shard
+from .helpers import get_shard_iterator, max_sequence_by_shard
 
 
 @dlt.resource(
     name=lambda args: args["stream_name"],
-    primary_key="kinesis_msg_id",
+    primary_key="_kinesis_msg_id",
     standalone=True,
-    max_table_nesting=0,
 )
 def kinesis_stream(
-    stream_name: str,
-    initial_at_timestamp: Optional[TAnyDateTime],
-    credentials: AwsCredentials,
+    stream_name: str = dlt.config.value,
+    credentials: AwsCredentials = dlt.secrets.value,
     last_msg: Optional[dlt.sources.incremental[StrStr]] = dlt.sources.incremental(
-        "kinesis", last_value_func=max_sequence_by_shard
+        "_kinesis", last_value_func=max_sequence_by_shard
     ),
-    max_number_of_messages: Optional[int] = None,
+    initial_at_timestamp: TAnyDateTime = 0.0,
+    max_number_of_messages: int = None,
     milliseconds_behind_latest: int = 1000,
     parse_json: bool = True,
     chunk_size: int = 1000,
@@ -56,10 +55,10 @@ def kinesis_stream(
         initial_at_timestamp (TAnyDateTime): An initial timestamp used to generate AT_TIMESTAMP or LATEST iterator when timestamp value is 0
         max_number_of_messages (int): Maximum number of messages to read in one run. Actual read may exceed that number by up to chunk_size. Defaults to None (no limit).
         milliseconds_behind_latest (int): The number of milliseconds behind the top of the shard to stop reading messages, defaults to 1000.
-        parse_json (bool): If True, assumes that messages are json strings, parses them and returns instead of `data` (otherwise). Defaults to True.
+        parse_json (bool): If True, assumes that messages are json strings, parses them and returns instead of `data` (otherwise). Defaults to False.
         chunk_size (int): The number of records to fetch at once. Defaults to 1000.
     Yields:
-            Iterable[TDataItem]: Messages. Contain Kinesis envelope in `kinesis` and bytes data in `data` (if `parse_json` disabled)
+            Iterable[TDataItem]: Messages. Contain Kinesis envelope in `_kinesis` and bytes data in `data` (if `parse_json` disabled)
 
     """
     session = credentials._to_botocore_session()
@@ -69,7 +68,7 @@ def kinesis_stream(
     initial_at_datetime = (
         None
         if initial_at_timestamp is None
-        else ensure_pendulum_datetime_utc(initial_at_timestamp)
+        else ensure_pendulum_datetime(initial_at_timestamp)
     )
     # set it in state
     resource_state = dlt.current.resource_state()
@@ -77,9 +76,9 @@ def kinesis_stream(
         "initial_at_timestamp", initial_at_datetime
     )
     # so next time we request shards at AT_TIMESTAMP that is now
-    resource_state["initial_at_timestamp"] = pendulum.now("UTC").subtract(seconds=1)
+    resource_state["initial_at_timestamp"] = pendulum.now().subtract(seconds=1)
 
-    shards_list = kinesis_client.list_shards(**get_stream_address(stream_name))
+    shards_list = kinesis_client.list_shards(StreamName=stream_name)
     shards: List[StrStr] = shards_list["Shards"]
     while next_token := shards_list.get("NextToken"):
         shards_list = kinesis_client.list_shards(NextToken=next_token)
@@ -90,38 +89,31 @@ def kinesis_stream(
     # get next shard to fetch messages from
     while shard_id := shard_ids.pop(0) if shard_ids else None:
         shard_iterator, _ = get_shard_iterator(
-            kinesis_client,
-            stream_name,
-            shard_id,
-            last_msg,  # ty: ignore[invalid-argument-type]
-            initial_at_datetime,
+            kinesis_client, stream_name, shard_id, last_msg, initial_at_datetime
         )
-
+        # fetch messages from shard iterator or exit loop if not present
         while shard_iterator:
             records = []
             records_response = kinesis_client.get_records(
                 ShardIterator=shard_iterator,
                 Limit=chunk_size,  # The size of data can be up to 1 MB, it must be controlled by the user
             )
-
             for record in records_response["Records"]:
                 sequence_number = record["SequenceNumber"]
                 content = record["Data"]
 
-                arrival_time = record["ApproximateArrivalTimestamp"]
-                arrival_timestamp = arrival_time.astimezone(pendulum.UTC)
-
                 message = {
-                    "kinesis": {
+                    "_kinesis": {
                         "shard_id": shard_id,
                         "seq_no": sequence_number,
-                        "ts": ensure_pendulum_datetime_utc(arrival_timestamp),
+                        "ts": ensure_pendulum_datetime(
+                            record["ApproximateArrivalTimestamp"]
+                        ),
                         "partition": record["PartitionKey"],
                         "stream_name": stream_name,
                     },
-                    "kinesis_msg_id": digest128(shard_id + sequence_number),
+                    "_kinesis_msg_id": digest128(shard_id + sequence_number),
                 }
-
                 if parse_json:
                     message.update(json.loadb(content))
                 else:
