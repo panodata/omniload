@@ -150,7 +150,7 @@ optional-dependencies.develop = [
   "pyproject-fmt<3",
   "pytest-repeat<1",
   "ruff==0.16.*",
-  "ty==0.0.83",
+  "ty==0.0.84",
   "validate-pyproject<1",
 ]
 # The filesystem and blob stack lives in its own distribution, built from
