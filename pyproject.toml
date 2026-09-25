@@ -124,7 +124,7 @@ dependencies = [
   "smartsheet-python-sdk<5",
   "snowflake-connector-python>=4.7.1,<5",
   "snowflake-sqlalchemy<2",
-  "sqlalchemy<2.1",
+  "sqlalchemy<2.2",
   "sqlalchemy-bigquery<2",
   "sqlalchemy-cratedb<1",
   "sqlalchemy-hana<5",
