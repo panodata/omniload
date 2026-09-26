@@ -2,6 +2,8 @@
 
 ## in progress
 
+## 2026/09/27 v0.19.0
+
 - **Filesystem: `dlt-filesystem` declares what it imports.** A standalone
   `pip install dlt-filesystem` lacked Polars, so reading a CSV failed with
   `No module named 'polars'`. Polars is now a base dependency. BSON, the DuckDB CSV
