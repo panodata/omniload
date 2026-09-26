@@ -435,5 +435,7 @@ def test_a_refusal_late_in_the_load_leaves_no_file_behind(tmp_path):
 def test_the_writer_without_xlsxwriter_names_the_install(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "xlsxwriter", None)
 
-    with pytest.raises(MissingDecoderError, match="pip install xlsxwriter"):
+    with pytest.raises(
+        MissingDecoderError, match=r"pip install 'dlt-filesystem\[spreadsheet\]'"
+    ):
         write_xlsx(str(tmp_path / "out.xlsx"), [{"id": 1}], table_name="rows")

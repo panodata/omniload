@@ -2,6 +2,14 @@
 
 ## in progress
 
+- **Filesystem: `dlt-filesystem` declares what it imports.** A standalone
+  `pip install dlt-filesystem` lacked Polars, so reading a CSV failed with
+  `No module named 'polars'`. Polars is now a base dependency. BSON, the DuckDB CSV
+  reader and the spreadsheet formats (XLSX, ODS) get the `bson`, `duckdb` and
+  `spreadsheet` extras: without one, its formats are left out of the supported-formats
+  message and their reader names the extra to install. `omniload` installs are
+  unchanged, since omniload already carries all of these.
+
 - **Filesystem: XLSX files, written.** The local `file://` destination writes
   `.xlsx` workbooks with one worksheet named after the destination table, so a
   later load finds the table by that name. A value an Excel cell would store as a

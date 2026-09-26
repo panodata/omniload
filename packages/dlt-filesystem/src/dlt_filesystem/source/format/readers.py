@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import codecs
+import importlib.util
 import io
 import shutil
 import tempfile
@@ -405,6 +406,14 @@ def read_spreadsheet(
 ) -> Iterator[TDataItems]:
     """Universal reader for ODS and XLSX spreadsheet / workbook files."""
 
+    # Polars reads both through its `calamine` engine. Checked here rather than by
+    # catching Polars' own error, which carries no module name to match on.
+    if importlib.util.find_spec("fastexcel") is None:
+        raise MissingDecoderError(
+            "Reading XLSX and ODS files needs the fastexcel package. "
+            "Install it with: pip install 'dlt-filesystem[spreadsheet]'"
+        )
+
     if "sheet_name" in kwargs and not kwargs["sheet_name"]:
         kwargs.pop("sheet_name")
 
@@ -772,7 +781,7 @@ def read_bson(
     Returns:
         TDataItem: The file content
     """
-    import bson
+    bson = _import_bson()
     from dlt.common.utils import map_nested_values_in_place
 
     from dlt_filesystem.source.format.bson_codec import convert_bson_objs
@@ -933,6 +942,30 @@ def read_vortex(
                     yield batch.slice(offset, chunksize).to_pylist()
 
 
+def _import_bson() -> Any:
+    """Import ``bson``, or raise the install hint the other optional formats give."""
+    try:
+        import bson
+    except ImportError as e:
+        raise MissingDecoderError(
+            "Reading BSON files needs the bson package, which ships with pymongo. "
+            "Install it with: pip install 'dlt-filesystem[bson]'"
+        ) from e
+    return bson
+
+
+def _import_duckdb() -> Any:
+    """Import ``duckdb``, or raise the install hint the other optional formats give."""
+    try:
+        import duckdb
+    except ImportError as e:
+        raise MissingDecoderError(
+            "Reading CSV files with DuckDB needs the duckdb package. "
+            "Install it with: pip install 'dlt-filesystem[duckdb]'"
+        ) from e
+    return duckdb
+
+
 def _import_vortex(action: str) -> Any:
     """Import ``vortex``, or raise the install hint the other optional formats give."""
     try:
@@ -1001,7 +1034,7 @@ def read_csv_duckdb(
     Returns:
         Iterable[TDataItem]: Data items, read from the given CSV files.
     """
-    import duckdb
+    duckdb = _import_duckdb()
 
     parsed_use_pyarrow = False if use_pyarrow == "" else asbool(use_pyarrow)
     helper = fetch_arrow if parsed_use_pyarrow else fetch_json

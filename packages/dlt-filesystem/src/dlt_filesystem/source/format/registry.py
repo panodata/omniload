@@ -27,14 +27,21 @@ BASE_READER_REGISTRATIONS = (
     # `read_json`'s fallback, so the two keys never need to route to each other.
     ReaderRegistration("read_json", ("json",), transformer_order=4),
     ReaderRegistration("read_jsonl", ("jsonl",), transformer_order=5),
-    ReaderRegistration("read_ods", ("ods",), transformer_order=3),
+    # `ods` and `xlsx` need the `spreadsheet` extra (fastexcel).
+    ReaderRegistration("read_ods", ("ods",), transformer_order=3, requires="fastexcel"),
     ReaderRegistration("read_orc", ("orc",), transformer_order=13),
     ReaderRegistration("read_parquet", ("parquet",), transformer_order=11),
     # bson is read-only: the file:// destination keeps its own writer registrations
     # (`target.registry`), and registers no writer for it.
-    ReaderRegistration("read_bson", ("bson",), transformer_order=6),
-    ReaderRegistration("read_excel", ("xlsx",), transformer_order=2),
-    ReaderRegistration("read_csv_duckdb", ("csv_duckdb",), transformer_order=12),
+    # Needs the `bson` extra (pymongo).
+    ReaderRegistration("read_bson", ("bson",), transformer_order=6, requires="bson"),
+    ReaderRegistration(
+        "read_excel", ("xlsx",), transformer_order=2, requires="fastexcel"
+    ),
+    # Needs the `duckdb` extra.
+    ReaderRegistration(
+        "read_csv_duckdb", ("csv_duckdb",), transformer_order=12, requires="duckdb"
+    ),
     # `.arrow` and `.ipc` are the other two extensions Feather V2 travels under -- it is
     # the Arrow IPC file format, and all three name one container. They are aliases for
     # the same reason `yml` is one: the format is chosen from the path, so a file spelled

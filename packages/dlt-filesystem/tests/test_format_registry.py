@@ -234,3 +234,60 @@ def test_vortex_reader_without_the_extra_names_the_install(monkeypatch):
         MissingDecoderError, match=r"pip install 'dlt-filesystem\[vortex\]'"
     ):
         list(read_vortex(iter([])))
+
+
+def _without_module(monkeypatch, module):
+    """Make `module` unimportable and invisible to `find_spec`, as on an install
+    without the extra that carries it."""
+    import importlib.util
+    import sys
+
+    real_find_spec = importlib.util.find_spec
+
+    def fake_find_spec(name, *args, **kwargs):
+        if name == module or name.startswith(f"{module}."):
+            return None
+        return real_find_spec(name, *args, **kwargs)
+
+    monkeypatch.setattr(importlib.util, "find_spec", fake_find_spec)
+    for name in [m for m in sys.modules if m == module or m.startswith(f"{module}.")]:
+        monkeypatch.delitem(sys.modules, name)
+    monkeypatch.setitem(sys.modules, module, None)
+
+
+# Each optional format: the module its reader needs, the extra that carries it, and the
+# format keys it routes.
+OPTIONAL_READERS = [
+    pytest.param("fastexcel", "spreadsheet", ("xlsx", "ods"), id="spreadsheet"),
+    pytest.param("bson", "bson", ("bson",), id="bson"),
+    pytest.param("duckdb", "duckdb", ("csv_duckdb",), id="duckdb"),
+]
+
+
+@pytest.mark.parametrize(("module", "extra", "formats"), OPTIONAL_READERS)
+def test_optional_formats_are_advertised_only_when_installed(
+    monkeypatch, module, extra, formats
+):
+    assert set(formats) <= set(advertised_file_formats())
+    _without_module(monkeypatch, module)
+    advertised = advertised_file_formats()
+    for file_format in formats:
+        assert file_format not in advertised
+        assert file_format in FORMAT_TO_READER
+        assert file_format in ADVERTISED_FILE_FORMATS
+
+
+@pytest.mark.parametrize(("module", "extra", "formats"), OPTIONAL_READERS)
+def test_optional_readers_without_their_extra_name_the_install(
+    monkeypatch, module, extra, formats
+):
+    from dlt_filesystem.source.error import MissingDecoderError
+    from dlt_filesystem.source.format import readers as readers_module
+
+    _without_module(monkeypatch, module)
+    for file_format in formats:
+        reader = getattr(readers_module, FORMAT_TO_READER[file_format])
+        with pytest.raises(
+            MissingDecoderError, match=rf"pip install 'dlt-filesystem\[{extra}\]'"
+        ):
+            list(reader(iter([])))
