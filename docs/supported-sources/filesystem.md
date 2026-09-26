@@ -334,6 +334,10 @@ Vortex needs the `vortex` extra, which requires Python 3.11 or newer.
 pip install 'omniload[vortex]'
 ```
 
+`omniload` installs the BSON, DuckDB CSV and spreadsheet decoders itself. Installing
+the filesystem package on its own, as `dlt-filesystem`, leaves them to its `bson`,
+`duckdb` and `spreadsheet` extras.
+
 ## File format notes
 
 ### Performance

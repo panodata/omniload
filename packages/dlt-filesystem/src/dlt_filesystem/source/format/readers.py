@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import codecs
+import importlib.util
 import io
 import shutil
 import tempfile
@@ -412,6 +413,17 @@ def read_spreadsheet(
     kwargs = cast_kwargs_to_signature(
         reader, kwargs, symbols=_polars_spreadsheet_symbols()
     )
+    # Polars' default `calamine` engine, the only one `read_ods` has, needs fastexcel.
+    # Checked here rather than by catching Polars' own error, which carries no module
+    # name to match on. An explicit `openpyxl` or `xlsx2csv` engine does not need it.
+    engine = kwargs.get("engine", "calamine")
+    if getattr(reader, "__name__", "") == "read_ods":
+        engine = "calamine"
+    if engine == "calamine" and importlib.util.find_spec("fastexcel") is None:
+        raise MissingDecoderError(
+            "Reading XLSX and ODS files needs the fastexcel package. "
+            "Install it with: pip install 'dlt-filesystem[spreadsheet]'"
+        )
     if plural_selection:
         if not any(
             selector in kwargs and kwargs[selector] is not None
@@ -772,7 +784,7 @@ def read_bson(
     Returns:
         TDataItem: The file content
     """
-    import bson
+    bson = _import_bson()
     from dlt.common.utils import map_nested_values_in_place
 
     from dlt_filesystem.source.format.bson_codec import convert_bson_objs
@@ -933,6 +945,30 @@ def read_vortex(
                     yield batch.slice(offset, chunksize).to_pylist()
 
 
+def _import_bson() -> Any:
+    """Import ``bson``, or raise the install hint the other optional formats give."""
+    try:
+        import bson
+    except ImportError as e:
+        raise MissingDecoderError(
+            "Reading BSON files needs the bson package, which ships with pymongo. "
+            "Install it with: pip install 'dlt-filesystem[bson]'"
+        ) from e
+    return bson
+
+
+def _import_duckdb() -> Any:
+    """Import ``duckdb``, or raise the install hint the other optional formats give."""
+    try:
+        import duckdb
+    except ImportError as e:
+        raise MissingDecoderError(
+            "Reading CSV files with DuckDB needs the duckdb package. "
+            "Install it with: pip install 'dlt-filesystem[duckdb]'"
+        ) from e
+    return duckdb
+
+
 def _import_vortex(action: str) -> Any:
     """Import ``vortex``, or raise the install hint the other optional formats give."""
     try:
@@ -1001,7 +1037,7 @@ def read_csv_duckdb(
     Returns:
         Iterable[TDataItem]: Data items, read from the given CSV files.
     """
-    import duckdb
+    duckdb = _import_duckdb()
 
     parsed_use_pyarrow = False if use_pyarrow == "" else asbool(use_pyarrow)
     helper = fetch_arrow if parsed_use_pyarrow else fetch_json

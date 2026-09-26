@@ -4,7 +4,7 @@ Self-contained mirror of omniload's ``convert_mongo_objs`` MongoDB helper that
 deliberately does *not* import the Mongo source: ``mongodb/helpers.py`` imports the
 ``pymongo`` client classes (``MongoClient``/``Collection``/``Cursor``) at module top,
 which would couple this filesystem reader to the Mongo driver. ``bson`` itself ships
-with ``pymongo`` (a hard dependency), so decoding needs no extra package.
+with ``pymongo``, which the ``bson`` extra carries.
 
 This module imports the ``bson`` submodules at its own top level rather than lazily,
 because it is itself imported lazily (only from ``_read_bson``), so the cost is paid

@@ -56,12 +56,21 @@ dependencies = [
   "ocifs",
   "ossfs",
   "paramiko",
+  "polars>=1.34,<3",
   "pyarrow>=18,<26",
   "s3fs>=2024.6",
   "smbprotocol; platform_system=='Linux'",
   "smbprotocol[kerberos]; platform_system!='Linux'",
   "verlib2",
   "webdav4[fsspec]",
+]
+# BSON dumps. The `bson` module ships with pymongo.
+optional-dependencies.bson = [
+  "pymongo<5",
+]
+# The DuckDB CSV reader (`csv_duckdb`), an alternative to the default Polars one.
+optional-dependencies.duckdb = [
+  "duckdb<1.6",
 ]
 # Long-tail file formats (MessagePack via iterabledata; CBOR via cbor2, XML via lxml, YAML via
 # PyYAML directly). iterabledata core is light (chardet, tqdm); each format's decoder is pulled
@@ -75,6 +84,12 @@ optional-dependencies.iterable = [
   "lxml<7",
   "msgpack<2",
   "pyyaml<7",
+]
+# XLSX and ODS. fastexcel (Polars' `calamine` engine) reads both, xlsxwriter writes
+# XLSX. Polars' own `excel` extra would also pull openpyxl and xlsx2csv, which no
+# reader here selects.
+optional-dependencies.spreadsheet = [
+  "polars[calamine,xlsxwriter]>=1.34,<3",
 ]
 # Vortex columnar files. vortex-data is a ~119 MB install that publishes wheels for Python
 # 3.11+ only, so it is opt-in rather than carried by every install of this package.

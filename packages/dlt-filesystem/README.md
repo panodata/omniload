@@ -33,6 +33,21 @@ extra:
 pip install 'dlt-filesystem[iterable]'
 ```
 
+Formats whose decoder is a sizeable or single-purpose package carry it in an extra
+of their own. Without it, the format still routes and its reader raises an error
+naming the extra to install.
+
+| Extra         | Formats                             |
+|---------------|-------------------------------------|
+| `bson`        | BSON                                |
+| `duckdb`      | CSV read with DuckDB (`csv_duckdb`) |
+| `spreadsheet` | XLSX (read and write), ODS          |
+| `vortex`      | Vortex (Python 3.11+)               |
+
+```shell
+pip install 'dlt-filesystem[spreadsheet]'
+```
+
 ## Usage
 
 ```python

@@ -650,7 +650,7 @@ def write_xlsx(path: str, rows: list[dict], *, table_name: str | None = None) ->
     except ImportError as e:
         raise MissingDecoderError(
             "Writing XLSX files needs the xlsxwriter package. "
-            "Install it with: pip install xlsxwriter"
+            "Install it with: pip install 'dlt-filesystem[spreadsheet]'"
         ) from e
 
     fieldnames = _column_union(rows)

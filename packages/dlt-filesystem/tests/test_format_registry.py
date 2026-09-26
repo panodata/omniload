@@ -234,3 +234,96 @@ def test_vortex_reader_without_the_extra_names_the_install(monkeypatch):
         MissingDecoderError, match=r"pip install 'dlt-filesystem\[vortex\]'"
     ):
         list(read_vortex(iter([])))
+
+
+def _without_module(monkeypatch, module):
+    """Make `module` unimportable and invisible to `find_spec`, as on an install
+    without the extra that carries it."""
+    import importlib.util
+    import sys
+
+    real_find_spec = importlib.util.find_spec
+
+    def fake_find_spec(name, *args, **kwargs):
+        if name == module or name.startswith(f"{module}."):
+            return None
+        return real_find_spec(name, *args, **kwargs)
+
+    monkeypatch.setattr(importlib.util, "find_spec", fake_find_spec)
+    for name in [m for m in sys.modules if m == module or m.startswith(f"{module}.")]:
+        monkeypatch.delitem(sys.modules, name)
+    monkeypatch.setitem(sys.modules, module, None)
+
+
+# Each optional format: the module its reader needs, the extra that carries it, and the
+# format keys it routes.
+OPTIONAL_READERS = [
+    pytest.param("fastexcel", "spreadsheet", ("xlsx", "ods"), id="spreadsheet"),
+    pytest.param("bson", "bson", ("bson",), id="bson"),
+    pytest.param("duckdb", "duckdb", ("csv_duckdb",), id="duckdb"),
+]
+
+
+@pytest.mark.parametrize(("module", "extra", "formats"), OPTIONAL_READERS)
+def test_optional_formats_are_advertised_only_when_installed(
+    monkeypatch, module, extra, formats
+):
+    assert set(formats) <= set(advertised_file_formats())
+    _without_module(monkeypatch, module)
+    advertised = advertised_file_formats()
+    for file_format in formats:
+        assert file_format not in advertised
+        assert file_format in FORMAT_TO_READER
+        assert file_format in ADVERTISED_FILE_FORMATS
+
+
+@pytest.mark.parametrize(("module", "extra", "formats"), OPTIONAL_READERS)
+def test_optional_readers_without_their_extra_name_the_install(
+    monkeypatch, module, extra, formats
+):
+    from dlt_filesystem.source.error import MissingDecoderError
+    from dlt_filesystem.source.format import readers as readers_module
+
+    _without_module(monkeypatch, module)
+    for file_format in formats:
+        reader = getattr(readers_module, FORMAT_TO_READER[file_format])
+        with pytest.raises(
+            MissingDecoderError, match=rf"pip install 'dlt-filesystem\[{extra}\]'"
+        ):
+            list(reader(iter([])))
+
+
+@pytest.mark.parametrize("engine", ["openpyxl", "xlsx2csv"])
+def test_an_explicit_excel_engine_does_not_need_fastexcel(monkeypatch, engine):
+    """Only Polars' default `calamine` engine reads through fastexcel."""
+    from dlt_filesystem.source.format.readers import read_excel
+
+    _without_module(monkeypatch, "fastexcel")
+    assert list(read_excel(iter([]), engine=engine)) == []
+
+
+def test_polars_is_a_base_requirement():
+    """The CSV reader and the CSV and Parquet writers import Polars, so a bare
+    `pip install dlt-filesystem` has to carry it rather than rely on a consumer."""
+    import re
+    from importlib.metadata import requires
+
+    base = {
+        re.split(r"[\s\[<>=!~;]", line, maxsplit=1)[0].lower()
+        for line in requires("dlt-filesystem") or []
+        if "extra ==" not in line
+    }
+    assert "polars" in base
+
+
+def test_an_ods_read_needs_fastexcel_whatever_engine_is_named(monkeypatch):
+    """`read_ods` has only the `calamine` engine, so an `engine` hint cannot route an
+    ODS read around fastexcel."""
+    from dlt_filesystem.source.error import MissingDecoderError
+    from dlt_filesystem.source.format.readers import read_ods
+
+    _without_module(monkeypatch, "fastexcel")
+    with pytest.raises(
+        MissingDecoderError, match=r"pip install 'dlt-filesystem\[spreadsheet\]'"
+    ):
+        list(read_ods(iter([]), engine="openpyxl"))
