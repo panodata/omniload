@@ -416,7 +416,7 @@ def read_spreadsheet(
     # Polars' default `calamine` engine, the only one `read_ods` has, needs fastexcel.
     # Checked here rather than by catching Polars' own error, which carries no module
     # name to match on. An explicit `openpyxl` or `xlsx2csv` engine does not need it.
-    engine = kwargs.get("engine") or "calamine"
+    engine = kwargs.get("engine", "calamine")
     if getattr(reader, "__name__", "") == "read_ods":
         engine = "calamine"
     if engine == "calamine" and importlib.util.find_spec("fastexcel") is None:

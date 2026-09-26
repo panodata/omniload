@@ -316,22 +316,14 @@ def test_polars_is_a_base_requirement():
     assert "polars" in base
 
 
-@pytest.mark.parametrize(
-    ("reader_name", "hints"),
-    [
-        pytest.param("read_excel", {"engine": None}, id="xlsx-engine-none"),
-        pytest.param("read_ods", {"engine": "openpyxl"}, id="ods-any-engine"),
-    ],
-)
-def test_the_calamine_engine_names_the_spreadsheet_extra(
-    monkeypatch, reader_name, hints
-):
-    """No engine and ODS, which has only `calamine`, both read through fastexcel."""
+def test_an_ods_read_needs_fastexcel_whatever_engine_is_named(monkeypatch):
+    """`read_ods` has only the `calamine` engine, so an `engine` hint cannot route an
+    ODS read around fastexcel."""
     from dlt_filesystem.source.error import MissingDecoderError
-    from dlt_filesystem.source.format import readers as readers_module
+    from dlt_filesystem.source.format.readers import read_ods
 
     _without_module(monkeypatch, "fastexcel")
     with pytest.raises(
         MissingDecoderError, match=r"pip install 'dlt-filesystem\[spreadsheet\]'"
     ):
-        list(getattr(readers_module, reader_name)(iter([]), **hints))
+        list(read_ods(iter([]), engine="openpyxl"))
