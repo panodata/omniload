@@ -406,14 +406,6 @@ def read_spreadsheet(
 ) -> Iterator[TDataItems]:
     """Universal reader for ODS and XLSX spreadsheet / workbook files."""
 
-    # Polars reads both through its `calamine` engine. Checked here rather than by
-    # catching Polars' own error, which carries no module name to match on.
-    if importlib.util.find_spec("fastexcel") is None:
-        raise MissingDecoderError(
-            "Reading XLSX and ODS files needs the fastexcel package. "
-            "Install it with: pip install 'dlt-filesystem[spreadsheet]'"
-        )
-
     if "sheet_name" in kwargs and not kwargs["sheet_name"]:
         kwargs.pop("sheet_name")
 
@@ -421,6 +413,17 @@ def read_spreadsheet(
     kwargs = cast_kwargs_to_signature(
         reader, kwargs, symbols=_polars_spreadsheet_symbols()
     )
+    # Polars' default `calamine` engine, the only one `read_ods` has, needs fastexcel.
+    # Checked here rather than by catching Polars' own error, which carries no module
+    # name to match on. An explicit `openpyxl` or `xlsx2csv` engine does not need it.
+    if (
+        kwargs.get("engine", "calamine") == "calamine"
+        and importlib.util.find_spec("fastexcel") is None
+    ):
+        raise MissingDecoderError(
+            "Reading XLSX and ODS files needs the fastexcel package. "
+            "Install it with: pip install 'dlt-filesystem[spreadsheet]'"
+        )
     if plural_selection:
         if not any(
             selector in kwargs and kwargs[selector] is not None

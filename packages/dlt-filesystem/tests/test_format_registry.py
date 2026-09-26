@@ -291,3 +291,26 @@ def test_optional_readers_without_their_extra_name_the_install(
             MissingDecoderError, match=rf"pip install 'dlt-filesystem\[{extra}\]'"
         ):
             list(reader(iter([])))
+
+
+@pytest.mark.parametrize("engine", ["openpyxl", "xlsx2csv"])
+def test_an_explicit_excel_engine_does_not_need_fastexcel(monkeypatch, engine):
+    """Only Polars' default `calamine` engine reads through fastexcel."""
+    from dlt_filesystem.source.format.readers import read_excel
+
+    _without_module(monkeypatch, "fastexcel")
+    assert list(read_excel(iter([]), engine=engine)) == []
+
+
+def test_polars_is_a_base_requirement():
+    """The CSV reader and the CSV and Parquet writers import Polars, so a bare
+    `pip install dlt-filesystem` has to carry it rather than rely on a consumer."""
+    import re
+    from importlib.metadata import requires
+
+    base = {
+        re.split(r"[\s\[<>=!~;]", line, maxsplit=1)[0].lower()
+        for line in requires("dlt-filesystem") or []
+        if "extra ==" not in line
+    }
+    assert "polars" in base
