@@ -7,6 +7,7 @@ staged file of a load in a stable order and always clears its temp directory. Se
 """
 
 from dlt_filesystem.target.local import LocalFilesystemDestination
+
 from omniload.core.tablename import two_level
 
 

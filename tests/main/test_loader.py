@@ -13,7 +13,6 @@ from contextlib import contextmanager
 
 import pytest
 from dlt.common.data_writers.writers import TLoaderFileFormat
-
 from dlt_filesystem.util.loader import (
     UnsupportedLoaderFileFormat,
     factory,

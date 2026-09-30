@@ -31,9 +31,6 @@ from typing import Any
 from unittest import mock
 
 import pytest
-from fsspec.implementations.memory import MemoryFileSystem
-
-from dlt_filesystem.source.base import FilesystemSource
 from dlt_filesystem.source.fsspec.ftp import FTPSource
 from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
 from dlt_filesystem.source.impl.remote import (
@@ -42,6 +39,8 @@ from dlt_filesystem.source.impl.remote import (
     SFTPSource,
 )
 from dlt_filesystem.source.model import FilesystemReference
+from fsspec.implementations.memory import MemoryFileSystem
+
 from omniload.api import RUN_OPTION_KEYS
 from omniload.core.factory import SourceDestinationFactory
 
@@ -506,48 +505,6 @@ def test_reference_defaults_read_as_a_run_that_enabled_nothing():
     options = ResourceOptions()
     assert options.filesystem_incremental is False
     assert options.column_types is None
-
-
-def test_declared_options_never_appear_in_the_package_as_omniload_names():
-    """Grep-based guardrail: the 13 omniload owns and this package does not must
-    never appear as an identifier under the package's own source tree.
-
-    Sourced from both sides so it cannot drift: `RUN_OPTION_KEYS` from
-    `omniload.api` (what a run can carry) minus `consumed_run_options()` from
-    `FilesystemSource` (what this family declares). The two names in the
-    difference are exempted only where they are substrings of a legitimate
-    package-local name (`data_item_format` contains no such collision; checked
-    directly against word boundaries via a regex, not a bare substring test).
-    """
-    import re
-
-    package_names = FilesystemSource().consumed_run_options()
-    forbidden = sorted(set(RUN_OPTION_KEYS) - package_names)
-    assert forbidden, "sanity: the omniload-only set should not be empty"
-
-    package_root = (
-        Path(__file__).resolve().parents[2]
-        / "packages"
-        / "dlt-filesystem"
-        / "src"
-        / "dlt_filesystem"
-    )
-    pattern = re.compile(
-        r"\b(" + "|".join(re.escape(name) for name in forbidden) + r")\b"
-    )
-
-    scanned = sorted(package_root.rglob("*.py"))
-    # An empty scan (a moved or renamed package root) would make every assertion
-    # below pass vacuously, so the sweep having actually run is part of the gate.
-    assert package_root.is_dir(), f"{package_root} is not a directory"
-    assert len(scanned) > 30, f"expected dozens of modules, found {len(scanned)}"
-
-    hits: list[str] = []
-    for path in scanned:
-        text = path.read_text()
-        for name in sorted(set(pattern.findall(text))):
-            hits.append(f"{path.relative_to(package_root)}: {name}")
-    assert hits == [], f"omniload-only run options leaked into the package: {hits}"
 
 
 #: A fixed modification time, so the second run sees an unchanged file.

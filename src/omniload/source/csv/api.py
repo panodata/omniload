@@ -10,6 +10,7 @@ from typing import Optional
 
 from dlt_filesystem.source.format.registry import reader_for_format
 from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
+
 from omniload.error import ValidationError
 
 # Every CSV-family reader the shared registry exposes. The scheme restricts the file

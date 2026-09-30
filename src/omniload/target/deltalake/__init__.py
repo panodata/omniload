@@ -2,8 +2,8 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit, urlunsplit
 
 import dlt
-
 from dlt_filesystem.target.remote import blob_destination_options
+
 from omniload.core.tablename import two_level
 from omniload.target.model import GenericSqlDestination
 

@@ -4,10 +4,10 @@ from urllib.parse import urlencode
 
 import duckdb
 import pytest
+from dlt_filesystem.staging import RemoteObject
 from fsspec.implementations.memory import MemoryFileSystem
 from sqlalchemy.engine import make_url
 
-from dlt_filesystem.staging import RemoteObject
 from omniload import run_ingest
 from omniload.source.sql_database.remote import (
     _database_uri,

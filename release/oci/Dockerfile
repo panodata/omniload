@@ -27,11 +27,9 @@ RUN true \
 ARG BUILD=/usr/src
 COPY . ${BUILD}
 
-# Build packages. Both of them: the image installs omniload, which depends on
-# `dlt-filesystem`, and resolving that from an index would need it published first.
+# Build package.
 RUN pip install build
 RUN python -m build --wheel --outdir ${BUILD}/dist ${BUILD}
-RUN python -m build --wheel --outdir ${BUILD}/dist ${BUILD}/packages/dlt-filesystem
 
 
 FROM python:3.14-slim-trixie AS package

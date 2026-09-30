@@ -2,8 +2,8 @@ import sys
 from pathlib import Path
 
 import pytest
-
 from dlt_filesystem.util.python import is_polars_2
+
 from tests.util import invoke_ingest_command
 
 

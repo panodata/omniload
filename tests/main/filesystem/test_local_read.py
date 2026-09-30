@@ -10,9 +10,9 @@ import gzip
 from unittest.mock import patch
 
 import pytest
-
 from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
 from dlt_filesystem.source.model import FilesystemReference
+
 from omniload.api import _reject_unconsumed_incremental_key
 from omniload.core.factory import SourceDestinationFactory
 from omniload.error import ValidationError

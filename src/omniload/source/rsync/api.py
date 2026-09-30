@@ -16,6 +16,7 @@ from dlt_filesystem.source.error import UnsupportedEndpointError
 from dlt_filesystem.source.format.registry import supported_file_format_message
 from dlt_filesystem.source.model import FilesystemReference
 from dlt_filesystem.source.router import determine_endpoint, parse_fragment
+
 from omniload.source.rsync.command import CommandRunner, SubprocessRunner
 from omniload.source.rsync.config import RsyncConfig, query_params
 from omniload.source.rsync.error import InvalidRsyncUriError
@@ -51,9 +52,8 @@ class RsyncSource(FilesystemSource):
 
         staging_dir = RsyncStager(transport, config, self._runner).stage(selection)
 
-        from pyarrow.fs import LocalFileSystem
-
         from dlt_filesystem.util.fsspec import ReadIntoArrowFSWrapper
+        from pyarrow.fs import LocalFileSystem
 
         fs = ReadIntoArrowFSWrapper(LocalFileSystem())
 

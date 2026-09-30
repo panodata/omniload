@@ -15,8 +15,8 @@ import json
 
 import duckdb
 import pytest
-
 from dlt_filesystem.testing.writer import write_msgpack
+
 from omniload import run_ingest
 
 pytest.importorskip("iterable.datatypes.msgpack")

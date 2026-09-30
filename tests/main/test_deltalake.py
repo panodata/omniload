@@ -10,8 +10,8 @@ from unittest import mock
 
 import pytest
 from dlt.common.storages.fsspec_filesystem import fsspec_from_config
-
 from dlt_filesystem.error import MissingConnectorOption
+
 from omniload.error import ValidationError
 from omniload.source.deltalake.adapter import DEFAULT_BATCH_SIZE, deltalake_source
 from omniload.source.deltalake.api import DeltaLakeSource
