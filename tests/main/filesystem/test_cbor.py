@@ -16,8 +16,8 @@ import json
 
 import duckdb
 import pytest
-
 from dlt_filesystem.testing.writer import write_cbor
+
 from omniload import run_ingest
 
 cbor2 = pytest.importorskip("cbor2")

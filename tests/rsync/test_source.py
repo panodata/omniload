@@ -1,8 +1,8 @@
 from unittest.mock import patch
 
 import pytest
-
 from dlt_filesystem.source.model import FilesystemReference
+
 from omniload.source.rsync.api import RsyncSource
 from omniload.source.rsync.error import (
     InvalidRsyncUriError,

@@ -16,8 +16,8 @@ import json
 
 import duckdb
 import pytest
-
 from dlt_filesystem.testing.writer import write_yaml
+
 from omniload import run_ingest
 
 yaml = pytest.importorskip("yaml")

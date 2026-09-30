@@ -6,9 +6,9 @@ import io
 import json
 
 import pytest
-
 from dlt_filesystem.target.local import LocalFilesystemDestination
 from dlt_filesystem.target.registry import WRITE_FORMATS
+
 from omniload import run_ingest
 from omniload.core.factory import SourceDestinationFactory
 from omniload.target.csv import CsvDestination

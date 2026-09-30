@@ -17,9 +17,9 @@ import pyarrow.parquet as pq
 import pytest
 from azure.storage.blob import BlobServiceClient
 from dlt.sources.filesystem import FileItemDict
-
 from dlt_filesystem.source.error import NoFilesFoundError
 from dlt_filesystem.staging import RemoteObjectNotFoundError
+
 from omniload import run_ingest
 from tests.util import invoke_ingest_command
 from tests.util.common import has_exception
@@ -595,9 +595,8 @@ def _azure_arrow_filesystem(connection_string: str, calls: list):
 
 def test_azure_selection_shapes_use_one_native_listing_request(azure_emulator):
     """Every selection shape costs one Arrow request, recursive only when needed."""
-    from pyarrow.fs import FileSelector
-
     from dlt_filesystem.source.lister import glob_files
+    from pyarrow.fs import FileSelector
 
     azure_emulator.upload("listing/part-1.csv", CSV_ROWS)
     azure_emulator.upload("listing/nested/part-2.csv", CSV_ROWS)

@@ -40,7 +40,6 @@ jobs:
         run: |
           uv pip install build twine
           python -m build
-          python -m build --outdir dist packages/dlt-filesystem
           twine check dist/{*.tar.gz,*.whl}
 
       - name: Publish package to PyPI

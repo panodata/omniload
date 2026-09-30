@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Extract fragments of code into dedicated package [dlt-filesystem].
+
 ## 2026/09/27 v0.19.0
 
 - **Filesystem: `dlt-filesystem` declares what it imports.** A standalone
@@ -555,5 +557,6 @@
 - Packaging: Modernized PyPI and OCI publishing
 
 
+[dlt-filesystem]: https://github.com/dlt-contrib/dlt-filesystem
 [ingestr v0.14.155]: https://github.com/bruin-data/ingestr/tree/v0.14.155
 [SCD2]: https://en.wikipedia.org/wiki/Slowly_changing_dimension#Type_2:_add_new_row

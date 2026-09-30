@@ -17,8 +17,8 @@ from bson.dbref import DBRef
 from bson.decimal128 import Decimal128
 from bson.max_key import MaxKey
 from bson.min_key import MinKey
-
 from dlt_filesystem.testing.writer import write_bson
+
 from omniload import run_ingest
 
 OID = "507f1f77bcf86cd799439011"

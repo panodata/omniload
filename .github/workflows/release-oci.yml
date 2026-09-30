@@ -55,7 +55,6 @@ jobs:
         run: |
           uv pip install build
           python -m build
-          python -m build --outdir dist packages/dlt-filesystem
 
       - name: Upload wheel package
         uses: actions/upload-artifact@v7

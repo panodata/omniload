@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Tuple
 
 from dlt_filesystem.source.impl.util import _split_dir_glob
+
 from omniload.source.rsync.command import (
     CommandRunner,
     RsyncCommandBuilder,

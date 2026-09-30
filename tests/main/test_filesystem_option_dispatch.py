@@ -18,8 +18,8 @@ from unittest import mock
 
 import duckdb
 import pytest
-
 from dlt_filesystem.source.fsspec.local import LocalFilesystemSource
+
 from omniload import run_ingest
 from omniload.api import RUN_OPTION_KEYS, _reject_unconsumed_incremental_key
 from omniload.core.router import SqlSourceRouter

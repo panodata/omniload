@@ -8,8 +8,8 @@ import duckdb
 import pytest
 import xlsxwriter
 from dlt.pipeline.exceptions import PipelineStepFailed
-
 from dlt_filesystem.source.format.readers import spreadsheet_selection_is_plural
+
 from omniload.api import run_ingest
 from omniload.error import ValidationError
 

@@ -8,9 +8,9 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import pytest
+from dlt_filesystem.error import MissingConnectorOption
 from fsspec.implementations.memory import MemoryFileSystem
 
-from dlt_filesystem.error import MissingConnectorOption
 from omniload.api import _reject_unconsumed_incremental_key
 from omniload.core.factory import SourceDestinationFactory
 

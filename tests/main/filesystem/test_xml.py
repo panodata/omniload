@@ -15,8 +15,8 @@ import json
 
 import duckdb
 import pytest
-
 from dlt_filesystem.testing.writer import write_xml
+
 from omniload import run_ingest
 
 lxml_etree = pytest.importorskip("lxml.etree")

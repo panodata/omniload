@@ -153,9 +153,7 @@ optional-dependencies.develop = [
   "ty==0.0.84",
   "validate-pyproject<1",
 ]
-# The filesystem and blob stack lives in its own distribution, built from
-# `packages/dlt-filesystem` in this repository. This extra forwards, so an install line
-# a user has already run keeps resolving to the same set.
+# The filesystem and blob stack lives in its own distribution.
 optional-dependencies.filesystem = [
   "dlt-filesystem",
 ]
@@ -164,8 +162,7 @@ optional-dependencies.ibm-db = [
   "ibm-db<4; platform_machine!='aarch64'",
   "ibm-db-sa<0.5; platform_machine!='aarch64'",
 ]
-# Long-tail file formats (XML, YAML, MessagePack, CBOR). The decoders are declared by
-# the distribution that imports them; see `packages/dlt-filesystem/pyproject.toml`.
+# Long-tail file formats (XML, YAML, MessagePack, CBOR).
 optional-dependencies.iterable = [
   "dlt-filesystem[iterable]",
 ]
@@ -212,8 +209,7 @@ optional-dependencies.test = [
   "types-requests<3",
   "xlsxwriter<4",
 ]
-# Vortex columnar files, Python 3.11+. Declared by the distribution that imports it;
-# see `packages/dlt-filesystem/pyproject.toml`.
+# Vortex columnar files, Python 3.11+.
 optional-dependencies.vortex = [
   "dlt-filesystem[vortex]",
 ]
@@ -226,15 +222,11 @@ scripts.omniload = "omniload.main:main"
 [tool.setuptools]
 package-dir = { "" = "src" }
 
-[tool.uv]
-sources.dlt-filesystem = { workspace = true }
-workspace.members = [ "packages/*" ]
-
 [tool.ruff]
 line-length = 88
 # Both distributions are first-party here. Without the second entry, isort groups
 # `dlt_filesystem` with third-party imports and reorders every module that touches it.
-src = [ ".", "packages/dlt-filesystem/src", "src" ]
+src = [ ".", "src" ]
 lint.select = [
   # Builtins
   "A",
@@ -290,18 +282,6 @@ lint.extend-ignore = [
   # Probable insecure usage of temporary file or directory
   "S108",
 ]
-lint.per-file-ignores."packages/dlt-filesystem/src/dlt_filesystem/source/*" = [
-  # line-too-long
-  "E501",
-]
-lint.per-file-ignores."packages/dlt-filesystem/src/dlt_filesystem/target/{local.py,util.py}" = [
-  # line-too-long
-  "E501",
-]
-lint.per-file-ignores."packages/dlt-filesystem/src/dlt_filesystem/testing/{stub.py}" = [
-  # line-too-long
-  "E501",
-]
 lint.per-file-ignores."release/util/*" = [
   # `print` found. These are command-line programs whose output is the result.
   "T201",
@@ -337,17 +317,7 @@ lint.per-file-ignores."src/omniload/{source,target}/**/{client,helpers}.py" = [
   # `print` found
   "T201",
 ]
-lint.per-file-ignores."tests/saas/*" = [
-  # Possible hardcoded password assigned to argument
-  "S106",
-]
-lint.per-file-ignores."tests/{warehouse,util}/*" = [
-  # `try`-`except`-`pass` detected, consider logging the exception
-  "S110",
-  # Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
-  "S310",
-]
-lint.per-file-ignores."{tests,packages/*/tests}/*" = [
+lint.per-file-ignores."tests/*" = [
   # Variable is shadowing a Python builtin
   "A001",
   # Function argument is shadowing a Python builtin
@@ -363,11 +333,20 @@ lint.per-file-ignores."{tests,packages/*/tests}/*" = [
   # `print` found
   "T201",
 ]
+lint.per-file-ignores."tests/saas/*" = [
+  # Possible hardcoded password assigned to argument
+  "S106",
+]
+lint.per-file-ignores."tests/{warehouse,util}/*" = [
+  # `try`-`except`-`pass` detected, consider logging the exception
+  "S110",
+  # Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
+  "S310",
+]
 
 [tool.pytest]
 ini_options.minversion = "2.0"
 ini_options.testpaths = [
-  "packages",
   "tests",
 ]
 ini_options.pythonpath = [
@@ -389,17 +368,13 @@ ini_options.log_cli_level = "DEBUG"
 # addopts = "-vvv -p no:warnings -rP"
 
 [tool.coverage]
-run.omit = [ "packages/*/tests/**", "tests/**" ]
+run.omit = [ "tests/**" ]
 
 [tool.poe]
 tasks.check = [
   "lint",
   "test",
 ]
-# Verify `dlt_filesystem` imports on the dependency set its own project declares.
-# Installing it alongside omniload always supplies the consumer's list by accident,
-# so nothing else here can see an undeclared import.
-tasks.check-standalone-imports = { cmd = "python release/util/standalone_import_probe.py" }
 tasks.docs-autobuild = [
   { cmd = "uv pip install -r docs/requirements.txt;" },
   { cmd = "sphinx-autobuild --open-browser docs docs/_build" },
@@ -416,7 +391,6 @@ tasks.docs-lint = { cmd = "vale docs" }
 tasks.format = [
   # Format project metadata.
   { cmd = "pyproject-fmt --keep-full-version pyproject.toml" },
-  { cmd = "pyproject-fmt --keep-full-version packages/dlt-filesystem/pyproject.toml" },
   # Format code.
   # Configure Ruff not to auto-fix a few items that are useful in workbench mode.
   # e.g.: unused imports (F401), unused variables (F841), `print` statements (T201), commented-out code (ERA001)
@@ -427,12 +401,10 @@ tasks.lint = [
   { cmd = "ruff format --check" },
   { cmd = "ruff check" },
   { cmd = "validate-pyproject pyproject.toml" },
-  { cmd = "validate-pyproject packages/dlt-filesystem/pyproject.toml" },
   { cmd = "ty check" },
 ]
 tasks.release = [
   { cmd = "python -m build" },
-  { cmd = "python -m build --outdir dist packages/dlt-filesystem" },
   { cmd = "twine upload --verbose --skip-existing dist/*" },
 ]
 tasks.test = { cmd = "pytest", env = { TESTCONTAINERS_RYUK_DISABLED = "true" } }

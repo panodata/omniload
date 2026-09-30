@@ -3,8 +3,8 @@ from pathlib import Path
 import duckdb
 import pytest
 from dlt.pipeline.exceptions import PipelineStepFailed
-
 from dlt_filesystem.source.error import NoFilesFoundError
+
 from omniload import run_ingest
 from tests.util.common import has_exception
 
