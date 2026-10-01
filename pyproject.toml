@@ -131,7 +131,7 @@ dependencies = [
   "sqlalchemy-redshift<2",
   "sqlalchemy-spanner<2",
   "sqlparse>=0.6",
-  "stripe<16",
+  "stripe<17",
   "thrift>=0.24",
   "tldextract<6",
   "toolz<2",
