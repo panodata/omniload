@@ -127,7 +127,7 @@ dependencies = [
   "sqlalchemy<2.2",
   "sqlalchemy-bigquery<2",
   "sqlalchemy-cratedb<1",
-  "sqlalchemy-hana<5",
+  "sqlalchemy-hana<6",
   "sqlalchemy-redshift<2",
   "sqlalchemy-spanner<2",
   "sqlparse>=0.6",
