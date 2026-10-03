@@ -106,6 +106,7 @@ sources: LazyRegistry = LazyRegistry(
         "https+webdav": "dlt_filesystem.source.fsspec.webdav:WebdavSource",
         "hubspot": "omniload.source.hubspot.api:HubspotSource",
         "ibmmq+mqb": "omniload.source.mqbridge.api:MqBridgeSource",
+        "imap": "omniload.source.imap.api:ImapSource",
         "indeed": "omniload.source.indeed.api:IndeedSource",
         "influxdb": "omniload.source.influxdb.api:InfluxDBSource",
         "intercom": "omniload.source.intercom.api:IntercomSource",
