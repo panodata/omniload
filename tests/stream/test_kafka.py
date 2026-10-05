@@ -50,7 +50,7 @@ def test_kafka_to_db_incremental(kafka, dest, topic):
     def get_output_table():
         return get_query_result(
             dest_uri,
-            f"select _kafka__data from {topic}.output order by _kafka_msg_id asc",
+            f"select _kafka__data from {topic}.output order by _kafka__offset asc",
         )
 
     run()

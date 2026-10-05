@@ -9,6 +9,7 @@ DESTINATIONS = {
     "postgres": registry.postgresql,
     "duckdb": registry.duckdb_destination,
     "clickhouse+native": registry.clickhouse,
+    "cratedb": registry.cratedb,
 }
 
 if registry.mssql is not None:

@@ -9,6 +9,7 @@ class ServiceRegistry:
     """Registry for all services."""
 
     clickhouse: Optional[AbstractService]
+    cratedb: Optional[AbstractService]
     duckdb_source: Optional[AbstractService]
     duckdb_destination: Optional[AbstractService]
     mongodb: Optional[AbstractService]
