@@ -53,7 +53,7 @@ Mailchimp source allows ingesting the following sources into separate tables:
 | [chimp_chatter](https://mailchimp.com/developer/marketing/api/activity-feed/) | - | - | replace | Retrieves recent activity feed from your Mailchimp account. |
 | [connected_sites](https://mailchimp.com/developer/marketing/api/connected-sites/) | id | updated_at | merge | Retrieves websites connected to your Mailchimp account. |
 | [conversations](https://mailchimp.com/developer/marketing/api/conversations/) | id | last_message.timestamp | merge | Retrieves conversation threads from connected channels. |
-| [ecommerce_stores](https://mailchimp.com/developer/marketing/api/ecommerce-stores/) | id | updated_at | merge | Retrieves e-commerce store information including products and orders. |
+| [ecommerce_stores](https://mailchimp.com/developer/marketing/api/e-commerce/get-store) | id | updated_at | merge | Retrieves e-commerce store information including products and orders. |
 | [facebook_ads](https://mailchimp.com/developer/marketing/api/facebook-ads/) | id | updated_at | merge | Retrieves Facebook ad campaigns managed through Mailchimp. |
 | [landing_pages](https://mailchimp.com/developer/marketing/api/landing-pages/) | id | updated_at | merge | Retrieves landing pages created in Mailchimp. |
 | lists_activity | - | - | replace | Retrieves recent activity for list members. Includes `audiences_id` reference. |
