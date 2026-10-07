@@ -8,7 +8,6 @@ from unittest.mock import patch
 import dlt
 import pytest
 from dlt.common.destination import Destination
-from dlt.common.destination.client import JobClientBase
 
 from omniload.target.athena import AthenaDestination
 from omniload.target.bigquery import BigQueryDestination
@@ -89,7 +88,7 @@ class BigQueryDestinationTest(unittest.TestCase):
 
 class GenericSqlDestinationFixture:
     destination: Any
-    expected_class: Type[Destination[Any, JobClientBase]]
+    expected_class: Type[Destination[Any, Any]]
 
     @abstractmethod
     def assertEqual(self, first, second, msg=None):
@@ -180,7 +179,6 @@ class TrinoDestinationTest(GenericSqlDestinationFixture, unittest.TestCase):
 
 class CrateDBDestinationTest(GenericSqlDestinationFixture, unittest.TestCase):
     destination = CrateDBDestination()
-    expected_class = None
 
     def test_credentials_are_passed_correctly(self):
         # CrateDB rewrites its scheme and builds through a third-party factory, so the

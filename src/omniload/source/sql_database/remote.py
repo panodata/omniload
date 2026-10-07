@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
-from typing import Iterator, Optional
+from typing import Generator, Optional
 from urllib.parse import unquote, urlsplit
 
 from dlt_filesystem.source.impl.util import has_glob_magic
@@ -140,7 +140,7 @@ def stage_remote_database(
     remote: RemoteObject,
     *,
     staging_root: str | Path | None = None,
-) -> Iterator[str]:
+) -> Generator[str]:
     """Yield a local SQL URI backed by a run-scoped copy of the remote database."""
     with materialize_remote_object(
         remote,
