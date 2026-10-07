@@ -78,7 +78,7 @@ dependencies = [
   "clickhouse-driver<0.3",
   "clickhouse-sqlalchemy<0.4",
   "colorlog<7",
-  "confluent-kafka<2.16",
+  "confluent-kafka<2.17",
   "couchbase>=4,<5",
   "cryptography>=50; python_version>='3.11'",
   "databricks-sql-connector<5",
