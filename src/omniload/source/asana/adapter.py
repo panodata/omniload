@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ def workspaces(
     Yields:
         dict: The workspace data.
     """
-    yield from get_client(access_token).workspaces.find_all(opt_fields=",".join(fields))  # ty: ignore[unresolved-attribute]
+    yield from get_client(access_token).workspaces.find_all(opt_fields=",".join(fields))
 
 
 @dlt.transformer(
@@ -95,7 +95,7 @@ def projects(
         list[dict]: The project data for the given workspace.
     """
     return list(
-        get_client(access_token).projects.find_all(  # ty: ignore[unresolved-attribute]
+        get_client(access_token).projects.find_all(
             workspace=workspace["gid"],
             timeout=REQUEST_TIMEOUT,
             opt_fields=",".join(fields),
@@ -125,7 +125,7 @@ def sections(
     return [
         section
         for project in project_array
-        for section in get_client(access_token).sections.get_sections_for_project(  # ty: ignore[unresolved-attribute]
+        for section in get_client(access_token).sections.get_sections_for_project(
             project_gid=project["gid"],
             timeout=REQUEST_TIMEOUT,
             opt_fields=",".join(fields),
@@ -151,7 +151,7 @@ def tags(
     """
     return [
         tag
-        for tag in get_client(access_token).tags.find_all(  # ty: ignore[unresolved-attribute]
+        for tag in get_client(access_token).tags.find_all(
             workspace=workspace["gid"],
             timeout=REQUEST_TIMEOUT,
             opt_fields=",".join(fields),
@@ -164,10 +164,7 @@ def tasks(
     project_array: t.List[TDataItem],
     access_token: str = dlt.secrets.value,
     modified_at: dlt.sources.incremental[str] = dlt.sources.incremental(
-        "modified_at",
-        initial_value=DEFAULT_START_DATE,
-        range_end="closed",
-        range_start="closed",
+        "modified_at", initial_value=DEFAULT_START_DATE
     ),
     fields: Iterable[str] = TASK_FIELDS,
 ) -> Iterable[TDataItem]:
@@ -185,7 +182,7 @@ def tasks(
     yield from (
         task
         for project in project_array
-        for task in get_client(access_token).tasks.find_all(  # ty: ignore[unresolved-attribute]
+        for task in get_client(access_token).tasks.find_all(
             project=project["gid"],
             timeout=REQUEST_TIMEOUT,
             modified_since=modified_at.start_value,
@@ -196,7 +193,7 @@ def tasks(
 
 @dlt.transformer(
     data_from=tasks,
-    write_disposition="replace",
+    write_disposition="append",
 )
 @dlt.defer
 def stories(
@@ -215,7 +212,7 @@ def stories(
     """
     return [
         story
-        for story in get_client(access_token).stories.get_stories_for_task(  # ty: ignore[unresolved-attribute]
+        for story in get_client(access_token).stories.get_stories_for_task(
             task_gid=task["gid"],
             timeout=REQUEST_TIMEOUT,
             opt_fields=",".join(fields),
@@ -244,7 +241,7 @@ def teams(
     """
     return [
         team
-        for team in get_client(access_token).teams.find_by_organization(  # ty: ignore[unresolved-attribute]
+        for team in get_client(access_token).teams.find_by_organization(
             organization=workspace["gid"],
             timeout=REQUEST_TIMEOUT,
             opt_fields=",".join(fields),
@@ -273,7 +270,7 @@ def users(
     """
     return [
         user
-        for user in get_client(access_token).users.find_all(  # ty: ignore[unresolved-attribute]
+        for user in get_client(access_token).users.find_all(
             workspace=workspace["gid"],
             timeout=REQUEST_TIMEOUT,
             opt_fields=",".join(fields),

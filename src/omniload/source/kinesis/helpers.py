@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ from typing import Any, Sequence, Tuple
 
 import dlt
 from dlt.common import pendulum
-from dlt.common.typing import DictStrAny, DictStrStr, StrAny, StrStr
+from dlt.common.typing import DictStrAny, StrAny, StrStr
 
 
 def get_shard_iterator(
@@ -24,7 +24,7 @@ def get_shard_iterator(
     stream_name: str,
     shard_id: str,
     last_msg: dlt.sources.incremental[StrStr],
-    initial_at_timestamp: pendulum.DateTime | None,
+    initial_at_timestamp: pendulum.DateTime,
 ) -> Tuple[str, StrAny]:
     """Gets shard `shard_id` of `stream_name` iterator. If `last_msg` incremental is present it may
     contain last message sequence for shard_id. in that case AFTER_SEQUENCE_NUMBER is created.
@@ -44,9 +44,7 @@ def get_shard_iterator(
     elif initial_at_timestamp is None:
         # Fetch all records from the beginning
         iterator_params = dict(ShardIteratorType="TRIM_HORIZON")
-
     elif initial_at_timestamp.timestamp() == 0.0:
-        # will sets to latest i.e only the messages at the tip of the stream are read
         iterator_params = dict(ShardIteratorType="LATEST")
     else:
         iterator_params = dict(
@@ -54,7 +52,7 @@ def get_shard_iterator(
         )
 
     shard_iterator: StrStr = kinesis_client.get_shard_iterator(
-        **get_stream_address(stream_name), ShardId=shard_id, **iterator_params
+        StreamName=stream_name, ShardId=shard_id, **iterator_params
     )
     return shard_iterator["ShardIterator"], iterator_params
 
@@ -77,20 +75,3 @@ def max_sequence_by_shard(values: Sequence[StrStr]) -> StrStr:
     # we compare message sequence at shard_id
     last_value[shard_id] = max(item["seq_no"], last_value.get(shard_id, ""))
     return last_value
-
-
-def get_stream_address(stream_name: str) -> DictStrStr:
-    """
-    Return address of stream, either as StreamName or StreamARN, when applicable.
-
-    Examples:
-    - customer_events
-    - arn:aws:kinesis:eu-central-1:842404475894:stream/customer_events
-
-    https://docs.aws.amazon.com/kinesis/latest/APIReference/API_StreamDescription.html#Streams-Type-StreamDescription-StreamName
-    https://docs.aws.amazon.com/kinesis/latest/APIReference/API_StreamDescription.html#Streams-Type-StreamDescription-StreamARN
-    """
-    if stream_name.startswith("arn:"):
-        return {"StreamARN": stream_name}
-    else:
-        return {"StreamName": stream_name}

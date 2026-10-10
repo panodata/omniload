@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,32 +23,35 @@ Api changelog: https://developers.pipedrive.com/changelog
 To get an api key: https://pipedrive.readme.io/docs/how-to-find-the-api-token
 """
 
-from typing import Any, Dict, Iterator, List, Optional, Union  # noqa: F401
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Union
 
 import dlt
 from dlt.common import pendulum
-from dlt.common.time import ensure_pendulum_datetime_utc
-from dlt.sources import DltResource, TDataItems
+from dlt.common.time import ensure_pendulum_datetime
+from dlt.common.typing import TDataItems
+from dlt.sources import DltResource
 
 from .helpers import group_deal_flows
 from .helpers.custom_fields_munger import rename_fields, update_fields_mapping
 from .helpers.pages import get_pages, get_recent_items_incremental
+
+# Export v2 source for easy access
+from .rest_v2 import pipedrive_v2_source
 from .settings import ENTITY_MAPPINGS, RECENTS_ENTITIES
 from .typing import TDataPage
 
 
-@dlt.source(name="pipedrive", max_table_nesting=0)
+@dlt.source(name="pipedrive")
 def pipedrive_source(
     pipedrive_api_key: str = dlt.secrets.value,
-    since_timestamp: Union[pendulum.DateTime, str] = "1970-01-01 00:00:00",
-) -> Iterator[DltResource]:
+    since_timestamp: Optional[Union[pendulum.DateTime, str]] = "1970-01-01 00:00:00",
+) -> Iterable[DltResource]:
     """
     Get data from the Pipedrive API. Supports incremental loading and custom fields mapping.
 
     Args:
         pipedrive_api_key: https://pipedrive.readme.io/docs/how-to-find-the-api-token
         since_timestamp: Starting timestamp for incremental loading. By default complete history is loaded on first run.
-        incremental: Enable or disable incremental loading.
 
     Returns resources:
         custom_fields_mapping
@@ -67,19 +70,23 @@ def pipedrive_source(
         stages
         users
         leads
+        projects
+        tasks
 
     For custom fields rename the `custom_fields_mapping` resource must be selected or loaded before other resources.
 
     Resources that depend on another resource are implemented as transformers
     so they can re-use the original resource data without re-downloading.
     Examples:  deals_participants, deals_flow
+
+    Note: For v2 API endpoints, use pipedrive_v2_source from pipedrive.rest_v2
     """
 
     # yield nice rename mapping
     yield create_state(pipedrive_api_key) | parsed_mapping
 
     # parse timestamp and build kwargs
-    since_timestamp = ensure_pendulum_datetime_utc(since_timestamp).strftime(
+    since_timestamp = ensure_pendulum_datetime(since_timestamp).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
     resource_kwargs: Any = (
@@ -107,10 +114,8 @@ def pipedrive_source(
         name="deals_flow", write_disposition="merge", primary_key="id"
     )(_get_deals_flow)(pipedrive_api_key)
 
-    yield leads(
-        pipedrive_api_key,
-        update_time=since_timestamp,  # ty: ignore[invalid-argument-type]
-    )
+    # if simple value is passed in place of incremental, it will be used as initial value
+    yield leads(pipedrive_api_key, update_time=since_timestamp)  # type: ignore[arg-type]
 
 
 def _get_deals_flow(

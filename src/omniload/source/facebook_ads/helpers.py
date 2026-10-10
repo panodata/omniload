@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,56 +17,78 @@
 import functools
 import itertools
 import time
-from datetime import datetime
-from typing import Any, Iterator, Optional, Sequence, cast
+from typing import Any, Iterator, Sequence
 
+import dlt
 import humanize
 import pendulum
 from dlt.common import logger
 from dlt.common.configuration.inject import with_config
+from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import DictStrAny, TDataItem, TDataItems
 from dlt.sources.helpers import requests
 from dlt.sources.helpers.requests import Client
 from facebook_business import FacebookAdsApi
-from facebook_business.adobjects.abstractcrudobject import AbstractCrudObject
-from facebook_business.adobjects.abstractobject import AbstractObject
 from facebook_business.adobjects.adaccount import AdAccount
 from facebook_business.adobjects.user import User
 from facebook_business.api import FacebookResponse
 
 from .exceptions import InsightsJobTimeout
 from .settings import (
+    FACEBOOK_INSIGHTS_RETENTION_PERIOD,
     INSIGHTS_PRIMARY_KEY,
     TFbMethod,
 )
+from .utils import AbstractCrudObject, AbstractObject
+
+
+def get_start_date(
+    incremental_start_date: dlt.sources.incremental[str],
+    attribution_window_days_lag: int = 7,
+) -> pendulum.DateTime:
+    """
+    Get the start date for incremental loading of Facebook Insights data.
+    """
+    start_date: pendulum.DateTime = ensure_pendulum_datetime(
+        incremental_start_date.start_value
+    ).subtract(days=attribution_window_days_lag)
+
+    # facebook forgets insights so trim the lag and warn
+    min_start_date = pendulum.today().subtract(
+        months=FACEBOOK_INSIGHTS_RETENTION_PERIOD
+    )
+    if start_date < min_start_date:
+        logger.warning(
+            "%s: Start date is earlier than %s months ago, using %s instead. "
+            "For more information, see https://www.facebook.com/business/help/1695754927158071?id=354406972049255",
+            "facebook_insights",
+            FACEBOOK_INSIGHTS_RETENTION_PERIOD,
+            min_start_date,
+        )
+        start_date = min_start_date
+        incremental_start_date.start_value = min_start_date
+
+    # lag the incremental start date by attribution window lag
+    incremental_start_date.start_value = start_date.isoformat()
+    return start_date
 
 
 def process_report_item(item: AbstractObject) -> DictStrAny:
-    if "date_start" in item:
-        item["date_start"] = datetime.strptime(item["date_start"], "%Y-%m-%d").date()
-    if "date_stop" in item:
-        item["date_stop"] = datetime.strptime(item["date_stop"], "%Y-%m-%d").date()
-
     d: DictStrAny = item.export_all_data()
     for pki in INSIGHTS_PRIMARY_KEY:
         if pki not in d:
             d[pki] = "no_" + pki
+
     return d
 
 
 def get_data_chunked(
-    method: TFbMethod,
-    fields: Sequence[str],
-    states: Sequence[str] | None,
-    chunk_size: int,
-    updated_since: Optional[int] = None,
+    method: TFbMethod, fields: Sequence[str], states: Sequence[str], chunk_size: int
 ) -> Iterator[TDataItems]:
     # add pagination and chunk into lists
     params: DictStrAny = {"limit": chunk_size}
     if states:
         params.update({"effective_status": states})
-    if updated_since:
-        params.update({"updated_since": updated_since})
     it: map[DictStrAny] = map(
         lambda c: c.export_all_data(), method(fields=fields, params=params)
     )
@@ -104,8 +126,8 @@ def enrich_ad_objects(fb_obj_type: AbstractObject, fields: Sequence[str]) -> Any
             raise resp.error()
 
         for item in items:
-            o: AbstractCrudObject = fb_obj_type(item["id"])  # ty: ignore[call-non-callable]
-            o.api_get(  # ty: ignore[unresolved-attribute]
+            o: AbstractCrudObject = fb_obj_type(item["id"])
+            o.api_get(
                 fields=fields,
                 batch=api_batch,
                 success=functools.partial(update_item, item=item),
@@ -127,12 +149,12 @@ def execute_job(
     insights_max_wait_to_finish_seconds: int = 30 * 60,
     insights_max_async_sleep_seconds: int = 5 * 60,
 ) -> AbstractCrudObject:
-    status: str = "Unknown"
+    status: str = None
     time_start = time.time()
-    sleep_time = 3
+    sleep_time = 10
     while status != "Job Completed":
         duration = time.time() - time_start
-        job = job.api_get()  # ty: ignore[unresolved-attribute]
+        job = job.api_get()
         status = job["async_status"]
         percent_complete = job["async_percent_completion"]
 
@@ -159,7 +181,7 @@ def execute_job(
             raise InsightsJobTimeout(
                 "facebook_insights",
                 pretty_error_message.format(
-                    job_id, insights_max_wait_to_finish_seconds
+                    job_id, insights_max_wait_to_finish_seconds // 60
                 ),
             )
 
@@ -170,10 +192,9 @@ def execute_job(
     return job
 
 
-def _init_facebook_api(
-    access_token: str, request_timeout: float, app_api_version: Optional[str] = None
-) -> None:
-    """Initialize Facebook API with retry session."""
+def get_ads_account(
+    account_id: str, access_token: str, request_timeout: float, app_api_version: str
+) -> AdAccount:
     notify_on_token_expiration()
 
     def retry_on_limit(response: requests.Response, exception: BaseException) -> bool:
@@ -206,40 +227,34 @@ def _init_facebook_api(
     retry_session = Client(
         request_timeout=request_timeout,
         raise_for_status=False,
-        retry_condition=retry_on_limit,  # ty: ignore[invalid-argument-type]
+        retry_condition=retry_on_limit,
         request_max_attempts=12,
         request_backoff_factor=2,
     ).session
     retry_session.params.update({"access_token": access_token})  # type: ignore
+    # patch dlt requests session with retries
     API = FacebookAdsApi.init(
+        account_id="act_" + account_id,
         access_token=access_token,
         api_version=app_api_version,
     )
     API._session.requests = retry_session
-
-
-def get_ads_account(
-    account_id: str,
-    access_token: str,
-    request_timeout: float,
-    app_api_version: Optional[str] = None,
-) -> AdAccount:
-    """Get a specific ad account by ID."""
-    _init_facebook_api(access_token, request_timeout, app_api_version)
-    return AdAccount(f"act_{account_id}")
-
-
-def get_all_ad_accounts(
-    access_token: str, request_timeout: float, app_api_version: str
-) -> list[AdAccount]:
-    """Get all ad accounts for the authenticated user."""
-    _init_facebook_api(access_token, request_timeout, app_api_version)
     user = User(fbid="me")
-    return list(user.get_ad_accounts())
+
+    accounts = user.get_ad_accounts()
+    account: AdAccount = None
+    for acc in accounts:
+        if acc["account_id"] == account_id:
+            account = acc
+
+    if not account:
+        raise ValueError("Couldn't find account with id {}".format(account_id))
+
+    return account
 
 
 @with_config(sections=("sources", "facebook_ads"))
-def notify_on_token_expiration(access_token_expires_at: Optional[int] = None) -> None:
+def notify_on_token_expiration(access_token_expires_at: int = None) -> None:
     """Notifies (currently via logger) if access token expires in less than 7 days. Needs `access_token_expires_at` to be configured."""
     if not access_token_expires_at:
         logger.warning(
@@ -251,49 +266,3 @@ def notify_on_token_expiration(access_token_expires_at: Optional[int] = None) ->
             logger.error(
                 f"Access Token expires in {humanize.precisedelta(pendulum.now() - expires_at)}. Replace the token now!"
             )
-
-
-def parse_insights_table_to_source_kwargs(table: str) -> DictStrAny:
-    import typing
-
-    from omniload.source.facebook_ads.settings import (
-        INSIGHTS_BREAKDOWNS_OPTIONS,
-        TInsightsBreakdownOptions,
-        TInsightsLevels,
-    )
-
-    parts = table.split(":")
-
-    source_kwargs = {}
-
-    breakdown_type = cast(TInsightsBreakdownOptions, parts[1])
-
-    valid_breakdowns = list(typing.get_args(TInsightsBreakdownOptions))
-    if breakdown_type in valid_breakdowns:
-        dimensions = INSIGHTS_BREAKDOWNS_OPTIONS[breakdown_type]["breakdowns"]
-        fields = INSIGHTS_BREAKDOWNS_OPTIONS[breakdown_type]["fields"]
-        source_kwargs["dimensions"] = dimensions
-        source_kwargs["fields"] = fields
-    else:
-        dimensions = breakdown_type.split(",")
-        valid_levels = list(typing.get_args(TInsightsLevels))
-        level = None
-        for valid_level in reversed(valid_levels):
-            if valid_level in dimensions:
-                level = valid_level
-                dimensions.remove(valid_level)
-                break
-
-        source_kwargs["level"] = level
-        source_kwargs["dimensions"] = dimensions
-
-    # If custom metrics are provided, parse them
-    if len(parts) == 3:
-        fields = [f.strip() for f in parts[2].split(",") if f.strip()]
-        if not fields:
-            raise ValueError(
-                "Custom metrics must be provided after the second colon in format: facebook_insights:breakdown_type:metric1,metric2..."
-            )
-        source_kwargs["fields"] = fields
-
-    return source_kwargs

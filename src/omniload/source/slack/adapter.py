@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ from .settings import (
 )
 
 
-@dlt.source(name="slack", max_table_nesting=0)
+@dlt.source(name="slack", max_table_nesting=2)
 def slack_source(
     page_size: int = MAX_PAGE_SIZE,
     access_token: str = dlt.secrets.value,
@@ -40,6 +40,7 @@ def slack_source(
     selected_channels: Optional[List[str]] = dlt.config.value,
     table_per_channel: bool = True,
     replies: bool = False,
+    include_private_channels: bool = False,
 ) -> Iterable[DltResource]:
     """
     The source for the Slack pipeline. Available resources are conversations, conversations_history
@@ -54,6 +55,8 @@ def slack_source(
         table_per_channel: Boolean flag, True by default. If True - for each channel separate table with messages is created.
             Otherwise, all messages are put in one table.
         replies: Boolean flag indicating if you want a replies table to be present as well. False by default.
+        include_private_channels: Boolean flag indicating if you want to include private channels and group DMs.
+            Defaults to False. Requires appropriate OAuth scopes (groups:read, mpim:read).
 
     Returns:
         Iterable[DltResource]: A list of DltResource objects representing the data resources.
@@ -71,7 +74,9 @@ def slack_source(
     )
 
     def get_channels(
-        slack_api: SlackAPI, selected_channels: Optional[List[str]]
+        slack_api: SlackAPI,
+        selected_channels: Optional[List[str]],
+        include_private_channels: bool = False,
     ) -> Tuple[List[TDataItem], List[TDataItem]]:
         """
         Returns channel fetched from slack and list of selected channels.
@@ -79,15 +84,24 @@ def slack_source(
         Args:
             slack_api: Slack API instance.
             selected_channels: List of selected channels names or None.
+            include_private_channels: Whether to include private channels and group DMs.
 
         Returns:
             Tuple[List[TDataItem], List[TDataItem]]: fetched channels and selected fetched channels.
         """
         channels: List[TDataItem] = []
+
+        # Define conversation types based on the include_private_channels parameter
+        if include_private_channels:
+            conversation_types = "public_channel,private_channel,mpim"
+        else:
+            conversation_types = "public_channel"
+
         for page_data in slack_api.get_pages(
             resource="conversations.list",
             response_path="$.channels[*]",
             datetime_fields=DEFAULT_DATETIME_FIELDS,
+            params={"types": conversation_types},
         ):
             channels.extend(page_data)
 
@@ -101,7 +115,9 @@ def slack_source(
             fetch_channels = channels
         return channels, fetch_channels
 
-    channels, fetched_selected_channels = get_channels(api, selected_channels)
+    channels, fetched_selected_channels = get_channels(
+        api, selected_channels, include_private_channels
+    )
 
     @dlt.resource(name="channels", primary_key="id", write_disposition="replace")
     def channels_resource() -> Iterable[TDataItem]:
@@ -189,8 +205,6 @@ def slack_source(
             initial_value=start_dt,
             end_value=end_dt,
             allow_external_schedulers=True,
-            range_end="closed",
-            range_start="closed",
         ),
     ) -> Iterable[TDataItem]:
         """
@@ -214,8 +228,6 @@ def slack_source(
             initial_value=start_dt,
             end_value=end_dt,
             allow_external_schedulers=True,
-            range_end="closed",
-            range_start="closed",
         ),
     ) -> Iterable[TDataItem]:
         """Yield all messages for a given channel as a DLT resource. Keep blocks column without normalization.

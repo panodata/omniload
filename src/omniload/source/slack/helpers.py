@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +14,15 @@
 
 """Slack source helpers."""
 
+import logging
 from typing import Any, Generator, Iterable, List, Optional
 from urllib.parse import urljoin
 
 import pendulum
-from dlt.common.time import ensure_pendulum_datetime_utc
+from dlt.common.time import ensure_pendulum_datetime
 from dlt.common.typing import Dict, TAnyDateTime, TDataItem
 from dlt.sources.helpers import requests
-from jsonpath_ng.ext import parse
+from jsonpath_ng.ext import parse  # type: ignore
 
 from .settings import MAX_PAGE_SIZE, SLACK_API_URL
 
@@ -55,9 +56,7 @@ def update_jsonpath(expression: str, json_data: TDataItem, value: Any) -> Any:
     return jsonpath.update_or_create(json_data, value)
 
 
-def ensure_dt_type(
-    dt: Optional[TAnyDateTime] = None, to_ts: Optional[bool] = False
-) -> Any:
+def ensure_dt_type(dt: TAnyDateTime, to_ts: bool = False) -> Any:
     """Converts a datetime to a pendulum datetime or timestamp.
     Args:
         dt: The datetime to convert.
@@ -67,7 +66,7 @@ def ensure_dt_type(
     """
     if dt is None:
         return None
-    out_dt = ensure_pendulum_datetime_utc(dt)
+    out_dt = ensure_pendulum_datetime(dt)
     if to_ts:
         return out_dt.timestamp()
     return out_dt
@@ -97,7 +96,7 @@ class SlackAPI:
         return {"Authorization": f"Bearer {self.access_token}"}
 
     def parameters(
-        self, params: Optional[Dict[str, Any]] = None, next_cursor: Optional[str] = None
+        self, params: Optional[Dict[str, Any]] = None, next_cursor: str = None
     ) -> Dict[str, str]:
         """
         Generate the query parameters to use for the request.
@@ -135,9 +134,7 @@ class SlackAPI:
         return next(extract_jsonpath(cursor_jsonpath, response), None)
 
     def _convert_datetime_fields(
-        self,
-        item: Dict[str, Any],
-        datetime_fields: Optional[List[str]] = None,
+        self, item: Dict[str, Any], datetime_fields: List[str]
     ) -> Dict[str, Any]:
         """Convert timestamp fields in the item to pendulum datetime objects.
 
@@ -166,10 +163,10 @@ class SlackAPI:
     def get_pages(
         self,
         resource: str,
-        response_path: str,
-        params: Optional[Dict[str, Any]] = None,
-        datetime_fields: Optional[List[str]] = None,
-        context: Optional[Dict[str, Any]] = None,
+        response_path: str = None,
+        params: Dict[str, Any] = None,
+        datetime_fields: List[str] = None,
+        context: Dict[str, Any] = None,
     ) -> Iterable[TDataItem]:
         """Get all pages from slack using requests.
         Iterates through all pages and yield each page items.\

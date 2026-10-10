@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Union
 
 import dlt
+from dlt.common.configuration.specs.config_section_context import ConfigSectionContext
 from dlt.common.data_writers import TDataItemFormat
 from dlt.sources import DltResource
 
@@ -25,16 +26,15 @@ from .helpers import (
     MongoDbCollectionResourceConfiguration,
     client_from_credentials,
     collection_documents,
-    process_file_items,
 )
 
 
-@dlt.source(max_table_nesting=0)
+@dlt.source
 def mongodb(
     connection_url: str = dlt.secrets.value,
     database: Optional[str] = dlt.config.value,
     collection_names: Optional[List[str]] = dlt.config.value,
-    incremental: Optional[dlt.sources.incremental] = None,
+    incremental: Optional[dlt.sources.incremental] = None,  # type: ignore[type-arg]
     write_disposition: Optional[str] = dlt.config.value,
     parallel: Optional[bool] = dlt.config.value,
     limit: Optional[int] = None,
@@ -90,7 +90,6 @@ def mongodb(
             primary_key="_id",
             write_disposition=write_disposition,
             spec=MongoDbCollectionConfiguration,
-            max_table_nesting=0,
         )(
             client,
             collection,
@@ -107,23 +106,21 @@ def mongodb(
     name=lambda args: args["collection"],
     standalone=True,
     spec=MongoDbCollectionResourceConfiguration,
-    max_table_nesting=0,
 )
 def mongodb_collection(
     connection_url: str = dlt.secrets.value,
     database: Optional[str] = dlt.config.value,
     collection: str = dlt.config.value,
-    incremental: Optional[dlt.sources.incremental] = None,
+    incremental: Optional[dlt.sources.incremental] = None,  # type: ignore[type-arg]
     write_disposition: Optional[str] = dlt.config.value,
     parallel: Optional[bool] = False,
     limit: Optional[int] = None,
-    chunk_size: Optional[int] = 1000,
+    chunk_size: Optional[int] = 10000,
     data_item_format: Optional[TDataItemFormat] = "object",
     filter_: Optional[Dict[str, Any]] = None,
     projection: Optional[Union[Mapping[str, Any], Iterable[str]]] = dlt.config.value,
     pymongoarrow_schema: Optional[Any] = None,
-    custom_query: Optional[List[Dict[str, Any]]] = None,
-) -> DltResource:
+) -> Any:
     """
     A DLT source which loads a collection from a mongo database using PyMongo.
 
@@ -149,7 +146,6 @@ def mongodb_collection(
                 exclude (dict) - {"released": False, "runtime": False}
             Note: Can't mix include and exclude statements '{"title": True, "released": False}`
         pymongoarrow_schema (pymongoarrow.schema.Schema): Mapping of expected field types to convert BSON to Arrow
-        custom_query (Optional[List[Dict[str, Any]]]): Custom MongoDB aggregation pipeline to execute instead of find()
 
     Returns:
         Iterable[DltResource]: A list of DLT resources for each collection to be loaded.
@@ -179,103 +175,4 @@ def mongodb_collection(
         filter_=filter_ or {},
         projection=projection,
         pymongoarrow_schema=pymongoarrow_schema,
-        custom_query=custom_query,
-    )
-
-
-def mongodb_insert(uri: str):
-    """Creates a dlt.destination for inserting data into a MongoDB collection.
-
-    Args:
-        uri (str): MongoDB connection URI including database.
-
-    Returns:
-        dlt.destination: A DLT destination object configured for MongoDB.
-    """
-    from urllib.parse import urlparse
-
-    parsed_uri = urlparse(uri)
-    database = (
-        parsed_uri.path.lstrip("/") if parsed_uri.path.lstrip("/") else "omniload_db"
-    )
-    first_batch_per_table: dict[str, bool] = {}
-    BATCH_SIZE = 10000
-
-    def destination(items, table) -> None:
-        import pyarrow
-        from pymongo import MongoClient
-
-        collection_name = table["name"]
-
-        if collection_name not in first_batch_per_table:
-            first_batch_per_table[collection_name] = True
-
-        with MongoClient(uri) as client:
-            db = client[database]
-            collection = db[collection_name]
-
-            # Process documents
-            if isinstance(items, str):
-                documents = process_file_items(items)
-            elif isinstance(items, pyarrow.RecordBatch):
-                documents = items.to_pylist()
-            else:
-                documents = [item for item in items if isinstance(item, dict)]
-
-            write_disposition = table.get("write_disposition")
-
-            batches = [
-                documents[i : i + BATCH_SIZE]
-                for i in range(0, len(documents), BATCH_SIZE)
-            ]
-
-            if write_disposition == "merge":
-                from pymongo import ReplaceOne
-
-                primary_keys = [
-                    col_name
-                    for col_name, col_def in table.get("columns", {}).items()
-                    if isinstance(col_def, dict) and col_def.get("primary_key")
-                ]
-
-                if not primary_keys:
-                    raise ValueError(
-                        f"Merge operation requires primary keys for table '{collection_name}'. "
-                        f"Please define primary keys in the table schema or use 'replace' write disposition."
-                    )
-
-                for batch in batches:
-                    operations = [
-                        ReplaceOne(
-                            {key: doc[key] for key in primary_keys},
-                            doc,
-                            upsert=True,
-                        )
-                        for doc in batch
-                        if all(key in doc for key in primary_keys)
-                    ]
-                    if operations:
-                        collection.bulk_write(operations, ordered=False)
-
-            elif write_disposition == "replace":
-                if first_batch_per_table[collection_name] and documents:
-                    collection.delete_many({})
-                    first_batch_per_table[collection_name] = False
-
-                for batch in batches:
-                    if batch:
-                        collection.insert_many(batch)
-
-            else:
-                raise ValueError(
-                    f"Unsupported write disposition '{write_disposition}' for MongoDB destination. "
-                )
-
-    return dlt.destination(
-        destination,
-        name="mongodb",
-        loader_file_format="typed-jsonl",
-        batch_size=1000,
-        naming_convention="snake_case",
-        loader_parallelism_strategy="sequential",
     )

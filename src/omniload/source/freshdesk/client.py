@@ -1,4 +1,4 @@
-# Copyright 2022-2025 ScaleVector
+# Copyright 2022-2026 ScaleVector
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,15 +16,10 @@
 
 import logging
 import time
-from typing import Any, Dict, Iterable, Optional, cast
+from typing import Any, Dict, Iterable, Optional
 
-import pendulum
 from dlt.common.typing import TDataItem
 from dlt.sources.helpers import requests
-
-from omniload.error import HTTPError
-
-TICKETS_QUERY_MAX_PAGE = 10
 
 
 class FreshdeskClient:
@@ -80,15 +75,13 @@ class FreshdeskClient:
                 else:
                     # If the error is not a rate limit (429), raise the exception to be
                     # handled elsewhere or stop execution
-                    raise HTTPError(e) from e
+                    raise
 
     def paginated_response(
         self,
         endpoint: str,
         per_page: int,
-        start_date: pendulum.DateTime,
-        end_date: pendulum.DateTime,
-        query: Optional[str] = None,
+        updated_at: Optional[str] = None,
     ) -> Iterable[TDataItem]:
         """
         Fetches a paginated response from a specified endpoint.
@@ -98,11 +91,6 @@ class FreshdeskClient:
         updated at the specified timestamp.
         """
         page = 1
-        if query is not None:
-            query = query.replace('"', "").strip()
-
-        is_tickets_query = query and endpoint == "tickets"
-
         while True:
             # Construct the URL for the specific endpoint
             url = f"{self.base_url}/{endpoint}"
@@ -114,39 +102,15 @@ class FreshdeskClient:
                 param_key = (
                     "updated_since" if endpoint == "tickets" else "_updated_since"
                 )
-
-                params[param_key] = start_date.to_iso8601_string()
-
-            if is_tickets_query:
-                url = f"{self.base_url}/search/tickets"
-                params = {
-                    "query": f'"{query}"',
-                    "page": page,
-                }
+                if updated_at:
+                    params[param_key] = updated_at
 
             # Handle requests with rate-limiting
             # A maximum of 300 pages (30000 tickets) will be returned.
             response = self._request_with_rate_limit(url, params=params)
             data = response.json()
 
-            if query and endpoint == "tickets":
-                data = data["results"]
-
             if not data:
                 break  # Stop if no data or max page limit reached
-
-            filtered_data = [
-                item
-                for item in data
-                if "updated_at" in item
-                and cast(pendulum.DateTime, pendulum.parse(item["updated_at"]))
-                <= end_date
-            ]
-            if not filtered_data:
-                break
-            yield filtered_data
+            yield data
             page += 1
-
-            # https://developers.freshdesk.com/api/#filter_tickets
-            if is_tickets_query and page > TICKETS_QUERY_MAX_PAGE:
-                break
