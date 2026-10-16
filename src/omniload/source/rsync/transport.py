@@ -67,8 +67,8 @@ class SshTransport(RsyncTransport):
     emitted only when at least one of these is present).
     """
 
-    host: str
-    user: Optional[str] = None
+    host: str  # ty: ignore[invalid-attribute-override]
+    user: Optional[str] = None  # ty: ignore[invalid-attribute-override]
     port: Optional[int] = None
     rsh: Optional[str] = None
     ssh_key: Optional[str] = None
@@ -125,8 +125,8 @@ class DaemonTransport(RsyncTransport):
     command line.
     """
 
-    host: str
-    user: Optional[str] = None
+    host: str  # ty: ignore[invalid-attribute-override]
+    user: Optional[str] = None  # ty: ignore[invalid-attribute-override]
     port: int = DEFAULT_DAEMON_PORT
     password: Optional[str] = None
     password_file: Optional[str] = None

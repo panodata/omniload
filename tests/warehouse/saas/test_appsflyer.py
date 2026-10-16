@@ -197,7 +197,7 @@ def test_exclude_metrics_for_date_range():
     to_date = "2024-01-11"
     now = "2024-01-12"
 
-    with pendulum.travel_to(cast(pendulum.DateTime, pendulum.parse(now))):
+    with pendulum.travel_to(cast(pendulum.DateTime, pendulum.parse(now))):  # ty: ignore[invalid-context-manager,unused-ignore-comment,unused-ignore-comment]
         excluded_metrics = exclude_metrics_for_date_range(metrics, from_date, to_date)
         assert excluded_metrics == [
             "cohort_day_1_revenue_per_user",
