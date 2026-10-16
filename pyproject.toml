@@ -122,7 +122,7 @@ dependencies = [
   "setuptools>=83",
   "simple-salesforce<2",
   "smartsheet-python-sdk<5",
-  "snowflake-connector-python>=4.7.1,<5",
+  "snowflake-connector-python>=4.7.1,<6",
   "snowflake-sqlalchemy<2",
   "sqlalchemy<2.2",
   "sqlalchemy-bigquery<2",
