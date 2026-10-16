@@ -111,7 +111,7 @@ dependencies = [
   "pyairtable<4",
   "pyarrow>=18,<27",
   "pyasn1>=0.6.4",
-  "pyathena<4",
+  "pyathena<5",
   "pymongo<5",
   "pymongoarrow<2",
   "pymysql<2",
