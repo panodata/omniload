@@ -80,4 +80,4 @@ omniload ingest \
   --dest-table="main.table_name"
 ```
 
-For more details on how to set up key-based authentication, see [this guide](https://select.dev/docs/snowflake-developer-guide/snowflake-key-pair).
+For more details on how to set up key-based authentication, see [this guide](https://select.dev/docs/resources/snowflake-developer-guide/snowflake-key-pair).
