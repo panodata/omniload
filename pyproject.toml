@@ -87,7 +87,7 @@ dependencies = [
   "dlt[deltalake]>=1.22,<1.32",
   "dlt-cratedb<0.2",
   "dlt-filesystem",
-  "duckdb<1.6",
+  "duckdb<2.1",
   "duckdb-engine<0.18",
   "elasticsearch<10",
   "facebook-business<27",
