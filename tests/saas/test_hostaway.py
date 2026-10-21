@@ -55,7 +55,9 @@ def test_hostaway_source_full_refresh(hostaway_table, tmp_path):
     assert result.exit_code == 0
 
     conn = duckdb.connect(abs_db_path)
-    result = conn.sql(f"select count(*) from raw.{hostaway_table}").fetchone()
+    result = (
+        conn.sql(f"select count(*) from raw.{hostaway_table}").limit(1).fetchall()[0]
+    )
     assert result is not None, "Database result is empty"
     assert result[0] > 0, f"No rows ingested for table {hostaway_table}"
     conn.close()

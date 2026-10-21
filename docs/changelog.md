@@ -2,6 +2,8 @@
 
 ## in progress
 
+- Connector: Verified support for DuckDB 2.x
+
 ## 2026/10/21 v0.20.0
 
 - Keep datetime normalization compatible with dlt 1.31 while retaining support for

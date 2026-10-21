@@ -45,7 +45,7 @@ def test_stripe_source_full_refresh(stripe_table, tmp_path):
 
     # Verify data was loaded
     conn = duckdb.connect(abs_db_path)
-    res = conn.sql(f"select count(*) from raw.{stripe_table}s").fetchone()
+    res = conn.sql(f"select count(*) from raw.{stripe_table}s").limit(1).fetchall()[0]
     conn.close()
     assert res, "Database result is empty"
     assert res[0] > 0, f"No {stripe_table} records found"
@@ -82,7 +82,7 @@ def test_stripe_source_incremental(stripe_table, tmp_path):
 
     # Verify data was loaded
     conn = duckdb.connect(abs_db_path)
-    res = conn.sql(f"select count(*) from raw.{stripe_table}s").fetchone()
+    res = conn.sql(f"select count(*) from raw.{stripe_table}s").limit(1).fetchall()[0]
     conn.close()
     assert res, "Database result is empty"
     if res[0] == 0:
