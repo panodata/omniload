@@ -79,7 +79,8 @@ dependencies = [
   "clickhouse-driver<0.3",
   "clickhouse-sqlalchemy<0.4",
   "colorlog<7",
-  "confluent-kafka<2.17",
+  # confluent-kafka publishes no wheels for Python 3.15 yet.
+  "confluent-kafka<2.17; python_version<'3.15'",
   "couchbase>=4,<5",
   "cryptography>=50; python_version>='3.11'",
   "databricks-sql-connector<5",
@@ -173,7 +174,8 @@ optional-dependencies.notify = [
   "apprise>=2,<3",
 ]
 optional-dependencies.odbc = [
-  "pyodbc<5.4",
+  # pyodbc publishes no wheels for Python 3.15 yet.
+  "pyodbc<5.4; python_version<'3.15'",
 ]
 optional-dependencies.oracle = [
   "oracledb>=2.0.0",
