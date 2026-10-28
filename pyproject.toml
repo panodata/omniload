@@ -126,7 +126,7 @@ dependencies = [
   "snowflake-sqlalchemy<3",
   # SQLAlchemy 2.0.55 reflects PostgreSQL primary keys with a `REGCLASS` cast, which
   # duckdb-engine (PostgreSQL dialect on DuckDB) cannot execute, so reading a DuckDB table fails.
-  "sqlalchemy<2.0.55",
+  "sqlalchemy<2.1.7",
   "sqlalchemy-bigquery<2",
   "sqlalchemy-cratedb<1",
   "sqlalchemy-hana<6",
