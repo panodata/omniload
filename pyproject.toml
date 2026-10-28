@@ -147,7 +147,7 @@ optional-dependencies.adbcbridge = [
   "adbcbridge>=0.1.3,<0.2",
 ]
 optional-dependencies.develop = [
-  "pkginfo<2",
+  "pkginfo<3",
   "poethepoet<1",
   "pyproject-fmt<3",
   "pytest-repeat<1",
