@@ -84,7 +84,7 @@ dependencies = [
   "databricks-sql-connector<5",
   "databricks-sqlalchemy<3",
   "dataclasses-json<0.7",
-  "dlt[deltalake]>=1.31,<1.32",
+  "dlt[deltalake]>=1.31,<1.33",
   "dlt-cratedb<0.2",
   "dlt-filesystem>=0.22",
   "duckdb<2.1",
