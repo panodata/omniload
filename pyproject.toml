@@ -44,6 +44,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Topic :: Adaptive Technologies",
   "Topic :: Communications",
   "Topic :: Database",
@@ -78,8 +79,12 @@ dependencies = [
   "clickhouse-driver<0.3",
   "clickhouse-sqlalchemy<0.4",
   "colorlog<7",
-  "confluent-kafka<2.17",
-  "couchbase>=4,<5",
+  # confluent-kafka publishes no wheels for Python 3.15 yet.
+  "confluent-kafka<2.17; python_version<'3.15'",
+  # Wants to build `openssl-3.5.2` on Windows/Python3.15 but fails.
+  # error: Failed to build `couchbase==4.6.3`
+  "couchbase>=4,<5; platform_system!='Windows'",
+  "couchbase>=4,<5; platform_system=='Windows' and python_version<'3.15'",
   "cryptography>=50; python_version>='3.11'",
   "databricks-sql-connector<5",
   "databricks-sqlalchemy<3",
@@ -172,7 +177,8 @@ optional-dependencies.notify = [
   "apprise>=2,<3",
 ]
 optional-dependencies.odbc = [
-  "pyodbc<5.4",
+  # pyodbc publishes no wheels for Python 3.15 yet.
+  "pyodbc<5.4; python_version<'3.15'",
 ]
 optional-dependencies.oracle = [
   "oracledb>=2.0.0",
@@ -198,7 +204,9 @@ optional-dependencies.release = [
 # therefore caps polars for [full] as a whole.
 optional-dependencies.reshape = [
   "macropipe<1",
-  "tikray<1",
+  # `tikray`  depends on `orjsonl` which depends on `xopen` which depends on `isal`
+  # https://github.com/pycompression/python-isal/issues/278
+  "tikray<1; python_version<'3.15'",
 ]
 optional-dependencies.test = [
   "adbcbridge>=0.1.3,<0.2",
