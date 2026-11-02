@@ -205,13 +205,13 @@ def test_failed_session_statement_closes_the_connection_itself():
     assert connection.closed
 
 
-@pytest.mark.parametrize("backend", ["adbcbridge", "connectorx"])
-def test_backends_with_their_own_connection_are_refused(backend):
+@pytest.mark.parametrize("backend", ["adbcbridge", "connectorx", "pandas"])
+def test_backends_not_known_to_read_through_the_engine_are_refused(backend):
     with pytest.raises(ValueError, match=f"--sql-backend {backend}"):
         build(EXASOL_URI, "probe.t", sql_backend=backend)
 
 
-@pytest.mark.parametrize("backend", ["sqlalchemy", "pyarrow", "pandas"])
+@pytest.mark.parametrize("backend", ["sqlalchemy", "pyarrow"])
 def test_backends_reading_through_the_engine_are_accepted(backend):
     assert build(EXASOL_URI, "probe.t", sql_backend=backend)["backend"] == backend
 

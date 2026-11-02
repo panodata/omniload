@@ -12,6 +12,7 @@ The module starts one container and shares it, so run it without xdist::
 Under xdist each worker that collects a test would start its own container.
 """
 
+import contextlib
 import os
 import ssl
 import time
@@ -32,6 +33,8 @@ if not os.environ.get("OMNILOAD_TEST_EXASOL"):
 # telemetry client reads the setting once, so it has to precede the first connection.
 os.environ.setdefault("EXASOL_TELEMETRY_DISABLE", "1")
 
+import docker  # noqa: E402
+import docker.errors  # noqa: E402
 import duckdb  # noqa: E402
 import pyexasol  # noqa: E402
 import sqlalchemy as sa  # noqa: E402
@@ -61,9 +64,10 @@ def exasol():
     if int(os.environ.get("PYTEST_XDIST_WORKER_COUNT", "1")) > 1:
         pytest.fail("tests/warehouse/db/test_exasol.py must run with -n0")
 
+    name = f"omniload-test-exasol-{uuid.uuid4().hex[:12]}"
     container = (
         DockerContainer(EXASOL_IMAGE)
-        .with_name(f"omniload-test-exasol-{uuid.uuid4().hex[:12]}")
+        .with_name(name)
         .with_exposed_ports(PORT)
         .with_kwargs(
             privileged=True,
@@ -73,8 +77,8 @@ def exasol():
             stop_signal="SIGTERM",
         )
     )
-    container.start()
     try:
+        container.start()
         port = int(container.get_exposed_port(PORT))
         deadline = time.monotonic() + READY_TIMEOUT
         while True:
@@ -88,7 +92,9 @@ def exasol():
         seed(port)
         yield port
     finally:
-        container.stop()
+        # By name, so a container that was created but failed to start goes too.
+        with contextlib.suppress(docker.errors.NotFound):
+            docker.from_env().containers.get(name).remove(force=True, v=True)
 
 
 def connect(port, user="sys", password=PASSWORD):

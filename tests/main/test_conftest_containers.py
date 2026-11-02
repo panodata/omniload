@@ -30,6 +30,7 @@ def test_exasol_module_alone_boots_no_shared_containers():
 def test_exasol_module_among_other_targets_boots_the_matrix():
     for args in (
         [EXASOL, "tests/warehouse/db/test_mysql.py"],
+        [EXASOL, "."],
         ["tests/warehouse/db"],
         ["tests"],
         [],

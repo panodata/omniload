@@ -31,7 +31,8 @@ URI parameters:
 
 Options:
 
-- `ENCRYPTION`: `Yes` (the default) connects over TLS, `No` without it.
+- `ENCRYPTION`: `Yes` (the default) connects over TLS. `No` connects without it, and
+  needs `SSLCertificate=SSL_VERIFY_NONE` as well.
 - `FINGERPRINT`: the SHA-256 fingerprint of the server's certificate. The connection
   is accepted when the certificate matches it, so it suits a server with a
   self-signed certificate.

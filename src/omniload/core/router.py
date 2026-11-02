@@ -29,9 +29,10 @@ from omniload.core.registry import SOURCE_CAPABILITIES
 from omniload.core.tablename import Defaults, TableName
 
 EXASOL_SESSION_SETUP = "ALTER SESSION SET TIME_ZONE = 'UTC'"
-# dlt backends that read through the SQLAlchemy engine, and so through the listener
-# that puts each session in UTC. The others open a connection of their own.
-EXASOL_ENGINE_BACKENDS = ("sqlalchemy", "pyarrow", "pandas")
+# The backends Exasol is read with: they read through the SQLAlchemy engine, and so
+# through the listener that puts each session in UTC. adbcbridge and connectorx open
+# a connection of their own.
+EXASOL_ENGINE_BACKENDS = ("sqlalchemy", "pyarrow")
 
 
 def _exasol_utc_session(dbapi_connection, connection_record) -> None:
@@ -462,10 +463,10 @@ class SqlSourceRouter:
 
         if is_exasol and sql_backend not in EXASOL_ENGINE_BACKENDS:
             raise ValueError(
-                f"Exasol cannot be read with --sql-backend {sql_backend}: that backend "
-                "opens its own connection, which does not run in UTC, so TIMESTAMP "
-                "WITH LOCAL TIME ZONE values would load shifted. Use the pyarrow or "
-                "sqlalchemy backend."
+                f"Exasol cannot be read with --sql-backend {sql_backend}. Only the "
+                "pyarrow and sqlalchemy backends read through the session omniload "
+                "sets to UTC; a connection outside it would load TIMESTAMP WITH LOCAL "
+                "TIME ZONE values shifted."
             )
 
         credentials = ConnectionStringCredentials(uri)

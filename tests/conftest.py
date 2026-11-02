@@ -52,6 +52,9 @@ def _only_exasol_tests(config) -> bool:
         Path(config.rootpath) / "tests/warehouse/db/test_exasol.py"
     ).resolve()
     targets = _explicit_test_targets(config)
+    # A target the parser could not place, such as `.`, may select anything.
+    if len(targets) != len(config.args):
+        return False
     return bool(targets) and all(target == exasol_tests for target in targets)
 
 
