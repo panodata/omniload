@@ -7,7 +7,8 @@
   (part of `full`; empty on Python 3.15, which the dialect does not support yet).
   Sessions run in UTC, so `TIMESTAMP WITH LOCAL TIME ZONE` values load as the
   correct instants, and aware `--interval-start` / `--interval-end` values are
-  converted to UTC before they are bound.
+  converted to UTC before they are bound. The `adbcbridge` and `connectorx`
+  backends, which read over a connection of their own, are refused for Exasol.
 
 ## 2026/10/30 v0.22.0
 

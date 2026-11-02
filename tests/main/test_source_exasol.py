@@ -14,14 +14,12 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy.pool import QueuePool
 
-from omniload.core.router import (
-    EXASOL_SESSION_SETUP,
-    SqlSourceRouter,
-    _exasol_utc_session,
-)
+from omniload.core.router import SqlSourceRouter, _exasol_utc_session
 from omniload.error import ValidationError
 
 EXASOL_URI = "exa+websocket://sys:secret@exasol.example:8563"
+# Written out rather than imported, so a change to the statement fails these tests.
+UTC_SESSION = "ALTER SESSION SET TIME_ZONE = 'UTC'"
 AWARE_START = datetime(2026, 1, 31, 12, 30, tzinfo=timezone(timedelta(hours=1)))
 AWARE_END = datetime(2026, 1, 31, 14, 0, tzinfo=timezone(timedelta(hours=1)))
 
@@ -47,7 +45,7 @@ class RecordingCursor:
         self._fail = fail
 
     def execute(self, statement, *args):
-        if statement == EXASOL_SESSION_SETUP:
+        if statement == UTC_SESSION:
             self._log.append(statement)
             if self._fail:
                 raise sqlite3.OperationalError("insufficient privileges")
@@ -126,7 +124,7 @@ def test_session_listener_is_attached_for_exasol(uri):
     assert callback(engine) is engine
     with engine.connect() as connection:
         assert connection.exec_driver_sql("SELECT 1").scalar() == 1
-    assert log == [EXASOL_SESSION_SETUP]
+    assert log == [UTC_SESSION]
 
 
 @pytest.mark.parametrize(
@@ -153,18 +151,18 @@ def test_session_statement_runs_once_per_new_connection():
     with engine.connect():
         pass
     assert len(connections) == 1
-    assert log == [EXASOL_SESSION_SETUP]
+    assert log == [UTC_SESSION]
 
     with engine.connect(), engine.connect():
         pass
     assert len(connections) == 2
-    assert log == [EXASOL_SESSION_SETUP] * 2
+    assert log == [UTC_SESSION] * 2
 
     engine.dispose()
     with engine.connect():
         pass
     assert len(connections) == 3
-    assert log == [EXASOL_SESSION_SETUP] * 3
+    assert log == [UTC_SESSION] * 3
 
 
 def test_session_listener_stays_on_its_own_engine():
@@ -179,7 +177,7 @@ def test_session_listener_stays_on_its_own_engine():
 
     with first.connect():
         pass
-    assert first_log == [EXASOL_SESSION_SETUP]
+    assert first_log == [UTC_SESSION]
     assert second_log == []
 
 
@@ -192,9 +190,9 @@ def test_failed_session_statement_fails_the_connection():
         engine.connect()
 
     message = str(exc_info.value)
-    assert EXASOL_SESSION_SETUP in message
+    assert UTC_SESSION in message
     assert "insufficient privileges" in message
-    assert log == [EXASOL_SESSION_SETUP]
+    assert log == [UTC_SESSION]
     assert [connection.closed for connection in connections] == [True]
 
 
@@ -205,6 +203,22 @@ def test_failed_session_statement_closes_the_connection_itself():
     with pytest.raises(RuntimeError, match="insufficient privileges"):
         _exasol_utc_session(connection, None)
     assert connection.closed
+
+
+@pytest.mark.parametrize("backend", ["adbcbridge", "connectorx"])
+def test_backends_with_their_own_connection_are_refused(backend):
+    with pytest.raises(ValueError, match=f"--sql-backend {backend}"):
+        build(EXASOL_URI, "probe.t", sql_backend=backend)
+
+
+@pytest.mark.parametrize("backend", ["sqlalchemy", "pyarrow", "pandas"])
+def test_backends_reading_through_the_engine_are_accepted(backend):
+    assert build(EXASOL_URI, "probe.t", sql_backend=backend)["backend"] == backend
+
+
+def test_query_sources_read_through_the_engine_whatever_the_backend():
+    captured = build(EXASOL_URI, "query:SELECT 1", sql_backend="adbcbridge")
+    assert captured["backend"] == "sqlalchemy"
 
 
 def test_aware_bounds_reach_the_incremental_as_naive_utc():
