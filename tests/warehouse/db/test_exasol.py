@@ -493,7 +493,8 @@ def test_interval_day_to_second_fails_the_load(exasol, tmp_path, backend):
     )
     assert result.exit_code != 0
     message = repr(result.exception).lower()
-    assert "timedelta" in message or "duration" in message, message
+    expected = {"sqlalchemy": "timedelta", "pyarrow": "duration"}[backend]
+    assert expected in message, message
 
 
 def test_timestamp_and_tsltz_compare_in_utc(exasol, tmp_path, monkeypatch):
