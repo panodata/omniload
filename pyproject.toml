@@ -155,11 +155,18 @@ optional-dependencies.develop = [
   "ty==0.0.95",
   "validate-pyproject<1",
 ]
+# Exasol, through the sqlalchemy-exasol websocket dialect (`exa://`, `exa+websocket://`).
+# Its releases declare Requires-Python <3.15, and on 3.15 pip would otherwise backtrack
+# to a release from before SQLAlchemy 2, so the extra is empty there. Drop the marker
+# once a release supports 3.15.
+optional-dependencies.exasol = [
+  "sqlalchemy-exasol>=7.2,<8; python_version<'3.15'",
+]
 # The filesystem and blob stack lives in its own distribution.
 optional-dependencies.filesystem = [
   "dlt-filesystem>=0.22",
 ]
-optional-dependencies.full = [ "omniload[adbcbridge,ibm-db,iterable,notify,odbc,oracle,reshape,turso,vortex]" ]
+optional-dependencies.full = [ "omniload[adbcbridge,exasol,ibm-db,iterable,notify,odbc,oracle,reshape,turso,vortex]" ]
 optional-dependencies.ibm-db = [
   "ibm-db<4; platform_machine!='aarch64'",
   "ibm-db-sa<0.5; platform_machine!='aarch64'",

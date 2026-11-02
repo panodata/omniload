@@ -2,6 +2,13 @@
 
 ## in progress
 
+- Exasol: Add a source for `exa://` and `exa+websocket://` URIs through the
+  sqlalchemy-exasol websocket dialect, installed with the new `exasol` extra
+  (part of `full`; empty on Python 3.15, which the dialect does not support yet).
+  Sessions run in UTC, so `TIMESTAMP WITH LOCAL TIME ZONE` values load as the
+  correct instants, and aware `--interval-start` / `--interval-end` values are
+  converted to UTC before they are bound.
+
 ## 2026/10/30 v0.22.0
 
 - Updated to dlt 1.32

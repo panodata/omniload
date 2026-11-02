@@ -1,9 +1,10 @@
 import base64
+import contextlib
 import json
 import os
 import sys
 import tempfile
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import (
     Any,
     Callable,
@@ -26,6 +27,61 @@ from dlt.sources.sql_database import BaseTableLoader
 
 from omniload.core.registry import SOURCE_CAPABILITIES
 from omniload.core.tablename import Defaults, TableName
+
+EXASOL_SESSION_SETUP = "ALTER SESSION SET TIME_ZONE = 'UTC'"
+
+
+def _exasol_utc_session(dbapi_connection, connection_record) -> None:
+    """Put a new Exasol connection in a UTC session, or fail the connection.
+
+    Exasol returns TIMESTAMP WITH LOCAL TIME ZONE values as naive wall time in the
+    session time zone, and dlt reads naive timestamps as UTC, so any other session
+    zone shifts every such instant by its offset. Reading on in the server's zone
+    would load those wrong instants without an error, so a failure here is raised.
+    """
+    try:
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute(EXASOL_SESSION_SETUP)
+        finally:
+            cursor.close()
+    except Exception as exc:
+        # SQLAlchemy closes a connection stranded by a failed connect event only
+        # from 2.0.53 on.
+        with contextlib.suppress(Exception):
+            dbapi_connection.close()
+        raise RuntimeError(
+            f"Exasol: {EXASOL_SESSION_SETUP!r} failed on a new connection, so "
+            f"TIMESTAMP WITH LOCAL TIME ZONE values cannot be read correctly: {exc}"
+        ) from exc
+
+
+def _exasol_engine_adapter(engine):
+    """Attach the UTC session listener to an Exasol engine.
+
+    SQLAlchemy registers a given function once per target, so applying this twice
+    to one engine still runs the statement once per new connection.
+    """
+    from sqlalchemy import event
+
+    event.listen(engine, "connect", _exasol_utc_session)
+    return engine
+
+
+def _naive_utc(value):
+    """Convert an aware datetime to naive UTC; return anything else unchanged."""
+    if isinstance(value, datetime) and value.utcoffset() is not None:
+        utc = value.astimezone(timezone.utc)
+        return datetime(
+            utc.year,
+            utc.month,
+            utc.day,
+            utc.hour,
+            utc.minute,
+            utc.second,
+            utc.microsecond,
+        )
+    return value
 
 
 class SqlSourceRouter:
@@ -53,6 +109,7 @@ class SqlSourceRouter:
         # `sqlite+<driver>` (e.g. pyturso's `sqlite+turso`) is still a SQLite file,
         # whose only schema without an ATTACH is `main`.
         is_sqlite = scheme.split("+", 1)[0] == "sqlite"
+        is_exasol = scheme.split("+", 1)[0] == "exa"
         if not table:
             # Empty table options remain temporarily valid for pipeline elements that
             # do not name a table. SQL reflection will report the missing table as it
@@ -73,6 +130,14 @@ class SqlSourceRouter:
                     table=table_fields.table,
                 )
 
+        if is_exasol:
+            # The Exasol dialect binds a datetime by formatting it, dropping any UTC
+            # offset unconverted. Sessions run in UTC (see _exasol_utc_session), so
+            # aware bounds become naive UTC, for the incremental and `query:` alike.
+            for bound in ("interval_start", "interval_end"):
+                if bound in kwargs:
+                    kwargs[bound] = _naive_utc(kwargs[bound])
+
         incremental = None
         if kwargs.get("incremental_key"):
             start_value = kwargs.get("interval_start")
@@ -86,6 +151,8 @@ class SqlSourceRouter:
             )
 
         engine_adapter_callback = None
+        if is_exasol:
+            engine_adapter_callback = _exasol_engine_adapter
 
         if uri.startswith("md://") or uri.startswith("motherduck://"):
             parsed_uri = urlparse(uri)
