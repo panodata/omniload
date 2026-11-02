@@ -83,6 +83,64 @@ jobs:
         with:
           fail_ci_if_error: true
 
+  # Exasol's docker-db image is 12 GB unpacked and runs privileged, so its round
+  # trips get a job of their own instead of sharing the integration job's disk and
+  # container matrix. The module skips unless OMNILOAD_TEST_EXASOL is set, and with
+  # it set, fails rather than skips when it cannot run.
+  integration-exasol:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.10'
+          - '3.14'
+
+    runs-on: ubuntu-latest
+    env:
+      OMNILOAD_TEST_EXASOL: '1'
+      TESTCONTAINERS_RYUK_DISABLED: 'true'
+    steps:
+
+      - name: Acquire sources
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          activate-environment: 'true'
+          cache-suffix: exasol-${{ matrix.python-version }}
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install project
+        run: |
+          uv pip install --editable='.[full,develop,test]'
+          python -c "import importlib.metadata as m; print('sqlalchemy-exasol', m.version('sqlalchemy-exasol'))"
+
+      - name: Set timezone
+        uses: szenius/set-timezone@v2.0
+        with:
+          timezoneLinux: "Europe/Berlin"
+
+      - name: Pull the Exasol image
+        run: |
+          df -h /
+          docker pull "$(python -c 'from tests.warehouse.manager import EXASOL_IMAGE; print(EXASOL_IMAGE)')"
+          df -h /
+
+      # One container per module, so no xdist. The junit check fails the job when
+      # nothing ran, so a module that skipped cannot pass for one that was tested.
+      - name: Run the Exasol tests
+        run: |
+          pytest tests/warehouse/db/test_exasol.py -n0 --no-cov -rA -p no:cacheprovider --junitxml=exasol-junit.xml
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          suite = ET.parse("exasol-junit.xml").getroot().find("testsuite")
+          tests, skipped = int(suite.get("tests")), int(suite.get("skipped"))
+          print(f"Exasol tests: {tests} collected, {skipped} skipped")
+          assert tests > 0 and skipped == 0, "the Exasol tests did not run"
+          PY
+
   unit:
     strategy:
       fail-fast: false

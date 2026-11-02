@@ -35,6 +35,9 @@ AZURITE_COMMAND = [
 ]
 CLICKHOUSE_IMAGE = "docker.io/clickhouse/clickhouse-server:26.5"
 COUCHBASE_IMAGE = "docker.io/couchbase:7.6.9"
+# Privileged, amd64 only and 12 GB unpacked, so tests/warehouse/db/test_exasol.py
+# starts it on demand and only when OMNILOAD_TEST_EXASOL is set.
+EXASOL_IMAGE = "docker.io/exasol/docker-db:2026.1.2"
 FLOCI_IMAGE = "docker.io/floci/floci:1.5.25"
 GCS_FAKE_SERVER_IMAGE = "docker.io/fsouza/fake-gcs-server:1.55.1"
 KAFKA_IMAGE = "docker.io/confluentinc/cp-kafka:7.6.0"

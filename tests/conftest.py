@@ -43,6 +43,18 @@ def _only_main_filesystem_tests(config) -> bool:
     )
 
 
+def _only_exasol_tests(config) -> bool:
+    """Return whether every explicit pytest target is the opt-in Exasol module.
+
+    That module starts its own Exasol container and uses none of the shared ones.
+    """
+    exasol_tests = (
+        Path(config.rootpath) / "tests/warehouse/db/test_exasol.py"
+    ).resolve()
+    targets = _explicit_test_targets(config)
+    return bool(targets) and all(target == exasol_tests for target in targets)
+
+
 def _remote_filesystem_tests_selected(config) -> bool:
     """Return whether the invocation can collect the remote emulator test module."""
     if hasattr(config, "workerinput"):
@@ -69,7 +81,7 @@ def _all_managed_containers(config):
 
 def _managed_containers(config):
     containers = set()
-    if not _only_main_filesystem_tests(config):
+    if not (_only_main_filesystem_tests(config) or _only_exasol_tests(config)):
         containers |= set(SOURCES.values()) | set(DESTINATIONS.values())
     if _remote_filesystem_tests_selected(config):
         containers |= set(get_remote_filesystem_services().values())
