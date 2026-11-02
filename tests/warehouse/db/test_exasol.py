@@ -91,12 +91,9 @@ def exasol():
                 break
             except Exception as exc:
                 if time.monotonic() > deadline:
-                    wrapped = container.get_wrapped_container()
-                    wrapped.reload()
-                    logs = wrapped.logs(tail=40).decode(errors="replace")
                     pytest.fail(
-                        f"Exasol did not accept connections within {READY_TIMEOUT} s "
-                        f"(container {wrapped.status}): {exc!r}\n{logs}"
+                        f"Exasol did not accept connections within {READY_TIMEOUT} s: "
+                        f"{exc!r}\n{container_state(container)}"
                     )
                 time.sleep(2)
         seed(server)
@@ -108,6 +105,17 @@ def exasol():
             contextlib.suppress(docker.errors.NotFound),
         ):
             client.containers.get(name).remove(force=True, v=True)
+
+
+def container_state(container):
+    """Describe the container for a readiness failure, without ever raising."""
+    try:
+        wrapped = container.get_wrapped_container()
+        wrapped.reload()
+        logs = wrapped.logs(tail=40).decode(errors="replace")
+    except Exception as error:
+        return f"container state unavailable: {error!r}"
+    return f"container {wrapped.status}, last log lines:\n{logs}"
 
 
 def connect(server, user="sys", password=PASSWORD):
