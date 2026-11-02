@@ -33,9 +33,9 @@ Options:
 
 - `ENCRYPTION`: `Yes` (the default) connects over TLS. `No` connects without it, and
   needs `SSLCertificate=SSL_VERIFY_NONE` as well.
-- `FINGERPRINT`: the SHA-256 fingerprint of the server's certificate. The connection
-  is accepted when the certificate matches it, so it suits a server with a
-  self-signed certificate.
+- `FINGERPRINT`: the SHA-256 fingerprint of the server's certificate, as upper-case
+  hexadecimal digits without separators. The connection is accepted when the
+  certificate matches it, so it suits a server with a self-signed certificate.
 - `SSLCertificate=SSL_VERIFY_NONE`: accept any certificate without checking it, for
   a local test server.
 
@@ -65,8 +65,8 @@ backend and `--sql-backend sqlalchemy` give the same result.
 | `BOOLEAN` | `BOOLEAN` | |
 | `CHAR(n)` | `VARCHAR` | Blank-padded to `n` characters |
 | `DATE` | `DATE` | |
-| `DECIMAL(18,0)`, `INTEGER` | `BIGINT` | |
-| `DECIMAL(p,s)` | `DECIMAL(p,s)` | All 36 digits kept |
+| `DECIMAL(p,0)` up to 18 digits, `INTEGER` | `BIGINT` | |
+| `DECIMAL(p,s)`, other | `DECIMAL(p,s)` | All 36 digits kept |
 | `DOUBLE` | `DOUBLE` | |
 | `GEOMETRY` | `VARCHAR` | Well-known text, such as `POINT (1 2)` |
 | `HASHTYPE` | `VARCHAR` | Hexadecimal digits |

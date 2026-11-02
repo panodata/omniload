@@ -17,6 +17,7 @@ import os
 import ssl
 import time
 import uuid
+from collections import namedtuple
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -52,6 +53,7 @@ READER = "omniload_reader"
 READER_PASSWORD = "Reader-Password-1"  # noqa: S105 - fixture value
 BACKENDS = ["sqlalchemy", "pyarrow"]
 UTC = timezone.utc
+Server = namedtuple("Server", "host port")
 
 
 def utc(*args):
@@ -60,7 +62,7 @@ def utc(*args):
 
 @pytest.fixture(scope="module")
 def exasol():
-    """Start docker-db once for the module and return its host port."""
+    """Start docker-db once for the module and return its host and port."""
     if int(os.environ.get("PYTEST_XDIST_WORKER_COUNT", "1")) > 1:
         pytest.fail("tests/warehouse/db/test_exasol.py must run with -n0")
 
@@ -79,18 +81,26 @@ def exasol():
     )
     try:
         container.start()
-        port = int(container.get_exposed_port(PORT))
+        server = Server(
+            container.get_container_host_ip(), int(container.get_exposed_port(PORT))
+        )
         deadline = time.monotonic() + READY_TIMEOUT
         while True:
             try:
-                connect(port).close()
+                connect(server).close()
                 break
             except Exception as exc:
                 if time.monotonic() > deadline:
-                    pytest.fail(f"Exasol did not accept connections: {exc!r}")
+                    wrapped = container.get_wrapped_container()
+                    wrapped.reload()
+                    logs = wrapped.logs(tail=40).decode(errors="replace")
+                    pytest.fail(
+                        f"Exasol did not accept connections within {READY_TIMEOUT} s "
+                        f"(container {wrapped.status}): {exc!r}\n{logs}"
+                    )
                 time.sleep(2)
-        seed(port)
-        yield port
+        seed(server)
+        yield server
     finally:
         # By name, so a container that was created but failed to start goes too.
         with (
@@ -100,24 +110,24 @@ def exasol():
             client.containers.get(name).remove(force=True, v=True)
 
 
-def connect(port, user="sys", password=PASSWORD):
+def connect(server, user="sys", password=PASSWORD):
     return pyexasol.connect(
-        dsn=f"127.0.0.1:{port}",
+        dsn=f"{server.host}:{server.port}",
         user=user,
         password=password,
         websocket_sslopt={"cert_reqs": ssl.CERT_NONE},
     )
 
 
-def writer(port):
+def writer(server):
     """Return a connection whose session runs in UTC, so literals mean UTC."""
-    connection = connect(port)
+    connection = connect(server)
     connection.execute("ALTER SESSION SET TIME_ZONE = 'UTC'")
     return connection
 
 
-def seed(port):
-    with writer(port) as connection:
+def seed(server):
+    with writer(server) as connection:
         connection.execute("CREATE SCHEMA probe")
         connection.execute(
             """
@@ -128,6 +138,7 @@ def seed(port):
                 c_varchar VARCHAR(100),
                 c_dec92 DECIMAL(9, 2),
                 c_dec364 DECIMAL(36, 4),
+                c_dec90 DECIMAL(9, 0),
                 c_dec180 DECIMAL(18, 0),
                 c_int INTEGER,
                 c_bigint BIGINT,
@@ -146,7 +157,7 @@ def seed(port):
             """
             INSERT INTO probe.t_types VALUES (
                 1, TRUE, 'ab', 'héllo ✓', 1234567.89,
-                12345678901234567890123456789012.3456, 123456789012345678,
+                12345678901234567890123456789012.3456, 123456789, 123456789012345678,
                 2147483647, 9223372036854775807, 3.5, DATE '2026-01-31',
                 TIMESTAMP '2026-01-31 12:34:56.123456',
                 TIMESTAMP '2026-01-31 12:34:56.123456789',
@@ -173,22 +184,22 @@ def seed(port):
         connection.execute(f"GRANT SELECT ON SCHEMA probe TO {READER}")
 
 
-def execute(port, *statements):
-    with writer(port) as connection:
+def execute(server, *statements):
+    with writer(server) as connection:
         for statement in statements:
             connection.execute(statement)
 
 
-def source_uri(port, user="sys", password=PASSWORD):
+def source_uri(server, user="sys", password=PASSWORD):
     return (
-        f"exa+websocket://{user}:{password}@127.0.0.1:{port}"
+        f"exa+websocket://{user}:{password}@{server.host}:{server.port}"
         "?SSLCertificate=SSL_VERIFY_NONE"
     )
 
 
-def ingest(port, table, dest, dest_table, **kwargs):
+def ingest(server, table, dest, dest_table, **kwargs):
     result = invoke_ingest_command(
-        kwargs.pop("uri", source_uri(port)),
+        kwargs.pop("uri", source_uri(server)),
         table,
         f"duckdb:///{dest}",
         dest_table,
@@ -203,11 +214,11 @@ def rows(dest, sql):
         return connection.sql(sql).fetchall()
 
 
-def new_table(port, columns, values):
+def new_table(server, columns, values):
     """Create a fresh table, so tests that mutate their source stay independent."""
     name = f"probe.t_{uuid.uuid4().hex[:10]}"
     execute(
-        port,
+        server,
         f"CREATE TABLE {name} ({columns})",
         f"INSERT INTO {name} VALUES {values}",
     )
@@ -234,6 +245,7 @@ def test_types_round_trip(exasol, tmp_path, backend):
         "c_varchar": "VARCHAR",
         "c_dec92": "DECIMAL(9,2)",
         "c_dec364": "DECIMAL(36,4)",
+        "c_dec90": "BIGINT",
         "c_dec180": "BIGINT",
         "c_int": "BIGINT",
         "c_bigint": "DECIMAL(36,0)",
@@ -248,7 +260,7 @@ def test_types_round_trip(exasol, tmp_path, backend):
     }
     assert rows(
         dest,
-        "SELECT id, c_bool, c_char, c_varchar, c_dec92, c_dec364, c_dec180, c_int, "
+        "SELECT id, c_bool, c_char, c_varchar, c_dec92, c_dec364, c_dec90, c_dec180, c_int, "
         "c_bigint, c_double, c_date, c_ts, c_ts9, c_tsltz, c_iym, c_geom, c_hash "
         "FROM out.t_types",
     ) == [
@@ -259,6 +271,7 @@ def test_types_round_trip(exasol, tmp_path, backend):
             "héllo ✓",
             Decimal("1234567.89"),
             Decimal("12345678901234567890123456789012.3456"),
+            123456789,
             123456789012345678,
             2147483647,
             Decimal("9223372036854775807"),
@@ -456,6 +469,44 @@ def test_interval_day_to_second_workarounds(exasol, tmp_path):
     columns = rows(dest, "SELECT column_name FROM (DESCRIBE out.excluded)")
     assert [name for (name,) in columns if not name.startswith("_dlt")] == ["id"]
     assert rows(dest, "SELECT id FROM out.excluded") == [(1,)]
+
+
+@pytest.mark.parametrize("backend", BACKENDS)
+def test_interval_day_to_second_fails_the_load(exasol, tmp_path, backend):
+    # The driver hands the column over as a timedelta, which neither backend loads.
+    # When this starts passing, the docs' type table needs a row for it.
+    result = invoke_ingest_command(
+        source_uri(exasol),
+        "probe.t_interval",
+        f"duckdb:///{tmp_path / 'warehouse.duckdb'}",
+        "out.t",
+        sql_backend=backend,
+        print_output=False,
+    )
+    assert result.exit_code != 0
+    message = repr(result.exception).lower()
+    assert "timedelta" in message or "duration" in message, message
+
+
+def test_timestamp_and_tsltz_compare_in_utc(exasol, tmp_path, monkeypatch):
+    # A plain TIMESTAMP is read as wall time in the session zone when compared with
+    # a TIMESTAMP WITH LOCAL TIME ZONE, so a session ahead of UTC selects row 1 too.
+    table = new_table(
+        exasol,
+        "id DECIMAL(18, 0), ts TIMESTAMP, tsltz TIMESTAMP WITH LOCAL TIME ZONE",
+        "(1, '2026-01-31 12:30:00', '2026-01-31 12:00:00'), "
+        "(2, '2026-01-31 11:30:00', '2026-01-31 12:00:00')",
+    )
+    query = f"query:SELECT id FROM {table} WHERE ts < tsltz"
+
+    dest = tmp_path / "warehouse.duckdb"
+    ingest(exasol, query, dest, "out.t")
+    assert rows(dest, "SELECT id FROM out.t ORDER BY id") == [(2,)]
+
+    without_session_hook(monkeypatch)
+    dest = tmp_path / "unhooked.duckdb"
+    ingest(exasol, query, dest, "out.t")
+    assert rows(dest, "SELECT id FROM out.t ORDER BY id") == [(1,), (2,)]
 
 
 def test_query_predicates_are_evaluated_in_utc(exasol, tmp_path, monkeypatch):
