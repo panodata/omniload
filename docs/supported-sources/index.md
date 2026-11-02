@@ -63,6 +63,11 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>✅</td>
         <td>✅</td>
     </tr>
+    <tr>
+        <td>Exasol</td>
+        <td>✅</td>
+        <td>-</td>
+    </tr>
      <tr>
         <td>GCP Spanner</td>
         <td>✅</td>
