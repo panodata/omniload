@@ -207,7 +207,7 @@ def test_failed_session_statement_closes_the_connection_itself():
 
 @pytest.mark.parametrize("backend", ["adbcbridge", "connectorx", "pandas"])
 def test_backends_not_known_to_read_through_the_engine_are_refused(backend):
-    with pytest.raises(ValueError, match=f"--sql-backend {backend}"):
+    with pytest.raises(ValidationError, match=f"--sql-backend {backend}"):
         build(EXASOL_URI, "probe.t", sql_backend=backend)
 
 

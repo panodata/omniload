@@ -27,6 +27,7 @@ from dlt.sources.sql_database import BaseTableLoader
 
 from omniload.core.registry import SOURCE_CAPABILITIES
 from omniload.core.tablename import Defaults, TableName
+from omniload.error import ValidationError
 
 EXASOL_SESSION_SETUP = "ALTER SESSION SET TIME_ZONE = 'UTC'"
 # The backends Exasol is read with, the two the integration tests run. They read
@@ -462,7 +463,7 @@ class SqlSourceRouter:
             query_adapters = [custom_query_variable_subsitution(query_value, kwargs)]
 
         if is_exasol and sql_backend not in EXASOL_ENGINE_BACKENDS:
-            raise ValueError(
+            raise ValidationError(
                 f"Exasol cannot be read with --sql-backend {sql_backend}: it supports "
                 "only the pyarrow and sqlalchemy backends. adbcbridge and connectorx "
                 "read over a connection of their own, outside the session omniload "
