@@ -93,8 +93,11 @@ def exasol():
         yield port
     finally:
         # By name, so a container that was created but failed to start goes too.
-        with contextlib.suppress(docker.errors.NotFound):
-            docker.from_env().containers.get(name).remove(force=True, v=True)
+        with (
+            contextlib.closing(docker.from_env()) as client,
+            contextlib.suppress(docker.errors.NotFound),
+        ):
+            client.containers.get(name).remove(force=True, v=True)
 
 
 def connect(port, user="sys", password=PASSWORD):
