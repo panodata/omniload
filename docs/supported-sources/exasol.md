@@ -33,9 +33,9 @@ Options:
 
 - `ENCRYPTION`: `Yes` (the default) connects over TLS. `No` connects without it, and
   needs `SSLCertificate=SSL_VERIFY_NONE` as well.
-- `FINGERPRINT`: the SHA-256 fingerprint of the server's certificate, as upper-case
-  hexadecimal digits without separators. The connection is accepted when the
-  certificate matches it, so it suits a server with a self-signed certificate.
+- `FINGERPRINT`: the SHA-256 fingerprint of the server's certificate, as hexadecimal
+  digits without separators. The connection is accepted when the certificate matches
+  it, so it suits a server with a self-signed certificate.
 - `SSLCertificate=SSL_VERIFY_NONE`: accept any certificate without checking it, for
   a local test server.
 
@@ -56,8 +56,10 @@ omniload ingest \
 
 ## Data types
 
-How each Exasol type arrives, as loaded into DuckDB. Both the default `pyarrow`
-backend and `--sql-backend sqlalchemy` give the same result.
+How each Exasol type arrives from a table named with `--source-table`, as loaded into
+DuckDB. Both the default `pyarrow` backend and `--sql-backend sqlalchemy` give the same
+result. A `query:` source has no table to reflect, so its column types are inferred
+from the values instead and can differ from this table.
 
 | Exasol | Loaded as | Value |
 |---|---|---|
