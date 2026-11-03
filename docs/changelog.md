@@ -2,6 +2,13 @@
 
 ## in progress
 
+- Filesystem: [dlt-filesystem] 0.27 is now the minimum version. It stops the
+  readers resolving their arguments from dlt config, so an exported `COLUMNS`,
+  as on readline-enabled Pythons, no longer reaches the Feather, ORC and Avro
+  readers as a column selection. An `s3://` URI that names no key, for a source,
+  a destination or a remote SQLite or DuckDB file, uses the AWS default
+  credential chain.
+
 ## 2026/10/30 v0.22.0
 
 - Updated to dlt 1.32

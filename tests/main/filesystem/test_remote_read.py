@@ -8,7 +8,7 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import pytest
-from dlt_filesystem.error import MissingConnectorOption
+from dlt_filesystem.error import InvalidBlobTableError, MissingConnectorOption
 from fsspec.implementations.memory import MemoryFileSystem
 
 from omniload.api import _reject_unconsumed_incremental_key
@@ -326,14 +326,26 @@ def test_touch_s3_filesystem_without_secret_access_key():
 
 def test_touch_s3_filesystem_without_bucket_or_credentials_reports_credentials():
     """Credential validation keeps precedence for a doubly invalid S3 source."""
-    source_uri = "s3://"
+    source_uri = "s3://?access_key_id=foo"
     factory = SourceDestinationFactory(source_uri, "file://")
     source = factory.get_source()
 
     with pytest.raises(MissingConnectorOption) as exc_info:
         source.dlt_source(uri=source_uri, table="")
 
-    assert exc_info.match("access_key_id is required")
+    assert exc_info.match("secret_access_key is required")
+
+
+def test_touch_s3_filesystem_without_bucket_or_keys_reports_bucket():
+    """A URI naming no key leaves credentials to the AWS chain, so the bucket is checked."""
+    source_uri = "s3://"
+    factory = SourceDestinationFactory(source_uri, "file://")
+    source = factory.get_source()
+
+    with pytest.raises(InvalidBlobTableError) as exc_info:
+        source.dlt_source(uri=source_uri, table="")
+
+    assert exc_info.match("Invalid source table for: S3")
 
 
 @pytest.mark.parametrize(

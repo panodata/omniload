@@ -86,7 +86,7 @@ dependencies = [
   "dataclasses-json<0.7",
   "dlt[deltalake]>=1.31,<1.33",
   "dlt-cratedb<0.2",
-  "dlt-filesystem>=0.22",
+  "dlt-filesystem>=0.27",
   "duckdb<2.1",
   "duckdb-engine<0.18",
   "elasticsearch<10",
@@ -157,7 +157,7 @@ optional-dependencies.develop = [
 ]
 # The filesystem and blob stack lives in its own distribution.
 optional-dependencies.filesystem = [
-  "dlt-filesystem>=0.22",
+  "dlt-filesystem>=0.27",
 ]
 optional-dependencies.full = [ "omniload[adbcbridge,ibm-db,iterable,notify,odbc,oracle,reshape,turso,vortex]" ]
 optional-dependencies.ibm-db = [
