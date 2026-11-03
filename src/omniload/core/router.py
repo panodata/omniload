@@ -61,14 +61,30 @@ def _exasol_utc_session(dbapi_connection, connection_record) -> None:
         ) from exc
 
 
-def _exasol_engine_adapter(engine):
-    """Attach the UTC session listener to an Exasol engine.
+def _disable_exasol_telemetry() -> None:
+    """Turn off pyexasol's usage telemetry, as omniload does for dlt's.
 
+    pyexasol 3 reports each new connection to Exasol's metrics endpoint through
+    exasol-telemetry-client. Earlier pyexasol releases have neither, so there is
+    nothing to turn off.
+    """
+    try:
+        from exasol.telemetry import client as telemetry
+    except ImportError:
+        return
+    telemetry.disable()
+
+
+def _exasol_engine_adapter(engine):
+    """Prepare an Exasol engine before it opens its first connection.
+
+    Turns off pyexasol's telemetry and attaches the UTC session listener.
     SQLAlchemy registers a given function once per target, so applying this twice
     to one engine still runs the statement once per new connection.
     """
     from sqlalchemy import event
 
+    _disable_exasol_telemetry()
     event.listen(engine, "connect", _exasol_utc_session)
     return engine
 

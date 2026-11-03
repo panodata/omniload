@@ -20,6 +20,7 @@
   correct instants, and aware `--interval-start` / `--interval-end` values are
   converted to UTC before they are bound. The `adbcbridge` and `connectorx`
   backends, which read over a connection of their own, are refused for Exasol.
+  pyexasol's usage telemetry is turned off, like dlt's.
 
 ## 2026/10/30 v0.22.0
 

@@ -7,6 +7,7 @@ where `sqlalchemy-exasol` is not installed. The round trip against a real server
 """
 
 import sqlite3
+import sys
 from datetime import datetime, timedelta, timezone
 
 import dlt
@@ -137,6 +138,44 @@ def test_session_listener_is_attached_for_exasol(uri):
 )
 def test_session_listener_is_absent_for_other_schemes(uri, table):
     assert build(uri, table)["engine_adapter_callback"] is None
+
+
+def test_exasol_engine_turns_off_pyexasol_telemetry(monkeypatch):
+    telemetry = pytest.importorskip("exasol.telemetry.client")
+    from exasol.telemetry.client import config, setup
+
+    # Start from a process where telemetry has not been set up and nothing in the
+    # environment turns it off, so only the engine callback can.
+    monkeypatch.setattr(config, "_config", None)
+    monkeypatch.delenv(config.ENV_DISABLE, raising=False)
+    monkeypatch.delenv(config.ENV_CI, raising=False)
+    started: list = []
+    monkeypatch.setattr(setup.worker, "start_worker", lambda: started.append(True))
+    monkeypatch.setattr(setup, "setup_exit_handlers", lambda: None)
+
+    engine, log, _ = recording_engine()
+    assert exasol_callback()(engine) is engine
+
+    # What pyexasol 3 calls on every new connection.
+    telemetry.track("PYEXA", "0.0.0", "connect")
+    assert not config.was_enabled()
+    assert started == []
+
+    # The session listener is still in place.
+    with engine.connect():
+        pass
+    assert log == [UTC_SESSION]
+
+
+def test_exasol_engine_without_telemetry_client(monkeypatch):
+    # pyexasol before 3 ships no telemetry client; the engine is prepared anyway.
+    monkeypatch.setitem(sys.modules, "exasol.telemetry", None)
+    engine, log, _ = recording_engine()
+
+    assert exasol_callback()(engine) is engine
+    with engine.connect():
+        pass
+    assert log == [UTC_SESSION]
 
 
 def test_session_statement_runs_once_per_new_connection():

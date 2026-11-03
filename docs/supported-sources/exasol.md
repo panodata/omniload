@@ -107,10 +107,10 @@ Plain `TIMESTAMP` values are not affected.
 This loads values such as `+02 12:30:15.500`.
 :::
 
-:::{tip}
-pyexasol 3.0 and newer send a usage event to Exasol on every connection. Set the
-environment variable `EXASOL_TELEMETRY_DISABLE` to any value to turn that off. It is
-read once, when the first connection is made, so set it before omniload starts.
+:::{note}
+pyexasol 3.0 and newer send a usage event to Exasol on every connection. omniload
+turns that telemetry off for the process before it opens the first Exasol
+connection, as it does for dlt's own telemetry.
 :::
 
 [Exasol]: https://www.exasol.com/
