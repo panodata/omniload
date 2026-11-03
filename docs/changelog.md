@@ -2,6 +2,11 @@
 
 ## in progress
 
+- Filesystem: [dlt-filesystem] 0.27 is now the minimum version. It stops the
+  Feather and ORC readers taking `COLUMNS` and `LINES` from the environment as
+  reader options, and an `s3://` source URI that names no key uses the AWS
+  default credential chain.
+
 ## 2026/10/30 v0.22.0
 
 - Updated to dlt 1.32
