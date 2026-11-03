@@ -9,6 +9,17 @@ an unlimited amount of unstructured data of any content type.
 
 `omniload` supports OCI as a data source.
 
+## Installation
+
+To read from OCI, install the `oci` extra:
+
+```sh
+pip install 'omniload[oci]'
+```
+
+The `full` extra includes it. If the `ocifs` package is missing, reading from an
+`oci://` source fails with an error naming the package to install.
+
 ## URI format
 
 The URI for connecting to OCI is structured as follows.

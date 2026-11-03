@@ -9,6 +9,10 @@
   a destination or a remote SQLite or DuckDB file, uses the AWS default
   credential chain.
 
+- Filesystem: Added the `oci` extra for `oci://` sources, included in `full`. Once
+  [dlt-filesystem] moves `ocifs` out of its base install, reading from OCI needs
+  `omniload[oci]` or `omniload[full]`.
+
 ## 2026/10/30 v0.22.0
 
 - Updated to dlt 1.32
