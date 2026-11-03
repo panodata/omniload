@@ -27,12 +27,18 @@ AWARE_END = datetime(2026, 1, 31, 14, 0, tzinfo=timezone(timedelta(hours=1)))
 
 @pytest.fixture(autouse=True)
 def restore_telemetry_config(monkeypatch):
-    """Undo the process-wide telemetry state the Exasol engine callback sets."""
+    """Undo the process-wide telemetry state the Exasol engine callback sets.
+
+    The callback's disable() replaces the client's configuration and stops its
+    worker. The configuration is put back after each test, and the worker is left
+    alone, since a stopped one is not restarted by a later track().
+    """
     try:
-        from exasol.telemetry.client import config
+        from exasol.telemetry.client import config, worker
     except ImportError:
         return
     monkeypatch.setattr(config, "_config", config._config)
+    monkeypatch.setattr(worker, "stop_worker", lambda flush_buffers: None)
 
 
 def build(uri, table, **kwargs):
