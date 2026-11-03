@@ -65,7 +65,7 @@ def floci(db_schema):
     """
     container = FlociContainer(image=FLOCI_IMAGE)
     container.start()
-    client = container.get_client("dynamodb")  # ty: ignore[invalid-argument-type, missing-argument]
+    client = container.get_client("dynamodb")
     load_test_data(client, db_schema)
     yield container
     container.stop()
