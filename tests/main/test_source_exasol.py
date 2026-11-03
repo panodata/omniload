@@ -25,6 +25,16 @@ AWARE_START = datetime(2026, 1, 31, 12, 30, tzinfo=timezone(timedelta(hours=1)))
 AWARE_END = datetime(2026, 1, 31, 14, 0, tzinfo=timezone(timedelta(hours=1)))
 
 
+@pytest.fixture(autouse=True)
+def restore_telemetry_config(monkeypatch):
+    """Undo the process-wide telemetry state the Exasol engine callback sets."""
+    try:
+        from exasol.telemetry.client import config
+    except ImportError:
+        return
+    monkeypatch.setattr(config, "_config", config._config)
+
+
 def build(uri, table, **kwargs):
     """Run the router with a capturing table builder and return its arguments."""
     captured: dict = {}
