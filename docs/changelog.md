@@ -2,6 +2,13 @@
 
 ## in progress
 
+- Filesystem: [dlt-filesystem] 0.27 is now the minimum version. It stops the
+  readers resolving their arguments from dlt config, so an exported `COLUMNS`,
+  as on readline-enabled Pythons, no longer reaches the Feather, ORC and Avro
+  readers as a column selection. An `s3://` URI that names no key, for a source,
+  a destination or a remote SQLite or DuckDB file, uses the AWS default
+  credential chain.
+
 - Filesystem: Added the `oci` extra for `oci://` sources, included in `full`. Once
   [dlt-filesystem] moves `ocifs` out of its base install, reading from OCI needs
   `omniload[oci]` or `omniload[full]`.
