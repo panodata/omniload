@@ -418,7 +418,7 @@ class SqlSourceRouter:
                 cols = []
 
                 if incremental:
-                    switchDict = {
+                    switchDict: dict[type, type[sa.TypeEngine[Any]]] = {
                         int: sa.INTEGER,
                         datetime: sa.TIMESTAMP,
                         date: sa.DATE,
