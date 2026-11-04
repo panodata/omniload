@@ -7,6 +7,8 @@ SQL_SOURCE_SCHEMES = [
     "crate",
     "cratedb",
     "duckdb",
+    "exa",
+    "exa+websocket",
     "mssql",
     "mssql+pyodbc",
     "mysql",
@@ -44,6 +46,11 @@ SOURCE_CAPABILITIES["spanner"] = one_level(
     "spanner",
     "Select the project, instance, and database in --source-uri instead.",
 )
+for _exasol_scheme in ("exa", "exa+websocket"):
+    SOURCE_CAPABILITIES[_exasol_scheme] = two_level(
+        _exasol_scheme,
+        "Exasol has no catalogs; use schema.table.",
+    )
 for _sqlite_scheme in ("sqlite", "sqlite+turso"):
     SOURCE_CAPABILITIES[_sqlite_scheme] = two_level(
         _sqlite_scheme,

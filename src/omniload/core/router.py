@@ -1,9 +1,10 @@
 import base64
+import contextlib
 import json
 import os
 import sys
 import tempfile
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import (
     Any,
     Callable,
@@ -26,6 +27,82 @@ from dlt.sources.sql_database import BaseTableLoader
 
 from omniload.core.registry import SOURCE_CAPABILITIES
 from omniload.core.tablename import Defaults, TableName
+from omniload.error import ValidationError
+
+EXASOL_SESSION_SETUP = "ALTER SESSION SET TIME_ZONE = 'UTC'"
+# The backends Exasol is read with, the two the integration tests run. They read
+# through the SQLAlchemy engine, and so through the listener that puts each session in
+# UTC; adbcbridge and connectorx open a connection of their own, outside it.
+EXASOL_ENGINE_BACKENDS = ("sqlalchemy", "pyarrow")
+
+
+def _exasol_utc_session(dbapi_connection, connection_record) -> None:
+    """Put a new Exasol connection in a UTC session, or fail the connection.
+
+    Exasol returns TIMESTAMP WITH LOCAL TIME ZONE values as naive wall time in the
+    session time zone, and dlt reads naive timestamps as UTC, so any other session
+    zone shifts every such instant by its offset. Reading on in the server's zone
+    would load those wrong instants without an error, so a failure here is raised.
+    """
+    try:
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute(EXASOL_SESSION_SETUP)
+        finally:
+            cursor.close()
+    except Exception as exc:
+        # SQLAlchemy closes a connection stranded by a failed connect event only
+        # from 2.0.53 on.
+        with contextlib.suppress(Exception):
+            dbapi_connection.close()
+        raise RuntimeError(
+            f"Exasol: {EXASOL_SESSION_SETUP!r} failed on a new connection, so "
+            f"TIMESTAMP WITH LOCAL TIME ZONE values cannot be read correctly: {exc}"
+        ) from exc
+
+
+def _disable_exasol_telemetry() -> None:
+    """Turn off pyexasol's usage telemetry, as omniload does for dlt's.
+
+    pyexasol 3 reports each new connection to Exasol's metrics endpoint through
+    exasol-telemetry-client. Earlier pyexasol releases have neither, so there is
+    nothing to turn off.
+    """
+    try:
+        from exasol.telemetry import client as telemetry
+    except ImportError:
+        return
+    telemetry.disable()
+
+
+def _exasol_engine_adapter(engine):
+    """Prepare an Exasol engine before it opens its first connection.
+
+    Turns off pyexasol's telemetry and attaches the UTC session listener.
+    SQLAlchemy registers a given function once per target, so applying this twice
+    to one engine still runs the statement once per new connection.
+    """
+    from sqlalchemy import event
+
+    _disable_exasol_telemetry()
+    event.listen(engine, "connect", _exasol_utc_session)
+    return engine
+
+
+def _naive_utc(value):
+    """Convert an aware datetime to naive UTC; return anything else unchanged."""
+    if isinstance(value, datetime) and value.utcoffset() is not None:
+        utc = value.astimezone(timezone.utc)
+        return datetime(
+            utc.year,
+            utc.month,
+            utc.day,
+            utc.hour,
+            utc.minute,
+            utc.second,
+            utc.microsecond,
+        )
+    return value
 
 
 class SqlSourceRouter:
@@ -53,6 +130,7 @@ class SqlSourceRouter:
         # `sqlite+<driver>` (e.g. pyturso's `sqlite+turso`) is still a SQLite file,
         # whose only schema without an ATTACH is `main`.
         is_sqlite = scheme.split("+", 1)[0] == "sqlite"
+        is_exasol = scheme.split("+", 1)[0] == "exa"
         if not table:
             # Empty table options remain temporarily valid for pipeline elements that
             # do not name a table. SQL reflection will report the missing table as it
@@ -73,6 +151,14 @@ class SqlSourceRouter:
                     table=table_fields.table,
                 )
 
+        if is_exasol:
+            # The Exasol dialect binds a datetime by formatting it, dropping any UTC
+            # offset unconverted. Sessions run in UTC (see _exasol_utc_session), so
+            # aware bounds become naive UTC, for the incremental and `query:` alike.
+            for bound in ("interval_start", "interval_end"):
+                if bound in kwargs:
+                    kwargs[bound] = _naive_utc(kwargs[bound])
+
         incremental = None
         if kwargs.get("incremental_key"):
             start_value = kwargs.get("interval_start")
@@ -86,6 +172,8 @@ class SqlSourceRouter:
             )
 
         engine_adapter_callback = None
+        if is_exasol:
+            engine_adapter_callback = _exasol_engine_adapter
 
         if uri.startswith("md://") or uri.startswith("motherduck://"):
             parsed_uri = urlparse(uri)
@@ -389,6 +477,15 @@ class SqlSourceRouter:
 
             # override the query adapters, the only one we want is the one here in the case of custom queries
             query_adapters = [custom_query_variable_subsitution(query_value, kwargs)]
+
+        if is_exasol and sql_backend not in EXASOL_ENGINE_BACKENDS:
+            raise ValidationError(
+                f"Exasol cannot be read with --sql-backend {sql_backend}: it supports "
+                "only the pyarrow and sqlalchemy backends. adbcbridge and connectorx "
+                "read over a connection of their own, outside the session omniload "
+                "sets to UTC, which would load TIMESTAMP WITH LOCAL TIME ZONE values "
+                "shifted."
+            )
 
         credentials = ConnectionStringCredentials(uri)
         if uri.startswith("mssql://"):
