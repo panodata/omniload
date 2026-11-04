@@ -2,6 +2,8 @@
 
 ## in progress
 
+## 2026/11/04 v0.23.0
+
 - Filesystem: [dlt-filesystem] 0.27 is now the minimum version. It stops the
   readers resolving their arguments from dlt config, so an exported `COLUMNS`,
   as on readline-enabled Pythons, no longer reaches the Feather, ORC and Avro
