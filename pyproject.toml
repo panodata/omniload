@@ -183,7 +183,7 @@ optional-dependencies.oci = [
   "dlt-filesystem[oci]",
 ]
 optional-dependencies.odbc = [
-  "pyodbc<5.4",
+  "pyodbc<5.5",
 ]
 optional-dependencies.oracle = [
   "oracledb>=2.0.0",
