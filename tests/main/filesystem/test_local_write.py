@@ -228,7 +228,7 @@ def _read_back(path, out_format):
 
         return pq.read_table(path).to_pylist()
     elif out_format == "vortex":
-        import vortex as vx  # ty: ignore[unresolved-import,unused-ignore-comment,unused-ignore-comment]
+        import vortex as vx  # ty: ignore[import-not-found,unused-ignore-comment,unused-ignore-comment]
 
         return vx.open(str(path)).to_dataset().to_table().to_pylist()
     elif out_format == "xlsx":
