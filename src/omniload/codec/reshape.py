@@ -165,7 +165,7 @@ def _resolve_python_callable(spec: str) -> "Callable[[dict], dict]":
 def _create_jq_mapper(program: str) -> "Callable[[dict], dict]":
     """Return a per-row mapper running the jq ``program`` per document via Tikray."""
     try:
-        from tikray import (  # ty: ignore[unresolved-import, unused-ignore-comment, unused-ignore-comment]
+        from tikray import (  # ty: ignore[import-not-found, unused-ignore-comment, unused-ignore-comment]
             MokshaTransformation,
         )
     except ImportError as exc:  # pragma: no cover - exercised only without the extra
@@ -208,7 +208,7 @@ def _create_polars_mapper(spec: str) -> "Callable":
     """
     try:
         import polars as pl
-        from macropipe.core import (  # ty: ignore[unresolved-import, unused-ignore-comment, unused-ignore-comment]
+        from macropipe.core import (  # ty: ignore[import-not-found, unused-ignore-comment, unused-ignore-comment]
             MacroPipe,
         )
     except ImportError as exc:  # pragma: no cover - exercised only without the extra
@@ -265,7 +265,7 @@ def _register_polars_recipes() -> None:
         literal ``"None"``) becomes a number or null instead of raising.
     """
     import polars as pl
-    from macropipe.registry import (  # ty: ignore[unresolved-import, unused-ignore-comment, unused-ignore-comment]
+    from macropipe.registry import (  # ty: ignore[import-not-found, unused-ignore-comment, unused-ignore-comment]
         Registry,
     )
 
