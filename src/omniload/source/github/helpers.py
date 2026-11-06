@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterator, List, Optional, Tuple, cast
+from typing import Iterator, List, Optional, Tuple
 
 from dlt.common.typing import DictStrAny, StrAny
 from dlt.common.utils import chunks
@@ -120,7 +120,7 @@ def _extract_top_connection(data: StrAny, node_type: str) -> StrAny:
     assert isinstance(data, dict) and len(data) == 1, (  # noqa: S101
         f"The data with list of {node_type} must be a dictionary and contain only one element"
     )
-    data = cast(StrAny, next(iter(data.values())))
+    data = next(iter(data.values()))
     return data[node_type]
 
 
