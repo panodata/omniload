@@ -139,7 +139,7 @@ dependencies = [
   "toolz<2",
   "tqdm<5",
   "trino[sqlalchemy]==0.340.0",
-  "typer<0.28",
+  "typer<0.29",
   "urllib3<2.9",
   "yarl<2",
 ]
