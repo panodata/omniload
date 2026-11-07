@@ -28,7 +28,9 @@ uv pip compile requirements.in --generate-hashes \
 
 The image accepts source distributions only for the four packages the
 `Dockerfile` names in `SDIST_PACKAGES`. Every other package must install from a
-wheel.
+wheel. If your extras pull in another package that publishes no wheel, pass the
+whole list as a build argument, the four names plus yours:
+`--build-arg SDIST_PACKAGES=clickhouse-sqlalchemy,crcmod,dropboxdrivefs,oss2,<package>`.
 
 ### Build the image
 
@@ -118,7 +120,10 @@ aws cloudformation delete-stack --stack-name omniload-job
   `Timeout` is 900 seconds, the Lambda maximum. Raise memory and ephemeral
   storage in `template.yaml` for larger inputs.
 - **One run at a time.** `ReservedConcurrentExecutions` is 1, per function, so
-  runs never overlap.
+  runs never overlap. Lambda keeps 100 units of an account's concurrency in each
+  region unreserved, so making this reservation when the stack is first deployed
+  needs the account's unreserved concurrency in that region to be at least 101,
+  or the deployment fails.
 - **Output replacement.** The handler loads with the fixed `replace` strategy,
   which deletes the previous output before writing the new one. A successful
   rerun over unchanged input therefore produces the same output, and a run that
@@ -138,7 +143,10 @@ aws cloudformation delete-stack --stack-name omniload-job
   needs a grant of its own.
 - **Emulator endpoints.** For an S3-compatible endpoint, such as a local
   emulator, name it in the URI with `?endpoint_url=`. `pyarrow` ignores the
-  `AWS_ENDPOINT_URL` environment variable.
+  `AWS_ENDPOINT_URL` environment variable. On a plain `s3://` URI without keys,
+  options other than `endpoint_url` and `region` are not checked, so a misspelled
+  one, such as `?endpoint=`, is dropped without an error and the job reaches
+  AWS instead of the emulator.
 - **Native libraries.** A connector that needs a native library needs it added
   to the image: the ODBC connectors need `unixODBC` and the driver, the Db2
   connector needs `clidriver`, and the `rsync` source needs the `oc-rsync`

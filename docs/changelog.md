@@ -20,8 +20,10 @@
   - Refused before and now with a different error: an unknown option or
     `layout=x` on an S3 URI without keys, which now names the option instead of
     the missing `access_key_id`. Also `layout=x` on a `gs+delta://` or
-    `az+delta://` URI without usable credentials, and an invalid `endpoint_url`
-    on an S3 URI without keys.
+    `az+delta://` URI without usable credentials, an invalid `endpoint_url` on
+    an S3 URI without keys, and a blank `endpoint_url` beside a non-empty
+    `region`, or a blank `region` beside a non-empty `endpoint_url`, on an S3
+    URI without keys, which now names the blank option.
 
 ## 2026/11/04 v0.23.0
 

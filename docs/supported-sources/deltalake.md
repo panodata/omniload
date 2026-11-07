@@ -110,10 +110,14 @@ s3+delta://my-bucket/lakehouse?endpoint_url=http://localhost:4566
 s3+delta://my-bucket/lakehouse?region=us-east-1
 ```
 
-Without keys, any other option is refused, naming the option, so a misspelled
-option does not silently fall back to the environment's credentials.
-`session_token` and dlt's own key names, such as `aws_access_key_id`, are
-refused unless the URI names both keys. One key without the other is refused.
+Without keys, any other option is refused, so a misspelled option does not
+silently fall back to the environment's credentials. `session_token` and dlt's
+own key names, such as `aws_access_key_id`, are refused unless the URI names
+both keys. One key without the other is refused.
+
+The destination never reads `session_token`, even beside both keys. For
+temporary credentials, leave the keys out of the URI and let the default
+credential chain supply them.
 
 With both `access_key_id` and `secret_access_key`, the destination uses those
 keys. It ignores unknown options and a blank `endpoint_url` or `region`, and
