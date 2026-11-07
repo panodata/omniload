@@ -218,11 +218,8 @@ def _function_containers(docker_client, network_name: str, floci_id: str) -> lis
     ]
 
 
-@pytest.fixture(scope="module")
-def floci(docker_client, lambda_network, run_token, run_labels):
-    """Floci with the Docker socket, so it can run the function image."""
-    from testcontainers.core.labels import SESSION_ID
-
+def _start_floci(docker_client, network_name: str, run_token: str, run_labels):
+    """Start this run's Floci, leaving no container behind if the start fails."""
     name = f"omniload-lambda-{run_token}-floci"
     container = FlociContainer(
         image=FLOCI_IMAGE,
@@ -230,7 +227,7 @@ def floci(docker_client, lambda_network, run_token, run_labels):
         region_name=REGION,
         name=name,
         docker_socket=True,
-        lambda_network=lambda_network.name,
+        lambda_network=network_name,
         labels=run_labels,
     )
     try:
@@ -238,6 +235,15 @@ def floci(docker_client, lambda_network, run_token, run_labels):
     except BaseException:
         _remove_after_failed_start(docker_client, run_token, name)
         raise
+    return container
+
+
+@pytest.fixture(scope="module")
+def floci(docker_client, lambda_network, run_token, run_labels):
+    """Floci with the Docker socket, so it can run the function image."""
+    from testcontainers.core.labels import SESSION_ID
+
+    container = _start_floci(docker_client, lambda_network.name, run_token, run_labels)
     floci_id = container.get_wrapped_container().id
     try:
         # The session hooks start the shared database containers for any target
@@ -483,15 +489,14 @@ def emulator(docker_client, lambda_network, floci, stack, run_token, run_labels)
     The base image starts its runtime interface emulator when no Lambda runtime
     API is present. The credentials are placeholders Floci accepts.
     """
-    floci_url = floci_internal_url(floci)
-    name = f"omniload-lambda-{run_token}-rie"
-    try:
-        container = _run_emulator(
-            docker_client, name, lambda_network, run_labels, floci_url, stack
-        )
-    except BaseException:
-        _remove_after_failed_start(docker_client, run_token, name)
-        raise
+    container = _start_emulator(
+        docker_client,
+        lambda_network.name,
+        run_token,
+        run_labels,
+        floci_internal_url(floci),
+        stack,
+    )
     try:
         container.reload()
         yield container
@@ -499,13 +504,27 @@ def emulator(docker_client, lambda_network, floci, stack, run_token, run_labels)
         container.remove(force=True, v=True)
 
 
-def _run_emulator(docker_client, name, lambda_network, run_labels, floci_url, stack):
+def _start_emulator(
+    docker_client, network_name: str, run_token: str, run_labels, floci_url, stack
+):
+    """Start this run's emulator, leaving no container behind if the start fails."""
+    name = f"omniload-lambda-{run_token}-rie"
+    try:
+        return _run_emulator(
+            docker_client, name, network_name, run_labels, floci_url, stack
+        )
+    except BaseException:
+        _remove_after_failed_start(docker_client, run_token, name)
+        raise
+
+
+def _run_emulator(docker_client, name, network_name, run_labels, floci_url, stack):
     return docker_client.containers.run(
         IMAGE,
         detach=True,
         name=name,
         labels=run_labels,
-        network=lambda_network.name,
+        network=network_name,
         read_only=True,
         tmpfs={"/tmp": "rw,size=512m,uid=993,gid=990"},  # noqa: S108
         user="993:990",
