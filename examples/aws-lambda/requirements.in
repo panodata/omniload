@@ -1,0 +1,3 @@
+# The input to the locked dependency set the image installs.
+# Pin the omniload release you deploy, and add the extras your job needs.
+omniload

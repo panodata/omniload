@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  One omniload job as an AWS Lambda container-image function: newline-delimited
+  JSON objects in the source bucket loaded into Parquet in the destination bucket.
+
+Parameters:
+  ImageUri:
+    Type: String
+    Description: The function image in Amazon ECR, by tag or digest.
+  SourceUri:
+    Type: String
+    Default: "s3://"
+    Description: >-
+      omniload source URI. A bare `s3://` reads with the function's role.
+  DestinationUri:
+    Type: String
+    Default: "s3://"
+    Description: >-
+      omniload destination URI. A bare `s3://` writes with the function's role.
+
+Resources:
+  SourceBucket:
+    Type: AWS::S3::Bucket
+
+  DestinationBucket:
+    Type: AWS::S3::Bucket
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: omniload-job
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource:
+                  - !GetAtt SourceBucket.Arn
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource:
+                  - !Sub "${SourceBucket.Arn}/*"
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource:
+                  - !GetAtt DestinationBucket.Arn
+              # `replace` deletes the previous output before writing the new one.
+              - Effect: Allow
+                Action:
+                  - s3:DeleteObject
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub "${DestinationBucket.Arn}/*"
+
+  JobFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref ImageUri
+      Architectures:
+        - x86_64
+      Role: !GetAtt ExecutionRole.Arn
+      MemorySize: 2048
+      # Lambda's maximum. A job that needs longer does not fit this recipe.
+      Timeout: 900
+      # /tmp, the only writable location, holds dlt's working files.
+      EphemeralStorage:
+        Size: 2048
+      # The job writes one output with `replace`; two overlapping runs would
+      # interleave their deletes and writes.
+      ReservedConcurrentExecutions: 1
+      Environment:
+        Variables:
+          OMNILOAD_SOURCE_URI: !Ref SourceUri
+          OMNILOAD_SOURCE_TABLE: !Sub "${SourceBucket}/input/*.jsonl"
+          OMNILOAD_DEST_URI: !Ref DestinationUri
+          OMNILOAD_DEST_TABLE: !Sub "${DestinationBucket}/output/records"
+
+Outputs:
+  FunctionName:
+    Value: !Ref JobFunction
+  SourceBucketName:
+    Value: !Ref SourceBucket
+  DestinationBucketName:
+    Value: !Ref DestinationBucket
