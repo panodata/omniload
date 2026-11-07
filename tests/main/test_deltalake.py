@@ -147,6 +147,12 @@ def test_destination_blank_or_partial_credentials_are_refused(query, missing):
         "s3+delta://my-bucket/lakehouse?access_key_id=AKIA123&secret_access_key=SECRET&layout=x",
         "file+delta:///data/delta-catalog?layout=x",
         "file+delta:///data/delta-catalog?layout=",
+        "gs+delta://my-bucket/lakehouse?layout=x",
+        "gs+delta://my-bucket/lakehouse?credentials_path=/tmp/sa.json&layout=x",
+        "az+delta://container/lakehouse?layout=x",
+        "az+delta://container/lakehouse?account_name=acct&account_key=KEY&layout=x",
+        "hdfs+delta://namenode:8020/lakehouse?layout=x",
+        "lakefs+delta://repo/main/lakehouse?layout=x",
     ],
 )
 def test_destination_refuses_the_layout_option(uri):
