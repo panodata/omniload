@@ -1,0 +1,112 @@
+# Build the AWS Lambda recipe in `examples/aws-lambda` from this checkout and
+# smoke-test it on the Floci emulator: CloudFormation stack, round trip, warm
+# rerun, failure propagation, and a read-only, non-root run.
+name: "Recipe: AWS Lambda"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/aws-lambda.yml'
+      - 'examples/aws-lambda/**'
+      - 'pyproject.toml'
+      - 'src/**'
+      - 'tests/conftest.py'
+      - 'tests/util/container/impl/floci.py'
+      - 'tests/warehouse/managed/**'
+      - 'tests/warehouse/manager.py'
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      OMNILOAD_TEST_LAMBDA_IMAGE: 'omniload-lambda:smoke'
+      TESTCONTAINERS_RYUK_DISABLED: 'true'
+    steps:
+
+      - name: Acquire sources
+        uses: actions/checkout@v7
+        with:
+          # The package version derives from the most recent tag.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          activate-environment: 'true'
+          cache-suffix: aws-lambda
+          enable-cache: true
+          python-version: '3.14'
+
+      - name: Install project
+        run: |
+          uv pip install --editable='.[develop,test]'
+
+      # The image installs this checkout's wheel, locked together with its
+      # dependencies for the Lambda runtime: CPython 3.12 on x86_64.
+      - name: Build wheel and lock
+        working-directory: examples/aws-lambda
+        run: |
+          uv build --wheel --out-dir wheels ../..
+          wheel=$(ls wheels/omniload-*.whl)
+          version=$(basename "${wheel}" | cut -d- -f2)
+          echo "omniload==${version}" | uv pip compile - \
+            --generate-hashes \
+            --python-version 3.12 \
+            --python-platform x86_64-manylinux_2_34 \
+            --find-links wheels --emit-find-links \
+            --output-file requirements.txt
+          grep -c '==' requirements.txt
+
+      - name: Build image
+        run: |
+          df -h /
+          start=$(date +%s)
+          docker buildx build --platform linux/amd64 --provenance=false --load \
+            -t "${OMNILOAD_TEST_LAMBDA_IMAGE}" examples/aws-lambda
+          echo "Image build took $(( $(date +%s) - start )) s"
+          docker image inspect "${OMNILOAD_TEST_LAMBDA_IMAGE}" \
+            --format '{{.Id}} {{.Os}}/{{.Architecture}} {{.Size}}' | tee image-digest.txt
+          test "$(docker image inspect "${OMNILOAD_TEST_LAMBDA_IMAGE}" \
+            --format '{{.Os}}/{{.Architecture}}')" = linux/amd64
+          df -h /
+
+      - name: Pull the Floci image
+        run: |
+          docker pull "$(python -c 'from tests.warehouse.manager import FLOCI_IMAGE; print(FLOCI_IMAGE)')"
+
+      # One stack per module, so no xdist. The junit check fails the job when
+      # nothing ran, so a module that skipped cannot pass for one that was tested.
+      - name: Run the smoke test
+        run: |
+          pytest tests/warehouse/managed -n0 --no-cov -rA -p no:cacheprovider --junitxml=aws-lambda-junit.xml
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          suite = ET.parse("aws-lambda-junit.xml").getroot().find("testsuite")
+          tests, skipped = int(suite.get("tests")), int(suite.get("skipped"))
+          print(f"AWS Lambda tests: {tests} collected, {skipped} skipped")
+          assert tests > 0 and skipped == 0, "the AWS Lambda tests did not run"
+          PY
+
+      - name: Upload the tested lock and image digest
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aws-lambda-${{ github.sha }}
+          path: |
+            examples/aws-lambda/requirements.txt
+            image-digest.txt
+            aws-lambda-junit.xml
+          if-no-files-found: warn
+          retention-days: 30
