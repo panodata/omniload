@@ -81,7 +81,9 @@ Resources:
       EphemeralStorage:
         Size: 2048
       # The job writes one output with `replace`; two overlapping runs would
-      # interleave their deletes and writes.
+      # interleave their deletes and writes. Lambda keeps 100 units of account
+      # concurrency unreserved, so making this reservation at the first deploy
+      # needs at least 101 unreserved in the region.
       ReservedConcurrentExecutions: 1
       Environment:
         Variables:
