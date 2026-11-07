@@ -240,19 +240,14 @@ def _start_floci(docker_client, network_name: str, run_token: str, run_labels):
 
 @pytest.fixture(scope="module")
 def floci(docker_client, lambda_network, run_token, run_labels):
-    """Floci with the Docker socket, so it can run the function image."""
-    from testcontainers.core.labels import SESSION_ID
+    """Floci with the Docker socket, so it can run the function image.
 
+    A run targeting only this directory boots none of the shared database
+    containers (tests/conftest.py, covered by tests/main/test_conftest_containers.py);
+    a broader run may, and this module neither needs nor objects to them."""
     container = _start_floci(docker_client, lambda_network.name, run_token, run_labels)
     floci_id = container.get_wrapped_container().id
     try:
-        # The session hooks start the shared database containers for any target
-        # outside a few known-isolated ones. This module needs none of them.
-        session_containers = docker_client.containers.list(
-            all=True,
-            filters={"label": f"org.testcontainers.session-id={SESSION_ID}"},
-        )
-        assert [c.id for c in session_containers] == [floci_id]
         yield container
     finally:
         for function_container in _function_containers(
