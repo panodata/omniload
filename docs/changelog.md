@@ -2,6 +2,27 @@
 
 ## in progress
 
+- Deployment: `examples/aws-lambda` holds an AWS Lambda recipe: a container
+  image and a CloudFormation template that run one job per invocation, with a
+  smoke test on the `Floci` emulator and a CI workflow that builds the image and
+  runs it. Documented under [Managed runtimes](install/managed/index.md).
+
+- Delta Lake: `s3+delta://` destination URIs without keys use the AWS default
+  credential chain, and the destination handles URI options more strictly.
+  - Newly accepted: an S3 URI naming only a non-empty `endpoint_url` and/or
+    `region` uses the default credential chain. It was refused as missing
+    `access_key_id`.
+  - Newly refused, previously accepted: a blank option alone on an `s3+delta://`,
+    `gs+delta://` or `az+delta://` URI, such as `?endpoint_url=` or
+    `?credentials_path=`, which read as no query. Also `layout`, which was
+    ignored, on an S3 URI with both keys, a `gs+delta://` or `az+delta://` URI
+    with credentials, and `file`, `hdfs` and `lakefs` URIs.
+  - Refused before and now with a different error: an unknown option or
+    `layout=x` on an S3 URI without keys, which now names the option instead of
+    the missing `access_key_id`. Also `layout=x` on a `gs+delta://` or
+    `az+delta://` URI without usable credentials, and an invalid `endpoint_url`
+    on an S3 URI without keys.
+
 ## 2026/11/04 v0.23.0
 
 - Filesystem: [dlt-filesystem] 0.27 is now the minimum version. It stops the

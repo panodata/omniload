@@ -71,6 +71,13 @@ supported-sources/index
 ```
 
 ```{toctree}
+:caption: Deployment
+:maxdepth: 1
+:hidden:
+install/managed/index
+```
+
+```{toctree}
 :caption: Tutorials
 :maxdepth: 1
 :hidden:

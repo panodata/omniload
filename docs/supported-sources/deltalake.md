@@ -93,6 +93,37 @@ credentials. See the relevant storage guide for the option names:
 `hdfs+delta://` and `lakefs+delta://` destinations take no options from the
 query; see Limitations.
 
+On a `gs+delta://` or `az+delta://` destination, a query that names only blank
+options, such as `?credentials_path=` or `?account_name=`, is refused instead
+of leaving the credentials to the environment.
+
+### S3 destination credentials
+
+An S3 destination URI that names neither `access_key_id` nor
+`secret_access_key` leaves the keys to the AWS default credential chain.
+Without keys, the destination reads only `endpoint_url` and `region`, each of
+which must be non-empty when named.
+
+```text
+s3+delta://my-bucket/lakehouse
+s3+delta://my-bucket/lakehouse?endpoint_url=http://localhost:4566
+s3+delta://my-bucket/lakehouse?region=us-east-1
+```
+
+Without keys, any other option is refused, naming the option, so a misspelled
+option does not silently fall back to the environment's credentials.
+`session_token` and dlt's own key names, such as `aws_access_key_id`, are
+refused unless the URI names both keys. One key without the other is refused.
+
+With both `access_key_id` and `secret_access_key`, the destination uses those
+keys. It ignores unknown options and a blank `endpoint_url` or `region`, and
+still checks that a non-empty `endpoint_url` is a valid URL.
+
+### The layout query option
+
+Every Delta destination refuses the `layout` option, even without a value. A
+Delta table defines its own file layout.
+
 ## Table layout
 
 A storage-backed Delta Lake catalog uses this layout.
@@ -210,7 +241,10 @@ batch size.
 - `uc+delta://` is not available as a destination. As a source it addresses the
   table in the URI, so `--source-table` only names the dlt resource.
 - The `lakefs+delta://` and `hdfs+delta://` destinations take no storage options
-  from the URI query, because dlt models no credentials for those protocols.
+  from the URI query, because dlt models no credentials for those protocols. A
+  `layout` option is refused there, as on every Delta destination.
+- An S3 destination URI without keys is covered by unit tests only. No
+  end-to-end test writes a Delta table with credentials from the environment.
 - The merge, delete-and-insert, SCD2, and upsert strategies need an incremental or
   merge key, which a whole-table read does not expose. As a source, Delta Lake also
   rejects `cdc`, which is for SQL database sources only.
