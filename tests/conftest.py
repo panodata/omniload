@@ -58,6 +58,21 @@ def _only_exasol_tests(config) -> bool:
     return bool(targets) and all(target == exasol_tests for target in targets)
 
 
+def _only_managed_runtime_tests(config) -> bool:
+    """Return whether every explicit pytest target is in warehouse/managed.
+
+    Those tests start their own emulator and use none of the shared containers.
+    """
+    managed_root = (Path(config.rootpath) / "tests/warehouse/managed").resolve()
+    targets = _explicit_test_targets(config)
+    # A target the parser could not place, such as `.`, may select anything.
+    if len(targets) != len(config.args):
+        return False
+    return bool(targets) and all(
+        target == managed_root or managed_root in target.parents for target in targets
+    )
+
+
 def _remote_filesystem_tests_selected(config) -> bool:
     """Return whether the invocation can collect the remote emulator test module."""
     if hasattr(config, "workerinput"):
@@ -84,7 +99,11 @@ def _all_managed_containers(config):
 
 def _managed_containers(config):
     containers = set()
-    if not (_only_main_filesystem_tests(config) or _only_exasol_tests(config)):
+    if not (
+        _only_main_filesystem_tests(config)
+        or _only_exasol_tests(config)
+        or _only_managed_runtime_tests(config)
+    ):
         containers |= set(SOURCES.values()) | set(DESTINATIONS.values())
     if _remote_filesystem_tests_selected(config):
         containers |= set(get_remote_filesystem_services().values())
