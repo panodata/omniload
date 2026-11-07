@@ -96,9 +96,10 @@ def function_properties() -> dict:
 
 
 def test_stack_template_grants():
-    """The role trusts Lambda only, and its inline grants name exactly the two
-    buckets and their objects. Floci does not evaluate inline IAM policies, so
-    this is the only check of them short of a real AWS account."""
+    """The role trusts Lambda only, and its inline grants are exactly the actions
+    the job needs on the two buckets and their objects. Floci does not evaluate
+    inline IAM policies, so this is the only check of them short of a real AWS
+    account."""
     role = load_template()["Resources"]["ExecutionRole"]["Properties"]
 
     (trust,) = role["AssumeRolePolicyDocument"]["Statement"]
@@ -106,18 +107,31 @@ def test_stack_template_grants():
     assert trust["Principal"] == {"Service": "lambda.amazonaws.com"}
     assert trust["Action"] == "sts:AssumeRole"
 
-    resources = []
+    grants = set()
     for policy in role["Policies"]:
         for statement in policy["PolicyDocument"]["Statement"]:
             assert statement["Effect"] == "Allow"
-            resources.extend(statement["Resource"])
+            actions = statement["Action"]
+            for action in [actions] if isinstance(actions, str) else actions:
+                for resource in statement["Resource"]:
+                    grants.add((action, json.dumps(resource, sort_keys=True)))
+    source = {"Fn::GetAtt": ["SourceBucket", "Arn"]}
+    source_objects = {"Fn::Sub": "${SourceBucket.Arn}/*"}
+    destination = {"Fn::GetAtt": ["DestinationBucket", "Arn"]}
+    destination_objects = {"Fn::Sub": "${DestinationBucket.Arn}/*"}
+    # The source is read only; `replace` deletes the previous output, so the
+    # destination's objects need delete as well as read and write.
     expected = [
-        {"Fn::GetAtt": ["SourceBucket", "Arn"]},
-        {"Fn::Sub": "${SourceBucket.Arn}/*"},
-        {"Fn::GetAtt": ["DestinationBucket", "Arn"]},
-        {"Fn::Sub": "${DestinationBucket.Arn}/*"},
+        ("s3:ListBucket", source),
+        ("s3:GetObject", source_objects),
+        ("s3:ListBucket", destination),
+        ("s3:DeleteObject", destination_objects),
+        ("s3:GetObject", destination_objects),
+        ("s3:PutObject", destination_objects),
     ]
-    assert sorted(map(json.dumps, resources)) == sorted(map(json.dumps, expected))
+    assert grants == {
+        (action, json.dumps(resource, sort_keys=True)) for action, resource in expected
+    }
 
 
 def test_stack_template_runs_one_job_at_a_time():
@@ -159,6 +173,26 @@ def docker_client():
     client.close()
 
 
+def _run_containers(docker_client, run_token: str, name: str | None = None) -> list:
+    """This run's containers, found by its label (and an exact name, if given)."""
+    filters = {"label": f"{RUN_LABEL}={run_token}"}
+    if name is not None:
+        filters["name"] = name
+    return [
+        container
+        for container in docker_client.containers.list(all=True, filters=filters)
+        if name is None or container.name == name
+    ]
+
+
+def _remove_after_failed_start(docker_client, run_token: str, name: str) -> None:
+    """A create that times out on the client can still complete in the daemon,
+    leaving a container the caller holds no handle to. Remove it, by this run's
+    label and its exact name, so a failed start leaves nothing behind."""
+    for container in _run_containers(docker_client, run_token, name):
+        container.remove(force=True, v=True)
+
+
 @pytest.fixture(scope="module")
 def lambda_network(docker_client, run_token, run_labels):
     """A network of this run's own, which Floci starts function containers on."""
@@ -166,6 +200,10 @@ def lambda_network(docker_client, run_token, run_labels):
         f"omniload-lambda-{run_token}", labels=run_labels
     )
     yield network
+    # Anything of this run's still here (a fixture that failed part way) would
+    # keep the network in use.
+    for container in _run_containers(docker_client, run_token):
+        container.remove(force=True, v=True)
     network.remove()
 
 
@@ -185,16 +223,21 @@ def floci(docker_client, lambda_network, run_token, run_labels):
     """Floci with the Docker socket, so it can run the function image."""
     from testcontainers.core.labels import SESSION_ID
 
+    name = f"omniload-lambda-{run_token}-floci"
     container = FlociContainer(
         image=FLOCI_IMAGE,
         edge_port=FLOCI_PORT,
         region_name=REGION,
-        name=f"omniload-lambda-{run_token}-floci",
+        name=name,
         docker_socket=True,
         lambda_network=lambda_network.name,
         labels=run_labels,
     )
-    container.start()
+    try:
+        container.start()
+    except BaseException:
+        _remove_after_failed_start(docker_client, run_token, name)
+        raise
     floci_id = container.get_wrapped_container().id
     try:
         # The session hooks start the shared database containers for any target
@@ -441,10 +484,26 @@ def emulator(docker_client, lambda_network, floci, stack, run_token, run_labels)
     API is present. The credentials are placeholders Floci accepts.
     """
     floci_url = floci_internal_url(floci)
-    container = docker_client.containers.run(
+    name = f"omniload-lambda-{run_token}-rie"
+    try:
+        container = _run_emulator(
+            docker_client, name, lambda_network, run_labels, floci_url, stack
+        )
+    except BaseException:
+        _remove_after_failed_start(docker_client, run_token, name)
+        raise
+    try:
+        container.reload()
+        yield container
+    finally:
+        container.remove(force=True, v=True)
+
+
+def _run_emulator(docker_client, name, lambda_network, run_labels, floci_url, stack):
+    return docker_client.containers.run(
         IMAGE,
         detach=True,
-        name=f"omniload-lambda-{run_token}-rie",
+        name=name,
         labels=run_labels,
         network=lambda_network.name,
         read_only=True,
@@ -464,11 +523,6 @@ def emulator(docker_client, lambda_network, floci, stack, run_token, run_labels)
             "OMNILOAD_DEST_TABLE": f"{stack.destination_bucket}/{READONLY_OUTPUT}",
         },
     )
-    try:
-        container.reload()
-        yield container
-    finally:
-        container.remove(force=True, v=True)
 
 
 def invoke_emulator(container, timeout: float = 960) -> Any:
