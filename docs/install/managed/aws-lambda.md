@@ -141,7 +141,8 @@ aws cloudformation delete-stack --stack-name omniload-job
   `AWS_ENDPOINT_URL` environment variable.
 - **Native libraries.** A connector that needs a native library needs it added
   to the image: the ODBC connectors need `unixODBC` and the driver, the Db2
-  connector needs `clidriver`, and the `rsync` source needs the `rsync` binary.
+  connector needs `clidriver`, and the `rsync` source needs the `oc-rsync`
+  binary, or `rsync` with the `binary=rsync` URI option.
   Oracle thin mode needs nothing extra. This recipe targets `linux/amd64`.
   Verify native-driver support before porting it to another architecture.
 - **Image size.** The image with the base install is over 3 GB. The recipe's CI
