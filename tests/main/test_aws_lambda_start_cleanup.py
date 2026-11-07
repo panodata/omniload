@@ -18,10 +18,11 @@ EMULATOR_NAME = f"omniload-lambda-{RUN}-rie"
 
 
 class FakeContainer:
-    def __init__(self, name: str, labels: dict[str, str]):
+    def __init__(self, name: str, labels: dict[str, str], status: str = "running"):
         self.id = f"id-{name}"
         self.name = name
         self.labels = labels
+        self.status = status
         self.removed = False
 
     def remove(self, force: bool = False, v: bool = False) -> None:
@@ -30,7 +31,8 @@ class FakeContainer:
 
 class FakeContainers:
     """The Docker filters the smoke uses: `label` as `key=value`, exact; `name` as
-    a substring of the name, as the Docker API matches it."""
+    a substring of the name, as the Docker API matches it. As in Docker, a
+    container that is not running is listed only with `all=True`."""
 
     def __init__(self, existing: list[FakeContainer]):
         self.all = list(existing)
@@ -41,6 +43,8 @@ class FakeContainers:
         found = []
         for container in self.all:
             if container.removed:
+                continue
+            if not all and container.status != "running":
                 continue
             label = filters.get("label")
             if label is not None:
@@ -54,8 +58,9 @@ class FakeContainers:
         return found
 
     def run(self, image, *, name: str, labels: dict[str, str], **kwargs):
-        # The daemon completes the create; the client sees only the timeout.
-        self.all.append(FakeContainer(name, labels))
+        # The daemon completes the create; the client sees only the timeout, and
+        # the container is left created, not running.
+        self.all.append(FakeContainer(name, labels, status="created"))
         assert self.run_error is not None
         raise self.run_error
 
@@ -87,7 +92,9 @@ def test_failed_floci_start_removes_only_this_runs_container(monkeypatch):
             self.labels = labels
 
         def start(self):
-            client.containers.all.append(FakeContainer(self.name, self.labels))
+            client.containers.all.append(
+                FakeContainer(self.name, self.labels, status="created")
+            )
             raise error
 
     monkeypatch.setattr(smoke, "FlociContainer", FailingFloci)

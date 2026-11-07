@@ -129,6 +129,7 @@ def test_destination_query_naming_no_key_leaves_the_keys_to_dlt(
         ("secret_access_key=SECRET&endpoint_url=http://x:1", "access_key_id"),
         ("endpoint_url=", "endpoint_url"),
         ("region=", "region"),
+        ("endpoint_url=&region=eu-west-1", "endpoint_url"),
     ],
 )
 def test_destination_blank_or_partial_credentials_are_refused(query, missing):
@@ -136,6 +137,27 @@ def test_destination_blank_or_partial_credentials_are_refused(query, missing):
     refused naming what is missing rather than replaced by the environment's."""
     with pytest.raises(MissingConnectorOption, match=missing):
         DeltaLakeDestination().dlt_dest(f"s3+delta://my-bucket/lakehouse?{query}")
+
+
+@pytest.mark.parametrize(
+    ("uri", "missing"),
+    [
+        ("gs+delta://my-bucket/lakehouse?credentials_path=", "credentials_path"),
+        ("az+delta://container/lakehouse?account_name=", "account_name"),
+    ],
+)
+def test_destination_blank_only_query_is_refused_on_gcs_and_azure(uri, missing):
+    """A query naming only blank options is refused, not read as no query, which
+    would leave the credentials to the environment."""
+    with pytest.raises(MissingConnectorOption, match=missing):
+        DeltaLakeDestination().dlt_dest(uri)
+
+
+def test_destination_keyless_query_validates_the_endpoint_url():
+    with pytest.raises(ValueError, match="Invalid endpoint_url"):
+        DeltaLakeDestination().dlt_dest(
+            "s3+delta://my-bucket/lakehouse?endpoint_url=not-a-url"
+        )
 
 
 @pytest.mark.parametrize(

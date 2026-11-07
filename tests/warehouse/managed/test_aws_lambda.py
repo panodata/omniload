@@ -8,8 +8,15 @@ interface emulator the base image ships, because Floci does not make the root
 file system read-only as Lambda does.
 
 Build the image first, then name it in ``OMNILOAD_TEST_LAMBDA_IMAGE``; without
-it the Docker tests skip::
+it the Docker tests skip. The build installs ``requirements.txt``, the hashed
+lock, which the checkout does not hold: compile it first, as the Dockerfile's
+header says (the CI workflow locks the checkout's own wheel instead)::
 
+    cd examples/aws-lambda
+    uv pip compile requirements.in --generate-hashes \\
+        --python-version 3.12 --python-platform x86_64-manylinux_2_34 \\
+        -o requirements.txt
+    cd ../..
     docker buildx build --platform linux/amd64 --provenance=false --load \\
         -t omniload-lambda:smoke examples/aws-lambda
     OMNILOAD_TEST_LAMBDA_IMAGE=omniload-lambda:smoke \\
@@ -135,11 +142,14 @@ def test_stack_template_grants():
 
 
 def test_stack_template_runs_one_job_at_a_time():
-    """`replace` rewrites one output, so two overlapping runs would interleave."""
+    """`replace` rewrites one output, so two overlapping runs would interleave.
+    The limits are also stated on the recipe's documentation page."""
     properties = function_properties()
     assert properties["ReservedConcurrentExecutions"] == 1
     assert properties["Timeout"] == 900
     assert properties["PackageType"] == "Image"
+    assert properties["MemorySize"] == 2048
+    assert properties["EphemeralStorage"] == {"Size": 2048}
 
 
 # --- Docker fixtures: everything carries this run's label ---
