@@ -156,6 +156,22 @@ def test_destination_refuses_the_layout_option(uri):
         DeltaLakeDestination().dlt_dest(uri)
 
 
+@pytest.mark.parametrize(
+    ("query", "unknown"),
+    [
+        ("regoin=eu-west-1", "regoin"),
+        ("access_key=TEST&secret_key=TEST", "access_key, secret_key"),
+        ("endpoint_url=http://localhost:4566&endpoint=http://x:1", "endpoint"),
+    ],
+)
+def test_destination_refuses_unknown_options_on_a_keyless_query(query, unknown):
+    """Without keys the default chain supplies them, so an option S3 does not read
+    is refused rather than dropped: a typo must not run the job on the
+    environment's credentials or region."""
+    with pytest.raises(ValidationError, match=f"option\\(s\\) {unknown}\\."):
+        DeltaLakeDestination().dlt_dest(f"s3+delta://my-bucket/lakehouse?{query}")
+
+
 def test_destination_local_catalog_needs_no_credentials():
     destination = DeltaLakeDestination().dlt_dest("file+delta:///data/delta-catalog")
 
