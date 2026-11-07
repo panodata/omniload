@@ -11,12 +11,14 @@ Parameters:
     Type: String
     Default: "s3://"
     Description: >-
-      omniload source URI. A bare `s3://` reads with the function's role.
+      omniload source URI. A bare `s3://` is meant to read with the
+      function's role, through the AWS default credential chain.
   DestinationUri:
     Type: String
     Default: "s3://"
     Description: >-
-      omniload destination URI. A bare `s3://` writes with the function's role.
+      omniload destination URI. A bare `s3://` is meant to write with the
+      function's role, through the AWS default credential chain.
 
 Resources:
   SourceBucket:
