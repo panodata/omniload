@@ -120,10 +120,10 @@ aws cloudformation delete-stack --stack-name omniload-job
   `Timeout` is 900 seconds, the Lambda maximum. Raise memory and ephemeral
   storage in `template.yaml` for larger inputs.
 - **One run at a time.** `ReservedConcurrentExecutions` is 1, per function, so
-  runs never overlap. Lambda keeps 100 units of an account's concurrency in each
-  region unreserved, so making this reservation when the stack is first deployed
-  needs the account's unreserved concurrency in that region to be at least 101,
-  or the deployment fails.
+  runs never overlap. Lambda keeps 100 units of an account's concurrency
+  unreserved, so making this reservation when the stack is first deployed needs
+  the account's unreserved concurrency to be at least 101, or the deployment
+  fails.
 - **Output replacement.** The handler loads with the fixed `replace` strategy,
   which deletes the previous output before writing the new one. A successful
   rerun over unchanged input therefore produces the same output, and a run that
@@ -145,8 +145,8 @@ aws cloudformation delete-stack --stack-name omniload-job
   emulator, name it in the URI with `?endpoint_url=`. `pyarrow` ignores the
   `AWS_ENDPOINT_URL` environment variable. On a plain `s3://` URI without keys,
   options other than `endpoint_url` and `region` are not checked, so a misspelled
-  one, such as `?endpoint=`, is dropped without an error and the job reaches
-  AWS instead of the emulator.
+  one, such as `?endpoint=`, is dropped without an error and the emulator
+  endpoint is not used.
 - **Native libraries.** A connector that needs a native library needs it added
   to the image: the ODBC connectors need `unixODBC` and the driver, the Db2
   connector needs `clidriver`, and the `rsync` source needs the `oc-rsync`

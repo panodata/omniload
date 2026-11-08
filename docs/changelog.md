@@ -12,9 +12,9 @@
   - Newly accepted: an S3 URI naming only a non-empty `endpoint_url` and/or
     `region` uses the default credential chain. It was refused as missing
     `access_key_id`.
-  - Newly refused, previously accepted: a blank option alone on an `s3+delta://`,
-    `gs+delta://` or `az+delta://` URI, such as `?endpoint_url=` or
-    `?credentials_path=`, which read as no query. Also `layout`, which was
+  - Newly refused, previously accepted: a query naming only blank options on an
+    `s3+delta://`, `gs+delta://` or `az+delta://` URI, such as `?endpoint_url=`
+    or `?credentials_path=`, which read as no query. Also `layout`, which was
     ignored, on an S3 URI with both keys, a `gs+delta://` or `az+delta://` URI
     with credentials, and `file`, `hdfs` and `lakefs` URIs.
   - Refused before and now with a different error: an unknown option or
