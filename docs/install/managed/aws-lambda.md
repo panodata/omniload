@@ -173,22 +173,22 @@ Registry, and the `arm64` architecture.
 ## Recipe files
 
 ```{literalinclude} ../../../examples/aws-lambda/template.yaml
-:caption: template.yaml
+:caption: `template.yaml`
 :language: yaml
 ```
 
 ```{literalinclude} ../../../examples/aws-lambda/handler.py
-:caption: handler.py
+:caption: `handler.py`
 :language: python
 ```
 
 ```{literalinclude} ../../../examples/aws-lambda/Dockerfile
-:caption: Dockerfile
+:caption: `Dockerfile`
 :language: docker
 ```
 
 ```{literalinclude} ../../../examples/aws-lambda/requirements.in
-:caption: requirements.in
+:caption: `requirements.in`
 :language: text
 ```
 
