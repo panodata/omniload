@@ -130,6 +130,7 @@ def test_destination_query_naming_no_key_leaves_the_keys_to_dlt(
         ("endpoint_url=", "endpoint_url"),
         ("region=", "region"),
         ("endpoint_url=&region=eu-west-1", "endpoint_url"),
+        ("region=&endpoint_url=http://localhost:4566", "region"),
     ],
 )
 def test_destination_blank_or_partial_credentials_are_refused(query, missing):
