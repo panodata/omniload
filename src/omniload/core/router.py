@@ -231,7 +231,7 @@ class SqlSourceRouter:
 
                 # SQLAlchemy's cx_oracle dialect checks for version >= 5.2
                 # oracledb has a different versioning scheme, so we need to patch it
-                oracledb.version.__version__ = "8.3.0"  # ty: ignore[unresolved-attribute]
+                oracledb.version.__version__ = "8.3.0"  # ty: ignore[missing-attribute]
                 sys.modules["cx_Oracle"] = oracledb
             except ImportError:
                 # oracledb not installed, will fail later with a clear error

@@ -105,7 +105,7 @@ def enrich_ad_objects(fb_obj_type: AbstractObject, fields: Sequence[str]) -> Any
 
         for item in items:
             o: AbstractCrudObject = fb_obj_type(item["id"])  # ty: ignore[call-non-callable]
-            o.api_get(  # ty: ignore[unresolved-attribute]
+            o.api_get(  # ty: ignore[missing-attribute]
                 fields=fields,
                 batch=api_batch,
                 success=functools.partial(update_item, item=item),
@@ -132,7 +132,7 @@ def execute_job(
     sleep_time = 3
     while status != "Job Completed":
         duration = time.time() - time_start
-        job = job.api_get()  # ty: ignore[unresolved-attribute]
+        job = job.api_get()  # ty: ignore[missing-union-attribute]
         status = job["async_status"]
         percent_complete = job["async_percent_completion"]
 

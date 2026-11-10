@@ -72,7 +72,7 @@ def workspaces(
     Yields:
         dict: The workspace data.
     """
-    yield from get_client(access_token).workspaces.find_all(opt_fields=",".join(fields))  # ty: ignore[unresolved-attribute]
+    yield from get_client(access_token).workspaces.find_all(opt_fields=",".join(fields))  # ty: ignore[missing-attribute]
 
 
 @dlt.transformer(
@@ -95,7 +95,7 @@ def projects(
         list[dict]: The project data for the given workspace.
     """
     return list(
-        get_client(access_token).projects.find_all(  # ty: ignore[unresolved-attribute]
+        get_client(access_token).projects.find_all(  # ty: ignore[missing-attribute]
             workspace=workspace["gid"],
             timeout=REQUEST_TIMEOUT,
             opt_fields=",".join(fields),
@@ -125,7 +125,7 @@ def sections(
     return [
         section
         for project in project_array
-        for section in get_client(access_token).sections.get_sections_for_project(  # ty: ignore[unresolved-attribute]
+        for section in get_client(access_token).sections.get_sections_for_project(  # ty: ignore[missing-attribute]
             project_gid=project["gid"],
             timeout=REQUEST_TIMEOUT,
             opt_fields=",".join(fields),
@@ -151,7 +151,7 @@ def tags(
     """
     return [
         tag
-        for tag in get_client(access_token).tags.find_all(  # ty: ignore[unresolved-attribute]
+        for tag in get_client(access_token).tags.find_all(  # ty: ignore[missing-attribute]
             workspace=workspace["gid"],
             timeout=REQUEST_TIMEOUT,
             opt_fields=",".join(fields),
@@ -185,7 +185,7 @@ def tasks(
     yield from (
         task
         for project in project_array
-        for task in get_client(access_token).tasks.find_all(  # ty: ignore[unresolved-attribute]
+        for task in get_client(access_token).tasks.find_all(  # ty: ignore[missing-attribute]
             project=project["gid"],
             timeout=REQUEST_TIMEOUT,
             modified_since=modified_at.start_value,
@@ -215,7 +215,7 @@ def stories(
     """
     return [
         story
-        for story in get_client(access_token).stories.get_stories_for_task(  # ty: ignore[unresolved-attribute]
+        for story in get_client(access_token).stories.get_stories_for_task(  # ty: ignore[missing-attribute]
             task_gid=task["gid"],
             timeout=REQUEST_TIMEOUT,
             opt_fields=",".join(fields),
@@ -244,7 +244,7 @@ def teams(
     """
     return [
         team
-        for team in get_client(access_token).teams.find_by_organization(  # ty: ignore[unresolved-attribute]
+        for team in get_client(access_token).teams.find_by_organization(  # ty: ignore[missing-attribute]
             organization=workspace["gid"],
             timeout=REQUEST_TIMEOUT,
             opt_fields=",".join(fields),
@@ -273,7 +273,7 @@ def users(
     """
     return [
         user
-        for user in get_client(access_token).users.find_all(  # ty: ignore[unresolved-attribute]
+        for user in get_client(access_token).users.find_all(  # ty: ignore[missing-attribute]
             workspace=workspace["gid"],
             timeout=REQUEST_TIMEOUT,
             opt_fields=",".join(fields),
