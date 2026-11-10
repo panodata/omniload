@@ -3,8 +3,15 @@ from urllib.parse import parse_qs, urlsplit, urlunsplit
 
 import dlt
 from dlt_filesystem.target.remote import blob_destination_options
+from dlt_filesystem.util.auth import (
+    S3_KEY_ALIASES,
+    S3_KEY_OPTIONS,
+    S3_KEYLESS_OPTIONS,
+    query_option_names,
+)
 
 from omniload.core.tablename import two_level
+from omniload.error import ValidationError
 from omniload.target.model import GenericSqlDestination
 
 
@@ -18,11 +25,42 @@ class DeltaLakeDestination(GenericSqlDestination):
         kwargs.pop("staging_bucket", None)
         parsed = urlsplit(uri.replace("+delta://", "://"))
         params = parse_qs(parsed.query)
+        # parse_qs drops blank values, so `access_key_id=` would otherwise read as
+        # no query at all. The raw option names keep a blank key refused, and let
+        # S3 tell a query naming no key from one naming a blank key.
+        named_options = query_option_names(parsed.query)
+
+        # The blob destinations shape their output paths with `layout`; a Delta
+        # table has its own layout, so the option would be silently ignored.
+        if "layout" in named_options:
+            raise ValidationError(
+                "The Delta Lake destination does not support the 'layout' URI "
+                "option: a Delta table defines its own file layout. Remove "
+                "'layout' from the destination URI."
+            )
+        named = any(key != "layout" for key in named_options)
+
+        # A query naming no key leaves the keys to the AWS SDK's default chain. An
+        # option S3 does not read (a misspelled `regoin`, `access_key`) would then
+        # be dropped, and the job would run on whatever the environment supplies.
+        if parsed.scheme == "s3" and not (
+            (S3_KEY_OPTIONS | S3_KEY_ALIASES) & named_options
+        ):
+            unknown = sorted(named_options - set(S3_KEYLESS_OPTIONS))
+            if unknown:
+                raise ValidationError(
+                    "The Delta Lake destination does not recognise the S3 URI "
+                    f"option(s) {', '.join(unknown)}. Without keys it reads only "
+                    f"{', '.join(S3_KEYLESS_OPTIONS)}; with keys, name both "
+                    "access_key_id and secret_access_key."
+                )
 
         # Protocols dlt models no credential spec for (hdfs, lakefs) take no
         # options from the query; forwarding the raw strings to their fsspec
         # backend would hand a constructor `"false"` where it expects `False`.
-        options: dict[str, Any] = blob_destination_options(parsed.scheme, params)
+        options: dict[str, Any] = blob_destination_options(
+            parsed.scheme, params, named=named, named_options=named_options
+        )
 
         # The query never travels in the bucket URL: dlt reads it as part of the
         # storage path, which on an object store makes the credential part of the

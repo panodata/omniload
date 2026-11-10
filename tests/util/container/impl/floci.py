@@ -38,13 +38,28 @@ class FlociContainer(DockerContainer):
     # bump after verifying the Kinesis and DynamoDB suites pass against the new image.
     FLOCI_VERSION = os.environ.get("FLOCI_VERSION", "1.5.25")
 
+    #: The host's Docker socket, which Floci needs to run Lambda functions.
+    DOCKER_SOCKET = "/var/run/docker.sock"
+
     def __init__(
         self,
         image: str = f"floci/floci:{FLOCI_VERSION}",
         edge_port: int = 4566,
         region_name: Optional[str] = None,
+        *,
+        docker_socket: bool = False,
+        lambda_network: Optional[str] = None,
         **kwargs,
     ) -> None:
+        """
+        `docker_socket` mounts the host's Docker socket, which Floci uses to start
+        a container per Lambda function. It hands Floci control of the Docker
+        daemon, so it is off by default and only the Lambda tests turn it on.
+
+        `lambda_network` names an existing user-defined Docker network. Floci
+        joins it and starts its function containers on it, and they reach Floci
+        by the container name, which `name` must therefore set.
+        """
         super().__init__(image=image, **kwargs)
         self.edge_port = edge_port
         self.region_name = region_name or os.environ.get(
@@ -54,6 +69,22 @@ class FlociContainer(DockerContainer):
         self.with_env("AWS_DEFAULT_REGION", self.region_name)
         self.with_env("AWS_ACCESS_KEY_ID", "testcontainers-localstack")
         self.with_env("AWS_SECRET_ACCESS_KEY", "testcontainers-localstack")
+        if docker_socket:
+            self.with_volume_mapping(self.DOCKER_SOCKET, self.DOCKER_SOCKET, "rw")
+            # Whoever reaches the edge port can have Floci start containers, so
+            # publish it on the loopback interface only, not on every interface.
+            self.ports[str(self.edge_port)] = ("127.0.0.1", None)  # ty: ignore[invalid-assignment]
+        if lambda_network is not None:
+            if not kwargs.get("name"):
+                raise ValueError(
+                    "lambda_network needs a container name: function containers "
+                    "reach Floci by that name"
+                )
+            # `with_kwargs` replaces the extra `docker run` arguments, so keep
+            # the ones the caller passed (labels, say).
+            self.with_kwargs(**{**self._kwargs, "network": lambda_network})
+            self.with_env("FLOCI_HOSTNAME", kwargs["name"])
+            self.with_env("FLOCI_SERVICES_LAMBDA_DOCKER_NETWORK", lambda_network)
 
     def _configure(self):
         self.waiting_for(

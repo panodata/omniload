@@ -87,6 +87,120 @@ def test_destination_partial_credentials_name_the_missing_option():
         )
 
 
+@pytest.mark.parametrize(
+    ("query", "endpoint_url", "region_name"),
+    [
+        ("endpoint_url=http://localhost:4566", "http://localhost:4566", None),
+        ("region=eu-west-1", None, "eu-west-1"),
+        (
+            "endpoint_url=http://localhost:4566&region=eu-west-1",
+            "http://localhost:4566",
+            "eu-west-1",
+        ),
+    ],
+)
+def test_destination_query_naming_no_key_leaves_the_keys_to_dlt(
+    query, endpoint_url, region_name
+):
+    """A query that names neither key still carries its endpoint and region, and
+    leaves the keys to the AWS SDK's default chain, as a role-based runtime needs."""
+    destination = DeltaLakeDestination().dlt_dest(
+        f"s3+delta://my-bucket/lakehouse?{query}"
+    )
+    params = passed_params(destination)
+    credentials = params["credentials"]
+
+    assert params["bucket_url"] == "s3://my-bucket/lakehouse"
+    assert credentials.aws_access_key_id is None
+    assert credentials.aws_secret_access_key is None
+    assert credentials.endpoint_url == endpoint_url
+    assert credentials.region_name == region_name
+
+
+@pytest.mark.parametrize(
+    ("query", "missing"),
+    [
+        ("access_key_id=", "access_key_id"),
+        ("access_key_id=&secret_access_key=", "access_key_id"),
+        ("access_key_id=&endpoint_url=http://localhost:4566", "access_key_id"),
+        ("access_key_id=&region=eu-west-1", "access_key_id"),
+        ("access_key_id=AKIA123&secret_access_key=", "secret_access_key"),
+        ("secret_access_key=SECRET", "access_key_id"),
+        ("secret_access_key=SECRET&endpoint_url=http://x:1", "access_key_id"),
+        ("endpoint_url=", "endpoint_url"),
+        ("region=", "region"),
+        ("endpoint_url=&region=eu-west-1", "endpoint_url"),
+        ("region=&endpoint_url=http://localhost:4566", "region"),
+    ],
+)
+def test_destination_blank_or_partial_credentials_are_refused(query, missing):
+    """A key the URI names, even blank, asked for that key to be used, so it is
+    refused naming what is missing rather than replaced by the environment's."""
+    with pytest.raises(MissingConnectorOption, match=missing):
+        DeltaLakeDestination().dlt_dest(f"s3+delta://my-bucket/lakehouse?{query}")
+
+
+@pytest.mark.parametrize(
+    ("uri", "missing"),
+    [
+        ("gs+delta://my-bucket/lakehouse?credentials_path=", "credentials_path"),
+        ("az+delta://container/lakehouse?account_name=", "account_name"),
+    ],
+)
+def test_destination_blank_only_query_is_refused_on_gcs_and_azure(uri, missing):
+    """A query naming only blank options is refused, not read as no query, which
+    would leave the credentials to the environment."""
+    with pytest.raises(MissingConnectorOption, match=missing):
+        DeltaLakeDestination().dlt_dest(uri)
+
+
+def test_destination_keyless_query_validates_the_endpoint_url():
+    with pytest.raises(ValueError, match="Invalid endpoint_url"):
+        DeltaLakeDestination().dlt_dest(
+            "s3+delta://my-bucket/lakehouse?endpoint_url=not-a-url"
+        )
+
+
+@pytest.mark.parametrize(
+    "uri",
+    [
+        "s3+delta://my-bucket/lakehouse?layout=x",
+        "s3+delta://my-bucket/lakehouse?layout=",
+        "s3+delta://my-bucket/lakehouse?layout=x&endpoint_url=http://localhost:4566",
+        "s3+delta://my-bucket/lakehouse?access_key_id=AKIA123&secret_access_key=SECRET&layout=x",
+        "file+delta:///data/delta-catalog?layout=x",
+        "file+delta:///data/delta-catalog?layout=",
+        "gs+delta://my-bucket/lakehouse?layout=x",
+        "gs+delta://my-bucket/lakehouse?credentials_path=/tmp/sa.json&layout=x",
+        "az+delta://container/lakehouse?layout=x",
+        "az+delta://container/lakehouse?account_name=acct&account_key=KEY&layout=x",
+        "hdfs+delta://namenode:8020/lakehouse?layout=x",
+        "lakefs+delta://repo/main/lakehouse?layout=x",
+    ],
+)
+def test_destination_refuses_the_layout_option(uri):
+    """`layout` shapes blob destination paths, which a Delta table does not use.
+    It is refused, blank or not, rather than ignored or read as a keyless query."""
+    with pytest.raises(ValidationError, match="does not support the 'layout' URI"):
+        DeltaLakeDestination().dlt_dest(uri)
+
+
+@pytest.mark.parametrize(
+    ("query", "unknown"),
+    [
+        ("regoin=eu-west-1", "regoin"),
+        ("access_key=TEST&secret_key=TEST", "access_key, secret_key"),
+        ("endpoint_url=http://localhost:4566&endpoint=http://x:1", "endpoint"),
+    ],
+)
+def test_destination_refuses_unknown_options_on_a_keyless_query(query, unknown):
+    """Without keys the default chain supplies them, so an option S3 does not read
+    is refused rather than dropped: a typo must not run the job on the
+    environment's credentials or region."""
+    with pytest.raises(ValidationError, match=f"option\\(s\\) {unknown}\\."):
+        DeltaLakeDestination().dlt_dest(f"s3+delta://my-bucket/lakehouse?{query}")
+
+
 def test_destination_local_catalog_needs_no_credentials():
     destination = DeltaLakeDestination().dlt_dest("file+delta:///data/delta-catalog")
 
