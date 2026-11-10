@@ -39,7 +39,7 @@ def appsflyer_test_cases():
             ).fetchall()
             columns = [
                 col[0]
-                for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
+                for col in conn.exec_driver_sql(  # ty: ignore[missing-union-attribute, unused-ignore-comment, unused-ignore-comment]
                     f"select * from {schema_rand_prefix}.creatives limit 0"
                 ).cursor.description
             ]
@@ -88,7 +88,7 @@ def appsflyer_test_cases():
             ).fetchall()
             columns = [
                 col[0]
-                for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
+                for col in conn.exec_driver_sql(  # ty: ignore[missing-union-attribute, unused-ignore-comment, unused-ignore-comment]
                     f"select * from {schema_rand_prefix}.campaigns limit 0"
                 ).cursor.description
             ]
@@ -145,7 +145,7 @@ def appsflyer_test_cases():
             ).fetchall()
             columns = [
                 col[0]
-                for col in conn.exec_driver_sql(  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
+                for col in conn.exec_driver_sql(  # ty: ignore[missing-union-attribute, unused-ignore-comment, unused-ignore-comment]
                     f"select * from {schema_rand_prefix}.custom limit 0"
                 ).cursor.description
             ]

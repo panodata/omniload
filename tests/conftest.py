@@ -193,7 +193,7 @@ def manage_containers(request, shared_directory):
     # still filtered below, but fixture polling must not depend on both processes
     # deriving exactly the same target set from their invocation arguments.
     for container in _all_managed_containers(request.config):
-        container.lock_dir = shared_directory  # ty: ignore[invalid-assignment, unresolved-attribute, unused-ignore-comment]
+        container.lock_dir = shared_directory  # ty: ignore[invalid-assignment, missing-attribute, unused-ignore-comment]
 
 
 def start_containers(config):
@@ -205,7 +205,7 @@ def start_containers(config):
     unique_containers = [x for x in _managed_containers(config) if x is not None]
 
     for container in unique_containers:
-        container.lock_dir = config.shared_directory  # ty: ignore[invalid-assignment, unresolved-attribute, unused-ignore-comment]
+        container.lock_dir = config.shared_directory  # ty: ignore[invalid-assignment, missing-attribute, unused-ignore-comment]
 
     with ThreadPoolExecutor() as executor:
         futures = {

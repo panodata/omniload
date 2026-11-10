@@ -85,7 +85,7 @@ def get_meta_for_ranges(
 ) -> Any:
     """Retrieves `spreadsheet_id` cell metadata for `range_names`"""
     return (
-        service.spreadsheets()  # ty: ignore[unresolved-attribute]
+        service.spreadsheets()  # ty: ignore[missing-attribute]
         .get(
             spreadsheetId=spreadsheet_id,
             ranges=range_names,
@@ -109,7 +109,7 @@ def get_known_range_names(
     Returns:
         Tuple[List[str], List[str], str] sheet names, named ranges, spreadheet title
     """
-    metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()  # ty: ignore[unresolved-attribute]
+    metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()  # ty: ignore[missing-attribute]
     sheet_names: List[str] = [s["properties"]["title"] for s in metadata["sheets"]]
     named_ranges: List[str] = [r["name"] for r in metadata.get("namedRanges", {})]
     title: str = metadata["properties"]["title"]
@@ -132,7 +132,7 @@ def get_data_for_ranges(
         List[DictStrAny]: A list of ranges with data in the same order as `range_names`
     """
     range_batch_resp = (
-        service.spreadsheets()  # ty: ignore[unresolved-attribute]
+        service.spreadsheets()  # ty: ignore[missing-attribute]
         .values()
         .batchGet(
             spreadsheetId=spreadsheet_id,

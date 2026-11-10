@@ -119,7 +119,7 @@ def _create_facebook_insights_resource(
                     insights_max_wait_to_finish_seconds=insights_max_wait_to_finish_seconds,
                     insights_max_wait_to_start_seconds=insights_max_wait_to_start_seconds,
                 )
-                output = list(map(process_report_item, job.get_result()))  # ty: ignore[unresolved-attribute]
+                output = list(map(process_report_item, job.get_result()))  # ty: ignore[missing-attribute]
                 yield output
             current_start_date = current_start_date.add(days=time_increment_days)
 

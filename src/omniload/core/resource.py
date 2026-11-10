@@ -16,11 +16,7 @@ def for_each(
     ):
         resource_names = list(source.selected_resources.keys())
         for res in resource_names:
-            ex(
-                source.resources[  # ty: ignore[unresolved-attribute]
-                    res
-                ]
-            )
+            ex(source.resources[res])  # ty: ignore[missing-union-attribute]
     else:
         ex(source)  # ty: ignore[invalid-argument-type]
 

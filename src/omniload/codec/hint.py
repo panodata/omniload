@@ -18,9 +18,8 @@ def apply_athena_hints(
     def _apply_partition_hint(resource: DltResource) -> None:
         columns = resource.columns if resource.columns else {}
 
-        partition_hint = (
-            columns.get(partition_column)  # ty: ignore[unresolved-attribute]
-            or additional_hints.get(partition_column)
+        partition_hint = columns.get(partition_column) or additional_hints.get(  # ty: ignore[missing-union-attribute]
+            partition_column
         )
 
         athena_adapter(

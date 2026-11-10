@@ -47,9 +47,9 @@ def table_adapter_exclude_columns(cols: list[str]):
     from dlt.common.libs.sql_alchemy import Table
 
     def excluder(table: Table):
-        cols_to_remove = [col for col in table._columns if col.name in cols]  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
+        cols_to_remove = [col for col in table._columns if col.name in cols]  # ty: ignore[missing-attribute, unused-ignore-comment, unused-ignore-comment]
         for col in cols_to_remove:
-            table._columns.remove(col)  # ty: ignore[unresolved-attribute, unused-ignore-comment, unused-ignore-comment]
+            table._columns.remove(col)  # ty: ignore[missing-attribute, unused-ignore-comment, unused-ignore-comment]
 
     return excluder
 
