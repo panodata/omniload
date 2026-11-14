@@ -104,7 +104,7 @@ def enrich_ad_objects(fb_obj_type: AbstractObject, fields: Sequence[str]) -> Any
             raise resp.error()
 
         for item in items:
-            o: AbstractCrudObject = fb_obj_type(item["id"])  # ty: ignore[call-non-callable]
+            o: AbstractCrudObject = fb_obj_type(item["id"])  # ty: ignore[not-callable]
             o.api_get(  # ty: ignore[missing-attribute]
                 fields=fields,
                 batch=api_batch,

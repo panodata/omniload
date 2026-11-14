@@ -754,7 +754,7 @@ def collection_documents(
 
     # Set custom query if provided
     if custom_query and hasattr(loader, "set_custom_query"):
-        loader.set_custom_query(custom_query)  # ty: ignore[call-non-callable]
+        loader.set_custom_query(custom_query)  # ty: ignore[not-callable]
 
     # Load documents based on loader type
     if isinstance(
