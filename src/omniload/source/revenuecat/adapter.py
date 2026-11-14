@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Iterator, Optional
+from typing import Any, AsyncGenerator, Dict, Iterable, Iterator, Optional
 
 import aiohttp
 import dlt
@@ -55,7 +55,7 @@ def revenuecat_source(
     )
     async def customers(
         customers,
-    ) -> Iterator[Dict[str, Any]]:  # ty: ignore[invalid-return-type]
+    ) -> AsyncGenerator[Dict[str, Any]]:
         if project_id is None:
             raise ValueError("project_id is required for customer_ids resource")
         async with aiohttp.ClientSession() as session:
