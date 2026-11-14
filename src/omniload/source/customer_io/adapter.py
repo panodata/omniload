@@ -59,7 +59,7 @@ def _to_timestamp(dt: TAnyDateTime | None) -> int | None:
     if dt is None:
         return None
     if hasattr(dt, "timestamp"):
-        return int(dt.timestamp())  # ty: ignore[call-non-callable]
+        return int(dt.timestamp())  # ty: ignore[not-callable]
     # Handle other types by converting through pendulum
     return int(pendulum.instance(dt).timestamp())  # ty: ignore[no-matching-overload]
 

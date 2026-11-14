@@ -17,7 +17,7 @@
 import asyncio
 import math
 from datetime import datetime, timedelta
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional, Union
 
 import stripe
 from dlt.common import pendulum
@@ -185,7 +185,7 @@ def _fetch_chunk_data_streaming(
 
 async def async_pagination(
     endpoint: str, start_date: Optional[Any] = None, end_date: Optional[Any] = None
-) -> Iterable[TDataItem]:  # ty: ignore[invalid-return-type]
+) -> AsyncGenerator[TDataItem, None]:
     """
     Async version of pagination that retrieves data from an endpoint with pagination.
 
@@ -218,7 +218,7 @@ async def async_parallel_pagination(
     endpoint: str,
     max_workers: int = 8,
     rate_limit_delay: float = 5,
-) -> Iterable[TDataItem]:  # ty: ignore[invalid-return-type]
+) -> AsyncGenerator[TDataItem, None]:
     """
     ULTRA-FAST async parallel pagination - yields data in random order for maximum speed.
     No ordering constraints - pure performance optimization.
@@ -282,7 +282,7 @@ async def _fetch_chunk_data_async_fast(
         List[List[TDataItem]]: Raw batches with zero overhead
     """
     chunk_data = []
-    async for batch in async_pagination(endpoint, start_ts, end_ts):  # ty: ignore[not-iterable]
+    async for batch in async_pagination(endpoint, start_ts, end_ts):
         chunk_data.append(batch)
 
     return chunk_data
