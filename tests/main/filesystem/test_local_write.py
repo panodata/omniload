@@ -8,6 +8,7 @@ import json
 import pytest
 from dlt_filesystem.target.local import LocalFilesystemDestination
 from dlt_filesystem.target.registry import WRITE_FORMATS
+from verlib2 import Version
 
 from omniload import run_ingest
 from omniload.core.factory import SourceDestinationFactory
@@ -20,6 +21,11 @@ def _skip_missing_writer_extra(out_format):
     module = {"cbor": "cbor2", "msgpack": "msgpack", "vortex": "vortex"}.get(out_format)
     if module and importlib.util.find_spec(module) is None:
         pytest.skip(f"Needs the {module} package for {out_format} output")
+    if out_format == "avro":
+        import polars
+
+        if Version(polars.__version__) < Version("2.1"):
+            pytest.skip("Writing Avro files needs Polars 2.1 or later")
 
 
 def test_factory_dispatches_file_scheme_to_local_destination():
@@ -188,7 +194,11 @@ def _read_back(path, out_format):
     encoding still fails here. `test_written_file_reads_back_through_its_own_reader`
     covers the other direction.
     """
-    if out_format == "cbor":
+    if out_format == "avro":
+        from polars.io import avro
+
+        return avro.read_avro(path).to_arrow().to_pylist()
+    elif out_format == "cbor":
         import cbor2
 
         with open(path, "rb") as f:
