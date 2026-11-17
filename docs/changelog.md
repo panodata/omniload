@@ -2,6 +2,8 @@
 
 ## in progress
 
+## 2026/11/17 v0.24.0
+
 - Deployment: `examples/aws-lambda` holds an AWS Lambda recipe: a container
   image and a CloudFormation template that run one job per invocation, with a
   smoke test on the `Floci` emulator and a CI workflow that builds the image and
