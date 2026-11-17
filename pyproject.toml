@@ -121,7 +121,7 @@ dependencies = [
   "rudder-sdk-python<2.3",
   "setuptools>=83",
   "simple-salesforce<2",
-  "smartsheet-python-sdk<5",
+  "smartsheet-python-sdk<6",
   "snowflake-connector-python>=4.7.1,<6",
   "snowflake-sqlalchemy<3",
   # SQLAlchemy 2.0.55 reflects PostgreSQL primary keys with a `REGCLASS` cast, which
