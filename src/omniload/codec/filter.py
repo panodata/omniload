@@ -1,3 +1,6 @@
+import sys
+
+
 def cast_set_to_list(row):
     # this handles just the sqlalchemy backend for now
     if isinstance(row, dict):
@@ -93,11 +96,23 @@ def format_interval(total_ns: int) -> str:
 def _timedelta_ns(value) -> int:
     # Built from the normalized fields in Python ints, so a pandas `Timedelta` in
     # second or millisecond resolution cannot overflow an int64 on the way. A
-    # pandas `Timedelta` also carries nanoseconds past the microseconds that
-    # `datetime.timedelta` holds.
-    seconds = value.days * 86_400 + value.seconds
-    microseconds = seconds * 1_000_000 + value.microseconds
-    return microseconds * 1_000 + getattr(value, "nanoseconds", 0)
+    # pandas `Timedelta` reports its own fields, which reach past the range of
+    # `datetime.timedelta` and carry nanoseconds. Any other subclass is read from
+    # `timedelta`'s own slots: pendulum's `Duration` overrides `.seconds` with a
+    # signed value, which double-counts a negative day.
+    from datetime import timedelta
+
+    pandas = sys.modules.get("pandas")
+    if pandas is not None and isinstance(value, pandas.Timedelta):
+        days, seconds, microseconds = value.days, value.seconds, value.microseconds
+        nanoseconds = value.nanoseconds
+    else:
+        days = timedelta.days.__get__(value)
+        seconds = timedelta.seconds.__get__(value)
+        microseconds = timedelta.microseconds.__get__(value)
+        nanoseconds = 0
+    total_seconds = days * 86_400 + seconds
+    return (total_seconds * 1_000_000 + microseconds) * 1_000 + nanoseconds
 
 
 def _durations_as_text(column, unit: str):

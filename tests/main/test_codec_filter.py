@@ -6,6 +6,7 @@ from datetime import timedelta
 import duckdb
 import numpy as np
 import pandas as pd
+import pendulum
 import pyarrow as pa
 import pyarrow.parquet
 import pytest
@@ -87,6 +88,19 @@ def test_a_timedelta_subclass_is_converted():
         pass
 
     assert cast_timedelta({"d": DriverTimeDelta(seconds=90)}) == {"d": "00:01:30"}
+
+
+@pytest.mark.parametrize(
+    ("value", "text"),
+    [
+        (pendulum.duration(hours=-3), "-03:00:00"),
+        (pendulum.duration(days=-1, hours=-3), "-1 days -03:00:00"),
+        (pendulum.duration(days=1, hours=2, seconds=4.5), "1 day 02:00:04.5"),
+    ],
+)
+def test_a_subclass_that_overrides_the_fields_is_read_from_timedelta(value, text):
+    # pendulum's `Duration` reports `.seconds` signed, not normalized to a day.
+    assert cast_timedelta({"d": value}) == {"d": text}
 
 
 def test_other_values_in_the_row_are_left_alone():
