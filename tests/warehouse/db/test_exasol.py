@@ -461,7 +461,9 @@ def test_aware_start_resumes_from_the_cursor(exasol, tmp_path, backend):
     ]
 
 
-def test_interval_day_to_second_workarounds(exasol, tmp_path):
+def test_interval_day_to_second_cast_in_a_query_or_excluded(exasol, tmp_path):
+    # A query that casts the column keeps Exasol's own text for it, and excluding
+    # the column leaves it out.
     dest = tmp_path / "warehouse.duckdb"
     ingest(
         exasol,
