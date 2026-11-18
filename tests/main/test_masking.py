@@ -1,9 +1,16 @@
+import hashlib
 import random
 import unittest
 from datetime import date, datetime
 from unittest.mock import patch
 
+import duckdb
+import pyarrow as pa
+import pyarrow.parquet
+import pytest
+
 from omniload.codec.masking import MaskingEngine, create_masking_mapper
+from tests.util import invoke_ingest_command
 
 
 class TestMaskingEngine(unittest.TestCase):
@@ -508,6 +515,49 @@ class TestMaskingArrowParity(unittest.TestCase):
         item = pa.Table.from_arrays([pa.array(["x"]), pa.array(["y"])], ["e", "e"])
         with self.assertRaises(ValueError):
             create_masking_mapper(["e:redact"])(item)
+
+
+@pytest.mark.parametrize(
+    "fragment",
+    ["#use_pyarrow=true", ""],
+    ids=["record-batches", "rows"],
+)
+def test_a_masked_parquet_column_loads_hashed(tmp_path, fragment):
+    # `use_pyarrow` makes the Parquet reader yield Arrow record batches; without it
+    # the reader yields dict rows. Both have to load the hash, not the address.
+    source = tmp_path / "source.parquet"
+    pa.parquet.write_table(
+        pa.table(
+            {
+                "email": ["a@example.com", "b@example.com"],
+                "big": pa.array([2**53 + 1, None], type=pa.int64()),
+            }
+        ),
+        source,
+    )
+    dest = tmp_path / "warehouse.duckdb"
+
+    result = invoke_ingest_command(
+        f"file://{source}{fragment}",
+        "rows",
+        f"duckdb:///{dest}",
+        "main.t",
+        mask=["email:sha256"],
+        print_output=False,
+    )
+
+    assert result.exit_code == 0, result.output
+    with duckdb.connect(str(dest), read_only=True) as connection:
+        rows = connection.execute(
+            "SELECT email, big, typeof(big) FROM main.t"
+        ).fetchall()
+    hashes = [
+        hashlib.sha256(e.encode()).hexdigest()
+        for e in ("a@example.com", "b@example.com")
+    ]
+    assert sorted(rows) == sorted(
+        [(hashes[0], 2**53 + 1, "BIGINT"), (hashes[1], None, "BIGINT")]
+    )
 
 
 if __name__ == "__main__":
