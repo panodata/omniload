@@ -7,11 +7,16 @@
   Their columns were loaded unmasked. On Arrow items, only the masked columns
   are rebuilt: the other columns keep their types and metadata, where a nullable
   integer column used to come back as floating point. The masks read each
-  column's own values, as they do on dict rows, so masked values change for an
-  Arrow table column that contains NULLs: a NULL was hashed as the text `nan` or
-  `<NA>` and stays NULL now, and an integer in such a column was hashed as a
-  float (`1.0`) and is hashed as the integer now. A column that `pandas`
-  metadata names as the index was skipped and is masked now.
+  column's own Python values, as they do on dict rows, so some masked values on
+  Arrow tables change:
+  - A NULL reaches the mask as `None`, where it was the text `nan` or `<NA>`.
+    A hash of it is NULL now, and `sequential` gives it no token.
+  - An integer in a plain Arrow integer column that holds a NULL was hashed as a
+    float (`1.0`) and is hashed as the integer.
+  - A list or struct value is hashed as Python's text of it (`[1, 2]`), where it
+    was NumPy's (`[1 2]`).
+  - A column that `pandas` metadata names as the index was skipped and is
+    masked now.
 
 ## 2026/11/17 v0.24.0
 
