@@ -9,14 +9,19 @@
   `sqlalchemy` and `pyarrow` SQL backends this covers PostgreSQL `interval`,
   Exasol `INTERVAL DAY TO SECOND` and DuckDB `INTERVAL`, and it covers duration
   columns, dictionary-encoded ones included, in files read through `file://`
-  and the other filesystem sources. An Arrow `month_day_nano_interval` column,
-  such as DuckDB's Arrow export gives, still fails the load, and a duration
-  inside a list or struct column is not converted. A masked interval column is
-  hashed from its `timedelta` value before it becomes text. Only the masks that
-  apply to any value mask an interval: `hash`, `sha256`, `md5`, `hmac`,
-  `redact`, `stars`, `fixed`, `uuid` and `sequential`. Any other mask on an
-  interval column, such as `round`, `date_shift` or `partial`, fails the run
-  rather than load the interval or its text unmasked.
+  and the other filesystem sources. A driver that hands over a `timedelta` has
+  already folded months into days: psycopg2 counts a year as 365 days and a
+  month as 30, DuckDB a year as 360 and a month as 30, so `1 year 2 months
+  3 days` loads as `428 days` from PostgreSQL and `423 days` from DuckDB. An
+  Arrow `month_day_nano_interval` column, such as DuckDB's Arrow export gives,
+  still fails the load, and a duration inside a list or struct column is not
+  converted. A masked `timedelta` value or Arrow `duration` column is hashed
+  from its `timedelta` value before it becomes text. Only the masks that apply
+  to any value mask one: `hash`, `sha256`, `md5`, `hmac`, `redact`, `stars`,
+  `fixed`, `uuid` and `sequential`. Any other mask on such a column, such as
+  `round`, `date_shift` or `partial`, fails the run rather than load the
+  interval or its text unmasked. A `month_day_nano_interval` column is not
+  checked.
 - Masking: `--mask` now applies to sources that yield Arrow record batches, such
   as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
   Their columns were loaded unmasked. On Arrow items, only the masked columns
