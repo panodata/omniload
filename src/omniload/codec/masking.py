@@ -401,6 +401,15 @@ def _masked_array(pa: Any, values: list, original_type: Any) -> Any:
     return masked
 
 
+def _interval_left_unmasked(column: str) -> ValueError:
+    # A mask that does not apply to a value returns it as it is. An interval is
+    # then turned into loadable text after masking, so it would load in clear.
+    return ValueError(
+        f"Cannot mask column {column!r}: the mask does not apply to an interval "
+        "and would load it unmasked"
+    )
+
+
 def create_masking_mapper(mask_configs: list[str]) -> Callable:
     engine = MaskingEngine()
 
@@ -434,6 +443,11 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
                             "than one column of that name"
                         )
                     masked = _masked_column(pa, column, columns[index], masks[column])
+                    result_type = columns[index].type if masked is None else masked.type
+                    if pa.types.is_dictionary(result_type):
+                        result_type = result_type.value_type
+                    if pa.types.is_duration(result_type):
+                        raise _interval_left_unmasked(column)
                     if masked is None:
                         continue
                     columns[index] = masked
@@ -458,9 +472,13 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
             for column, mask_func in masks.items():
                 if column in data:
                     try:
-                        data[column] = mask_func(data[column])
+                        masked = mask_func(data[column])
                     except Exception as e:
                         logger.warning("Failed to mask column %s: %s", column, e)
+                        continue
+                    if isinstance(masked, timedelta):
+                        raise _interval_left_unmasked(column)
+                    data[column] = masked
             return data
 
         # Return as-is if not a supported type

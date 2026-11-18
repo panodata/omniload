@@ -253,6 +253,58 @@ def test_a_masked_interval_column_keeps_its_hash(interval_source, tmp_path):
     assert _rows(dest, "SELECT d FROM main.t WHERE id = 1") == [(expected,)]
 
 
+# Masks that do not apply to an interval and hand it back as it is.
+INTERVAL_PASS_THROUGH_MASKS = [
+    "round",
+    "noise",
+    "range",
+    "date_shift",
+    "year_only",
+    "month_year",
+]
+
+
+@pytest.mark.parametrize("algorithm", INTERVAL_PASS_THROUGH_MASKS)
+@pytest.mark.parametrize("path", ["sqlalchemy", "pyarrow", "record-batches"])
+def test_a_mask_that_leaves_an_interval_as_it_is_fails_the_run(
+    interval_source, tmp_path, algorithm, path
+):
+    # The interval would otherwise become text after masking and load in clear.
+    if path == "record-batches":
+        source = tmp_path / "source.parquet"
+        pa.parquet.write_table(
+            pa.table(
+                {
+                    "id": [1, 2],
+                    "d": pa.array(
+                        [timedelta(days=1, hours=2, minutes=3, seconds=4.5), None],
+                        type=pa.duration("us"),
+                    ),
+                }
+            ),
+            source,
+        )
+        options = {"source_uri": f"file://{source}#use_pyarrow=true", "table": "rows"}
+    else:
+        options = {"source_uri": interval_source, "table": "raw.t", "sql_backend": path}
+    dest = tmp_path / "warehouse.duckdb"
+
+    source_uri = options.pop("source_uri")
+    table = options.pop("table")
+    result = invoke_ingest_command(
+        source_uri,
+        table,
+        f"duckdb:///{dest}",
+        "main.t",
+        mask=[f"d:{algorithm}"],
+        print_output=False,
+        **options,
+    )
+
+    assert result.exit_code != 0, result.output
+    assert "would load it unmasked" in repr(result.exception)
+
+
 def test_an_arrow_file_with_a_duration_column_loads(tmp_path):
     source = tmp_path / "source.arrow"
     table = pa.table(
