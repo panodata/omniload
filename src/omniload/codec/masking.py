@@ -20,6 +20,14 @@ logger = logging.getLogger(__name__)
 # when that order does.
 NON_DETERMINISTIC_ALGORITHMS = frozenset({"date_shift", "noise", "random", "uuid"})
 
+# Algorithms that mask an interval: each hashes, replaces or tokenizes any value.
+# The others read a number, a date or text, and would mask an interval's text or
+# its digits; an interval passes them as it is, and an interval left as one fails
+# the run, since it would load unmasked.
+INTERVAL_ALGORITHMS = frozenset(
+    {"fixed", "hash", "hmac", "md5", "redact", "sequential", "sha256", "stars", "uuid"}
+)
+
 
 class MaskingEngine:
     def __init__(self):
@@ -267,9 +275,6 @@ class MaskingEngine:
         if isinstance(value, (date, datetime)):
             shift_days = random.randint(-max_days, max_days)
             return value + timedelta(days=shift_days)
-        if isinstance(value, timedelta):
-            # An interval is not a date, though a short one parses as a time.
-            return value
 
         # Try to parse string dates
         try:
@@ -290,8 +295,6 @@ class MaskingEngine:
 
         if isinstance(value, (date, datetime)):
             return value.year
-        if isinstance(value, timedelta):
-            return value
 
         # Try to parse string dates
         try:
@@ -308,8 +311,6 @@ class MaskingEngine:
 
         if isinstance(value, (date, datetime)):
             return f"{value.year}-{value.month:02d}"
-        if isinstance(value, timedelta):
-            return value
 
         # Try to parse string dates
         try:
@@ -417,6 +418,15 @@ def _interval_left_unmasked(column: str) -> ValueError:
     )
 
 
+def _passing_intervals(mask: Callable) -> Callable:
+    """`mask`, returning an interval as it is for the refusal below to catch."""
+    return lambda value: value if isinstance(value, timedelta) else mask(value)
+
+
+def _has_values(array: Any) -> bool:
+    return len(array) > array.null_count
+
+
 def create_masking_mapper(mask_configs: list[str]) -> Callable:
     engine = MaskingEngine()
 
@@ -424,7 +434,10 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
     masks = {}
     for config in mask_configs:
         column, algorithm, param = engine.parse_mask_config(config)
-        masks[column] = engine.get_masking_function(algorithm, param)
+        mask = engine.get_masking_function(algorithm, param)
+        if algorithm.lower() not in INTERVAL_ALGORITHMS:
+            mask = _passing_intervals(mask)
+        masks[column] = mask
 
     def apply_masks(data: Any) -> Any:
         # Handle PyArrow tables and record batches
@@ -450,10 +463,11 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
                             "than one column of that name"
                         )
                     masked = _masked_column(pa, column, columns[index], masks[column])
-                    result_type = columns[index].type if masked is None else masked.type
+                    result = columns[index] if masked is None else masked
+                    result_type = result.type
                     if pa.types.is_dictionary(result_type):
                         result_type = result_type.value_type
-                    if pa.types.is_duration(result_type):
+                    if pa.types.is_duration(result_type) and _has_values(result):
                         raise _interval_left_unmasked(column)
                     if masked is None:
                         continue
@@ -481,6 +495,9 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
                     try:
                         masked = mask_func(data[column])
                     except Exception as e:
+                        if isinstance(data[column], timedelta):
+                            # Left in place, the interval would load unmasked.
+                            raise _interval_left_unmasked(column) from e
                         logger.warning("Failed to mask column %s: %s", column, e)
                         continue
                     if isinstance(masked, timedelta):

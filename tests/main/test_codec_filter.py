@@ -267,15 +267,99 @@ def test_a_masked_interval_column_keeps_its_hash(interval_source, tmp_path):
     assert _rows(dest, "SELECT d FROM main.t WHERE id = 1") == [(expected,)]
 
 
-# Masks that do not apply to an interval and hand it back as it is.
-INTERVAL_PASS_THROUGH_MASKS = [
+# Every `--mask` algorithm, and those that do not mask an interval: they read a
+# number, a date or text, and hand an interval back as it is.
+ALL_MASKS = [
+    "hash",
+    "sha256",
+    "md5",
+    "hmac",
+    "email",
+    "phone",
+    "credit_card",
+    "ssn",
+    "redact",
+    "stars",
+    "fixed",
+    "random",
+    "partial",
+    "first_letter",
+    "uuid",
+    "sequential",
     "round",
-    "noise",
     "range",
+    "noise",
     "date_shift",
     "year_only",
     "month_year",
 ]
+INTERVAL_PASS_THROUGH_MASKS = [
+    "email",
+    "phone",
+    "credit_card",
+    "ssn",
+    "random",
+    "partial",
+    "first_letter",
+    "round",
+    "range",
+    "noise",
+    "date_shift",
+    "year_only",
+    "month_year",
+]
+INTERVAL_MASKS = [m for m in ALL_MASKS if m not in INTERVAL_PASS_THROUGH_MASKS]
+
+
+def test_every_mask_is_one_or_the_other():
+    from omniload.codec.masking import INTERVAL_ALGORITHMS, MaskingEngine
+
+    for algorithm in ALL_MASKS:
+        MaskingEngine().get_masking_function(algorithm)
+    assert set(INTERVAL_MASKS) == INTERVAL_ALGORITHMS
+
+
+@pytest.mark.parametrize("algorithm", INTERVAL_MASKS)
+def test_a_mask_that_applies_to_an_interval_masks_it(algorithm):
+    from omniload.codec.masking import create_masking_mapper
+
+    mapper = create_masking_mapper([f"d:{algorithm}"])
+    value = timedelta(days=1, hours=2, minutes=3, seconds=4.5)
+    row = mapper({"d": value})
+    batch = mapper(pa.record_batch({"d": pa.array([value, None], pa.duration("us"))}))
+
+    for masked in (row["d"], batch.column("d")[0].as_py()):
+        assert not isinstance(masked, timedelta)
+        assert str(value) != str(masked)
+    assert not pa.types.is_duration(batch.schema.field("d").type)
+
+
+@pytest.mark.parametrize("algorithm", ["sha256", "round"])
+def test_an_arrow_duration_column_without_a_value_is_not_refused(algorithm):
+    from omniload.codec.masking import create_masking_mapper
+
+    mapper = create_masking_mapper([f"d:{algorithm}"])
+    for array in (
+        pa.array([None, None], pa.duration("us")),
+        pa.array([], pa.duration("us")),
+        pa.array([None], pa.duration("s")).dictionary_encode(),
+    ):
+        result = mapper(pa.record_batch({"d": array}))
+        assert result.num_rows == len(array)
+
+
+def test_a_mask_that_raises_on_an_interval_fails_the_run():
+    # The failing mask would leave the interval in the row, to load unmasked.
+    from omniload.codec.masking import create_masking_mapper
+
+    class Unprintable(timedelta):
+        def __str__(self):
+            raise RuntimeError("no text")
+
+    mapper = create_masking_mapper(["d:sha256"])
+    with pytest.raises(ValueError, match="would load it unmasked"):
+        mapper({"d": Unprintable(hours=1)})
+    assert mapper({"d": "text"})["d"] == hashlib.sha256(b"text").hexdigest()
 
 
 @pytest.mark.parametrize("algorithm", INTERVAL_PASS_THROUGH_MASKS)
