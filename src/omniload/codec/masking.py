@@ -356,22 +356,28 @@ def _temporal_kind(value: Any) -> Optional[type]:
     return None
 
 
-def _masked_column(pa: Any, name: str, column: Any, mask: Callable) -> Any:
+def _masked_column(
+    pa: Any, name: str, column: Any, mask: Callable, emitted_type: Any
+) -> Any:
     """Mask one Arrow column; `None` when the mask returned every value as it was.
 
     An unchanged column that holds a value is kept as it is, so a value a mask
-    does not apply to loads exactly as it would have unmasked. An all-NULL one is
-    rebuilt like any other, as Arrow's `null` type: kept, it would carry its
-    source type into a batch whose neighbours carry the mask's, which dlt refuses
-    to put together. Dates or times beside values of another kind are refused:
-    Arrow would read the others as dates or times, or a datetime beside a date as
-    a date. A value that loads as NULL, such as a NaN or `NaT`, is no kind.
+    does not apply to loads exactly as it would have unmasked. An all-NULL one
+    takes `emitted_type`, the type this mask gave the column in an earlier item,
+    or Arrow's `null` type before there is one: dlt refuses to put batches of
+    different types together, and a mask may or may not change the type. Dates or
+    times beside values of another kind are refused: Arrow would read the others
+    as dates or times, or a datetime beside a date as a date. A value that loads
+    as NULL, such as a NaN or `NaT`, is no kind.
     """
     values = column.to_pylist()
     results = [mask(value) for value in values]
     unchanged = all(result is value for result, value in zip(results, values))
-    if unchanged and any(value is not None for value in values):
-        return None
+    if unchanged:
+        if any(value is not None for value in values):
+            return None
+        if emitted_type is not None:
+            return pa.nulls(len(values), emitted_type)
     kinds = {_temporal_kind(result) for result in results if not _loads_as_null(result)}
     if len(kinds) > 1:
         raise ValueError(
@@ -413,6 +419,10 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
         column, algorithm, param = engine.parse_mask_config(config)
         masks[column] = engine.get_masking_function(algorithm, param)
 
+    # The type each mask gave a column, by column name and source type, so an
+    # all-NULL column in a later item can take it too.
+    emitted: Dict[Tuple[str, Any], Any] = {}
+
     def apply_masks(data: Any) -> Any:
         # Handle PyArrow tables and record batches
         try:
@@ -436,7 +446,13 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
                             f"Cannot mask column {column!r}: the data has more "
                             "than one column of that name"
                         )
-                    masked = _masked_column(pa, column, columns[index], masks[column])
+                    key = (column, columns[index].type)
+                    masked = _masked_column(
+                        pa, column, columns[index], masks[column], emitted.get(key)
+                    )
+                    result_type = columns[index].type if masked is None else masked.type
+                    if not pa.types.is_null(result_type):
+                        emitted[key] = result_type
                     if masked is None:
                         continue
                     columns[index] = masked
