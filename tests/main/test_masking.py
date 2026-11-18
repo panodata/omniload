@@ -523,26 +523,67 @@ class TestMaskingArrowParity(unittest.TestCase):
             self.assertEqual(result.column("v").to_pylist(), ["REDACTED"])
             self.assertNotIn(b"pandas", result.schema.metadata or {})
 
+    def test_a_column_the_mask_returns_unchanged_is_kept_as_it_is(self):
+        import pyarrow as pa
+
+        stamp = pa.scalar(1_700_000_000_123_456_789, pa.timestamp("ns", tz="UTC"))
+        # Each mask here does not apply to the values and returns them as they are.
+        cases = [
+            ("year_only", pa.array([2**63 + 1, None], pa.uint64())),
+            ("round", pa.array([stamp, None], stamp.type)),
+            ("round", pa.array([stamp, stamp, None], stamp.type).dictionary_encode()),
+            ("round", pa.array([[stamp.as_py()], None], pa.list_(stamp.type))),
+            ("round", pa.array([12_345, None], pa.time64("ns"))),
+            (
+                "round",
+                pa.array([[], [("x", 1)], None], pa.map_(pa.string(), pa.int64())),
+            ),
+            ("sha256", pa.array([None, None], pa.string())),
+        ]
+        for algorithm, array in cases:
+            field = pa.field("v", array.type, metadata={"k": "v"})
+            for kind in (pa.Table, pa.RecordBatch):
+                item = kind.from_arrays([array], schema=pa.schema([field]))
+                result = create_masking_mapper([f"v:{algorithm}"])(item)
+
+                self.assertEqual(result.schema.field("v"), field)
+                self.assertTrue(result.column("v").equals(item.column("v")))
+
     def test_masked_values_inference_cannot_hold_keep_the_column_type(self):
         import pyarrow as pa
 
         stamp = pa.scalar(1_700_000_000_123_456_789, pa.timestamp("ns", tz="UTC"))
-        cases = [
-            # An unsigned integer above the int64 range, returned unchanged.
-            ("year_only", pa.array([2**63 + 1, None], pa.uint64())),
-            # A timestamp returned unchanged keeps its nanoseconds and time zone.
-            ("round", pa.array([stamp, None], stamp.type)),
-            # So does a dictionary-encoded one, decoded.
-            ("round", pa.array([stamp, stamp, None], stamp.type).dictionary_encode()),
-        ]
-        for algorithm, array in cases:
-            for kind in (pa.Table, pa.RecordBatch):
+        big = 2**63 + 2**61
+        for kind in (pa.Table, pa.RecordBatch):
+            # A shifted timestamp keeps its nanoseconds and time zone, decoded
+            # from a dictionary too.
+            for array in (
+                pa.array([stamp, None], stamp.type),
+                pa.array([stamp, stamp, None], stamp.type).dictionary_encode(),
+            ):
                 item = kind.from_arrays([array], ["v"])
-                result = create_masking_mapper([f"v:{algorithm}"])(item)
+                result = create_masking_mapper(["v:date_shift:0"])(item)
 
-                own_type = getattr(array.type, "value_type", array.type)
-                self.assertEqual(result.schema.field("v").type, own_type)
+                self.assertEqual(result.schema.field("v").type, stamp.type)
                 self.assertEqual(result.column("v").to_pylist(), array.to_pylist())
+
+            # A changed unsigned integer above the int64 range stays unsigned.
+            item = kind.from_arrays([pa.array([big, None], pa.uint64())], ["v"])
+            result = create_masking_mapper(["v:noise:0.01"])(item)
+
+            self.assertEqual(result.schema.field("v").type, pa.uint64())
+            value = result.column("v")[0].as_py()
+            self.assertTrue(2**63 < value < 2**64 and value != big)
+
+    def test_dates_beside_values_of_another_kind_are_refused(self):
+        import pyarrow as pa
+
+        # `date_shift` shifts what parses as a date and returns the rest unchanged,
+        # which Arrow would read as microseconds since the epoch.
+        for kind in (pa.Table, pa.RecordBatch):
+            item = kind.from_arrays([pa.array([2024, 12345678, None])], ["v"])
+            with self.assertRaisesRegex(ValueError, "dates or times"):
+                create_masking_mapper(["v:date_shift"])(item)
 
     def test_mixed_mask_results_are_not_forced_into_a_list_column(self):
         import pyarrow as pa

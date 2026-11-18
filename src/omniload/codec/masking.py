@@ -6,7 +6,7 @@ import random
 import re
 import string
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
@@ -330,6 +330,30 @@ def non_deterministic_masks(mask_configs: list[str]) -> list[str]:
     return unstable
 
 
+def _masked_column(pa: Any, name: str, column: Any, mask: Callable) -> Any:
+    """Mask one Arrow column; `None` when the mask returned every value as it was.
+
+    An unchanged column is kept as it is, so a value a mask does not apply to
+    loads exactly as it would have unmasked. Dates or times beside values of
+    another kind are refused: Arrow would read the others as dates or times.
+    """
+    values = column.to_pylist()
+    results = [mask(value) for value in values]
+    if all(result is value for result, value in zip(results, values)):
+        return None
+    temporal = {
+        isinstance(result, (date, time, timedelta))
+        for result in results
+        if result is not None
+    }
+    if len(temporal) > 1:
+        raise ValueError(
+            f"Cannot mask column {name!r}: the mask returned dates or times "
+            "beside values of another kind"
+        )
+    return _masked_array(pa, results, column.type)
+
+
 def _masked_array(pa: Any, values: list, original_type: Any) -> Any:
     """Build the Arrow array for a column's masked values.
 
@@ -385,12 +409,9 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
                             f"Cannot mask column {column!r}: the data has more "
                             "than one column of that name"
                         )
-                    mask = masks[column]
-                    masked = _masked_array(
-                        pa,
-                        [mask(v) for v in columns[index].to_pylist()],
-                        fields[index].type,
-                    )
+                    masked = _masked_column(pa, column, columns[index], masks[column])
+                    if masked is None:
+                        continue
                     columns[index] = masked
                     fields[index] = pa.field(
                         column, masked.type, metadata=fields[index].metadata
