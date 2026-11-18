@@ -585,6 +585,30 @@ class TestMaskingArrowParity(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "dates or times"):
                 create_masking_mapper(["v:date_shift"])(item)
 
+    def test_a_datetime_beside_a_date_is_refused(self):
+        import pyarrow as pa
+
+        both = pa.UnionArray.from_dense(
+            pa.array([0, 1], pa.int8()),
+            pa.array([0, 0], pa.int32()),
+            [pa.array([date(2024, 1, 2)]), pa.array([datetime(2024, 1, 2, 3, 4)])],
+        )
+        for kind in (pa.Table, pa.RecordBatch):
+            item = kind.from_arrays([both], ["v"])
+            with self.assertRaisesRegex(ValueError, "dates or times"):
+                create_masking_mapper(["v:date_shift:0"])(item)
+
+    def test_a_nan_beside_dates_reads_as_null(self):
+        import pyarrow as pa
+
+        # `date_shift` returns a NaN as it is, which loads as NULL.
+        for kind in (pa.Table, pa.RecordBatch):
+            item = kind.from_arrays([pa.array([1.0, float("nan"), None])], ["v"])
+            result = create_masking_mapper(["v:date_shift:0"])(item)
+
+            self.assertEqual(result.column("v").null_count, 2)
+            self.assertTrue(pa.types.is_timestamp(result.schema.field("v").type))
+
     def test_mixed_mask_results_are_not_forced_into_a_list_column(self):
         import pyarrow as pa
 

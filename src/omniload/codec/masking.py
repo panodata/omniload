@@ -7,6 +7,7 @@ import re
 import string
 import uuid
 from datetime import date, datetime, time, timedelta
+from decimal import Decimal
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
@@ -330,23 +331,33 @@ def non_deterministic_masks(mask_configs: list[str]) -> list[str]:
     return unstable
 
 
+def _temporal_kind(value: Any) -> Optional[type]:
+    """The date or time class Arrow would infer for `value`, `None` for others."""
+    for kind in (datetime, date, time, timedelta):
+        if isinstance(value, kind):
+            return kind
+    return None
+
+
 def _masked_column(pa: Any, name: str, column: Any, mask: Callable) -> Any:
     """Mask one Arrow column; `None` when the mask returned every value as it was.
 
     An unchanged column is kept as it is, so a value a mask does not apply to
     loads exactly as it would have unmasked. Dates or times beside values of
-    another kind are refused: Arrow would read the others as dates or times.
+    another kind are refused: Arrow would read the others as dates or times, or
+    a datetime beside a date as a date. A NaN loads as NULL, so it is no kind.
     """
     values = column.to_pylist()
     results = [mask(value) for value in values]
     if all(result is value for result, value in zip(results, values)):
         return None
-    temporal = {
-        isinstance(result, (date, time, timedelta))
+    kinds = {
+        _temporal_kind(result)
         for result in results
         if result is not None
+        and not (isinstance(result, (float, Decimal)) and result != result)
     }
-    if len(temporal) > 1:
+    if len(kinds) > 1:
         raise ValueError(
             f"Cannot mask column {name!r}: the mask returned dates or times "
             "beside values of another kind"
