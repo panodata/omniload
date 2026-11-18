@@ -357,13 +357,24 @@ def test_an_arrow_duration_column_without_a_value_is_not_refused(algorithm):
     from omniload.codec.masking import create_masking_mapper
 
     mapper = create_masking_mapper([f"d:{algorithm}"])
+    hour_or_null = pa.array([3_600, None], pa.duration("s"))
     for array in (
         pa.array([None, None], pa.duration("us")),
         pa.array([], pa.duration("us")),
         pa.array([None], pa.duration("s")).dictionary_encode(),
+        # Valid indices that point at the NULL entry, beside an unused hour.
+        pa.DictionaryArray.from_arrays(pa.array([1, 1], pa.int32()), hour_or_null),
     ):
         result = mapper(pa.record_batch({"d": array}))
         assert result.num_rows == len(array)
+
+    if algorithm == "round":
+        # The same dictionary with an index on the hour is refused.
+        used = pa.DictionaryArray.from_arrays(
+            pa.array([0, 1], pa.int32()), hour_or_null
+        )
+        with pytest.raises(ValueError, match="would load it unmasked"):
+            mapper(pa.record_batch({"d": used}))
 
 
 def test_a_mask_that_raises_on_an_interval_fails_the_run():
