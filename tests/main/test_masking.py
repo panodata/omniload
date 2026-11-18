@@ -556,13 +556,15 @@ class TestMaskingArrowParity(unittest.TestCase):
 )
 def test_a_masked_parquet_column_loads_hashed(tmp_path, fragment):
     # `use_pyarrow` makes the Parquet reader yield Arrow record batches; without it
-    # the reader yields dict rows. Both have to load the hash, not the address.
+    # the reader yields dict rows. Both have to load the same rows: the hash, not
+    # the address, NULL as NULL, and an integer hashed as the integer it is.
     source = tmp_path / "source.parquet"
     pa.parquet.write_table(
         pa.table(
             {
-                "email": ["a@example.com", "b@example.com"],
-                "big": pa.array([2**53 + 1, None], type=pa.int64()),
+                "email": ["a@example.com", "b@example.com", None],
+                "id": pa.array([1, None, 2**53 + 1], type=pa.int64()),
+                "big": pa.array([2**53 + 1, None, 3], type=pa.int64()),
             }
         ),
         source,
@@ -574,22 +576,24 @@ def test_a_masked_parquet_column_loads_hashed(tmp_path, fragment):
         "rows",
         f"duckdb:///{dest}",
         "main.t",
-        mask=["email:sha256"],
+        mask=["email:sha256", "id:sha256"],
         print_output=False,
     )
 
     assert result.exit_code == 0, result.output
     with duckdb.connect(str(dest), read_only=True) as connection:
         rows = connection.execute(
-            "SELECT email, big, typeof(big) FROM main.t"
+            "SELECT email, id, big, typeof(big) FROM main.t ORDER BY big NULLS LAST"
         ).fetchall()
-    hashes = [
-        hashlib.sha256(e.encode()).hexdigest()
-        for e in ("a@example.com", "b@example.com")
+
+    def sha(value):
+        return hashlib.sha256(str(value).encode()).hexdigest()
+
+    assert rows == [
+        (None, sha(2**53 + 1), 3, "BIGINT"),
+        (sha("a@example.com"), sha(1), 2**53 + 1, "BIGINT"),
+        (sha("b@example.com"), None, None, "BIGINT"),
     ]
-    assert sorted(rows) == sorted(
-        [(hashes[0], 2**53 + 1, "BIGINT"), (hashes[1], None, "BIGINT")]
-    )
 
 
 if __name__ == "__main__":
