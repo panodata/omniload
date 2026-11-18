@@ -103,6 +103,24 @@ def test_a_subclass_that_overrides_the_fields_is_read_from_timedelta(value, text
     assert cast_timedelta({"d": value}) == {"d": text}
 
 
+def test_a_pendulum_absolute_duration_is_its_absolute_value():
+    earlier, later = pendulum.time(20), pendulum.time(23)
+    for value in (later.diff(earlier), earlier.diff(later)):
+        assert value.total_seconds() == 3 * 3600
+        assert cast_timedelta({"d": value}) == {"d": "03:00:00"}
+
+
+@pytest.mark.parametrize("container", [pa.table, pa.record_batch])
+def test_a_dictionary_encoded_duration_column_becomes_text(container):
+    durations = pa.array([3_600, None, 3_600], pa.duration("s")).dictionary_encode()
+    item = container({"d": durations})
+
+    result = cast_timedelta(item)
+
+    assert result.schema.field("d").type == pa.string()
+    assert result.column("d").to_pylist() == ["01:00:00", None, "01:00:00"]
+
+
 def test_other_values_in_the_row_are_left_alone():
     row = {"id": 1, "d": timedelta(minutes=5), "note": None, "nested": [timedelta(1)]}
     nested = row["nested"]

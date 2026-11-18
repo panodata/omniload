@@ -112,7 +112,13 @@ def _timedelta_ns(value) -> int:
         microseconds = timedelta.microseconds.__get__(value)
         nanoseconds = 0
     total_seconds = days * 86_400 + seconds
-    return (total_seconds * 1_000_000 + microseconds) * 1_000 + nanoseconds
+    total = (total_seconds * 1_000_000 + microseconds) * 1_000 + nanoseconds
+    # pendulum's `AbsoluteDuration` keeps the signed difference in those slots and
+    # stands for its absolute value, as its own fields and `total_seconds()` say.
+    absolute = getattr(sys.modules.get("pendulum.duration"), "AbsoluteDuration", None)
+    if absolute is not None and isinstance(value, absolute):
+        return abs(total)
+    return total
 
 
 def _durations_as_text(column, unit: str):
@@ -132,6 +138,13 @@ def _durations_as_text(column, unit: str):
             [convert(chunk) for chunk in column.chunks], type=pa.string()
         )
     return convert(column)
+
+
+def _duration_type(pa, arrow_type):
+    """The duration type of a column, dictionary-encoded or not, else `None`."""
+    if pa.types.is_dictionary(arrow_type):
+        arrow_type = arrow_type.value_type
+    return arrow_type if pa.types.is_duration(arrow_type) else None
 
 
 def cast_timedelta(item):
@@ -155,15 +168,18 @@ def cast_timedelta(item):
     if not isinstance(item, (pa.Table, pa.RecordBatch)):
         return item
     schema = item.schema
-    if not any(pa.types.is_duration(field.type) for field in schema):
+    if not any(_duration_type(pa, field.type) for field in schema):
         return item
 
     columns = []
     fields = []
     for index, field in enumerate(schema):
         column = item.column(index)
-        if pa.types.is_duration(field.type):
-            column = _durations_as_text(column, field.type.unit)
+        duration = _duration_type(pa, field.type)
+        if duration is not None:
+            if duration != field.type:
+                column = column.cast(duration)
+            column = _durations_as_text(column, duration.unit)
             field = field.with_type(pa.string())
         columns.append(column)
         fields.append(field)
