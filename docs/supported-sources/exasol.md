@@ -72,7 +72,7 @@ from the values instead and can differ from this table.
 | `DOUBLE` | `DOUBLE` | |
 | `GEOMETRY` | `VARCHAR` | Well-known text, such as `POINT (1 2)` |
 | `HASHTYPE` | `VARCHAR` | Hexadecimal digits |
-| `INTERVAL DAY TO SECOND` | not supported | See the note below |
+| `INTERVAL DAY TO SECOND` | `VARCHAR` | Such as `2 days 12:30:15.5` |
 | `INTERVAL YEAR TO MONTH` | `VARCHAR` | Such as `+05-03` |
 | `TIMESTAMP`, `TIMESTAMP(p)` | `TIMESTAMP` | Up to microseconds; finer digits are cut off |
 | `TIMESTAMP WITH LOCAL TIME ZONE` | `TIMESTAMP WITH TIME ZONE` | The exact instant |
@@ -94,17 +94,6 @@ columns:
   outside the UTC session, so they are refused for Exasol.
 
 Plain `TIMESTAMP` values are not affected.
-:::
-
-:::{note}
-**`INTERVAL DAY TO SECOND` columns fail the load.** Exclude the column with
-`--sql-exclude-columns`, or read it as text from a `query:` source:
-
-```shell
---source-table 'query:SELECT id, CAST(duration AS VARCHAR(40)) AS duration FROM retail.calls'
-```
-
-This loads values such as `+02 12:30:15.500`.
 :::
 
 :::{note}

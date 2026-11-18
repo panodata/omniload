@@ -2,6 +2,13 @@
 
 ## in progress
 
+- Core: Interval columns load as text instead of failing the run. dlt has no
+  interval type, so a `timedelta` value or an Arrow `duration` column reaches it
+  in PostgreSQL's interval format, such as `1 day 02:03:04.5`, which PostgreSQL
+  and DuckDB cast back to `INTERVAL`. This covers PostgreSQL `interval`, Exasol
+  `INTERVAL DAY TO SECOND`, DuckDB `INTERVAL` and duration columns in files read
+  through `file://` and the other filesystem sources. A masked interval column
+  keeps the hash it had.
 - Masking: `--mask` now applies to sources that yield Arrow record batches, such
   as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
   Their columns were loaded unmasked. On Arrow items, only the masked columns

@@ -24,3 +24,15 @@ The same URI structure can be used both for sources and destinations. You can re
 As a source, PostgreSQL can also be read through its ODBC driver with
 `--sql-backend adbcbridge`, which yields Arrow batches straight from the driver;
 see {ref}`sql-backends`.
+
+## Interval columns
+
+An `interval` column loads as text in PostgreSQL's own format, such as
+`1 day 02:03:04.5` or `-03:00:00`, which casts back with `CAST(d AS INTERVAL)`.
+The driver counts a year as 365 days and a month as 30 before omniload sees the
+value, so `1 year 2 mons` loads as `425 days`. To keep calendar units, read the
+column as text from a `query:` source:
+
+```shell
+--source-table 'query:SELECT id, CAST(d AS TEXT) AS d FROM public.t'
+```

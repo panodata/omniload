@@ -480,21 +480,11 @@ def test_interval_day_to_second_workarounds(exasol, tmp_path):
 
 
 @pytest.mark.parametrize("backend", BACKENDS)
-def test_interval_day_to_second_fails_the_load(exasol, tmp_path, backend):
-    # The driver hands the column over as a timedelta, which neither backend loads.
-    # When this starts passing, the docs' type table needs a row for it.
-    result = invoke_ingest_command(
-        source_uri(exasol),
-        "probe.t_interval",
-        f"duckdb:///{tmp_path / 'warehouse.duckdb'}",
-        "out.t",
-        sql_backend=backend,
-        print_output=False,
-    )
-    assert result.exit_code != 0
-    message = repr(result.exception).lower()
-    expected = {"sqlalchemy": "timedelta", "pyarrow": "duration"}[backend]
-    assert expected in message, message
+def test_interval_day_to_second_loads_as_text(exasol, tmp_path, backend):
+    # The driver hands the column over as a timedelta, which reaches dlt as text.
+    dest = tmp_path / "warehouse.duckdb"
+    ingest(exasol, "probe.t_interval", dest, "out.t", sql_backend=backend)
+    assert rows(dest, "SELECT id, c_ids FROM out.t") == [(1, "2 days 12:30:15.5")]
 
 
 def test_timestamp_and_tsltz_compare_in_utc(exasol, tmp_path, monkeypatch):

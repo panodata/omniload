@@ -434,7 +434,7 @@ a load follows the right-hand column without being asked.
 | date, timestamp, time, binary, decimal | ISO or base64 **string** | itself, retyped by dlt's schema |
 | list, struct | itself | JSON **string** |
 | all-null column | dropped | dropped |
-| duration | **load fails** | **load fails** |
+| duration | interval **string** | interval **string** |
 
 "Itself" describes what staging hands the writer, not what the file ends up
 holding, and it carries one qualification: dlt infers a schema rather than
@@ -450,10 +450,10 @@ Parquet staging** with `Unknown or unsupported Arrow type: time64[us]`.
 
 Two of those rows are worth spelling out.
 
-A **duration** column cannot be loaded at all. dlt's extract step serializes
-rows as JSON and refuses a `Timedelta`, so the run fails with
-`Type is not JSON serializable: Timedelta` before any writer sees it. Cast such
-a column in the source query if you need it.
+A **duration** column reaches the writer as interval text, such as
+`1 day 02:03:04.5` or `-00:00:01.5`, because dlt has no duration type. That is
+PostgreSQL's interval format, which PostgreSQL and DuckDB cast back with
+`CAST(d AS INTERVAL)`. Nanoseconds are kept as nine fractional digits.
 
 A column that is **null in every row** does not reach the output. dlt omits a
 null key per row, so a wholly null column has no keys anywhere and the writer

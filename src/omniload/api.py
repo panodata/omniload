@@ -454,6 +454,7 @@ def _assemble_and_run(
     from omniload.codec.filter import (
         cast_set_to_list,
         cast_spanner_types,
+        cast_timedelta,
         create_masking_filter,
         handle_mysql_empty_dates,
     )
@@ -1118,6 +1119,10 @@ def _assemble_and_run(
     if jr.mask:
         masking_filter = create_masking_filter(jr.mask)
         resource.for_each(dlt_source, lambda x: x.add_map(masking_filter))
+
+    # dlt can load neither a `timedelta` nor an Arrow `duration`, so intervals
+    # reach it as text. This runs after masking, which hashes the original value.
+    resource.for_each(dlt_source, lambda x: x.add_map(cast_timedelta))
 
     if jr.yield_limit:
         resource.for_each(dlt_source, lambda x: x.add_limit(jr.yield_limit))
