@@ -337,7 +337,7 @@ def test_every_mask_is_one_or_the_other():
     assert set(INTERVAL_MASKS) == INTERVAL_ALGORITHMS
 
 
-@pytest.mark.parametrize("algorithm", INTERVAL_MASKS)
+@pytest.mark.parametrize("algorithm", [*INTERVAL_MASKS, "SHA256"])
 def test_a_mask_that_applies_to_an_interval_masks_it(algorithm):
     from omniload.codec.masking import create_masking_mapper
 
@@ -389,6 +389,25 @@ def test_a_mask_that_raises_on_an_interval_fails_the_run():
     with pytest.raises(ValueError, match="would load it unmasked"):
         mapper({"d": Unprintable(hours=1)})
     assert mapper({"d": "text"})["d"] == hashlib.sha256(b"text").hexdigest()
+
+
+class DriverTimeDelta(timedelta):
+    pass
+
+
+@pytest.mark.parametrize("algorithm", INTERVAL_PASS_THROUGH_MASKS)
+@pytest.mark.parametrize(
+    "value",
+    [DriverTimeDelta(hours=1), pendulum.duration(hours=1)],
+    ids=["subclass", "pendulum"],
+)
+def test_a_mask_that_leaves_a_timedelta_subclass_as_it_is_is_refused(algorithm, value):
+    # Drivers hand intervals over as `timedelta` subclasses (pyexasol's
+    # `ExaTimeDelta`, pendulum's `Duration`), which the cast turns into text too.
+    from omniload.codec.masking import create_masking_mapper
+
+    with pytest.raises(ValueError, match="would load it unmasked"):
+        create_masking_mapper([f"d:{algorithm}"])({"d": value})
 
 
 @pytest.mark.parametrize("algorithm", INTERVAL_PASS_THROUGH_MASKS)
