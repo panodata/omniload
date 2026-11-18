@@ -91,13 +91,13 @@ def format_interval(total_ns: int) -> str:
 
 
 def _timedelta_ns(value) -> int:
-    from datetime import timedelta
-
-    # A pandas `Timedelta` carries nanoseconds past the microseconds that
-    # `datetime.timedelta` holds; floor division keeps them consistent.
-    return (value // timedelta(microseconds=1)) * 1_000 + getattr(
-        value, "nanoseconds", 0
-    )
+    # Built from the normalized fields in Python ints, so a pandas `Timedelta` in
+    # second or millisecond resolution cannot overflow an int64 on the way. A
+    # pandas `Timedelta` also carries nanoseconds past the microseconds that
+    # `datetime.timedelta` holds.
+    seconds = value.days * 86_400 + value.seconds
+    microseconds = seconds * 1_000_000 + value.microseconds
+    return microseconds * 1_000 + getattr(value, "nanoseconds", 0)
 
 
 def _durations_as_text(column, unit: str):

@@ -4,6 +4,7 @@ import hashlib
 from datetime import timedelta
 
 import duckdb
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet
@@ -60,6 +61,17 @@ def test_the_extremes_format_without_overflow():
 )
 def test_a_pandas_timedelta_keeps_its_nanoseconds(value, text):
     assert cast_timedelta({"d": value}) == {"d": text}
+
+
+@pytest.mark.parametrize("unit", ["s", "ms"])
+@pytest.mark.parametrize("count", [2**63 - 1, -(2**63 - 1)])
+def test_a_coarse_pandas_timedelta_past_the_nanosecond_range_is_exact(unit, count):
+    # pandas keeps second and millisecond resolution, so such a value can hold more
+    # than an int64 count of nanoseconds; it formats like the Arrow duration does.
+    value = pd.Timedelta(np.timedelta64(count, unit))
+    expected = format_interval(count * {"s": SECOND, "ms": 1_000_000}[unit])
+
+    assert cast_timedelta({"d": value}) == {"d": expected}
 
 
 def test_duckdb_reads_nanosecond_text_to_the_microsecond():

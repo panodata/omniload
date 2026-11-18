@@ -453,7 +453,9 @@ Two of those rows are worth spelling out.
 A **duration** column reaches the writer as interval text, such as
 `1 day 02:03:04.5` or `-00:00:01.5`, because dlt has no duration type. That is
 PostgreSQL's interval format, which PostgreSQL and DuckDB cast back with
-`CAST(d AS INTERVAL)`. Nanoseconds are kept as nine fractional digits.
+`CAST(d AS INTERVAL)` within their interval range. The text keeps nanoseconds,
+up to nine fractional digits with trailing zeros dropped, and a cast back
+rounds or truncates them to microseconds.
 
 A column that is **null in every row** does not reach the output. dlt omits a
 null key per row, so a wholly null column has no keys anywhere and the writer
