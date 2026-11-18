@@ -31,12 +31,19 @@
     struct column, that holds a NULL was hashed as a float (`1.0`) and is hashed
     as the integer.
   - A list value, or a struct holding one, is hashed with the list in Python's
-    text (`[1, 2]`), where it was NumPy's (`[1 2]`).
+    text (`[1, 2]`), where it was NumPy's (`[1 2]`, or `array([1, 2])` inside a
+    struct).
+  - An interval or duration value is hashed as Python's `timedelta` text
+    (`1:00:00`), as through the `sqlalchemy` SQL backend, where the `pyarrow`
+    backend hashed pandas' (`0 days 01:00:00`). A nanosecond duration column
+    still reaches the mask as a pandas `Timedelta` and is hashed from its text.
   - A column that `pandas` metadata names as the index was skipped and is
     masked now.
 
   A masked column whose values the mask returns as they were, such as `round`
-  on a timestamp, loads exactly as it would unmasked. A mask that returns dates
+  on a timestamp, loads exactly as it would unmasked, unless it holds no value
+  at all: an all-NULL masked column takes Arrow's `null` type, so it loads
+  beside the masked type of the batches around it. A mask that returns dates
   or times beside values of another kind, such as `date_shift` on an integer
   column where only some values parse as dates, fails the run on an Arrow item.
 

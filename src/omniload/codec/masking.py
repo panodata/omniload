@@ -367,15 +367,18 @@ def _temporal_kind(value: Any) -> Optional[type]:
 def _masked_column(pa: Any, name: str, column: Any, mask: Callable) -> Any:
     """Mask one Arrow column; `None` when the mask returned every value as it was.
 
-    An unchanged column is kept as it is, so a value a mask does not apply to
-    loads exactly as it would have unmasked. Dates or times beside values of
-    another kind are refused: Arrow would read the others as dates or times, or
-    a datetime beside a date as a date. A value that loads as NULL, such as a
-    NaN or `NaT`, is no kind.
+    An unchanged column that holds a value is kept as it is, so a value a mask
+    does not apply to loads exactly as it would have unmasked. An all-NULL one is
+    rebuilt like any other, as Arrow's `null` type: kept, it would carry its
+    source type into a batch whose neighbours carry the mask's, which dlt refuses
+    to put together. Dates or times beside values of another kind are refused:
+    Arrow would read the others as dates or times, or a datetime beside a date as
+    a date. A value that loads as NULL, such as a NaN or `NaT`, is no kind.
     """
     values = column.to_pylist()
     results = [mask(value) for value in values]
-    if all(result is value for result, value in zip(results, values)):
+    unchanged = all(result is value for result, value in zip(results, values))
+    if unchanged and any(value is not None for value in values):
         return None
     kinds = {_temporal_kind(result) for result in results if not _loads_as_null(result)}
     if len(kinds) > 1:

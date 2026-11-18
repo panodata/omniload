@@ -538,7 +538,6 @@ class TestMaskingArrowParity(unittest.TestCase):
                 "round",
                 pa.array([[], [("x", 1)], None], pa.map_(pa.string(), pa.int64())),
             ),
-            ("sha256", pa.array([None, None], pa.string())),
         ]
         for algorithm, array in cases:
             field = pa.field("v", array.type, metadata={"k": "v"})
@@ -548,6 +547,23 @@ class TestMaskingArrowParity(unittest.TestCase):
 
                 self.assertEqual(result.schema.field("v"), field)
                 self.assertTrue(result.column("v").equals(item.column("v")))
+
+    def test_an_all_null_masked_column_takes_the_null_type(self):
+        # Kept, it would carry its source type into a load whose other batches
+        # carry the mask's, which dlt refuses to put together.
+        import pyarrow as pa
+
+        for array in (
+            pa.array([None, None], pa.int64()),
+            pa.array([None, None], pa.string()),
+            pa.array([None], pa.int64()).dictionary_encode(),
+        ):
+            for kind in (pa.Table, pa.RecordBatch):
+                item = kind.from_arrays([array], ["v"])
+                result = create_masking_mapper(["v:sha256"])(item)
+
+                self.assertEqual(result.schema.field("v").type, pa.null())
+                self.assertEqual(result.column("v").null_count, len(array))
 
     def test_masked_values_inference_cannot_hold_keep_the_column_type(self):
         import pyarrow as pa
@@ -729,6 +745,39 @@ def test_a_masked_parquet_column_loads_hashed(tmp_path, fragment):
         (sha("a@example.com"), sha(1), 2**53 + 1, "BIGINT"),
         (sha("b@example.com"), None, None, "BIGINT"),
     ]
+
+
+def test_a_masked_column_null_in_a_whole_batch_loads(tmp_path):
+    # Each row group reaches the mask as its own record batch; the first holds no
+    # value in the masked column, the second holds integers it hashes to text.
+    source = tmp_path / "source.parquet"
+    pa.parquet.write_table(
+        pa.table(
+            {
+                "id": pa.array([None] * 10_000 + list(range(10_000)), pa.int64()),
+                "n": pa.array(range(20_000), pa.int64()),
+            }
+        ),
+        source,
+        row_group_size=10_000,
+    )
+    dest = tmp_path / "warehouse.duckdb"
+
+    result = invoke_ingest_command(
+        f"file://{source}#use_pyarrow=true",
+        "rows",
+        f"duckdb:///{dest}",
+        "main.t",
+        mask=["id:sha256"],
+        print_output=False,
+    )
+
+    assert result.exit_code == 0, result.output
+    with duckdb.connect(str(dest), read_only=True) as connection:
+        counts = connection.execute(
+            "SELECT count(*), count(id), any_value(typeof(id)) FROM main.t"
+        ).fetchone()
+    assert counts == (20_000, 10_000, "VARCHAR")
 
 
 if __name__ == "__main__":
