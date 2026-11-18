@@ -314,7 +314,7 @@ Feel free to [create an issue][Issues] if you'd like to see support for another 
         <td>-</td>
     </tr>
     <tr>
-        <td>Smartsheets</td>
+        <td>Smartsheet</td>
         <td>✅</td>
         <td>-</td>
     </tr>

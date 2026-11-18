@@ -51,14 +51,14 @@ def smartsheet_source(
         sheet_id_int, include=["objectValue"]
     )
     if isinstance(sheet_details, smartsheet.models.Error):
-        raise ProcessingError(str(sheet_details), "Smartsheets")
+        raise ProcessingError(str(sheet_details), "Smartsheet")
 
     sheet_name = sheet_details.name
     resource_name = f"sheet_{sheet_name.replace(' ', '_').lower()}"
     sheet = smartsheet_client.Sheets.get_sheet(sheet_id_int)
 
     if isinstance(sheet, smartsheet.models.Error):
-        raise ProcessingError(str(sheet), "Smartsheets")
+        raise ProcessingError(str(sheet), "Smartsheet")
 
     yield dlt.resource(
         _get_sheet_data(sheet),

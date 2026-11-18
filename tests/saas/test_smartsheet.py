@@ -6,7 +6,7 @@ import smartsheet
 import smartsheet.exceptions
 from smartsheet.models import Cell, Column, Row, Sheet
 
-from omniload.source.smartsheets.adapter import _get_sheet_data, smartsheet_source
+from omniload.source.smartsheet.adapter import _get_sheet_data, smartsheet_source
 
 
 def pp(x):
@@ -14,7 +14,7 @@ def pp(x):
 
 
 class TestSmartsheetSource(unittest.TestCase):
-    @patch("omniload.source.smartsheets.adapter.smartsheet.Smartsheet")
+    @patch("omniload.source.smartsheet.adapter.smartsheet.Smartsheet")
     def test_smartsheet_source_success(self, mock_smartsheet_client):
         # Mock Smartsheet client and its methods
         mock_client_instance = mock_smartsheet_client.return_value
@@ -72,7 +72,7 @@ class TestSmartsheetSource(unittest.TestCase):
             123
         )  # for _get_sheet_data
 
-    @patch("omniload.source.smartsheets.adapter.smartsheet.Smartsheet")
+    @patch("omniload.source.smartsheet.adapter.smartsheet.Smartsheet")
     def test_smartsheet_source_api_error(self, mock_smartsheet_client):
         mock_client_instance = mock_smartsheet_client.return_value
         mock_client_instance.Sheets.get_sheet.side_effect = (
