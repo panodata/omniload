@@ -435,6 +435,7 @@ a load follows the right-hand column without being asked.
 | list, struct | itself | JSON **string** |
 | all-null column | dropped | dropped |
 | duration | interval **string** | interval **string** |
+| interval (month, day, nanosecond) | **load fails** | **load fails** |
 
 "Itself" describes what staging hands the writer, not what the file ends up
 holding, and it carries one qualification: dlt infers a schema rather than
@@ -455,7 +456,10 @@ A **duration** column reaches the writer as interval text, such as
 PostgreSQL's interval format, which PostgreSQL and DuckDB cast back with
 `CAST(d AS INTERVAL)` within their interval range. The text keeps nanoseconds,
 up to nine fractional digits with trailing zeros dropped, and a cast back
-rounds or truncates them to microseconds.
+rounds or truncates them to microseconds. Arrow's other interval type, the
+month, day and nanosecond interval that DuckDB's Arrow export writes, is not
+converted: the run fails at extract with
+`Type is not JSON serializable: MonthDayNano`.
 
 A column that is **null in every row** does not reach the output. dlt omits a
 null key per row, so a wholly null column has no keys anywhere and the writer

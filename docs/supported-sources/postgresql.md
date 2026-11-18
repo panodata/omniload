@@ -27,10 +27,12 @@ see {ref}`sql-backends`.
 
 ## Interval columns
 
-An `interval` column loads as text in PostgreSQL's own format, such as
-`1 day 02:03:04.5` or `-03:00:00`, which casts back with `CAST(d AS INTERVAL)`.
-The driver counts a year as 365 days and a month as 30 before omniload sees the
-value, so `1 year 2 mons` loads as `425 days`. To keep calendar units, read the
+Through the `sqlalchemy` and `pyarrow` SQL backends, an `interval` column loads
+as text in PostgreSQL's own format, such as `1 day 02:03:04.5` or `-03:00:00`,
+which casts back with `CAST(d AS INTERVAL)`. Their driver, psycopg2, counts a
+year as 365 days and a month as 30 before omniload sees the value, so
+`1 year 2 mons` loads as `425 days`. Interval columns read through
+`--sql-backend adbcbridge` are not covered. To keep calendar units, read the
 column as text from a `query:` source:
 
 ```shell
