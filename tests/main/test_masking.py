@@ -523,6 +523,33 @@ class TestMaskingArrowParity(unittest.TestCase):
             self.assertEqual(result.column("v").to_pylist(), ["REDACTED"])
             self.assertNotIn(b"pandas", result.schema.metadata or {})
 
+    def test_masked_values_inference_cannot_hold_keep_the_column_type(self):
+        import pyarrow as pa
+
+        stamp = pa.scalar(1_700_000_000_123_456_789, pa.timestamp("ns", tz="UTC"))
+        cases = [
+            # An unsigned integer above the int64 range, returned unchanged.
+            ("year_only", pa.array([2**63 + 1, None], pa.uint64())),
+            # A timestamp returned unchanged keeps its nanoseconds and time zone.
+            ("round", pa.array([stamp, None], stamp.type)),
+        ]
+        for algorithm, array in cases:
+            for kind in (pa.Table, pa.RecordBatch):
+                item = kind.from_arrays([array], ["v"])
+                result = create_masking_mapper([f"v:{algorithm}"])(item)
+
+                self.assertEqual(result.schema.field("v").type, array.type)
+                self.assertEqual(result.column("v").to_pylist(), array.to_pylist())
+
+    def test_a_nan_a_mask_returns_reads_as_null(self):
+        import pyarrow as pa
+
+        for kind in (pa.Table, pa.RecordBatch):
+            item = kind.from_arrays([pa.array([1.0, float("nan")])], ["v"])
+            result = create_masking_mapper(["v:range:100"])(item)
+
+            self.assertEqual(result.column("v").to_pylist(), ["0-100", None])
+
     def test_a_masked_field_keeps_its_metadata(self):
         import pyarrow as pa
 

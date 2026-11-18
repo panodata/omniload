@@ -330,6 +330,23 @@ def non_deterministic_masks(mask_configs: list[str]) -> list[str]:
     return unstable
 
 
+def _masked_array(pa: Any, values: list, original_type: Any) -> Any:
+    """Build the Arrow array for a column's masked values.
+
+    The type is inferred from what the masks return, and a NaN reads as NULL.
+    Two cases keep the column's own type instead: values that inference cannot
+    hold, such as an unsigned integer above the signed range returned unchanged,
+    and timestamps, whose unit and time zone inference would not keep.
+    """
+    try:
+        masked = pa.array(values, from_pandas=True)
+    except (pa.ArrowException, OverflowError):
+        return pa.array(values, type=original_type, from_pandas=True)
+    if pa.types.is_timestamp(masked.type) and pa.types.is_timestamp(original_type):
+        return pa.array(values, type=original_type, from_pandas=True)
+    return masked
+
+
 def create_masking_mapper(mask_configs: list[str]) -> Callable:
     engine = MaskingEngine()
 
@@ -363,7 +380,11 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
                             "than one column of that name"
                         )
                     mask = masks[column]
-                    masked = pa.array([mask(v) for v in columns[index].to_pylist()])
+                    masked = _masked_array(
+                        pa,
+                        [mask(v) for v in columns[index].to_pylist()],
+                        fields[index].type,
+                    )
                     columns[index] = masked
                     fields[index] = pa.field(
                         column, masked.type, metadata=fields[index].metadata
