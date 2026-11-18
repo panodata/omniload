@@ -1117,8 +1117,16 @@ def _assemble_and_run(
         resource.for_each(dlt_source, lambda x: x.add_yield_map(reshape_fn))
 
     if jr.mask:
-        masking_filter = create_masking_filter(jr.mask)
-        resource.for_each(dlt_source, lambda x: x.add_map(masking_filter))
+        from omniload.codec.masking import MaskingEngine
+
+        # One mapper per resource: a mapper remembers the type it gave each masked
+        # column, which belongs to that resource's table. They share one engine,
+        # so `sequential` and `uuid` give a value the same token in every table.
+        masking_engine = MaskingEngine()
+        resource.for_each(
+            dlt_source,
+            lambda x: x.add_map(create_masking_filter(jr.mask, masking_engine)),
+        )
 
     # dlt can load neither a `timedelta` nor an Arrow `duration`, so intervals
     # reach it as text. This runs after masking, which hashes the original value.

@@ -589,6 +589,46 @@ class TestMaskingArrowParity(unittest.TestCase):
                 )
                 self.assertEqual(second.column("v").null_count, 3)
 
+    def test_mappers_sharing_an_engine_share_tokens_but_not_remembered_types(self):
+        # One mapper per resource: what a mask gave one table's column does not
+        # type another table's, while a value keeps one token across tables.
+        import pyarrow as pa
+
+        from omniload.codec.masking import MaskingEngine
+
+        engine = MaskingEngine()
+        first = create_masking_mapper(["v:round", "t:sequential"], engine)
+        second = create_masking_mapper(["v:round", "t:sequential"], engine)
+
+        numbers = first(pa.table({"v": ["10", "20"], "t": ["x", "y"]}))
+        nulls = second(pa.table({"v": pa.nulls(2, pa.string()), "t": ["y", "z"]}))
+
+        self.assertEqual(numbers.schema.field("v").type, pa.int64())
+        self.assertEqual(nulls.schema.field("v").type, pa.null())
+        self.assertEqual(numbers.column("t").to_pylist(), [1, 2])
+        self.assertEqual(nulls.column("t").to_pylist(), [2, 3])
+
+    def test_a_python_defined_extension_type_can_be_masked(self):
+        import pyarrow as pa
+
+        class IntExtension(pa.ExtensionType):
+            def __init__(self):
+                super().__init__(pa.int64(), "test.int_extension")
+
+            def __arrow_ext_serialize__(self):
+                return b""
+
+            @classmethod
+            def __arrow_ext_deserialize__(cls, storage_type, serialized):
+                return cls()
+
+        storage = pa.array([1, None], pa.int64())
+        array = pa.ExtensionArray.from_storage(IntExtension(), storage)
+        for algorithm in ("sha256", "round"):
+            mapper = create_masking_mapper([f"v:{algorithm}"])
+            result = mapper(pa.table({"v": array}))
+            self.assertEqual(result.num_rows, 2)
+
     def test_masked_values_inference_cannot_hold_keep_the_column_type(self):
         import pyarrow as pa
 
