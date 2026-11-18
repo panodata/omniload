@@ -410,6 +410,22 @@ def _masked_array(pa: Any, values: list, original_type: Any) -> Any:
     return masked
 
 
+def _remembered(known: list, source_type: Any) -> Any:
+    """The masked type remembered for `source_type`, else `None`."""
+    for known_source, masked_type in known:
+        if known_source.equals(source_type):
+            return masked_type
+    return None
+
+
+def _remember(known: list, source_type: Any, masked_type: Any) -> None:
+    for position, (known_source, _) in enumerate(known):
+        if known_source.equals(source_type):
+            known[position] = (known_source, masked_type)
+            return
+    known.append((source_type, masked_type))
+
+
 def create_masking_mapper(
     mask_configs: list[str], engine: Optional[MaskingEngine] = None
 ) -> Callable:
@@ -426,10 +442,12 @@ def create_masking_mapper(
         column, algorithm, param = engine.parse_mask_config(config)
         masks[column] = engine.get_masking_function(algorithm, param)
 
-    # The type each mask gave a column of this resource, by column name and source
-    # type (as text: a Python-defined extension type need not be hashable), so an
-    # all-NULL column in a later item can take it too.
-    emitted: Dict[Tuple[str, str], Any] = {}
+    # The type each mask gave a column of this resource, per column name as
+    # (source type, masked type) pairs matched by type equality, so an all-NULL
+    # column in a later item can take it too. A list rather than a dict key: a
+    # Python-defined extension type need not be hashable, and a type's text can
+    # name two unequal types alike.
+    emitted: Dict[str, list] = {}
 
     def apply_masks(data: Any) -> Any:
         # Handle PyArrow tables and record batches
@@ -454,13 +472,18 @@ def create_masking_mapper(
                             f"Cannot mask column {column!r}: the data has more "
                             "than one column of that name"
                         )
-                    key = (column, str(columns[index].type))
+                    source_type = columns[index].type
+                    known = emitted.setdefault(column, [])
                     masked = _masked_column(
-                        pa, column, columns[index], masks[column], emitted.get(key)
+                        pa,
+                        column,
+                        columns[index],
+                        masks[column],
+                        _remembered(known, source_type),
                     )
-                    result_type = columns[index].type if masked is None else masked.type
+                    result_type = source_type if masked is None else masked.type
                     if not pa.types.is_null(result_type):
-                        emitted[key] = result_type
+                        _remember(known, source_type, result_type)
                     if masked is None:
                         continue
                     columns[index] = masked
