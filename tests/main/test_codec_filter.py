@@ -6,6 +6,7 @@ from datetime import timedelta
 import duckdb
 import pandas as pd
 import pyarrow as pa
+import pyarrow.parquet
 import pytest
 
 from omniload.codec.filter import cast_timedelta, format_interval
@@ -266,3 +267,47 @@ def test_an_arrow_file_with_a_duration_column_loads(tmp_path):
         (1, "1 day 02:03:04.5"),
         (2, None),
     ]
+
+
+def test_a_masked_duration_column_in_record_batches_is_hashed(tmp_path):
+    # `use_pyarrow` makes the Parquet reader yield RecordBatch items, which the mask
+    # has to reach before the duration column is turned into loadable text.
+    source = tmp_path / "source.parquet"
+    pa.parquet.write_table(
+        pa.table({"id": [1], "d": pa.array([3_600], type=pa.duration("s"))}), source
+    )
+    dest = tmp_path / "warehouse.duckdb"
+
+    result = invoke_ingest_command(
+        f"file://{source}#use_pyarrow=true",
+        "rows",
+        f"duckdb:///{dest}",
+        "main.t",
+        mask=["d:sha256"],
+        print_output=False,
+    )
+
+    assert result.exit_code == 0, result.output
+    expected = hashlib.sha256(str(pd.Timedelta(hours=1)).encode()).hexdigest()
+    assert _rows(dest, "SELECT d FROM main.t") == [(expected,)]
+
+
+def test_an_unmasked_duration_beside_a_masked_column_loads_as_text(tmp_path):
+    source = tmp_path / "source.parquet"
+    pa.parquet.write_table(
+        pa.table({"id": [1], "d": pa.array([3_600], type=pa.duration("s"))}), source
+    )
+    dest = tmp_path / "warehouse.duckdb"
+
+    result = invoke_ingest_command(
+        f"file://{source}#use_pyarrow=true",
+        "rows",
+        f"duckdb:///{dest}",
+        "main.t",
+        mask=["id:sha256"],
+        print_output=False,
+    )
+
+    assert result.exit_code == 0, result.output
+    expected = hashlib.sha256(b"1").hexdigest()
+    assert _rows(dest, "SELECT id, d FROM main.t") == [(expected, "01:00:00")]
