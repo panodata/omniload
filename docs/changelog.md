@@ -8,7 +8,8 @@
   and DuckDB cast back to `INTERVAL` within their interval range. This covers PostgreSQL `interval`, Exasol
   `INTERVAL DAY TO SECOND`, DuckDB `INTERVAL` and duration columns in files read
   through `file://` and the other filesystem sources. A masked interval column
-  keeps the hash it had.
+  is hashed from its `timedelta` value before it becomes text, on dict rows and
+  Arrow items alike.
 - Masking: `--mask` now applies to sources that yield Arrow record batches, such
   as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
   Their columns were loaded unmasked. On Arrow items, only the masked columns
