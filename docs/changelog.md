@@ -8,11 +8,15 @@
   DuckDB cast back to `INTERVAL` within their interval range. Through the
   `sqlalchemy` and `pyarrow` SQL backends this covers PostgreSQL `interval`,
   Exasol `INTERVAL DAY TO SECOND` and DuckDB `INTERVAL`, and it covers duration
-  columns in files read through `file://` and the other filesystem sources. An
-  Arrow `month_day_nano_interval` column, such as DuckDB's Arrow export gives,
-  still fails the load. A masked interval column is hashed from its `timedelta`
-  value before it becomes text, and a mask that does not apply to an interval,
-  such as `round` or `date_shift`, fails the run rather than load it unmasked.
+  columns, dictionary-encoded ones included, in files read through `file://`
+  and the other filesystem sources. An Arrow `month_day_nano_interval` column,
+  such as DuckDB's Arrow export gives, still fails the load, and a duration
+  inside a list or struct column is not converted. A masked interval column is
+  hashed from its `timedelta` value before it becomes text. Only the masks that
+  apply to any value mask an interval: `hash`, `sha256`, `md5`, `hmac`,
+  `redact`, `stars`, `fixed`, `uuid` and `sequential`. Any other mask on an
+  interval column, such as `round`, `date_shift` or `partial`, fails the run
+  rather than load the interval or its text unmasked.
 - Masking: `--mask` now applies to sources that yield Arrow record batches, such
   as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
   Their columns were loaded unmasked. On Arrow items, only the masked columns

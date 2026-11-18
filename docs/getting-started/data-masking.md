@@ -259,6 +259,13 @@ Keeps only month and year.
 # 2024-03-15 → "2024-03"
 ```
 
+:::{note}
+An interval column, such as a PostgreSQL `interval`, takes only the masks that
+apply to any value: `hash`, `sha256`, `md5`, `hmac`, `redact`, `stars`, `fixed`,
+`uuid` and `sequential`. Any other mask on it fails the run rather than load the
+interval, or its text, unmasked.
+:::
+
 ## Use Case Examples
 
 ### GDPR Compliance for Development Environment

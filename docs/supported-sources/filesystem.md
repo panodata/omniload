@@ -456,10 +456,11 @@ A **duration** column reaches the writer as interval text, such as
 PostgreSQL's interval format, which PostgreSQL and DuckDB cast back with
 `CAST(d AS INTERVAL)` within their interval range. The text keeps nanoseconds,
 up to nine fractional digits with trailing zeros dropped, and a cast back
-rounds or truncates them to microseconds. Arrow's other interval type, the
-month, day and nanosecond interval that DuckDB's Arrow export writes, is not
-converted: the run fails at extract with
-`Type is not JSON serializable: MonthDayNano`.
+rounds or truncates them to microseconds. A dictionary-encoded duration column
+is converted the same way; a duration inside a list or struct column is not.
+Arrow's other interval type, the month, day and nanosecond interval that
+DuckDB's Arrow export writes, is not converted either: the run fails at extract
+with `Type is not JSON serializable: MonthDayNano`.
 
 A column that is **null in every row** does not reach the output. dlt omits a
 null key per row, so a wholly null column has no keys anywhere and the writer
