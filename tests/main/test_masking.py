@@ -523,6 +523,16 @@ class TestMaskingArrowParity(unittest.TestCase):
             self.assertEqual(result.column("v").to_pylist(), ["REDACTED"])
             self.assertNotIn(b"pandas", result.schema.metadata or {})
 
+    def test_a_masked_field_keeps_its_metadata(self):
+        import pyarrow as pa
+
+        schema = pa.schema([pa.field("e", pa.string(), metadata={"k": "v"})])
+        for kind in (pa.Table, pa.RecordBatch):
+            item = kind.from_arrays([pa.array(["x"])], schema=schema)
+            result = create_masking_mapper(["e:sha256"])(item)
+
+            self.assertEqual(result.schema.field("e").metadata, {b"k": b"v"})
+
     def test_a_duplicate_column_name_is_refused(self):
         import pyarrow as pa
 
