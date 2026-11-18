@@ -565,6 +565,7 @@ class TestMaskingArrowParity(unittest.TestCase):
                 result = create_masking_mapper(["v:date_shift:0"])(item)
 
                 self.assertEqual(result.schema.field("v").type, stamp.type)
+                self.assertEqual(result.column("v")[0].value, stamp.value)
                 self.assertEqual(result.column("v").to_pylist(), array.to_pylist())
 
             # A changed unsigned integer above the int64 range stays unsigned.
@@ -608,6 +609,25 @@ class TestMaskingArrowParity(unittest.TestCase):
 
             self.assertEqual(result.column("v").null_count, 2)
             self.assertTrue(pa.types.is_timestamp(result.schema.field("v").type))
+
+    def test_a_nat_beside_a_date_reads_as_null(self):
+        import pyarrow as pa
+
+        # The smallest nanosecond timestamp reaches the mask as pandas' `NaT`, which
+        # loads as NULL rather than counting as a datetime beside the date.
+        both = pa.UnionArray.from_dense(
+            pa.array([0, 1], pa.int8()),
+            pa.array([0, 0], pa.int32()),
+            [
+                pa.array([date(2024, 1, 2)]),
+                pa.array([-(2**63)], pa.timestamp("ns")),
+            ],
+        )
+        for kind in (pa.Table, pa.RecordBatch):
+            item = kind.from_arrays([both], ["v"])
+            result = create_masking_mapper(["v:date_shift:0"])(item)
+
+            self.assertEqual(result.column("v").to_pylist(), [date(2024, 1, 2), None])
 
     def test_mixed_mask_results_are_not_forced_into_a_list_column(self):
         import pyarrow as pa

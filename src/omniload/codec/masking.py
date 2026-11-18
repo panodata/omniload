@@ -5,6 +5,7 @@ import logging
 import random
 import re
 import string
+import sys
 import uuid
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
@@ -331,6 +332,22 @@ def non_deterministic_masks(mask_configs: list[str]) -> list[str]:
     return unstable
 
 
+def _loads_as_null(value: Any) -> bool:
+    """Whether Arrow reads `value` as NULL when it builds a masked column.
+
+    That is what `from_pandas=True` treats as missing: `None`, a float or
+    `Decimal` NaN, and pandas' `NaT` and `NA`.
+    """
+    if value is None:
+        return True
+    if isinstance(value, float):
+        return value != value
+    if isinstance(value, Decimal):
+        return value.is_nan()
+    pandas = sys.modules.get("pandas")
+    return pandas is not None and (value is pandas.NaT or value is pandas.NA)
+
+
 def _temporal_kind(value: Any) -> Optional[type]:
     """The date or time class Arrow would infer for `value`, `None` for others."""
     for kind in (datetime, date, time, timedelta):
@@ -345,18 +362,14 @@ def _masked_column(pa: Any, name: str, column: Any, mask: Callable) -> Any:
     An unchanged column is kept as it is, so a value a mask does not apply to
     loads exactly as it would have unmasked. Dates or times beside values of
     another kind are refused: Arrow would read the others as dates or times, or
-    a datetime beside a date as a date. A NaN loads as NULL, so it is no kind.
+    a datetime beside a date as a date. A value that loads as NULL, such as a
+    NaN or `NaT`, is no kind.
     """
     values = column.to_pylist()
     results = [mask(value) for value in values]
     if all(result is value for result, value in zip(results, values)):
         return None
-    kinds = {
-        _temporal_kind(result)
-        for result in results
-        if result is not None
-        and not (isinstance(result, (float, Decimal)) and result != result)
-    }
+    kinds = {_temporal_kind(result) for result in results if not _loads_as_null(result)}
     if len(kinds) > 1:
         raise ValueError(
             f"Cannot mask column {name!r}: the mask returned dates or times "
