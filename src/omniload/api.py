@@ -1122,9 +1122,10 @@ def _assemble_and_run(
         # column, which belongs to that resource's table. They share one engine,
         # so `sequential` and `uuid` give a value the same token in every table.
         masking_engine = MaskingEngine()
+        mask_configs = jr.mask
         resource.for_each(
             dlt_source,
-            lambda x: x.add_map(create_masking_filter(jr.mask, masking_engine)),
+            lambda x: x.add_map(create_masking_filter(mask_configs, masking_engine)),
         )
 
     if jr.yield_limit:
