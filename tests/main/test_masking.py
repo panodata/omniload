@@ -512,9 +512,27 @@ class TestMaskingArrowParity(unittest.TestCase):
     def test_a_duplicate_column_name_is_refused(self):
         import pyarrow as pa
 
-        item = pa.Table.from_arrays([pa.array(["x"]), pa.array(["y"])], ["e", "e"])
-        with self.assertRaises(ValueError):
-            create_masking_mapper(["e:redact"])(item)
+        arrays = [pa.array(["x"]), pa.array(["y"])]
+        for item in (
+            pa.Table.from_arrays(arrays, ["e", "e"]),
+            pa.RecordBatch.from_arrays(arrays, ["e", "e"]),
+        ):
+            with self.assertRaises(ValueError):
+                create_masking_mapper(["e:redact"])(item)
+
+    def test_an_empty_item_keeps_its_kind_and_unmasked_fields(self):
+        import pyarrow as pa
+
+        data = {
+            "email": pa.array([], type=pa.string()),
+            "id": pa.array([], type=pa.int64()),
+        }
+        for item in (pa.table(data), pa.record_batch(data)):
+            result = create_masking_mapper(["email:sha256"])(item)
+
+            self.assertIs(type(result), type(item))
+            self.assertEqual(result.num_rows, 0)
+            self.assertEqual(result.schema.field("id"), item.schema.field("id"))
 
 
 @pytest.mark.parametrize(
