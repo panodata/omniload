@@ -305,6 +305,22 @@ def test_a_mask_that_leaves_an_interval_as_it_is_fails_the_run(
     assert "would load it unmasked" in repr(result.exception)
 
 
+@pytest.mark.parametrize("algorithm", ["date_shift", "year_only", "month_year"])
+def test_a_date_mask_does_not_read_a_short_interval_as_a_time(algorithm):
+    # `1:00:00` parses as one o'clock today, which `date_shift` would load as a
+    # timestamp carrying the interval's hours.
+    from omniload.codec.masking import create_masking_mapper
+
+    mapper = create_masking_mapper([f"d:{algorithm}"])
+    items = [
+        {"d": timedelta(hours=1)},
+        pa.record_batch({"d": pa.array([timedelta(hours=1)], pa.duration("us"))}),
+    ]
+    for item in items:
+        with pytest.raises(ValueError, match="would load it unmasked"):
+            mapper(item)
+
+
 def test_an_arrow_file_with_a_duration_column_loads(tmp_path):
     source = tmp_path / "source.arrow"
     table = pa.table(

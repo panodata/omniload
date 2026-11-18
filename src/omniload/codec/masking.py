@@ -267,6 +267,9 @@ class MaskingEngine:
         if isinstance(value, (date, datetime)):
             shift_days = random.randint(-max_days, max_days)
             return value + timedelta(days=shift_days)
+        if isinstance(value, timedelta):
+            # An interval is not a date, though a short one parses as a time.
+            return value
 
         # Try to parse string dates
         try:
@@ -287,6 +290,8 @@ class MaskingEngine:
 
         if isinstance(value, (date, datetime)):
             return value.year
+        if isinstance(value, timedelta):
+            return value
 
         # Try to parse string dates
         try:
@@ -303,6 +308,8 @@ class MaskingEngine:
 
         if isinstance(value, (date, datetime)):
             return f"{value.year}-{value.month:02d}"
+        if isinstance(value, timedelta):
+            return value
 
         # Try to parse string dates
         try:
