@@ -410,8 +410,15 @@ def _masked_array(pa: Any, values: list, original_type: Any) -> Any:
     return masked
 
 
-def create_masking_mapper(mask_configs: list[str]) -> Callable:
-    engine = MaskingEngine()
+def create_masking_mapper(
+    mask_configs: list[str], engine: Optional[MaskingEngine] = None
+) -> Callable:
+    """A map that masks rows and Arrow items, one mapper per resource.
+
+    Mappers given the same `engine` share its tokens, so `sequential` and `uuid`
+    give a value the same token in every table of a run.
+    """
+    engine = engine or MaskingEngine()
 
     # Parse all configurations
     masks = {}
@@ -419,9 +426,10 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
         column, algorithm, param = engine.parse_mask_config(config)
         masks[column] = engine.get_masking_function(algorithm, param)
 
-    # The type each mask gave a column, by column name and source type, so an
+    # The type each mask gave a column of this resource, by column name and source
+    # type (as text: a Python-defined extension type need not be hashable), so an
     # all-NULL column in a later item can take it too.
-    emitted: Dict[Tuple[str, Any], Any] = {}
+    emitted: Dict[Tuple[str, str], Any] = {}
 
     def apply_masks(data: Any) -> Any:
         # Handle PyArrow tables and record batches
@@ -446,7 +454,7 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
                             f"Cannot mask column {column!r}: the data has more "
                             "than one column of that name"
                         )
-                    key = (column, columns[index].type)
+                    key = (column, str(columns[index].type))
                     masked = _masked_column(
                         pa, column, columns[index], masks[column], emitted.get(key)
                     )
