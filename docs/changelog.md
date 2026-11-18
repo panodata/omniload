@@ -46,11 +46,12 @@
     masked now.
 
   A masked column whose values the mask returns as they were, such as `round`
-  on a timestamp, loads exactly as it would unmasked, unless it holds no value
-  at all: an all-NULL masked column takes Arrow's `null` type, so it loads
-  beside the masked type of the batches around it. A mask that returns dates
-  or times beside values of another kind, such as `date_shift` on an integer
-  column where only some values parse as dates, fails the run on an Arrow item.
+  on a timestamp, loads exactly as it would unmasked. An all-NULL masked column
+  takes the type its mask gave that column in an earlier batch, or Arrow's
+  `null` type before there is one, so it loads beside the batches around it. A
+  mask that returns dates or times beside values of another kind, such as
+  `date_shift` on an integer column where only some values parse as dates,
+  fails the run on an Arrow item.
 
 ## 2026/11/17 v0.24.0
 

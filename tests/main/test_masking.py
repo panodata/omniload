@@ -565,6 +565,30 @@ class TestMaskingArrowParity(unittest.TestCase):
                 self.assertEqual(result.schema.field("v").type, pa.null())
                 self.assertEqual(result.column("v").null_count, len(array))
 
+    def test_an_all_null_masked_column_takes_the_type_the_mask_gave_it_before(self):
+        # Whether the mask changes the type (sha256) or hands the values back
+        # (round), a later all-NULL column matches what earlier items carried.
+        import pyarrow as pa
+
+        day = date(2024, 1, 2)
+        cases = [
+            ("sha256", pa.array([1, 2], pa.int64())),
+            ("round", pa.array([day, day], pa.date64())),
+            ("round", pa.array(["a", "b"]).dictionary_encode()),
+            ("round", pa.array([[1], [2]], pa.list_(pa.int64()))),
+        ]
+        for algorithm, values in cases:
+            for kind in (pa.Table, pa.RecordBatch):
+                mapper = create_masking_mapper([f"v:{algorithm}"])
+                first = mapper(kind.from_arrays([values], ["v"]))
+                nulls = pa.nulls(3, values.type)
+                second = mapper(kind.from_arrays([nulls], ["v"]))
+
+                self.assertEqual(
+                    second.schema.field("v").type, first.schema.field("v").type
+                )
+                self.assertEqual(second.column("v").null_count, 3)
+
     def test_masked_values_inference_cannot_hold_keep_the_column_type(self):
         import pyarrow as pa
 
@@ -747,14 +771,19 @@ def test_a_masked_parquet_column_loads_hashed(tmp_path, fragment):
     ]
 
 
-def test_a_masked_column_null_in_a_whole_batch_loads(tmp_path):
-    # Each row group reaches the mask as its own record batch; the first holds no
-    # value in the masked column, the second holds integers it hashes to text.
+@pytest.mark.parametrize(
+    "null_first", [True, False], ids=["null-first", "values-first"]
+)
+def test_a_masked_column_null_in_a_whole_batch_loads(tmp_path, null_first):
+    # Each row group reaches the mask as its own record batch; one holds no value
+    # in the masked column, the other holds integers it hashes to text.
+    nulls, values = [None] * 10_000, list(range(10_000))
+    ids = nulls + values if null_first else values + nulls
     source = tmp_path / "source.parquet"
     pa.parquet.write_table(
         pa.table(
             {
-                "id": pa.array([None] * 10_000 + list(range(10_000)), pa.int64()),
+                "id": pa.array(ids, pa.int64()),
                 "n": pa.array(range(20_000), pa.int64()),
             }
         ),
