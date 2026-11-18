@@ -334,16 +334,22 @@ def _masked_array(pa: Any, values: list, original_type: Any) -> Any:
     """Build the Arrow array for a column's masked values.
 
     The type is inferred from what the masks return, and a NaN reads as NULL.
-    Two cases keep the column's own type instead: values that inference cannot
-    hold, such as an unsigned integer above the signed range returned unchanged,
-    and timestamps, whose unit and time zone inference would not keep.
+    Two cases use the column's own type, decoded from a dictionary, instead: an
+    integer column whose values inference cannot hold, such as an unsigned
+    integer above the signed range returned unchanged, and timestamps, whose
+    unit and time zone inference would not keep.
     """
+    own_type = original_type
+    if pa.types.is_dictionary(own_type):
+        own_type = own_type.value_type
     try:
         masked = pa.array(values, from_pandas=True)
     except (pa.ArrowException, OverflowError):
-        return pa.array(values, type=original_type, from_pandas=True)
-    if pa.types.is_timestamp(masked.type) and pa.types.is_timestamp(original_type):
-        return pa.array(values, type=original_type, from_pandas=True)
+        if not pa.types.is_integer(own_type):
+            raise
+        return pa.array(values, type=own_type, from_pandas=True)
+    if pa.types.is_timestamp(masked.type) and pa.types.is_timestamp(own_type):
+        return pa.array(values, type=own_type, from_pandas=True)
     return masked
 
 

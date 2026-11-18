@@ -532,14 +532,27 @@ class TestMaskingArrowParity(unittest.TestCase):
             ("year_only", pa.array([2**63 + 1, None], pa.uint64())),
             # A timestamp returned unchanged keeps its nanoseconds and time zone.
             ("round", pa.array([stamp, None], stamp.type)),
+            # So does a dictionary-encoded one, decoded.
+            ("round", pa.array([stamp, stamp, None], stamp.type).dictionary_encode()),
         ]
         for algorithm, array in cases:
             for kind in (pa.Table, pa.RecordBatch):
                 item = kind.from_arrays([array], ["v"])
                 result = create_masking_mapper([f"v:{algorithm}"])(item)
 
-                self.assertEqual(result.schema.field("v").type, array.type)
+                own_type = getattr(array.type, "value_type", array.type)
+                self.assertEqual(result.schema.field("v").type, own_type)
                 self.assertEqual(result.column("v").to_pylist(), array.to_pylist())
+
+    def test_mixed_mask_results_are_not_forced_into_a_list_column(self):
+        import pyarrow as pa
+
+        # `partial` leaves an empty list as it is and turns a list into its text.
+        array = pa.array([[], ["alice"], None], pa.list_(pa.string()))
+        for kind in (pa.Table, pa.RecordBatch):
+            item = kind.from_arrays([array], ["v"])
+            with self.assertRaises(pa.ArrowException):
+                create_masking_mapper(["v:partial"])(item)
 
     def test_a_nan_a_mask_returns_reads_as_null(self):
         import pyarrow as pa
