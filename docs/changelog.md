@@ -6,7 +6,12 @@
   as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
   Their columns were loaded unmasked. On Arrow items, only the masked columns
   are rebuilt: the other columns keep their types and metadata, where a nullable
-  integer column used to come back as floating point.
+  integer column used to come back as floating point. The masks read each
+  column's own values, as they do on dict rows, so masked values change for an
+  Arrow table column that contains NULLs: a NULL was hashed as the text `nan` or
+  `<NA>` and stays NULL now, and an integer in such a column was hashed as a
+  float (`1.0`) and is hashed as the integer now. A column that `pandas`
+  metadata names as the index was skipped and is masked now.
 
 ## 2026/11/17 v0.24.0
 
