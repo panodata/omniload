@@ -440,6 +440,22 @@ def _has_values(pa: Any, array: Any) -> bool:
     return len(array) > array.null_count
 
 
+def _remembered(known: list, source_type: Any) -> Any:
+    """The masked type remembered for `source_type`, else `None`."""
+    for known_source, masked_type in known:
+        if known_source.equals(source_type):
+            return masked_type
+    return None
+
+
+def _remember(known: list, source_type: Any, masked_type: Any) -> None:
+    for position, (known_source, _) in enumerate(known):
+        if known_source.equals(source_type):
+            known[position] = (known_source, masked_type)
+            return
+    known.append((source_type, masked_type))
+
+
 def create_masking_mapper(
     mask_configs: list[str], engine: Optional[MaskingEngine] = None
 ) -> Callable:
@@ -459,10 +475,12 @@ def create_masking_mapper(
             mask = _passing_intervals(mask)
         masks[column] = mask
 
-    # The type each mask gave a column of this resource, by column name and source
-    # type (as text: a Python-defined extension type need not be hashable), so an
-    # all-NULL column in a later item can take it too.
-    emitted: Dict[Tuple[str, str], Any] = {}
+    # The type each mask gave a column of this resource, per column name as
+    # (source type, masked type) pairs matched by type equality, so an all-NULL
+    # column in a later item can take it too. A list rather than a dict key: a
+    # Python-defined extension type need not be hashable, and a type's text can
+    # name two unequal types alike.
+    emitted: Dict[str, list] = {}
 
     def apply_masks(data: Any) -> Any:
         # Handle PyArrow tables and record batches
@@ -487,9 +505,14 @@ def create_masking_mapper(
                             f"Cannot mask column {column!r}: the data has more "
                             "than one column of that name"
                         )
-                    key = (column, str(columns[index].type))
+                    source_type = columns[index].type
+                    known = emitted.setdefault(column, [])
                     masked = _masked_column(
-                        pa, column, columns[index], masks[column], emitted.get(key)
+                        pa,
+                        column,
+                        columns[index],
+                        masks[column],
+                        _remembered(known, source_type),
                     )
                     result = columns[index] if masked is None else masked
                     value_type = result.type
@@ -498,7 +521,7 @@ def create_masking_mapper(
                     if pa.types.is_duration(value_type) and _has_values(pa, result):
                         raise _interval_left_unmasked(column)
                     if not pa.types.is_null(result.type):
-                        emitted[key] = result.type
+                        _remember(known, source_type, result.type)
                     if masked is None:
                         continue
                     columns[index] = masked

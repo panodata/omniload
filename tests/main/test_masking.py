@@ -608,6 +608,22 @@ class TestMaskingArrowParity(unittest.TestCase):
         self.assertEqual(numbers.column("t").to_pylist(), [1, 2])
         self.assertEqual(nulls.column("t").to_pylist(), [2, 3])
 
+    def test_a_remembered_type_is_matched_by_equality_not_by_its_text(self):
+        # These two struct types print alike but are not equal: the second has one
+        # field whose name is the first one's whole field list.
+        import pyarrow as pa
+
+        two_fields = pa.struct([("a", pa.int64()), ("b", pa.int64())])
+        one_field = pa.struct([("a: int64, b", pa.int64())])
+        self.assertEqual(str(two_fields), str(one_field))
+        self.assertFalse(two_fields.equals(one_field))
+
+        mapper = create_masking_mapper(["v:round"])
+        mapper(pa.table({"v": pa.array([{"a": 1, "b": 2}], two_fields)}))
+        nulls = mapper(pa.table({"v": pa.nulls(2, one_field)}))
+
+        self.assertEqual(nulls.schema.field("v").type, pa.null())
+
     def test_a_python_defined_extension_type_can_be_masked(self):
         import pyarrow as pa
 

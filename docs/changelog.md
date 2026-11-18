@@ -48,8 +48,8 @@
   A masked column whose values the mask returns as they were, such as `round`
   on a timestamp, loads exactly as it would unmasked. An all-NULL masked column
   takes the type its mask gave the same column, of the same source type, in an
-  earlier batch of the same table, or Arrow's `null` type before there is one,
-  so it loads beside the batches around it. A batch whose columns are all
+  earlier batch of the same resource, or Arrow's `null` type before there is
+  one, so it loads beside the batches around it. A batch whose columns are all
   masked and all NULL, ahead of any batch with a value, loads no rows. A mask
   that returns dates or times beside values of another kind, such as
   `date_shift` on an integer column where only some values parse as dates,

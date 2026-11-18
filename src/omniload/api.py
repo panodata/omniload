@@ -1120,7 +1120,7 @@ def _assemble_and_run(
         from omniload.codec.masking import MaskingEngine
 
         # One mapper per resource: a mapper remembers the type it gave each masked
-        # column, which belongs to that resource's table. They share one engine,
+        # column, which belongs to that resource's items. They share one engine,
         # so `sequential` and `uuid` give a value the same token in every table.
         masking_engine = MaskingEngine()
         mask_configs = jr.mask
