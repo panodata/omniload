@@ -350,14 +350,9 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
                 if not targets:
                     return data
 
-                # The masks read the values pandas gives them, in mask order, so
-                # a hash or token stays what it was. Only the masked columns are
-                # rebuilt; the others keep their arrays, types and metadata.
-                df = data.to_pandas()
-                # A column pandas metadata turns into the index is not in `df`.
-                targets = [column for column in targets if column in df.columns]
-                if not targets:
-                    return data
+                # The masks read each column's own Python values, as dict rows
+                # give them, in mask order. Only the masked columns are rebuilt;
+                # the others keep their arrays, types and metadata.
                 columns = list(data.columns)
                 fields = list(schema)
                 for column in targets:
@@ -367,7 +362,8 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
                             f"Cannot mask column {column!r}: the data has more "
                             "than one column of that name"
                         )
-                    masked = pa.array(df[column].apply(masks[column]), from_pandas=True)
+                    mask = masks[column]
+                    masked = pa.array([mask(v) for v in columns[index].to_pylist()])
                     columns[index] = masked
                     fields[index] = pa.field(
                         column, masked.type, metadata=fields[index].metadata
