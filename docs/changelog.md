@@ -9,15 +9,21 @@
   integer column used to come back as floating point. The masks read each
   column's own Python values, as they do on dict rows, so some masked values on
   Arrow tables change:
-  - A NULL in a number, string or timestamp column reaches the mask as `None`,
-    where it was `nan`, `<NA>` or `NaT`. A hash of it is NULL now, and
-    `sequential` gives it no token.
-  - An integer in a plain Arrow integer column that holds a NULL was hashed as a
-    float (`1.0`) and is hashed as the integer.
+  - A NULL in an integer, floating-point, string or timestamp column reaches the
+    mask as `None`, where it was `nan`, `<NA>` or `NaT`. A hash of it is NULL
+    now, and `sequential` gives it no token.
+  - An integer in a plain Arrow integer column, or in an integer field of a
+    struct column, that holds a NULL was hashed as a float (`1.0`) and is hashed
+    as the integer.
   - A list value, or a struct holding one, is hashed with the list in Python's
     text (`[1, 2]`), where it was NumPy's (`[1 2]`).
   - A column that `pandas` metadata names as the index was skipped and is
     masked now.
+
+  A masked column whose values the mask returns as they were, such as `round`
+  on a timestamp, loads exactly as it would unmasked. A mask that returns dates
+  or times beside values of another kind, such as `date_shift` on an integer
+  column where only some values parse as dates, fails the run on an Arrow item.
 
 ## 2026/11/17 v0.24.0
 
