@@ -3,4 +3,6 @@ services:
     build:
       context: ../..
       dockerfile: release/oci/Dockerfile
-    command: selftest.sh
+    # The image's entrypoint is `omniload`, so replace it rather than
+    # passing the script to it as a subcommand.
+    entrypoint: selftest.sh
