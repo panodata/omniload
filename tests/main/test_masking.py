@@ -531,7 +531,7 @@ class TestMaskingArrowParity(unittest.TestCase):
             pa.Table.from_arrays(arrays, ["e", "e"]),
             pa.RecordBatch.from_arrays(arrays, ["e", "e"]),
         ):
-            with self.assertRaises(ValueError):
+            with self.assertRaisesRegex(ValueError, "more than one column"):
                 create_masking_mapper(["e:redact"])(item)
 
     def test_an_empty_item_keeps_its_kind_and_unmasked_fields(self):
