@@ -300,7 +300,8 @@ def test_a_masked_duration_column_in_record_batches_is_hashed(tmp_path):
     )
 
     assert result.exit_code == 0, result.output
-    expected = hashlib.sha256(str(pd.Timedelta(hours=1)).encode()).hexdigest()
+    # The mask reads the column's Python value, as the dict-row path does.
+    expected = hashlib.sha256(str(timedelta(hours=1)).encode()).hexdigest()
     assert _rows(dest, "SELECT d FROM main.t") == [(expected,)]
 
 
