@@ -381,6 +381,134 @@ class TestCreateMaskingMapper(unittest.TestCase):
         result2 = mapper(row2)
         self.assertEqual(result2["value"], 120)
 
+    def test_create_masking_mapper_arrow_items(self):
+        import pyarrow as pa
+
+        mapper = create_masking_mapper(["email:hash"])
+        data = {"email": ["test@example.com"], "name": ["John Doe"]}
+
+        for item in (pa.table(data), pa.record_batch(data)):
+            result = mapper(item)
+
+            self.assertIs(type(result), type(item))
+            self.assertEqual(
+                result.column("email").to_pylist(),
+                ["973dfe463ec85785f5f95af5ba3906eedb2d931c24e69824a89ea65dba4e813b"],
+            )
+            self.assertEqual(result.column("name").to_pylist(), ["John Doe"])
+
+    def test_create_masking_mapper_arrow_items_keep_unmasked_columns(self):
+        import pyarrow as pa
+
+        mapper = create_masking_mapper(["email:hash"])
+        schema = pa.schema(
+            [
+                pa.field("email", pa.string()),
+                pa.field("id", pa.int64(), nullable=False, metadata={"k": "v"}),
+                pa.field("big", pa.int64()),
+            ],
+            metadata={"source": "test"},
+        )
+        data = {
+            "email": ["a@example.com", None],
+            "id": [1, 2],
+            "big": [2**53 + 1, None],
+        }
+
+        for item in (
+            pa.table(data, schema=schema),
+            pa.record_batch(data, schema=schema),
+        ):
+            result = mapper(item)
+
+            self.assertEqual(result.schema.metadata, schema.metadata)
+            self.assertEqual(result.schema.field("id"), schema.field("id"))
+            self.assertEqual(result.schema.field("big"), schema.field("big"))
+            self.assertEqual(result.column("big").to_pylist(), [2**53 + 1, None])
+
+    def test_create_masking_mapper_arrow_item_without_masked_column(self):
+        import pyarrow as pa
+
+        mapper = create_masking_mapper(["email:hash"])
+        for item in (pa.table({"id": [1]}), pa.record_batch({"id": [1]})):
+            self.assertIs(mapper(item), item)
+
+
+class TestMaskingArrowParity(unittest.TestCase):
+    """Arrow items mask the same values, in the same order, as before."""
+
+    def test_pandas_nullable_integers_hash_as_pandas_gives_them(self):
+        import hashlib
+
+        import pandas as pd
+        import pyarrow as pa
+
+        frame = pd.DataFrame({"v": pd.array([2**53 + 1, None], dtype="Int64")})
+        for item in (
+            pa.Table.from_pandas(frame),
+            pa.RecordBatch.from_pandas(frame),
+        ):
+            result = create_masking_mapper(["v:sha256"])(item)
+
+            self.assertEqual(
+                result.column("v").to_pylist(),
+                [
+                    hashlib.sha256(b"9007199254740993").hexdigest(),
+                    hashlib.sha256(b"<NA>").hexdigest(),
+                ],
+            )
+            self.assertNotIn(b"pandas", result.schema.metadata or {})
+            result.to_pandas()
+
+    def test_sequential_tokens_follow_the_mask_order(self):
+        import pyarrow as pa
+
+        configs = ["b:sequential", "a:sequential"]
+        row = create_masking_mapper(configs)({"a": "alice", "b": "bob"})
+        for item in (
+            pa.table({"a": ["alice"], "b": ["bob"]}),
+            pa.record_batch({"a": ["alice"], "b": ["bob"]}),
+        ):
+            result = create_masking_mapper(configs)(item)
+
+            self.assertEqual(
+                (result.column("a")[0].as_py(), result.column("b")[0].as_py()),
+                (row["a"], row["b"]),
+            )
+
+    def test_a_column_pandas_makes_the_index_is_left_as_before(self):
+        # Such a column is not in the pandas frame the masks read, so it is skipped,
+        # as it always was; the mask on the data column still applies.
+        import pandas as pd
+        import pyarrow as pa
+
+        indexes = [
+            pd.Index(["secret"], name="email"),
+            pd.Index(["secret"]),
+            pd.Index(["secret"], name="v"),
+        ]
+        for index in indexes:
+            frame = pd.DataFrame({"v": ["x"]}, index=index)
+            for item in (
+                pa.Table.from_pandas(frame),
+                pa.RecordBatch.from_pandas(frame),
+            ):
+                index_field = item.schema.names[-1]
+
+                self.assertIs(create_masking_mapper(["email:redact"])(item), item)
+                result = create_masking_mapper([f"{index_field}:redact", "v:redact"])(
+                    item
+                )
+                self.assertEqual(result.column("v").to_pylist(), ["REDACTED"])
+                self.assertEqual(result.column(index_field).to_pylist(), ["secret"])
+
+    def test_a_duplicate_column_name_is_refused(self):
+        import pyarrow as pa
+
+        item = pa.Table.from_arrays([pa.array(["x"]), pa.array(["y"])], ["e", "e"])
+        with self.assertRaises(ValueError):
+            create_masking_mapper(["e:redact"])(item)
+
 
 if __name__ == "__main__":
     unittest.main()

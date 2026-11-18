@@ -2,6 +2,12 @@
 
 ## in progress
 
+- Masking: `--mask` now applies to sources that yield Arrow record batches, such
+  as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
+  Their columns were loaded unmasked. On Arrow items, only the masked columns
+  are rebuilt: the other columns keep their types and metadata, where a nullable
+  integer column used to come back as floating point.
+
 ## 2026/11/17 v0.24.0
 
 - Deployment: `examples/aws-lambda` holds an AWS Lambda recipe: a container

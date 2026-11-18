@@ -340,21 +340,48 @@ def create_masking_mapper(mask_configs: list[str]) -> Callable:
         masks[column] = engine.get_masking_function(algorithm, param)
 
     def apply_masks(data: Any) -> Any:
-        # Handle PyArrow tables
+        # Handle PyArrow tables and record batches
         try:
             import pyarrow as pa
 
-            if isinstance(data, pa.Table):
-                # Convert to pandas for easier manipulation
+            if isinstance(data, (pa.Table, pa.RecordBatch)):
+                schema = data.schema
+                targets = [column for column in masks if column in schema.names]
+                if not targets:
+                    return data
+
+                # The masks read the values pandas gives them, in mask order, so
+                # a hash or token stays what it was. Only the masked columns are
+                # rebuilt; the others keep their arrays, types and metadata.
                 df = data.to_pandas()
+                # A column pandas metadata turns into the index is not in `df`.
+                targets = [column for column in targets if column in df.columns]
+                if not targets:
+                    return data
+                columns = list(data.columns)
+                fields = list(schema)
+                for column in targets:
+                    index = schema.get_field_index(column)
+                    if index < 0:
+                        raise ValueError(
+                            f"Cannot mask column {column!r}: the data has more "
+                            "than one column of that name"
+                        )
+                    masked = pa.array(df[column].apply(masks[column]), from_pandas=True)
+                    columns[index] = masked
+                    fields[index] = pa.field(
+                        column, masked.type, metadata=fields[index].metadata
+                    )
 
-                # Apply masks to each column
-                for column, mask_func in masks.items():
-                    if column in df.columns:
-                        df[column] = df[column].apply(mask_func)
-
-                # Convert back to PyArrow table
-                return pa.Table.from_pandas(df)
+                # pandas metadata would describe the column types before masking.
+                metadata = {
+                    key: value
+                    for key, value in (schema.metadata or {}).items()
+                    if key != b"pandas"
+                }
+                return type(data).from_arrays(
+                    columns, schema=pa.schema(fields, metadata=metadata or None)
+                )
         except ImportError:
             pass
 
