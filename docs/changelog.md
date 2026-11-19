@@ -57,8 +57,12 @@
   values all load as NULL, NaN included, takes the type its mask gave the same
   column, of the same source type, in an earlier batch of the same resource, or
   Arrow's `null` type before there is one, so it loads beside the batches around
-  it. A batch whose columns are all masked and all NULL or NaN, ahead of any
-  batch with a value, loads no rows. A mask that returns values of different
+  it. When that would leave a batch with no column of another type, which dlt
+  would load as no rows, the masked columns take the type their source loads
+  as instead (`int64`, `uint64`, `double`, `string`, or the source type for
+  other kinds), and so do the all-NULL batches after it. The rows load, and a
+  later batch the mask types otherwise, such as `sha256` on an integer column
+  whose first batch is all NULL, fails the run rather than losing them. A mask that returns values of different
   kinds in one column fails the run on an Arrow item: dates or times beside
   values of another kind, such as `date_shift` on an integer column where only
   some values parse as dates, and text beside numbers, such as `year_only` on

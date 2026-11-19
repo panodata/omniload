@@ -551,7 +551,8 @@ class TestMaskingArrowParity(unittest.TestCase):
 
     def test_an_all_null_masked_column_takes_the_null_type(self):
         # Kept, it would carry its source type into a load whose other batches
-        # carry the mask's, which dlt refuses to put together.
+        # carry the mask's, which dlt refuses to put together. The unmasked
+        # column keeps the batch's rows when dlt drops the `null` one.
         import pyarrow as pa
 
         for array in (
@@ -560,7 +561,8 @@ class TestMaskingArrowParity(unittest.TestCase):
             pa.array([None], pa.int64()).dictionary_encode(),
         ):
             for kind in (pa.Table, pa.RecordBatch):
-                item = kind.from_arrays([array], ["v"])
+                ids = pa.array(range(len(array)))
+                item = kind.from_arrays([array, ids], ["v", "id"])
                 result = create_masking_mapper(["v:sha256"])(item)
 
                 self.assertEqual(result.schema.field("v").type, pa.null())
@@ -621,7 +623,7 @@ class TestMaskingArrowParity(unittest.TestCase):
 
         mapper = create_masking_mapper(["v:round"])
         mapper(pa.table({"v": pa.array([{"a": 1, "b": 2}], two_fields)}))
-        nulls = mapper(pa.table({"v": pa.nulls(2, one_field)}))
+        nulls = mapper(pa.table({"v": pa.nulls(2, one_field), "id": [1, 2]}))
 
         self.assertEqual(nulls.schema.field("v").type, pa.null())
 
@@ -683,6 +685,45 @@ class TestMaskingArrowParity(unittest.TestCase):
                 self.assertEqual(first.schema.field("v").type, masked_type)
                 self.assertEqual(nans.schema.field("v").type, masked_type)
                 self.assertEqual(nans.column("v").null_count, 2)
+
+    def test_a_batch_of_untyped_masked_columns_alone_keeps_its_source_kind(self):
+        # dlt drops a `null` column, and a batch with no other column loses its
+        # rows. Typed as its source kind loads, the batch keeps them; a later
+        # batch the mask types otherwise fails the run instead.
+        import pyarrow as pa
+
+        cases = [
+            (pa.array([None, None], pa.int32()), pa.int64()),
+            (pa.array([None, None], pa.uint64()), pa.uint64()),
+            (pa.array([math.nan, None], pa.float32()), pa.float64()),
+            (pa.array([None, None], pa.large_string()), pa.string()),
+            (pa.array([None, None], pa.string()).dictionary_encode(), pa.string()),
+            (pa.array([None, None], pa.date32()), pa.date32()),
+        ]
+        for array, source_kind in cases:
+            for kind in (pa.Table, pa.RecordBatch):
+                mapper = create_masking_mapper(["v:round", "w:round"])
+                nulls = pa.nulls(2, pa.int64())
+                item = kind.from_arrays([array, nulls], ["v", "w"])
+                result = mapper(item)
+
+                self.assertEqual(result.schema.field("v").type, source_kind)
+                self.assertEqual(result.schema.field("w").type, pa.int64())
+                self.assertEqual(result.num_rows, 2)
+                self.assertEqual(result.column("v").null_count, 2)
+                # Later all-NULL batches take the same type.
+                again = mapper(kind.from_arrays([pa.nulls(1, array.type)], ["v"]))
+                self.assertEqual(again.schema.field("v").type, source_kind)
+
+    def test_an_empty_batch_of_untyped_masked_columns_stays_null(self):
+        # No rows to keep: the batch loads beside any type the column takes later.
+        import pyarrow as pa
+
+        for kind in (pa.Table, pa.RecordBatch):
+            item = kind.from_arrays([pa.array([], pa.int64())], ["v"])
+            result = create_masking_mapper(["v:sha256"])(item)
+
+            self.assertEqual(result.schema.field("v").type, pa.null())
 
     def test_a_timestamp_the_mask_hands_back_as_nat_is_kept_as_it_is(self):
         # The lowest nanosecond timestamp reads back as pandas' `NaT`, which
@@ -1028,6 +1069,71 @@ def test_a_masked_float_column_nan_in_a_whole_batch_loads(tmp_path, algorithm, n
             masked = connection.execute("SELECT count(n) FROM main.t").fetchone()
     assert rows == (20_000,)
     assert masked == ((0,) if nans == "only" else (10_000,))
+
+
+@pytest.mark.parametrize(
+    ("algorithm", "source_type", "empty", "loaded"),
+    [
+        ("round:10", pa.int64(), None, 10_000),
+        ("noise:0", pa.float64(), math.nan, 10_000),
+        ("sha256", pa.int64(), None, None),
+    ],
+    ids=["null-then-ints", "nan-then-floats", "all-null"],
+)
+def test_a_masked_column_alone_keeps_the_rows_of_a_leading_empty_batch(
+    tmp_path, algorithm, source_type, empty, loaded
+):
+    # Each row group reaches the mask as its own record batch, and the masked
+    # column is all the first one holds. Typed `null`, dlt would drop it and the
+    # batch's rows with it.
+    values = list(range(10_000)) if loaded else [None] * 10_000
+    numbers = [empty] * 10_000 + values
+    source = tmp_path / "source.parquet"
+    pa.parquet.write_table(
+        pa.table({"n": pa.array(numbers, source_type, from_pandas=True)}),
+        source,
+        row_group_size=10_000,
+    )
+    dest = tmp_path / "warehouse.duckdb"
+
+    result = invoke_ingest_command(
+        f"file://{source}#use_pyarrow=true",
+        "rows",
+        f"duckdb:///{dest}",
+        "main.t",
+        mask=[f"n:{algorithm}"],
+        print_output=False,
+    )
+
+    assert result.exit_code == 0, result.output
+    with duckdb.connect(str(dest), read_only=True) as connection:
+        counts = connection.execute("SELECT count(*), count(n) FROM main.t").fetchone()
+    assert counts == (20_000, loaded or 0)
+
+
+def test_a_masked_column_alone_typed_otherwise_after_an_empty_batch_fails(tmp_path):
+    # The leading batch takes the integer type its source loads as, and the
+    # hashes after it are text: dlt refuses the run rather than lose the rows.
+    numbers = [None] * 10_000 + list(range(10_000))
+    source = tmp_path / "source.parquet"
+    pa.parquet.write_table(
+        pa.table({"n": pa.array(numbers, pa.int64())}),
+        source,
+        row_group_size=10_000,
+    )
+    dest = tmp_path / "warehouse.duckdb"
+
+    result = invoke_ingest_command(
+        f"file://{source}#use_pyarrow=true",
+        "rows",
+        f"duckdb:///{dest}",
+        "main.t",
+        mask=["n:sha256"],
+        print_output=False,
+    )
+
+    assert result.exit_code != 0
+    assert "IncompatibleArrowSchema" in repr(result.exception) + result.output
 
 
 def test_each_resource_gets_its_own_mapper_and_shares_the_tokens(tmp_path, monkeypatch):

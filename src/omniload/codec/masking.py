@@ -377,10 +377,11 @@ def _masked_column(
     values (see `_inferred_alike`). A column whose masked values all load as NULL
     takes `emitted_type`, the type this mask gave the column in an earlier item,
     or Arrow's `null` type before there is one, which dlt loads beside any type
-    by dropping the column from that batch. Dates or times beside values of
-    another kind are refused: Arrow would read the others as dates or times, or a
-    datetime beside a date as a date. A value that loads as NULL, such as a NaN
-    or `NaT`, is no kind.
+    by dropping the column from that batch; `create_masking_mapper` types it
+    instead when no other column would keep the batch's rows. Dates or times
+    beside values of another kind are refused: Arrow would read the others as
+    dates or times, or a datetime beside a date as a date. A value that loads as
+    NULL, such as a NaN or `NaT`, is no kind.
     """
     values = column.to_pylist()
     results = [mask(value) for value in values]
@@ -423,6 +424,25 @@ def _inferred_alike(pa: Any, column_type: Any) -> bool:
         or pa.types.is_large_string(column_type)
         or pa.types.is_string_view(column_type)
     )
+
+
+def _source_kind(pa: Any, source_type: Any) -> Any:
+    """The type values of `source_type` load as when a mask returns them as they were.
+
+    That is the inferred type for the kinds `_inferred_alike` names, decoded from
+    a dictionary, and the column's own type for the others.
+    """
+    if not _inferred_alike(pa, source_type):
+        return source_type
+    if pa.types.is_dictionary(source_type):
+        source_type = source_type.value_type
+    if pa.types.is_uint64(source_type):
+        return source_type
+    if pa.types.is_integer(source_type):
+        return pa.int64()
+    if pa.types.is_floating(source_type):
+        return pa.float64()
+    return pa.string()
 
 
 def _masked_array(pa: Any, values: list, original_type: Any) -> Any:
@@ -520,6 +540,7 @@ def create_masking_mapper(
                 # the others keep their arrays, types and metadata.
                 columns = list(data.columns)
                 fields = list(schema)
+                untyped = []
                 for column in targets:
                     index = schema.get_field_index(column)
                     if index < 0:
@@ -542,7 +563,9 @@ def create_masking_mapper(
                         value_type = value_type.value_type
                     if pa.types.is_duration(value_type):
                         raise _interval_left_unmasked(column)
-                    if not pa.types.is_null(result.type):
+                    if pa.types.is_null(result.type):
+                        untyped.append((index, source_type))
+                    else:
                         _remember(known, source_type, result.type)
                     if masked is None:
                         continue
@@ -550,6 +573,23 @@ def create_masking_mapper(
                     fields[index] = pa.field(
                         column, masked.type, metadata=fields[index].metadata
                     )
+
+                # dlt drops a column typed `null`, and with it the rows of a
+                # batch that has no other column. Such a batch keeps its rows
+                # with the masked columns typed as their source kind loads, and
+                # a later batch the mask types otherwise fails the run.
+                if data.num_rows and all(
+                    pa.types.is_null(field.type) for field in fields
+                ):
+                    for index, source_type in untyped:
+                        fallback = _source_kind(pa, source_type)
+                        columns[index] = pa.nulls(data.num_rows, fallback)
+                        fields[index] = pa.field(
+                            fields[index].name,
+                            fallback,
+                            metadata=fields[index].metadata,
+                        )
+                        _remember(emitted[fields[index].name], source_type, fallback)
 
                 # pandas metadata would describe the column types before masking.
                 metadata = {
