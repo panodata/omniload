@@ -90,7 +90,7 @@ dependencies = [
   "duckdb<2.1",
   "duckdb-engine<0.18",
   "elasticsearch<10",
-  "facebook-business<27",
+  "facebook-business<28",
   "flatten-json<0.2",
   "gitpython>=3.1.59",
   "google-ads<36",
@@ -152,7 +152,7 @@ optional-dependencies.develop = [
   "pyproject-fmt<3",
   "pytest-repeat<1",
   "ruff==0.17.*",
-  "ty==0.0.105",
+  "ty==0.0.107",
   "validate-pyproject<1",
 ]
 # Exasol, through the sqlalchemy-exasol websocket dialect (`exa://`, `exa+websocket://`).

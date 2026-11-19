@@ -65,15 +65,13 @@ jobs:
 
       - name: Run tests
         run: |
-          compose_file="release/oci-full/test.yml"
-          if [[ -f "${compose_file}" ]]; then
-            export BUILDKIT_PROGRESS=plain
-            export COMPOSE_DOCKER_CLI_BUILD=1
-            export DOCKER_BUILDKIT=1
-            docker compose --file "${compose_file}" build
-            docker compose --file "${compose_file}" run --rm sut
-            docker compose --file "${compose_file}" down --volumes --remove-orphans
-          fi
+          compose_file="release/oci/test.yml"
+          export BUILDKIT_PROGRESS=plain
+          export COMPOSE_DOCKER_CLI_BUILD=1
+          export DOCKER_BUILDKIT=1
+          docker compose --file "${compose_file}" build
+          docker compose --file "${compose_file}" run --rm sut
+          docker compose --file "${compose_file}" down --volumes --remove-orphans
 
   build-and-publish:
     needs: build-and-test

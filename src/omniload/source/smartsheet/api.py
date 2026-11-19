@@ -24,7 +24,7 @@ class SmartsheetSource:
                 "access_token in the URI is required to connect to Smartsheet"
             )
 
-        from omniload.source.smartsheets.adapter import smartsheet_source
+        from omniload.source.smartsheet.adapter import smartsheet_source
 
         return smartsheet_source(
             access_token=access_token[0],

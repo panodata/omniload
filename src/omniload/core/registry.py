@@ -162,7 +162,7 @@ sources: LazyRegistry = LazyRegistry(
         "sharepoint": "dlt_filesystem.source.fsspec.sharepoint:SharePointSource",
         "shopify": "omniload.source.shopify.api:ShopifySource",
         "slack": "omniload.source.slack.api:SlackSource",
-        "smartsheet": "omniload.source.smartsheets.api:SmartsheetSource",
+        "smartsheet": "omniload.source.smartsheet.api:SmartsheetSource",
         "smb": "dlt_filesystem.source.fsspec.smb:SMBSource",
         "snapchatads": "omniload.source.snapchat_ads.api:SnapchatAdsSource",
         "socrata": "omniload.source.socrata.api:SocrataSource",
