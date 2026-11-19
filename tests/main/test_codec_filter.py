@@ -377,6 +377,26 @@ def test_an_arrow_duration_column_without_a_value_is_not_refused(algorithm):
             mapper(pa.record_batch({"d": used}))
 
 
+@pytest.mark.parametrize("kind", [pa.Table, pa.RecordBatch])
+def test_a_nanosecond_duration_that_reads_back_as_nat_is_masked_or_refused(kind):
+    # The lowest nanosecond duration reads back as pandas' `NaT`, a datetime
+    # rather than a `timedelta`. Unmasked it loads as interval text, so a mask
+    # that hands it back as it is (`round`) is refused like any interval.
+    from omniload.codec.masking import create_masking_mapper
+
+    nat = pa.array([-(2**63), None], pa.duration("ns"))
+    for array in (nat, nat.dictionary_encode()):
+        item = kind.from_arrays([array], ["d"])
+        with pytest.raises(ValueError, match="would load it unmasked"):
+            create_masking_mapper(["d:round"])(item)
+
+        hashed = create_masking_mapper(["d:sha256"])(item)
+        assert hashed.schema.field("d").type == pa.string()
+        # `year_only` reads its year as NaN, so the column holds no value.
+        year = create_masking_mapper(["d:year_only"])(item)
+        assert year.schema.field("d").type == pa.null()
+
+
 def test_a_mask_that_raises_on_an_interval_fails_the_run():
     # The failing mask would leave the interval in the row, to load unmasked.
     from omniload.codec.masking import create_masking_mapper
