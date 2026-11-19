@@ -34,10 +34,10 @@ Custom queries support incremental loads, but there are some caveats:
   time or timestamp column
 - you must do your own filtering in the query for the incremental load
   - you can use the `interval_start` and `interval_end` variables to filter the data
-  - on the first run `interval_start` is the timestamp `0001-01-01 00:00:00`,
-    whatever the type of the incremental key, so compare it only with a date or
-    timestamp column. With another key type, leave it out of the query: each run
-    then reads every row, and only the rows past the stored cursor are loaded
+  - `interval_start` is the `--interval-start` value, or the timestamp
+    `0001-01-01 00:00:00` without one, on every run: it is not the stored
+    cursor. Compare it only with a date or timestamp column. Each run reads every
+    row the query returns, and only the rows past the stored cursor are loaded
 
 Here's an example of how to do an incremental load:
 
