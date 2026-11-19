@@ -27,28 +27,26 @@
   - A column that `pandas` metadata names as the index was skipped and is
     masked now.
 
-  A masked column whose values the mask returns as they were, such as `round`
-  on a timestamp, loads exactly as it would unmasked, apart from integer,
-  floating-point and text columns, dictionary-encoded ones included. What a
-  mask returns from those takes one type whatever values a batch holds, as
-  long as it returns one kind of value: integers load as `int64` (`uint64` from
-  a `uint64` column), floating-point values as `double` and text as `string`,
-  so an `int32` column that `year_only` leaves alone loads as `int64`. A masked
-  column whose values all load as NULL, NaN included, takes the type its mask
-  gave the same column, of the same source type, in an earlier batch of the
-  same resource, so it loads beside the batches around it. Before there is one,
-  NaN values load as `double` and NULL as Arrow's `null` type, so a batch whose
-  columns are all masked and all NULL, ahead of any batch with a value, loads
-  no rows, and a NaN-only batch ahead of the values `round` or `range` turns
-  into integers or text fails the run. A mask that returns values of different
+  A masked column whose values the mask returns as they were, such as `round` on
+  a timestamp, loads exactly as it would unmasked, apart from integer,
+  floating-point and text columns, dictionary-encoded ones included. What a mask
+  returns from those takes one type whatever values a batch holds, as long as it
+  returns one kind of value: integers load as `int64` (`uint64` from a `uint64`
+  column), floating-point values as `double` and text as `string`, so an `int32`
+  column that `year_only` leaves alone loads as `int64`. A masked column whose
+  values all load as NULL, NaN included, takes the type its mask gave the same
+  column, of the same source type, in an earlier batch of the same resource, or
+  Arrow's `null` type before there is one, so it loads beside the batches around
+  it. A batch whose columns are all masked and all NULL or NaN, ahead of any
+  batch with a value, loads no rows. A mask that returns values of different
   kinds in one column fails the run on an Arrow item: dates or times beside
   values of another kind, such as `date_shift` on an integer column where only
   some values parse as dates, and text beside numbers, such as `year_only` on
   text where only some values parse, or `partial` on an integer column, which
   hands a zero back as it is. Across batches the same holds for numbers of two
-  kinds: `year_only` on a floating-point column gives years where a value
-  parses as a date and hands the others back, so a batch holding only one kind
-  loads as `int64` or `double` and the two cannot load together.
+  kinds: `year_only` on a floating-point column gives years where a value parses
+  as a date and hands the others back, so a batch holding only one kind loads as
+  `int64` or `double` and the two cannot load together.
 
 ## 2026/11/17 v0.24.0
 
