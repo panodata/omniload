@@ -5,6 +5,7 @@ import os
 import sys
 import tempfile
 from datetime import date, datetime, timezone
+from decimal import Decimal
 from typing import (
     Any,
     Callable,
@@ -436,6 +437,9 @@ class SqlSourceRouter:
                 if incremental:
                     switchDict: dict[type, type[sa.TypeEngine[Any]]] = {
                         int: sa.INTEGER,
+                        Decimal: sa.Numeric,
+                        float: sa.Float,
+                        str: sa.String,
                         datetime: sa.TIMESTAMP,
                         date: sa.DATE,
                         pendulum.Date: sa.DATE,
@@ -443,10 +447,19 @@ class SqlSourceRouter:
                     }
 
                     if incremental.last_value is not None:
+                        cursor_type = type(incremental.last_value)
+                        if cursor_type not in switchDict:
+                            raise ValidationError(
+                                f"The stored value of cursor column "
+                                f"'{incremental.cursor_path}' has type "
+                                f"{cursor_type.__name__}, which a query: source "
+                                f"cannot resume from. Use an integer, decimal, "
+                                f"float, string, date or timestamp cursor column."
+                            )
                         cols.append(
                             Column(
                                 incremental.cursor_path,
-                                switchDict[type(incremental.last_value)],
+                                switchDict[cursor_type],
                             )
                         )
                     else:

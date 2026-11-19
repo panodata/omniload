@@ -6,8 +6,10 @@ from unittest.mock import Mock
 import dlt.sources.sql_database as sql_database
 import duckdb
 import pytest
+from dlt.pipeline.exceptions import PipelineStepFailed
 
 from omniload.core.router import SqlSourceRouter
+from omniload.error import ValidationError
 from omniload.main import app
 
 
@@ -114,3 +116,81 @@ def test_query_credentials_failure_does_not_change_loader(sql_source, monkeypatc
         SqlSourceRouter().dlt_source(sql_source, "query:SELECT id, v FROM t")
     assert raised.value is error
     assert sql_database.table_rows is original
+
+
+def _ingest_query_incremental(source, destination, cursor):
+    app(
+        [
+            "ingest",
+            "--source-uri",
+            f"duckdb:///{source}",
+            "--source-table",
+            "query:SELECT * FROM t",
+            "--dest-uri",
+            f"duckdb:///{destination}",
+            "--dest-table",
+            "out.q",
+            "--incremental-key",
+            cursor,
+            "--incremental-strategy",
+            "append",
+            "--progress",
+            "log",
+        ],
+        standalone_mode=False,
+    )
+
+
+@pytest.mark.parametrize(
+    "cursor",
+    ["amount", "ratio", "code", "id"],
+    ids=["decimal", "double", "varchar", "bigint"],
+)
+def test_query_incremental_resumes_from_stored_cursor(tmp_path, cursor):
+    """The second run restores the cursor value the first run stored, whatever its
+    Python type, and loads only the rows past it."""
+    source = tmp_path / "source.duckdb"
+    destination = tmp_path / "warehouse.duckdb"
+    with duckdb.connect(str(source)) as connection:
+        connection.execute(
+            "CREATE TABLE t (id BIGINT, amount DECIMAL(10, 2), ratio DOUBLE, "
+            "code VARCHAR)"
+        )
+
+    def add_rows(ids):
+        with duckdb.connect(str(source)) as connection:
+            for i in ids:
+                connection.execute(
+                    "INSERT INTO t VALUES (?, ?, ?, ?)",
+                    [i, i * 1.5, i * 0.5, f"k{i:03d}"],
+                )
+
+    add_rows([1, 2, 3])
+    _ingest_query_incremental(source, destination, cursor)
+    add_rows([4, 5])
+    _ingest_query_incremental(source, destination, cursor)
+
+    with duckdb.connect(str(destination)) as connection:
+        assert connection.sql("SELECT id FROM out.q ORDER BY id").fetchall() == [
+            (1,),
+            (2,),
+            (3,),
+            (4,),
+            (5,),
+        ]
+
+
+def test_query_incremental_unsupported_cursor_type_names_it(tmp_path):
+    source = tmp_path / "source.duckdb"
+    destination = tmp_path / "warehouse.duckdb"
+    with duckdb.connect(str(source)) as connection:
+        connection.execute("CREATE TABLE t AS SELECT 1 AS id, true AS flag")
+    _ingest_query_incremental(source, destination, "flag")
+
+    with pytest.raises(PipelineStepFailed) as raised:
+        _ingest_query_incremental(source, destination, "flag")
+    cause = raised.value.__cause__
+    while cause is not None and not isinstance(cause, ValidationError):
+        cause = cause.__cause__
+    assert isinstance(cause, ValidationError)
+    assert "cursor column 'flag' has type bool" in str(cause)
