@@ -2,6 +2,11 @@
 
 ## in progress
 
+- SQL: A `query:` table resumes an incremental load from a DECIMAL,
+  floating-point, text or TIME cursor column. The second run failed with a
+  `KeyError` naming `decimal.Decimal`, `float`, `str` or `datetime.time`. A
+  stored cursor of another type, such as BOOLEAN, now fails with an error naming
+  the column and the type.
 - Core: `timedelta` values and Arrow `duration` columns load as interval text
   instead of failing the run. dlt has no interval type, so they reach it in
   PostgreSQL's interval format, such as `1 day 02:03:04.5`, which PostgreSQL and

@@ -30,9 +30,14 @@ omniload uses SQLAlchemy to run the queries, therefore you can use any valid SQL
 
 Custom queries support incremental loads, but there are some caveats:
 - the incremental key must be a column that is returned by the query
-- the incremental key must be a datetime/timestamp column
+- the incremental key must be an integer, decimal, floating-point, text, date,
+  time or timestamp column
 - you must do your own filtering in the query for the incremental load
   - you can use the `interval_start` and `interval_end` variables to filter the data
+  - `interval_start` is the `--interval-start` value, or the timestamp
+    `0001-01-01 00:00:00` without one, on every run: it is not the stored
+    cursor. Compare it only with a date or timestamp column. Each run reads every
+    row the query returns, and only the rows past the stored cursor are loaded
 
 Here's an example of how to do an incremental load:
 
