@@ -49,3 +49,9 @@ omniload ingest \
 
 In this example, the query is filtering the data to only include rows where the `updated_at` column is greater than the `interval_start` variable.
 
+On a resumed run, `interval_start` is the cursor value the previous run stored,
+so the query reads only the rows past it. The first run binds `--interval-start`,
+or the timestamp `0001-01-01 00:00:00` without one. After that the stored cursor
+takes precedence over `--interval-start`, as it does for a table, unless
+`--interval-end` is given too: the two then bound the run.
+
