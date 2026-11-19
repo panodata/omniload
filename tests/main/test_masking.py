@@ -1,4 +1,5 @@
 import hashlib
+import math
 import random
 import unittest
 from datetime import date, datetime
@@ -574,7 +575,7 @@ class TestMaskingArrowParity(unittest.TestCase):
         cases = [
             ("sha256", pa.array([1, 2], pa.int64())),
             ("round", pa.array([day, day], pa.date64())),
-            ("round", pa.array(["a", "b"]).dictionary_encode()),
+            ("round", pa.array([day, day]).dictionary_encode()),
             ("round", pa.array([[1], [2]], pa.list_(pa.int64()))),
         ]
         for algorithm, values in cases:
@@ -623,6 +624,61 @@ class TestMaskingArrowParity(unittest.TestCase):
         nulls = mapper(pa.table({"v": pa.nulls(2, one_field)}))
 
         self.assertEqual(nulls.schema.field("v").type, pa.null())
+
+    def test_a_masked_number_column_takes_one_type_whatever_its_values(self):
+        # dlt refuses batches of one resource whose types differ, so the type a
+        # mask gives a column cannot depend on which values a batch holds:
+        # `round:10` hands zeros back as the same objects and other values as new
+        # ones, and a NaN-only batch rounds to NaN.
+        import pyarrow as pa
+
+        widths = {
+            pa.int8(): 100,
+            pa.int16(): 30_000,
+            pa.int32(): 2_000_000,
+            pa.int64(): 2**40,
+            pa.uint8(): 200,
+            pa.uint16(): 60_000,
+            pa.uint32(): 4_000_000_000,
+            pa.uint64(): 2**63 + 5,
+        }
+        cases = []
+        for column_type, large in widths.items():
+            batches = [[0, 0, 0], [10, 20, None], [large, 5]]
+            for algorithm in ("round:10", "noise:0", "noise", "year_only"):
+                cases.append((column_type, algorithm, batches))
+        for column_type in (pa.float16(), pa.float32(), pa.float64()):
+            batches = [[0.0, 0.0], [1.5, None], [12_345.5, 9.0], [math.nan, math.nan]]
+            for algorithm in ("round:10", "noise:0", "noise", "range"):
+                cases.append((column_type, algorithm, batches))
+        for column_type, algorithm, batches in cases:
+            # pyarrow builds a half-float array from Python floats only by a cast.
+            build = pa.float64() if column_type == pa.float16() else column_type
+            arrays = [pa.array(values, build).cast(column_type) for values in batches]
+            for order in (arrays, arrays[::-1]):
+                for kind in (pa.Table, pa.RecordBatch):
+                    mapper = create_masking_mapper([f"v:{algorithm}"])
+                    types = {
+                        mapper(kind.from_arrays([array], ["v"])).schema.field("v").type
+                        for array in order
+                    }
+                    types.discard(pa.null())
+                    with self.subTest(column_type=column_type, algorithm=algorithm):
+                        self.assertEqual(len(types), 1, types)
+
+    def test_a_text_column_the_mask_returns_unchanged_takes_the_masked_type(self):
+        # `first_letter` returns a one-letter value as it is and masks the rest;
+        # the batch it leaves alone loads as `string` like the others.
+        import pyarrow as pa
+
+        for column_type in (pa.large_string(), pa.string_view()):
+            mapper = create_masking_mapper(["v:first_letter"])
+            short = mapper(pa.table({"v": pa.array(["a", "b"], column_type)}))
+            long = mapper(pa.table({"v": pa.array(["abc", "b"], column_type)}))
+
+            self.assertEqual(short.schema.field("v").type, pa.string())
+            self.assertEqual(long.schema.field("v").type, pa.string())
+            self.assertEqual(short.column("v").to_pylist(), ["a", "b"])
 
     def test_a_python_defined_extension_type_can_be_masked(self):
         import pyarrow as pa
@@ -863,6 +919,44 @@ def test_a_masked_column_null_in_a_whole_batch_loads(tmp_path, null_first):
             "SELECT count(*), count(id), any_value(typeof(id)) FROM main.t"
         ).fetchone()
     assert counts == (20_000, 10_000, "VARCHAR")
+
+
+@pytest.mark.parametrize("algorithm", ["round:10", "noise:0"])
+@pytest.mark.parametrize(
+    "zeros_first", [True, False], ids=["zeros-first", "values-first"]
+)
+def test_a_masked_int32_column_loads_whether_a_batch_changes_or_not(
+    tmp_path, algorithm, zeros_first
+):
+    # Each row group reaches the mask as its own record batch. The mask hands the
+    # zeros back as the same objects, as CPython caches small integers, and turns
+    # the other row group's values into new ones; both have to load as one type.
+    zeros, values = [0] * 10_000, list(range(1_000, 11_000))
+    numbers = zeros + values if zeros_first else values + zeros
+    source = tmp_path / "source.parquet"
+    pa.parquet.write_table(
+        pa.table({"n": pa.array(numbers, pa.int32())}),
+        source,
+        row_group_size=10_000,
+    )
+    dest = tmp_path / "warehouse.duckdb"
+
+    result = invoke_ingest_command(
+        f"file://{source}#use_pyarrow=true",
+        "rows",
+        f"duckdb:///{dest}",
+        "main.t",
+        mask=[f"n:{algorithm}"],
+        print_output=False,
+    )
+
+    assert result.exit_code == 0, result.output
+    with duckdb.connect(str(dest), read_only=True) as connection:
+        counts = connection.execute(
+            "SELECT count(*), count(n), sum((n = 0)::INT), any_value(typeof(n)) "
+            "FROM main.t"
+        ).fetchone()
+    assert counts == (20_000, 20_000, 10_000, "BIGINT")
 
 
 if __name__ == "__main__":
