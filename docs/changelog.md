@@ -21,7 +21,9 @@
   `fixed`, `uuid` and `sequential`. Any other mask on such a column, such as
   `round`, `date_shift` or `partial`, fails the run rather than load the
   interval or its text unmasked. A `month_day_nano_interval` column is not
-  checked.
+  checked. A masked duration column whose first batch holds no value, with no
+  other column beside it, takes the interval text type, so `sequential`, which
+  gives integers, fails the run on the batches after it.
 - Masking: `--mask` now applies to sources that yield Arrow record batches, such
   as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
   Their columns were loaded unmasked. On Arrow items, only the masked columns

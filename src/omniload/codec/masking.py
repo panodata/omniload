@@ -433,8 +433,9 @@ def _source_kind(pa: Any, source_type: Any) -> Any:
     `_inferred_alike` names, and the column's own type for the others, which
     `_masked_column` keeps as it is, dictionary included. A mask that rebuilds
     one of those others infers its type instead, so a later batch it gives
-    another type fails the run. A duration takes `string`: the interval text it
-    loads as unmasked, and what a mask that applies to it gives.
+    another type fails the run. A duration takes `string`, the interval text it
+    loads as unmasked and what most masks that apply to it give; `sequential`
+    gives integers, so a later batch it masks fails the run.
     """
     value_type = source_type
     if pa.types.is_dictionary(value_type):
