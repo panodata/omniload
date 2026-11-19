@@ -457,14 +457,6 @@ def _passing_intervals(mask: Callable) -> Callable:
     return lambda value: value if isinstance(value, timedelta) else mask(value)
 
 
-def _has_values(pa: Any, array: Any) -> bool:
-    """Whether `array` holds a non-NULL value, read through a dictionary."""
-    if pa.types.is_dictionary(array.type):
-        # A valid index can point at a NULL entry, which `null_count` misses.
-        array = array.cast(array.type.value_type)
-    return len(array) > array.null_count
-
-
 def _remembered(known: list, source_type: Any) -> Any:
     """The masked type remembered for `source_type`, else `None`."""
     for known_source, masked_type in known:
@@ -543,7 +535,7 @@ def create_masking_mapper(
                     value_type = result.type
                     if pa.types.is_dictionary(value_type):
                         value_type = value_type.value_type
-                    if pa.types.is_duration(value_type) and _has_values(pa, result):
+                    if pa.types.is_duration(value_type):
                         raise _interval_left_unmasked(column)
                     if not pa.types.is_null(result.type):
                         _remember(known, source_type, result.type)
