@@ -367,9 +367,10 @@ def test_an_arrow_duration_column_without_a_value_is_not_refused(algorithm):
     ):
         result = mapper(pa.record_batch({"d": array}))
         assert result.num_rows == len(array)
-        # Alone in its batch it takes the interval text type, not a duration
-        # a later batch would refuse.
-        assert result.schema.field("d").type in (pa.null(), pa.string())
+        # Alone in its batch it takes text, the hash's type or the interval
+        # text type, not a duration a later batch would refuse; the batches
+        # after the first take the type remembered from it.
+        assert result.schema.field("d").type == pa.string()
 
     if algorithm == "round":
         # The same dictionary with an index on the hour is refused.
@@ -382,8 +383,8 @@ def test_an_arrow_duration_column_without_a_value_is_not_refused(algorithm):
 
 @pytest.mark.parametrize("kind", [pa.Table, pa.RecordBatch])
 def test_a_sequential_duration_after_a_typed_leading_batch_takes_integers(kind):
-    # The leading batch takes the interval text type, and `sequential` gives the
-    # later durations integer tokens: dlt refuses the two types, failing the run.
+    # `sequential` gives any duration an integer token, so the leading batch
+    # takes that type rather than the interval text type, and both load.
     from omniload.codec.masking import create_masking_mapper
 
     hours = pa.array([3_600, 7_200], pa.duration("s"))
@@ -392,7 +393,7 @@ def test_a_sequential_duration_after_a_typed_leading_batch_takes_integers(kind):
         first = mapper(kind.from_arrays([pa.nulls(2, array.type)], ["d"]))
         later = mapper(kind.from_arrays([array], ["d"]))
 
-        assert first.schema.field("d").type == pa.string()
+        assert first.schema.field("d").type == pa.int64()
         assert later.schema.field("d").type == pa.int64()
 
 
