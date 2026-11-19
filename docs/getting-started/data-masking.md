@@ -267,7 +267,7 @@ An interval column that reaches the mask as a `timedelta` value or an Arrow
 Any other mask on it fails the run. `round`, `range` and `noise` would hand the
 interval back as it is, the date masks would read its text as a time of day, and
 `random` would return its text, so none of them would mask it. `partial`,
-`email`, `phone`, `credit_card`, `ssn` and `first_letter` mask pieces of a
+`email`, `phone`, `credit_card`, `ssn` and `first_letter` would mask pieces of a
 nonzero interval's text and hand a zero interval back as it is, so they fail the
 run too. An Arrow month, day and nanosecond interval column is not checked, and
 a mask that hands one back as it is leaves a column dlt refuses, so the load
