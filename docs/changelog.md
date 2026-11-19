@@ -7,7 +7,10 @@
   only the new rows. It bound `--interval-start`, or `0001-01-01` without one, on
   every run, so each run read the whole result. As on a table, the stored cursor
   now outranks `--interval-start` unless `--interval-end` is given too. A query
-  that selects `:interval_start` as a column loads the stored cursor there.
+  that selects `:interval_start` as a column loads the stored cursor there. A
+  query that compares with `>`, as the SQL source page's example did, now misses
+  a row added at the stored cursor value after the previous run: compare with
+  `>=`.
 - Masking: `--mask` now applies to sources that yield Arrow record batches, such
   as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
   Their columns were loaded unmasked. On Arrow items, only the masked columns

@@ -41,17 +41,20 @@ omniload ingest \
     --source-uri $POSTGRES_URI \
     --dest-uri "duckdb:///mydb.db" \
     --dest-table "public.output" \
-    --source-table "query:select oi.*, o.updated_at from order_items oi join orders o on oi.order_id = o.id where o.updated_at > :interval_start" \
+    --source-table "query:select oi.*, o.updated_at from order_items oi join orders o on oi.order_id = o.id where o.updated_at >= :interval_start" \
     --incremental-key updated_at \
     --incremental-strategy merge \
     --primary-key id
 ```
 
-In this example, the query is filtering the data to only include rows where the `updated_at` column is greater than the `interval_start` variable.
+In this example, the query is filtering the data to only include rows where the `updated_at` column is at or after the `interval_start` variable.
 
 On a resumed run, `interval_start` is the cursor value the previous run stored,
 so the query reads only the rows past it. The first run binds `--interval-start`,
 or the timestamp `0001-01-01 00:00:00` without one. After that the stored cursor
 takes precedence over `--interval-start`, as it does for a table, unless
-`--interval-end` is given too: the two then bound the run.
+`--interval-end` is given too: the two then bound the run. Compare with `>=`, not
+`>`: rows added after the previous run with the same cursor value as the last row
+it loaded are read only through `>=`, and the rows already loaded at that value
+are not loaded twice.
 

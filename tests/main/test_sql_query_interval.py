@@ -149,3 +149,24 @@ def test_query_without_placeholders_resumes(source, tmp_path, bound_parameters):
     ingest(source, destination, query)
     assert bound_parameters[-1] == {}
     assert loaded_ids(destination) == [1, 2, 3]
+
+
+@pytest.mark.parametrize(
+    ("comparison", "expected"),
+    [(">=", [1, 2, 3, 4, 5]), (">", [1, 2, 3, 4])],
+    ids=["inclusive", "exclusive"],
+)
+def test_resumed_run_reads_new_rows_at_the_stored_cursor(
+    source, tmp_path, comparison, expected
+):
+    """The stored cursor is inclusive: a row added at it loads only through `>=`,
+    and the rows the last run already loaded there are not loaded twice."""
+    destination = tmp_path / "warehouse.duckdb"
+    query = f"SELECT id, ts FROM t WHERE ts {comparison} :interval_start"
+    add_rows(source, 1, 2, 3)
+    ingest(source, destination, query)
+    with duckdb.connect(str(source)) as connection:
+        connection.execute("INSERT INTO t VALUES (5, ?)", [datetime(2024, 1, 3)])
+    add_rows(source, 4)
+    ingest(source, destination, query)
+    assert loaded_ids(destination) == expected
