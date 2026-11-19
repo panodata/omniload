@@ -666,6 +666,24 @@ class TestMaskingArrowParity(unittest.TestCase):
                     with self.subTest(column_type=column_type, algorithm=algorithm):
                         self.assertEqual(len(types), 1, types)
 
+    def test_a_nan_only_batch_takes_the_type_the_mask_gave_it_before(self):
+        # `round` and `range` hand a NaN back as it is. Typed `null`, a batch of
+        # nothing else would lose its rows when it is all a batch holds.
+        import pyarrow as pa
+
+        for algorithm, masked_type in (
+            ("round:10", pa.int64()),
+            ("range", pa.string()),
+        ):
+            for kind in (pa.Table, pa.RecordBatch):
+                mapper = create_masking_mapper([f"v:{algorithm}"])
+                first = mapper(kind.from_arrays([pa.array([1.5, 22.5])], ["v"]))
+                nans = mapper(kind.from_arrays([pa.array([math.nan] * 2)], ["v"]))
+
+                self.assertEqual(first.schema.field("v").type, masked_type)
+                self.assertEqual(nans.schema.field("v").type, masked_type)
+                self.assertEqual(nans.column("v").null_count, 2)
+
     def test_a_text_column_the_mask_returns_unchanged_takes_the_masked_type(self):
         # `first_letter` returns a one-letter value as it is and masks the rest;
         # the batch it leaves alone loads as `string` like the others.
