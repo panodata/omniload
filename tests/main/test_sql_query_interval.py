@@ -172,3 +172,16 @@ def test_resumed_run_reads_new_rows_at_the_stored_cursor(
     add_rows(source, 4)
     ingest(source, destination, query)
     assert loaded_ids(destination) == expected
+
+
+def test_replace_binds_interval_start_on_every_run(source, tmp_path, bound_parameters):
+    """`replace` resets the incremental state before each run, so a resumed run
+    has no stored cursor to bind."""
+    destination = tmp_path / "warehouse.duckdb"
+    query = "SELECT id, ts FROM t WHERE ts >= :interval_start"
+    add_rows(source, 1, 2, 3)
+    ingest(source, destination, query, "--incremental-strategy", "replace")
+    add_rows(source, 4)
+    ingest(source, destination, query, "--incremental-strategy", "replace")
+    assert [p["interval_start"] for p in bound_parameters] == [datetime.min] * 2
+    assert loaded_ids(destination) == [1, 2, 3, 4]
