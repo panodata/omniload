@@ -429,17 +429,22 @@ def _inferred_alike(pa: Any, column_type: Any) -> bool:
 def _source_kind(pa: Any, source_type: Any) -> Any:
     """The type values of `source_type` load as when a mask returns them as they were.
 
-    That is the inferred type for the kinds `_inferred_alike` names and the
-    column's own type for the others, decoded from a dictionary either way: a
-    masked column is never dictionary-encoded. A duration takes `string`: the
-    interval text it loads as unmasked, and what a mask that applies to it gives.
+    That is the inferred type, decoded from a dictionary, for the kinds
+    `_inferred_alike` names, and the column's own type for the others, which
+    `_masked_column` keeps as it is, dictionary included. A mask that rebuilds
+    one of those others infers its type instead, so a later batch it gives
+    another type fails the run. A duration takes `string`: the interval text it
+    loads as unmasked, and what a mask that applies to it gives.
     """
-    if pa.types.is_dictionary(source_type):
-        source_type = source_type.value_type
-    if pa.types.is_duration(source_type):
+    value_type = source_type
+    if pa.types.is_dictionary(value_type):
+        value_type = value_type.value_type
+    if pa.types.is_duration(value_type):
         return pa.string()
     if not _inferred_alike(pa, source_type):
         return source_type
+    if pa.types.is_dictionary(source_type):
+        source_type = source_type.value_type
     if pa.types.is_uint64(source_type):
         return source_type
     if pa.types.is_integer(source_type):
