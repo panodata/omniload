@@ -735,6 +735,20 @@ class TestMaskingArrowParity(unittest.TestCase):
                 self.assertEqual(later.schema.field("v").type, values.type)
                 self.assertEqual(first.schema.field("v").type, values.type)
 
+    def test_a_typed_leading_batch_differs_from_a_column_the_mask_rebuilds(self):
+        # `date_shift` rebuilds a dictionary of dates as plain dates, which the
+        # dictionary-typed leading batch does not match: dlt fails the run.
+        import pyarrow as pa
+
+        dates = pa.array([date(2024, 1, 2)]).dictionary_encode()
+        for kind in (pa.Table, pa.RecordBatch):
+            mapper = create_masking_mapper(["v:date_shift:0"])
+            first = mapper(kind.from_arrays([pa.nulls(2, dates.type)], ["v"]))
+            later = mapper(kind.from_arrays([dates], ["v"]))
+
+            self.assertEqual(first.schema.field("v").type, dates.type)
+            self.assertEqual(later.schema.field("v").type, pa.date32())
+
     def test_an_empty_batch_of_untyped_masked_columns_stays_null(self):
         # No rows to keep: the batch loads beside any type the column takes later.
         import pyarrow as pa
