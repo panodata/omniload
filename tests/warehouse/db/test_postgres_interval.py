@@ -10,8 +10,9 @@ from tests.util import invoke_ingest_command
 from tests.util.common import get_random_string
 from tests.warehouse.manager import registry
 
-# Source literal, the text the load writes. psycopg2 counts a year as 365 days and a
-# month as 30 before omniload sees the value, so calendar units arrive folded.
+# Source literal, the text the load writes. psycopg2 counts a year as 365 days, a
+# month as 30 and a day as 24 hours before omniload sees the value, so calendar
+# units arrive folded.
 ROWS = [
     (1, "1 day 02:03:04.5", "1 day 02:03:04.5"),
     (2, "-3 hours", "-03:00:00"),
@@ -19,6 +20,7 @@ ROWS = [
     (4, "1 year 2 mons 3 days", "428 days"),
     (5, "0.000001 seconds", "00:00:00.000001"),
     (6, None, None),
+    (7, "1 day -1 hour", "23:00:00"),
 ]
 
 

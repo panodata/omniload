@@ -438,6 +438,22 @@ def test_a_mask_that_raises_on_an_interval_fails_the_run(monkeypatch):
     assert mapper({"d": "text"})["d"] == hashlib.sha256(b"text").hexdigest()
 
 
+@pytest.mark.parametrize("algorithm", ["sha256", "sequential"])
+def test_a_nanosecond_duration_masks_apart_from_its_microsecond(algorithm):
+    # A nanosecond duration reaches the mask as a pandas `Timedelta`, which keeps
+    # its nanoseconds; read as a plain `timedelta`, these two would mask alike.
+    from omniload.codec.masking import create_masking_mapper
+
+    durations = pa.array([3_600_000_000_001, 3_600_000_000_002], pa.duration("ns"))
+    mapper = create_masking_mapper([f"d:{algorithm}"])
+    first, second = mapper(pa.table({"d": durations})).column("d").to_pylist()
+
+    assert first != second
+    if algorithm == "sha256":
+        text = str(pd.Timedelta(3_600_000_000_001))
+        assert first == hashlib.sha256(text.encode()).hexdigest()
+
+
 class PrintsItsOwnText(timedelta):
     # As pyexasol's `ExaTimeDelta` prints Exasol's interval text.
     def __str__(self):
