@@ -26,7 +26,8 @@
   masks it. `partial`, `email`, `phone`, `credit_card`, `ssn` and `first_letter`
   read a value's text: they used to load pieces of a nonzero interval's text,
   and hand a zero interval back as it is, and now fail the run. A
-  `month_day_nano_interval` column is not checked.
+  `month_day_nano_interval` column is not checked: `random` loads its text
+  unmasked and the text masks load pieces of it.
 - Masking: `--mask` now applies to sources that yield Arrow record batches, such
   as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
   Their columns were loaded unmasked. On Arrow items, only the masked columns
