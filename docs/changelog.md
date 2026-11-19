@@ -2,6 +2,10 @@
 
 ## in progress
 
+- SQL: A `query:` table resumes an incremental load from a DECIMAL, floating-point
+  or text cursor column. The second run failed with a `KeyError` naming
+  `decimal.Decimal`, `float` or `str`. A stored cursor of another type, such as
+  BOOLEAN or TIME, now fails with an error naming the column and the type.
 - Masking: `--mask` now applies to sources that yield Arrow record batches, such
   as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
   Their columns were loaded unmasked. On Arrow items, only the masked columns
