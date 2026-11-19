@@ -367,13 +367,12 @@ def _masked_column(
     value, is kept as it is, so a value a mask does not apply to loads exactly as
     it would have unmasked, unless inference gives its kind one type whatever the
     values (see `_inferred_alike`). A column whose masked values all load as NULL
-    takes `emitted_type`, the type this mask gave the column in an earlier item.
-    Before there is one it takes `double` when they are NaN, which are
-    floating-point values, and Arrow's `null` type otherwise: dlt drops a `null`
-    column, and with it the rows of a batch that holds nothing else. Dates or
-    times beside values of another kind are refused: Arrow would read the others
-    as dates or times, or a datetime beside a date as a date. A value that loads
-    as NULL, such as a NaN or `NaT`, is no kind.
+    takes `emitted_type`, the type this mask gave the column in an earlier item,
+    or Arrow's `null` type before there is one, which dlt loads beside any type
+    by dropping the column from that batch. Dates or times beside values of
+    another kind are refused: Arrow would read the others as dates or times, or a
+    datetime beside a date as a date. A value that loads as NULL, such as a NaN
+    or `NaT`, is no kind.
     """
     values = column.to_pylist()
     results = [mask(value) for value in values]
@@ -387,8 +386,6 @@ def _masked_column(
     if all(_loads_as_null(result) for result in results):
         if emitted_type is not None:
             return pa.nulls(len(values), emitted_type)
-        if any(isinstance(result, float) for result in results):
-            return pa.array(results, pa.float64(), from_pandas=True)
         return pa.nulls(len(values))
     kinds = {_temporal_kind(result) for result in results if not _loads_as_null(result)}
     if len(kinds) > 1:
