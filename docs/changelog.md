@@ -7,6 +7,32 @@
   `KeyError` naming `decimal.Decimal`, `float`, `str` or `datetime.time`. A
   stored cursor of another type, such as BOOLEAN, now fails with an error naming
   the column and the type.
+- Core: `timedelta` values and Arrow `duration` columns load as interval text
+  instead of failing the run. dlt has no interval type, so they reach it in
+  PostgreSQL's interval format, such as `1 day 02:03:04.5`, which PostgreSQL and
+  DuckDB cast back to `INTERVAL` within their interval range. Through the
+  `sqlalchemy` and `pyarrow` SQL backends this covers PostgreSQL `interval`,
+  Exasol `INTERVAL DAY TO SECOND` and DuckDB `INTERVAL`, and it covers duration
+  columns, dictionary-encoded ones included, in files read through `file://`
+  and the other filesystem sources. A driver that hands over a `timedelta` has
+  already folded months into days: psycopg2 counts a year as 365 days and a
+  month as 30, DuckDB a year as 360 and a month as 30, so `1 year 2 months
+  3 days` loads as `428 days` from PostgreSQL and `423 days` from DuckDB. An
+  Arrow `month_day_nano_interval` column, such as DuckDB's Arrow export gives,
+  still fails the load, and a duration inside a list or struct column is not
+  converted. A masked `timedelta` value or Arrow `duration` column is hashed
+  from its `timedelta` value before it becomes text, a driver's own subclass,
+  such as pyexasol's for Exasol, read as a plain `timedelta`, so an interval
+  hashes alike through either SQL backend. Only the masks that apply to any
+  value mask one: `hash`, `sha256`, `md5`, `hmac`, `redact`, `stars`, `fixed`,
+  `uuid` and `sequential`. Any other mask on such a column fails the run.
+  `round`, `range` and `noise` hand an interval back as it is, the date masks
+  read its text as a time of day, and `random` returns its text, so none of them
+  masks it. `partial`, `email`, `phone`, `credit_card`, `ssn` and `first_letter`
+  read a value's text: they used to load pieces of a nonzero interval's text,
+  and hand a zero interval back as it is, and now fail the run. A
+  `month_day_nano_interval` column is not checked: `random` loads its text
+  unmasked and the text masks load pieces of it.
 - Masking: `--mask` now applies to sources that yield Arrow record batches, such
   as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
   Their columns were loaded unmasked. On Arrow items, only the masked columns

@@ -453,16 +453,19 @@ def test_a_wholly_null_column_does_not_reach_the_output(tmp_path, loader_file_fo
 
 
 @pytest.mark.parametrize("loader_file_format", [None, "parquet"])
-@pytest.mark.parametrize("unit", ["ns", "us"])
-def test_a_duration_column_fails_the_load_before_any_writer(
-    tmp_path, loader_file_format, unit
+@pytest.mark.parametrize(
+    ("unit", "text"),
+    [("ns", "00:00:01.23456789"), ("us", "00:20:34.56789")],
+)
+def test_a_duration_column_loads_as_interval_text(
+    tmp_path, loader_file_format, unit, text
 ):
-    """A duration cannot be loaded at all, whichever staging is chosen.
+    """A duration reaches the writer as interval text, whichever staging is chosen.
 
-    dlt's extract step serializes rows as JSON and refuses a timedelta, so the run dies
-    ahead of the staging format and no output is written. Pinned rather than left to be
-    discovered, because the format page states it and because the failure is the same on
-    a Parquet or ORC destination.
+    dlt can neither serialize a timedelta nor take an Arrow duration, so omniload turns
+    the value into text before extract. Nanoseconds survive, because the reader hands a
+    nanosecond value over as a pandas `Timedelta`. This is the duration row of the load
+    table on the filesystem documentation page.
     """
     import pyarrow as pa
 
@@ -484,9 +487,10 @@ def test_a_duration_column_fails_the_load_before_any_writer(
         **kwargs,
     )
 
-    assert result.exit_code != 0
-    assert "not JSON serializable" in str(result.output) + str(result.exception)
-    assert not out_path.exists()
+    assert result.exit_code == 0, result.output
+    written = pa.ipc.open_file(str(out_path)).read_all()
+    assert written.schema.field("dur").type == pa.string()
+    assert written.column("dur").to_pylist() == [text]
 
 
 def test_orc_cannot_take_a_time_column_under_parquet_staging(tmp_path):

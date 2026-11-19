@@ -18,8 +18,12 @@ from tests.warehouse.settings import DESTINATIONS, SOURCES
 logger = logging.getLogger(__name__)
 
 
-def _explicit_test_targets(config) -> list[Path]:
-    """Return the collection paths resolved by pytest's argument parser."""
+def _explicit_test_targets(config) -> list[Path] | None:
+    """Return the collection paths resolved by pytest's argument parser.
+
+    Return None when an argument cannot be placed, such as `.` or `src`: it may
+    select any test, so no caller can narrow the run from the other arguments.
+    """
     targets = []
     for arg in config.args:
         raw_path = arg.split("::", 1)[0]
@@ -27,7 +31,7 @@ def _explicit_test_targets(config) -> list[Path]:
         if not path.is_absolute():
             normalized = raw_path.removeprefix("./")
             if normalized.split("/", 1)[0] not in {"tests", "examples", "omniload"}:
-                continue
+                return None
             path = Path(config.rootpath) / normalized
         targets.append(path.resolve())
     return targets
@@ -37,7 +41,9 @@ def _only_main_filesystem_tests(config) -> bool:
     """Return whether every explicit pytest target is in main/filesystem."""
     filesystem_root = (Path(config.rootpath) / "tests/main/filesystem").resolve()
     targets = _explicit_test_targets(config)
-    return bool(targets) and all(
+    if not targets:
+        return False
+    return all(
         target == filesystem_root or filesystem_root in target.parents
         for target in targets
     )
@@ -52,10 +58,9 @@ def _only_exasol_tests(config) -> bool:
         Path(config.rootpath) / "tests/warehouse/db/test_exasol.py"
     ).resolve()
     targets = _explicit_test_targets(config)
-    # A target the parser could not place, such as `.`, may select anything.
-    if len(targets) != len(config.args):
+    if not targets:
         return False
-    return bool(targets) and all(target == exasol_tests for target in targets)
+    return all(target == exasol_tests for target in targets)
 
 
 def _only_managed_runtime_tests(config) -> bool:
@@ -65,10 +70,9 @@ def _only_managed_runtime_tests(config) -> bool:
     """
     managed_root = (Path(config.rootpath) / "tests/warehouse/managed").resolve()
     targets = _explicit_test_targets(config)
-    # A target the parser could not place, such as `.`, may select anything.
-    if len(targets) != len(config.args):
+    if not targets:
         return False
-    return bool(targets) and all(
+    return all(
         target == managed_root or managed_root in target.parents for target in targets
     )
 
@@ -83,6 +87,7 @@ def _remote_filesystem_tests_selected(config) -> bool:
         Path(config.rootpath) / "tests/main/filesystem/test_remote_integration.py"
     ).resolve()
     targets = _explicit_test_targets(config)
+    # No targets, or one that cannot be placed, may collect the module.
     if not targets:
         return True
     return any(

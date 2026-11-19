@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from tests import conftest
+from tests.warehouse.manager import get_remote_filesystem_services
 from tests.warehouse.settings import DESTINATIONS, SOURCES
 
 ROOT = Path(conftest.__file__).resolve().parent.parent
@@ -13,6 +14,10 @@ MATRIX = set(SOURCES.values()) | set(DESTINATIONS.values())
 
 MANAGED = "tests/warehouse/managed"
 LAMBDA = f"{MANAGED}/test_aws_lambda.py"
+
+FILESYSTEM = "tests/main/filesystem"
+LOCAL_READ = f"{FILESYSTEM}/test_local_read.py"
+REMOTE = set(get_remote_filesystem_services().values())
 
 
 def config(*args):
@@ -68,3 +73,44 @@ def test_managed_runtime_tests_among_other_targets_boot_the_matrix():
         [],
     ):
         assert MATRIX <= conftest._managed_containers(config(*args)), args
+
+
+def test_filesystem_tests_alone_boot_no_shared_matrix():
+    for args in (
+        [FILESYSTEM],
+        [f"./{FILESYSTEM}"],
+        [LOCAL_READ],
+        [str(ROOT / FILESYSTEM)],
+    ):
+        assert MATRIX.isdisjoint(conftest._managed_containers(config(*args))), args
+
+
+def test_filesystem_tests_among_other_targets_boot_the_matrix():
+    for args in (
+        [FILESYSTEM, "."],
+        [FILESYSTEM, "./"],
+        [FILESYSTEM, "src"],
+        [FILESYSTEM, "tests/main/test_factory.py"],
+        [FILESYSTEM, "tests/warehouse"],
+    ):
+        assert MATRIX <= conftest._managed_containers(config(*args)), args
+
+
+def test_remote_emulators_boot_when_the_remote_module_can_be_collected():
+    for args in (
+        [FILESYSTEM],
+        [f"{FILESYSTEM}/test_remote_integration.py"],
+        [LOCAL_READ, "."],
+        [LOCAL_READ, "src"],
+        [],
+    ):
+        assert REMOTE <= conftest._managed_containers(config(*args)), args
+
+
+def test_remote_emulators_stay_off_when_the_remote_module_is_not_a_target():
+    for args in (
+        [LOCAL_READ],
+        [EXASOL],
+        [LAMBDA],
+    ):
+        assert REMOTE.isdisjoint(conftest._managed_containers(config(*args))), args
