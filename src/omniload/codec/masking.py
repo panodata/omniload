@@ -429,13 +429,14 @@ def _inferred_alike(pa: Any, column_type: Any) -> bool:
 def _source_kind(pa: Any, source_type: Any) -> Any:
     """The type values of `source_type` load as when a mask returns them as they were.
 
-    That is the inferred type for the kinds `_inferred_alike` names, decoded from
-    a dictionary, and the column's own type for the others.
+    That is the inferred type for the kinds `_inferred_alike` names and the
+    column's own type for the others, decoded from a dictionary either way: a
+    masked column is never dictionary-encoded.
     """
-    if not _inferred_alike(pa, source_type):
-        return source_type
     if pa.types.is_dictionary(source_type):
         source_type = source_type.value_type
+    if not _inferred_alike(pa, source_type):
+        return source_type
     if pa.types.is_uint64(source_type):
         return source_type
     if pa.types.is_integer(source_type):

@@ -699,6 +699,7 @@ class TestMaskingArrowParity(unittest.TestCase):
             (pa.array([None, None], pa.large_string()), pa.string()),
             (pa.array([None, None], pa.string()).dictionary_encode(), pa.string()),
             (pa.array([None, None], pa.date32()), pa.date32()),
+            (pa.array([None, None], pa.date32()).dictionary_encode(), pa.date32()),
         ]
         for array, source_kind in cases:
             for kind in (pa.Table, pa.RecordBatch):
