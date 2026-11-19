@@ -367,6 +367,9 @@ def test_an_arrow_duration_column_without_a_value_is_not_refused(algorithm):
     ):
         result = mapper(pa.record_batch({"d": array}))
         assert result.num_rows == len(array)
+        # Alone in its batch it takes the interval text type, not a duration
+        # a later batch would refuse.
+        assert result.schema.field("d").type in (pa.null(), pa.string())
 
     if algorithm == "round":
         # The same dictionary with an index on the hour is refused.
@@ -392,9 +395,14 @@ def test_a_nanosecond_duration_that_reads_back_as_nat_is_masked_or_refused(kind)
 
         hashed = create_masking_mapper(["d:sha256"])(item)
         assert hashed.schema.field("d").type == pa.string()
-        # `year_only` reads its year as NaN, so the column holds no value.
-        year = create_masking_mapper(["d:year_only"])(item)
+        # `year_only` reads its year as NaN, so the column holds no value:
+        # `null` beside another column, and alone the interval text type.
+        beside = kind.from_arrays([array, pa.array([1, 2])], ["d", "id"])
+        year = create_masking_mapper(["d:year_only"])(beside)
         assert year.schema.field("d").type == pa.null()
+        year = create_masking_mapper(["d:year_only"])(item)
+        assert year.schema.field("d").type == pa.string()
+        assert year.column("d").null_count == 2
 
 
 def test_a_mask_that_raises_on_an_interval_fails_the_run():
@@ -558,3 +566,32 @@ def test_an_unmasked_duration_beside_a_masked_column_loads_as_text(tmp_path):
     assert result.exit_code == 0, result.output
     expected = hashlib.sha256(b"1").hexdigest()
     assert _rows(dest, "SELECT id, d FROM main.t") == [(expected, "01:00:00")]
+
+
+@pytest.mark.parametrize("hours", [True, False], ids=["null-then-hours", "all-null"])
+def test_a_masked_duration_column_alone_keeps_a_leading_null_batch(tmp_path, hours):
+    # Each row group reaches the mask as its own record batch, and the masked
+    # duration column is all the first one holds. It takes the interval text
+    # type, which the hashes after it share.
+    later = [3_600 * i for i in range(10_000)] if hours else [None] * 10_000
+    source = tmp_path / "source.parquet"
+    pa.parquet.write_table(
+        pa.table({"d": pa.array([None] * 10_000 + later, pa.duration("s"))}),
+        source,
+        row_group_size=10_000,
+    )
+    dest = tmp_path / "warehouse.duckdb"
+
+    result = invoke_ingest_command(
+        f"file://{source}#use_pyarrow=true",
+        "rows",
+        f"duckdb:///{dest}",
+        "main.t",
+        mask=["d:sha256"],
+        print_output=False,
+    )
+
+    assert result.exit_code == 0, result.output
+    with duckdb.connect(str(dest), read_only=True) as connection:
+        counts = connection.execute("SELECT count(*), count(d) FROM main.t").fetchone()
+    assert counts == (20_000, 10_000 if hours else 0)

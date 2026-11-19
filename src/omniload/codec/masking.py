@@ -431,10 +431,13 @@ def _source_kind(pa: Any, source_type: Any) -> Any:
 
     That is the inferred type for the kinds `_inferred_alike` names and the
     column's own type for the others, decoded from a dictionary either way: a
-    masked column is never dictionary-encoded.
+    masked column is never dictionary-encoded. A duration takes `string`: the
+    interval text it loads as unmasked, and what a mask that applies to it gives.
     """
     if pa.types.is_dictionary(source_type):
         source_type = source_type.value_type
+    if pa.types.is_duration(source_type):
+        return pa.string()
     if not _inferred_alike(pa, source_type):
         return source_type
     if pa.types.is_uint64(source_type):
