@@ -977,5 +977,62 @@ def test_a_masked_int32_column_loads_whether_a_batch_changes_or_not(
     assert counts == (20_000, 20_000, 10_000, "BIGINT")
 
 
+def test_each_resource_gets_its_own_mapper_and_shares_the_tokens(tmp_path, monkeypatch):
+    # A mapper remembers the types it gave its resource's columns, so each
+    # resource needs its own; one engine keeps a value's token across them.
+    import dlt
+
+    import omniload.codec.filter as codec_filter
+    from omniload.api import run_ingest
+    from omniload.core.factory import SourceDestinationFactory
+
+    class TwoResources:
+        def handles_incrementality(self):
+            return True
+
+        def dlt_source(self, uri, table, **kwargs):
+            @dlt.resource(name="a")
+            def a():
+                yield pa.table({"id": ["x", "y"]})
+
+            @dlt.resource(name="b")
+            def b():
+                yield pa.table({"id": ["y", "z"]})
+
+            @dlt.source
+            def both():
+                return a(), b()
+
+            return both()
+
+    engines = []
+    build = codec_filter.create_masking_filter
+
+    def spy(mask_configs, engine=None):
+        engines.append(engine)
+        return build(mask_configs, engine)
+
+    monkeypatch.setattr(codec_filter, "create_masking_filter", spy)
+    monkeypatch.setattr(
+        SourceDestinationFactory, "get_source", lambda self: TwoResources()
+    )
+    dest = tmp_path / "warehouse.duckdb"
+
+    run_ingest(
+        source_uri="influxdb://placeholder",
+        dest_uri=f"duckdb:///{dest}",
+        source_table="rows",
+        dest_table="main.t",
+        progress="log",
+        mask=["id:sequential"],
+    )
+
+    assert len(engines) == 2
+    assert engines[0] is engines[1] is not None
+    with duckdb.connect(str(dest), read_only=True) as connection:
+        ids = connection.execute("SELECT id FROM main.t ORDER BY id").fetchall()
+    assert ids == [(1,), (2,), (2,), (3,)]
+
+
 if __name__ == "__main__":
     unittest.main()
