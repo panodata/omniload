@@ -10,8 +10,10 @@
   column's own Python values, as they do on dict rows, so some masked values on
   Arrow tables change:
   - A NULL in an integer, floating-point, string or timestamp column reaches the
-    mask as `None`, where it was `nan`, `<NA>` or `NaT`. A hash of it is NULL
-    now, and `sequential` gives it no token.
+    mask as `None`, where it was `nan`, `<NA>` or `NaT`. A hash of it is NULL,
+    `sequential` and `uuid` give it no token, where `uuid` gave every NULL one
+    shared token, and `stars` gives it an empty string, `partial` and
+    `first_letter` NULL.
   - An integer in a plain Arrow integer column, or in an integer field of a
     struct column, that holds a NULL was hashed as a float (`1.0`) and is hashed
     as the integer.
@@ -26,14 +28,21 @@
     masked now.
 
   A masked column whose values the mask returns as they were, such as `round`
-  on a timestamp, loads exactly as it would unmasked. An all-NULL masked column
-  takes the type its mask gave the same column, of the same source type, in an
-  earlier batch of the same resource, or Arrow's `null` type before there is
-  one, so it loads beside the batches around it. A batch whose columns are all
-  masked and all NULL, ahead of any batch with a value, loads no rows. A mask
-  that returns dates or times beside values of another kind, such as
-  `date_shift` on an integer column where only some values parse as dates,
-  fails the run on an Arrow item.
+  on a timestamp, loads exactly as it would unmasked, apart from integer,
+  floating-point and text columns. What a mask returns from those takes one
+  type whatever values a batch holds: integers load as `int64` (`uint64` from a
+  `uint64` column), floating-point values as `double` and text as `string`, so
+  an `int32` column that `year_only` leaves alone loads as `int64`. A masked
+  column whose values all load as NULL, NaN included, takes the type its mask
+  gave the same column, of the same source type, in an earlier batch of the
+  same resource, or Arrow's `null` type before there is one, so it loads beside
+  the batches around it. A batch whose columns are all masked and all NULL,
+  ahead of any batch with a value, loads no rows. A mask that returns values of
+  different kinds in one column fails the run on an Arrow item: dates or times
+  beside values of another kind, such as `date_shift` on an integer column
+  where only some values parse as dates, and text beside numbers, such as
+  `year_only` on text where only some values parse, or `partial` on an integer
+  column, which hands a zero back as it is.
 
 ## 2026/11/17 v0.24.0
 
