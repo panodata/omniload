@@ -699,7 +699,10 @@ class TestMaskingArrowParity(unittest.TestCase):
             (pa.array([None, None], pa.large_string()), pa.string()),
             (pa.array([None, None], pa.string()).dictionary_encode(), pa.string()),
             (pa.array([None, None], pa.date32()), pa.date32()),
-            (pa.array([None, None], pa.date32()).dictionary_encode(), pa.date32()),
+            (
+                pa.array([None, None], pa.date32()).dictionary_encode(),
+                pa.dictionary(pa.int32(), pa.date32()),
+            ),
         ]
         for array, source_kind in cases:
             for kind in (pa.Table, pa.RecordBatch):
@@ -715,6 +718,22 @@ class TestMaskingArrowParity(unittest.TestCase):
                 # Later all-NULL batches take the same type.
                 again = mapper(kind.from_arrays([pa.nulls(1, array.type)], ["v"]))
                 self.assertEqual(again.schema.field("v").type, source_kind)
+
+    def test_a_typed_leading_batch_matches_a_column_the_mask_keeps(self):
+        # `round` hands dates back as they are, so the column keeps its own
+        # type, dictionary included; the leading all-NULL batch takes it too.
+        import pyarrow as pa
+
+        day = date(2024, 1, 2)
+        for values in (pa.array([day]), pa.array([day]).dictionary_encode()):
+            for kind in (pa.Table, pa.RecordBatch):
+                mapper = create_masking_mapper(["v:round"])
+                nulls = pa.nulls(2, values.type)
+                first = mapper(kind.from_arrays([nulls], ["v"]))
+                later = mapper(kind.from_arrays([values], ["v"]))
+
+                self.assertEqual(later.schema.field("v").type, values.type)
+                self.assertEqual(first.schema.field("v").type, values.type)
 
     def test_an_empty_batch_of_untyped_masked_columns_stays_null(self):
         # No rows to keep: the batch loads beside any type the column takes later.
