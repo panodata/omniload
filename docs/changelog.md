@@ -60,18 +60,21 @@
   column, of the same source type, in an earlier batch of the same resource, or
   Arrow's `null` type before there is one, so it loads beside the batches around
   it. When that would leave a batch with no column of another type, which dlt
-  would load as no rows, the masked columns take the type their source loads
-  as instead (`int64`, `uint64`, `double`, `string`, or the source type for
-  other kinds), and so do the all-NULL batches after it. The rows load, and a
-  later batch the mask types otherwise, such as `sha256` on an integer column
-  whose first batch is all NULL, fails the run rather than losing them. A mask that returns values of different
-  kinds in one column fails the run on an Arrow item: dates or times beside
-  values of another kind, such as `date_shift` on an integer column where only
-  some values parse as dates, and text beside numbers, such as `year_only` on
-  text where only some values parse, or `partial` on an integer column, which
-  hands a zero back as it is. Across batches the same holds for numbers of two
-  kinds: `year_only` on a floating-point column gives years where a value parses
-  as a date and hands the others back, so a batch holding only one kind loads as
+  would load as no rows, the masked columns take the type their mask gives any
+  value instead: text from `hash`, `sha256`, `md5`, `hmac` and `uuid`, and
+  `int64` from `sequential` (`uint64` from a `uint64` column). Under another
+  mask they take the type their source loads as (`int64`, `uint64`, `double`,
+  `string`, or the source type for other kinds). The all-NULL batches after it
+  take the same type. The rows load, and a later batch the mask types otherwise,
+  such as `partial` on an integer column whose first batch is all NULL, fails
+  the run rather than losing them. A mask that returns values of different kinds
+  in one column fails the run on an Arrow item: dates or times beside values of
+  another kind, such as `date_shift` on an integer column where only some values
+  parse as dates, and text beside numbers, such as `year_only` on text where
+  only some values parse, or `partial` on an integer column, which hands a zero
+  back as it is. Across batches the same holds, numbers of two kinds included:
+  `year_only` on a floating-point column gives years where a value parses as a
+  date and hands the others back, so a batch holding only one kind loads as
   `int64` or `double` and the two cannot load together.
 
 ## 2026/11/17 v0.24.0

@@ -426,6 +426,26 @@ def _inferred_alike(pa: Any, column_type: Any) -> bool:
     )
 
 
+# Algorithms whose result for a value that is not NULL has one kind, whatever the
+# value: text from the hashes and `uuid`, an integer token from `sequential`.
+TEXT_ALGORITHMS = frozenset({"hash", "hmac", "md5", "sha256", "uuid"})
+
+
+def _fixed_output_type(pa: Any, algorithm: str, source_type: Any) -> Any:
+    """The type `algorithm` gives any value of `source_type`, else `None`.
+
+    `sequential` tokens build as `uint64` from a `uint64` column, as
+    `_masked_array` keeps that type, and as `int64` otherwise.
+    """
+    if algorithm in TEXT_ALGORITHMS:
+        return pa.string()
+    if algorithm == "sequential":
+        if pa.types.is_dictionary(source_type):
+            source_type = source_type.value_type
+        return source_type if pa.types.is_uint64(source_type) else pa.int64()
+    return None
+
+
 def _source_kind(pa: Any, source_type: Any) -> Any:
     """The type values of `source_type` load as when a mask returns them as they were.
 
@@ -520,12 +540,14 @@ def create_masking_mapper(
 
     # Parse all configurations
     masks = {}
+    algorithms = {}
     for config in mask_configs:
         column, algorithm, param = engine.parse_mask_config(config)
         mask = engine.get_masking_function(algorithm, param)
         if algorithm.lower() not in INTERVAL_ALGORITHMS:
             mask = _passing_intervals(mask)
         masks[column] = mask
+        algorithms[column] = algorithm.lower()
 
     # The type each mask gave a column of this resource, per column name as
     # (source type, masked type) pairs matched by type equality, so an all-NULL
@@ -586,20 +608,24 @@ def create_masking_mapper(
 
                 # dlt drops a column typed `null`, and with it the rows of a
                 # batch that has no other column. Such a batch keeps its rows
-                # with the masked columns typed as their source kind loads, and
-                # a later batch the mask types otherwise fails the run.
+                # with the masked columns typed as the mask's output when that
+                # is one type for any value, else as their source kind loads; a
+                # later batch the mask types otherwise fails the run.
                 if data.num_rows and all(
                     pa.types.is_null(field.type) for field in fields
                 ):
                     for index, source_type in untyped:
-                        fallback = _source_kind(pa, source_type)
+                        name = fields[index].name
+                        fallback = _fixed_output_type(
+                            pa, algorithms[name], source_type
+                        ) or _source_kind(pa, source_type)
                         columns[index] = pa.nulls(data.num_rows, fallback)
                         fields[index] = pa.field(
                             fields[index].name,
                             fallback,
                             metadata=fields[index].metadata,
                         )
-                        _remember(emitted[fields[index].name], source_type, fallback)
+                        _remember(emitted[name], source_type, fallback)
 
                 # pandas metadata would describe the column types before masking.
                 metadata = {
