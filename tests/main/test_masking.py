@@ -648,7 +648,9 @@ class TestMaskingArrowParity(unittest.TestCase):
             for algorithm in ("round:10", "noise:0", "noise", "year_only"):
                 cases.append((column_type, algorithm, batches))
         for column_type in (pa.float16(), pa.float32(), pa.float64()):
-            batches = [[0.0, 0.0], [1.5, None], [12_345.5, 9.0], [math.nan, math.nan]]
+            # A NaN-only batch in the middle: ahead of every value it is typed
+            # as floating point, as `test_a_first_nan_only_batch_is_typed_as_floating_point` shows.
+            batches = [[0.0, 0.0], [math.nan, math.nan], [1.5, None], [12_345.5, 9.0]]
             for algorithm in ("round:10", "noise:0", "noise", "range"):
                 cases.append((column_type, algorithm, batches))
         for column_type, algorithm, batches in cases:
@@ -683,6 +685,31 @@ class TestMaskingArrowParity(unittest.TestCase):
                 self.assertEqual(first.schema.field("v").type, masked_type)
                 self.assertEqual(nans.schema.field("v").type, masked_type)
                 self.assertEqual(nans.column("v").null_count, 2)
+
+    def test_a_first_nan_only_batch_is_typed_as_floating_point(self):
+        # Before the mask has typed the column, a NaN-only batch keeps its rows:
+        # typed `null`, dlt would drop the column and every row with it.
+        import pyarrow as pa
+
+        for kind in (pa.Table, pa.RecordBatch):
+            mapper = create_masking_mapper(["v:round:10"])
+            nans = mapper(kind.from_arrays([pa.array([math.nan] * 3)], ["v"]))
+
+            self.assertEqual(nans.schema.field("v").type, pa.float64())
+            self.assertEqual(nans.column("v").null_count, 3)
+
+    def test_a_timestamp_the_mask_hands_back_as_nat_is_kept_as_it_is(self):
+        # The lowest nanosecond timestamp reads back as pandas' `NaT`, which
+        # loads as NULL when a column is rebuilt; this one is not rebuilt.
+        import pyarrow as pa
+
+        array = pa.array([-(2**63), -(2**63)], pa.timestamp("ns"))
+        for kind in (pa.Table, pa.RecordBatch):
+            item = kind.from_arrays([array], ["v"])
+            result = create_masking_mapper(["v:round"])(item)
+
+            self.assertEqual(result.schema.field("v").type, array.type)
+            self.assertTrue(result.column("v").equals(item.column("v")))
 
     def test_a_text_column_the_mask_returns_unchanged_takes_the_masked_type(self):
         # `first_letter` returns a one-letter value as it is and masks the rest;
@@ -975,6 +1002,78 @@ def test_a_masked_int32_column_loads_whether_a_batch_changes_or_not(
             "FROM main.t"
         ).fetchone()
     assert counts == (20_000, 20_000, 10_000, "BIGINT")
+
+
+@pytest.mark.parametrize(
+    ("algorithm", "nan_first", "loaded"),
+    [
+        ("noise:0", True, (20_000, 10_000, "DOUBLE")),
+        ("noise:0", False, (20_000, 10_000, "DOUBLE")),
+        ("round:10", False, (20_000, 10_000, "BIGINT")),
+        ("round:10", True, None),
+    ],
+    ids=[
+        "noise-nan-first",
+        "noise-values-first",
+        "round-values-first",
+        "round-nan-first",
+    ],
+)
+def test_a_masked_float_column_nan_in_a_whole_batch_keeps_its_rows(
+    tmp_path, algorithm, nan_first, loaded
+):
+    # The masked column is the only one, so a batch dlt read as all-`null`
+    # would lose its rows. A NaN batch ahead of integers `round` gives the
+    # column cannot take a type of theirs, and fails the run rather than lose
+    # them.
+    nans, values = [math.nan] * 10_000, [float(i) + 0.5 for i in range(10_000)]
+    source = tmp_path / "source.parquet"
+    pa.parquet.write_table(
+        pa.table({"n": nans + values if nan_first else values + nans}),
+        source,
+        row_group_size=10_000,
+    )
+    dest = tmp_path / "warehouse.duckdb"
+
+    result = invoke_ingest_command(
+        f"file://{source}#use_pyarrow=true",
+        "rows",
+        f"duckdb:///{dest}",
+        "main.t",
+        mask=[f"n:{algorithm}"],
+        print_output=False,
+    )
+
+    if loaded is None:
+        assert result.exit_code != 0
+        assert "IncompatibleArrowSchema" in repr(result.exception)
+        return
+    assert result.exit_code == 0, result.output
+    with duckdb.connect(str(dest), read_only=True) as connection:
+        counts = connection.execute(
+            "SELECT count(*), count(n), any_value(typeof(n)) FROM main.t"
+        ).fetchone()
+    assert counts == loaded
+
+
+def test_a_masked_float_column_of_nan_alone_keeps_its_rows(tmp_path):
+    source = tmp_path / "source.parquet"
+    pa.parquet.write_table(pa.table({"n": [math.nan] * 3}), source)
+    dest = tmp_path / "warehouse.duckdb"
+
+    result = invoke_ingest_command(
+        f"file://{source}#use_pyarrow=true",
+        "rows",
+        f"duckdb:///{dest}",
+        "main.t",
+        mask=["n:round:10"],
+        print_output=False,
+    )
+
+    assert result.exit_code == 0, result.output
+    with duckdb.connect(str(dest), read_only=True) as connection:
+        counts = connection.execute("SELECT count(*), count(n) FROM main.t").fetchone()
+    assert counts == (3, 0)
 
 
 def test_each_resource_gets_its_own_mapper_and_shares_the_tokens(tmp_path, monkeypatch):
