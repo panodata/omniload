@@ -30,9 +30,15 @@ omniload uses SQLAlchemy to run the queries, therefore you can use any valid SQL
 
 Custom queries support incremental loads, but there are some caveats:
 - the incremental key must be a column that is returned by the query
-- the incremental key must be a datetime/timestamp column
+- the incremental key must be an integer, decimal, floating-point, text, date,
+  time or timestamp column
 - you must do your own filtering in the query for the incremental load
   - you can use the `interval_start` and `interval_end` variables to filter the data
+  - `interval_start` is a timestamp on the first run: `--interval-start`, or
+    `0001-01-01 00:00:00` without one. On a resumed run it is the stored cursor,
+    as described below. Use it only with a date or timestamp incremental key, and
+    compare it only with that column. With any other key, leave it out of the
+    query: only the rows past the stored cursor are loaded
 
 Here's an example of how to do an incremental load:
 
@@ -59,9 +65,9 @@ table, unless `--interval-end` is given too: the two then bound the run. The
 
 Because `interval_start` holds the stored value of the `--incremental-key`
 column, compare it only with that column: a query that uses it as a fixed lower
-bound on another column drops rows from its second run on, or fails, as with an
-integer key and a timestamp column. Write such a bound into the query as a
-literal.
+bound on another column drops rows, or fails, as with an integer key and a
+timestamp column, on a run that binds the stored cursor. Write such a bound into
+the query as a literal.
 
 Compare with `>=`, not `>`: rows added after the previous run with the same
 cursor value as the last row it loaded are read only through `>=`. A run bounded

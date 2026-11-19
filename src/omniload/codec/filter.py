@@ -1,3 +1,6 @@
+import sys
+
+
 def cast_set_to_list(row):
     # this handles just the sqlalchemy backend for now
     if isinstance(row, dict):
@@ -61,3 +64,125 @@ def create_masking_filter(mask_configs: list[str], engine=None):
         return lambda x: x
 
     return create_masking_mapper(mask_configs, engine)
+
+
+_NS_PER_UNIT = {"s": 1_000_000_000, "ms": 1_000_000, "us": 1_000, "ns": 1}
+_NS_PER_SECOND = 1_000_000_000
+_NS_PER_DAY = 86_400 * _NS_PER_SECOND
+
+
+def format_interval(total_ns: int) -> str:
+    """Format a signed nanosecond count as interval text.
+
+    The form follows PostgreSQL's own output, `[-]D days [-]HH:MM:SS[.fffffffff]`,
+    with the sign carried on each field, so PostgreSQL and DuckDB both cast it
+    back to an `INTERVAL`. The fraction keeps nanoseconds and drops trailing
+    zeros, and a whole number of days has no clock part.
+    """
+    sign = "-" if total_ns < 0 else ""
+    days, rest = divmod(abs(total_ns), _NS_PER_DAY)
+    seconds, fraction = divmod(rest, _NS_PER_SECOND)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    clock = f"{sign}{hours:02d}:{minutes:02d}:{seconds:02d}"
+    if fraction:
+        clock += "." + f"{fraction:09d}".rstrip("0")
+    if not days:
+        return clock
+    day_part = f"{sign}{days} {'day' if days == 1 and not sign else 'days'}"
+    return f"{day_part} {clock}" if rest else day_part
+
+
+def _timedelta_ns(value) -> int:
+    # Built from the normalized fields in Python ints, so a pandas `Timedelta` in
+    # second or millisecond resolution cannot overflow an int64 on the way. A
+    # pandas `Timedelta` reports its own fields, which reach past the range of
+    # `datetime.timedelta` and carry nanoseconds. Any other subclass is read from
+    # `timedelta`'s own slots: pendulum's `Duration` overrides `.seconds` with a
+    # signed value, which double-counts a negative day.
+    from datetime import timedelta
+
+    pandas = sys.modules.get("pandas")
+    if pandas is not None and isinstance(value, pandas.Timedelta):
+        days, seconds, microseconds = value.days, value.seconds, value.microseconds
+        nanoseconds = value.nanoseconds
+    else:
+        days = timedelta.days.__get__(value)
+        seconds = timedelta.seconds.__get__(value)
+        microseconds = timedelta.microseconds.__get__(value)
+        nanoseconds = 0
+    total_seconds = days * 86_400 + seconds
+    total = (total_seconds * 1_000_000 + microseconds) * 1_000 + nanoseconds
+    # pendulum's `AbsoluteDuration` keeps the signed difference in those slots and
+    # stands for its absolute value, as its own fields and `total_seconds()` say.
+    absolute = getattr(sys.modules.get("pendulum.duration"), "AbsoluteDuration", None)
+    if absolute is not None and isinstance(value, absolute):
+        return abs(total)
+    return total
+
+
+def _durations_as_text(column, unit: str):
+    import pyarrow as pa
+
+    factor = _NS_PER_UNIT[unit]
+
+    def convert(array):
+        counts = array.cast(pa.int64()).to_pylist()
+        return pa.array(
+            [None if n is None else format_interval(n * factor) for n in counts],
+            type=pa.string(),
+        )
+
+    if isinstance(column, pa.ChunkedArray):
+        return pa.chunked_array(
+            [convert(chunk) for chunk in column.chunks], type=pa.string()
+        )
+    return convert(column)
+
+
+def _duration_type(pa, arrow_type):
+    """The duration type of a column, dictionary-encoded or not, else `None`."""
+    if pa.types.is_dictionary(arrow_type):
+        arrow_type = arrow_type.value_type
+    return arrow_type if pa.types.is_duration(arrow_type) else None
+
+
+def cast_timedelta(item):
+    """Turn `timedelta` values and Arrow `duration` columns into interval text.
+
+    dlt has no interval type: it cannot serialize a `timedelta` row value, and it
+    rejects an Arrow `duration` column. Covers `datetime.timedelta` and its
+    subclasses, pandas `Timedelta` included. Values nested in another value are
+    left alone.
+    """
+    from datetime import timedelta
+
+    if isinstance(item, dict):
+        for key, value in item.items():
+            if isinstance(value, timedelta):
+                item[key] = format_interval(_timedelta_ns(value))
+        return item
+
+    import pyarrow as pa
+
+    if not isinstance(item, (pa.Table, pa.RecordBatch)):
+        return item
+    schema = item.schema
+    if not any(_duration_type(pa, field.type) for field in schema):
+        return item
+
+    columns = []
+    fields = []
+    for index, field in enumerate(schema):
+        column = item.column(index)
+        duration = _duration_type(pa, field.type)
+        if duration is not None:
+            if duration != field.type:
+                column = column.cast(duration)
+            column = _durations_as_text(column, duration.unit)
+            field = field.with_type(pa.string())
+        columns.append(column)
+        fields.append(field)
+    return type(item).from_arrays(
+        columns, schema=pa.schema(fields, metadata=schema.metadata)
+    )

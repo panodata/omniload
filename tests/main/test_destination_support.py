@@ -117,6 +117,50 @@ def test_mongodb_loads_rows_with_a_resolved_destination(
     assert [(doc["id"], doc["name"]) for doc in documents] == [(1, "Alice")]
 
 
+@pytest.mark.parametrize("loader_file_format", [None, "parquet"])
+def test_athena_accepts_its_staging_format(source_db, loader_file_format):
+    _ingest(
+        source_db,
+        "athena://?bucket=s3://example-bucket&access_key_id=testing"
+        "&secret_access_key=testing&region_name=us-east-1",
+        dest_table="analytics.people",
+        loader_file_format=loader_file_format,
+        dry_run=True,
+    )
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_athena_refuses_jsonl_with_staging_format_suggestions(source_db, dry_run):
+    with pytest.raises(ValidationError) as exc:
+        _ingest(
+            source_db,
+            "athena://?bucket=s3://example-bucket&access_key_id=testing"
+            "&secret_access_key=testing&region_name=us-east-1",
+            dest_table="analytics.people",
+            loader_file_format="jsonl",
+            dry_run=dry_run,
+        )
+    assert str(exc.value) == (
+        "Loader file format jsonl is not supported by the destination. "
+        "Supported loader file formats: parquet."
+    )
+
+
+def test_direct_loading_does_not_use_staging_formats(source_db, tmp_path, monkeypatch):
+    _capabilities(monkeypatch, supported_staging_file_formats=["insert_values"])
+    with pytest.raises(ValidationError) as exc:
+        _ingest(
+            source_db,
+            f"sqlite:///{tmp_path / 'dest.db'}",
+            loader_file_format="insert_values",
+            dry_run=True,
+        )
+    assert str(exc.value) == (
+        "Loader file format insert_values is not supported by the destination. "
+        "Supported loader file formats: parquet."
+    )
+
+
 def test_an_instantiated_destination_accepts_its_loader_format(source_db, tmp_path):
     dest = tmp_path / "dest.duckdb"
     _ingest(

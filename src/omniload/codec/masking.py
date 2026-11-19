@@ -20,6 +20,14 @@ logger = logging.getLogger(__name__)
 # when that order does.
 NON_DETERMINISTIC_ALGORITHMS = frozenset({"date_shift", "noise", "random", "uuid"})
 
+# Algorithms that mask an interval: each hashes, replaces or tokenizes any value.
+# The others read a number, a date or text, and would mask an interval's text or
+# its digits; an interval passes them as it is, and an interval left as one fails
+# the run, since it would load unmasked.
+INTERVAL_ALGORITHMS = frozenset(
+    {"fixed", "hash", "hmac", "md5", "redact", "sequential", "sha256", "stars", "uuid"}
+)
+
 
 class MaskingEngine:
     def __init__(self):
@@ -445,8 +453,15 @@ def _source_kind(pa: Any, source_type: Any) -> Any:
     `_inferred_alike` names, and the column's own type for the others, which
     `_masked_column` keeps as it is, dictionary included. A mask that rebuilds
     one of those others infers its type instead, so a later batch it gives
-    another type fails the run.
+    another type fails the run. A duration takes `string`, the interval text it
+    loads as unmasked; the masks that apply to it are typed by
+    `_fixed_output_type` before this is asked.
     """
+    value_type = source_type
+    if pa.types.is_dictionary(value_type):
+        value_type = value_type.value_type
+    if pa.types.is_duration(value_type):
+        return pa.string()
     if not _inferred_alike(pa, source_type):
         return source_type
     if pa.types.is_dictionary(source_type):
@@ -483,6 +498,41 @@ def _masked_array(pa: Any, values: list, original_type: Any) -> Any:
     return masked
 
 
+def _interval_left_unmasked(column: str) -> ValueError:
+    # A mask that does not apply to a value returns it as it is. An interval is
+    # then turned into loadable text after masking, so it would load in clear.
+    return ValueError(
+        f"Cannot mask column {column!r}: the mask does not apply to an interval "
+        "and would load it unmasked"
+    )
+
+
+def _plain_intervals(mask: Callable) -> Callable:
+    """`mask`, reading a `timedelta` subclass as a plain `timedelta` first.
+
+    A driver's subclass prints its own text, as pyexasol's `ExaTimeDelta` prints
+    Exasol's, where the same value read through Arrow reaches the mask as a plain
+    `timedelta`; masked from one text, it hashes alike on either path. pandas'
+    `Timedelta`, which carries nanoseconds, is masked as it is.
+    """
+
+    def masked(value: Any) -> Any:
+        if isinstance(value, timedelta) and type(value) is not timedelta:
+            pandas = sys.modules.get("pandas")
+            if pandas is None or not isinstance(value, pandas.Timedelta):
+                from omniload.codec.filter import _timedelta_ns
+
+                value = timedelta(microseconds=_timedelta_ns(value) // 1_000)
+        return mask(value)
+
+    return masked
+
+
+def _passing_intervals(mask: Callable) -> Callable:
+    """`mask`, returning an interval as it is for the refusal below to catch."""
+    return lambda value: value if isinstance(value, timedelta) else mask(value)
+
+
 def _remembered(known: list, source_type: Any) -> Any:
     """The masked type remembered for `source_type`, else `None`."""
     for known_source, masked_type in known:
@@ -514,7 +564,12 @@ def create_masking_mapper(
     algorithms = {}
     for config in mask_configs:
         column, algorithm, param = engine.parse_mask_config(config)
-        masks[column] = engine.get_masking_function(algorithm, param)
+        mask = engine.get_masking_function(algorithm, param)
+        if algorithm.lower() in INTERVAL_ALGORITHMS:
+            mask = _plain_intervals(mask)
+        else:
+            mask = _passing_intervals(mask)
+        masks[column] = mask
         algorithms[column] = algorithm.lower()
 
     # The type each mask gave a column of this resource, per column name as
@@ -557,11 +612,16 @@ def create_masking_mapper(
                         masks[column],
                         _remembered(known, source_type),
                     )
-                    result_type = source_type if masked is None else masked.type
-                    if pa.types.is_null(result_type):
+                    result = columns[index] if masked is None else masked
+                    value_type = result.type
+                    if pa.types.is_dictionary(value_type):
+                        value_type = value_type.value_type
+                    if pa.types.is_duration(value_type):
+                        raise _interval_left_unmasked(column)
+                    if pa.types.is_null(result.type):
                         untyped.append((index, source_type))
                     else:
-                        _remember(known, source_type, result_type)
+                        _remember(known, source_type, result.type)
                     if masked is None:
                         continue
                     columns[index] = masked
@@ -607,9 +667,16 @@ def create_masking_mapper(
             for column, mask_func in masks.items():
                 if column in data:
                     try:
-                        data[column] = mask_func(data[column])
+                        masked = mask_func(data[column])
                     except Exception as e:
+                        if isinstance(data[column], timedelta):
+                            # Left in place, the interval would load unmasked.
+                            raise _interval_left_unmasked(column) from e
                         logger.warning("Failed to mask column %s: %s", column, e)
+                        continue
+                    if isinstance(masked, timedelta):
+                        raise _interval_left_unmasked(column)
+                    data[column] = masked
             return data
 
         # Return as-is if not a supported type

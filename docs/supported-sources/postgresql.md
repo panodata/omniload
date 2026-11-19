@@ -24,3 +24,19 @@ The same URI structure can be used both for sources and destinations. You can re
 As a source, PostgreSQL can also be read through its ODBC driver with
 `--sql-backend adbcbridge`, which yields Arrow batches straight from the driver;
 see {ref}`sql-backends`.
+
+## Interval columns
+
+Through the `sqlalchemy` and `pyarrow` SQL backends, an `interval` column loads
+as text in PostgreSQL's own format, such as `1 day 02:03:04.5` or `-03:00:00`,
+which casts back with `CAST(d AS INTERVAL)`. Their driver, psycopg2, counts a
+year as 365 days, a month as 30 and a day as 24 hours before omniload sees the
+value, so `1 year 2 mons` loads as `425 days` and `1 day -1 hour` as
+`23:00:00`. Interval columns read through
+`--sql-backend adbcbridge` or `connectorx` are not covered. To keep calendar
+units, read the
+column as text from a `query:` source:
+
+```shell
+--source-table 'query:SELECT id, CAST(d AS TEXT) AS d FROM public.t'
+```
