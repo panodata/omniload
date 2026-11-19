@@ -54,8 +54,8 @@ so the query reads only the rows from it on. The first run binds
 `--interval-start`, or the timestamp `0001-01-01 00:00:00` without one. After that
 the stored cursor takes precedence over `--interval-start`, as it does for a
 table, unless `--interval-end` is given too: the two then bound the run. The
-`replace` strategy stores no cursor, so it binds `--interval-start`, or
-`0001-01-01 00:00:00`, on every run. Compare with `>=`, not
+`replace` strategy resets the incremental state before every run, so it binds
+`--interval-start`, or `0001-01-01 00:00:00`, each time. Compare with `>=`, not
 `>`: rows added after the previous run with the same cursor value as the last row
 it loaded are read only through `>=`. A run bounded by `--interval-start` and
 `--interval-end` loads every row in its window, so with the `append` strategy it
