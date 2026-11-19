@@ -55,9 +55,15 @@ so the query reads only the rows from it on. The first run binds
 the stored cursor takes precedence over `--interval-start`, as it does for a
 table, unless `--interval-end` is given too: the two then bound the run. The
 `replace` strategy resets the incremental state before every run, so it binds
-`--interval-start`, or `0001-01-01 00:00:00`, each time. Compare with `>=`, not
-`>`: rows added after the previous run with the same cursor value as the last row
-it loaded are read only through `>=`. A run bounded by `--interval-start` and
-`--interval-end` loads every row in its window, so with the `append` strategy it
-loads again the rows an earlier run loaded there.
+`--interval-start`, or `0001-01-01 00:00:00`, each time.
 
+Because `interval_start` holds the stored value of the `--incremental-key`
+column, compare it only with that column: a query that uses it as a fixed lower
+bound on another column drops rows from its second run on, or fails, as with an
+integer key and a timestamp column. Write such a bound into the query as a
+literal.
+
+Compare with `>=`, not `>`: rows added after the previous run with the same
+cursor value as the last row it loaded are read only through `>=`. A run bounded
+by `--interval-start` and `--interval-end` loads every row in its window, so with
+the `append` strategy it loads again the rows an earlier run loaded there.

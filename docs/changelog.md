@@ -10,7 +10,9 @@
   that selects `:interval_start` as a column loads the stored cursor there. A
   query that compares with `>`, as the SQL source page's example did, now misses
   a row added at the stored cursor value after the previous run: compare with
-  `>=`.
+  `>=`. A query that compares `:interval_start` with a column other than the
+  incremental key now drops rows, or fails, from its second run on: write such a
+  fixed bound into the query as a literal.
 - Masking: `--mask` now applies to sources that yield Arrow record batches, such
   as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
   Their columns were loaded unmasked. On Arrow items, only the masked columns
