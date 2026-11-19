@@ -2,6 +2,59 @@
 
 ## in progress
 
+- Masking: `--mask` now applies to sources that yield Arrow record batches, such
+  as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
+  Their columns were loaded unmasked. On Arrow items, only the masked columns
+  are rebuilt: the other columns keep their types and metadata, where a nullable
+  integer column used to come back as floating point. The masks read each
+  column's own Python values, as they do on dict rows, so some masked values on
+  Arrow tables change:
+  - A NULL in an integer, floating-point, string or timestamp column reaches the
+    mask as `None`, where it was `nan`, `<NA>` or `NaT`. A hash of it is NULL,
+    `sequential` and `uuid` give it no token, where `uuid` gave every NULL one
+    shared token, and `stars` gives it an empty string, `partial` and
+    `first_letter` NULL.
+  - An integer in a plain Arrow integer column, or in an integer field of a
+    struct column, that holds a NULL was hashed as a float (`1.0`) and is hashed
+    as the integer.
+  - A list value, or a struct holding one, is hashed with the list in Python's
+    text (`[1, 2]`), where it was NumPy's (`[1 2]`, or `array([1, 2])` inside a
+    struct).
+  - An interval or duration value is hashed as Python's `timedelta` text
+    (`1:00:00`), as through the `sqlalchemy` SQL backend, where the `pyarrow`
+    backend hashed pandas' (`0 days 01:00:00`). A nanosecond duration column
+    still reaches the mask as a pandas `Timedelta` and is hashed from its text.
+  - A column that `pandas` metadata names as the index was skipped and is
+    masked now.
+
+  A masked column whose values the mask returns as they were, such as `round` on
+  a timestamp, loads exactly as it would unmasked, apart from integer,
+  floating-point and text columns, dictionary-encoded ones included. What a mask
+  returns from those takes one type whatever values a batch holds, as long as it
+  returns one kind of value: integers load as `int64` (`uint64` from a `uint64`
+  column), floating-point values as `double` and text as `string`, so an `int32`
+  column that `year_only` leaves alone loads as `int64`. A masked column whose
+  values all load as NULL, NaN included, takes the type its mask gave the same
+  column, of the same source type, in an earlier batch of the same resource, or
+  Arrow's `null` type before there is one, so it loads beside the batches around
+  it. When that would leave a batch with no column of another type, which dlt
+  would load as no rows, the masked columns take the type their mask gives any
+  value instead: text from `hash`, `sha256`, `md5`, `hmac` and `uuid`, and
+  `int64` from `sequential` (`uint64` from a `uint64` column). Under another
+  mask they take the type their source loads as (`int64`, `uint64`, `double`,
+  `string`, or the source type for other kinds). The all-NULL batches after it
+  take the same type. The rows load, and a later batch the mask types otherwise,
+  such as `partial` on an integer column whose first batch is all NULL, fails
+  the run rather than losing them. A mask that returns values of different kinds
+  in one column fails the run on an Arrow item: dates or times beside values of
+  another kind, such as `date_shift` on an integer column where only some values
+  parse as dates, and text beside numbers, such as `year_only` on text where
+  only some values parse, or `partial` on an integer column, which hands a zero
+  back as it is. Across batches the same holds, numbers of two kinds included:
+  `year_only` on a floating-point column gives years where a value parses as a
+  date and hands the others back, so a batch holding only one kind loads as
+  `int64` or `double` and the two cannot load together.
+
 ## 2026/11/17 v0.24.0
 
 - Deployment: `examples/aws-lambda` holds an AWS Lambda recipe: a container

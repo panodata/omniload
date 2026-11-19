@@ -1116,8 +1116,17 @@ def _assemble_and_run(
         resource.for_each(dlt_source, lambda x: x.add_yield_map(reshape_fn))
 
     if jr.mask:
-        masking_filter = create_masking_filter(jr.mask)
-        resource.for_each(dlt_source, lambda x: x.add_map(masking_filter))
+        from omniload.codec.masking import MaskingEngine
+
+        # One mapper per resource: a mapper remembers the type it gave each masked
+        # column, which belongs to that resource's items. They share one engine,
+        # so `sequential` and `uuid` give a value the same token in every table.
+        masking_engine = MaskingEngine()
+        mask_configs = jr.mask
+        resource.for_each(
+            dlt_source,
+            lambda x: x.add_map(create_masking_filter(mask_configs, masking_engine)),
+        )
 
     if jr.yield_limit:
         resource.for_each(dlt_source, lambda x: x.add_limit(jr.yield_limit))

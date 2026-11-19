@@ -375,3 +375,6 @@ Multiple masks should be comma-separated when using environment variables.
 - The original source data remains unchanged
 - Some algorithms require additional dependencies (e.g., `date_shift` requires `python-dateutil`)
 - Masking adds processing overhead proportional to the data volume and number of masks applied
+- On sources that yield Arrow tables or record batches, a mask that returns integers, floating-point values or text gives a column of `int64` (`uint64` from a `uint64` column), `double` or `string`, whatever the source column's width, so that every batch of a column has one type
+- On those sources, a mask that returns values Arrow cannot hold in one column fails the run: text beside numbers, such as `year_only` on text where only some values parse as dates, or `partial` on an integer column, which hands a zero back as it is, and dates or times beside values of another kind. Integers beside floating-point values load as `double` within a batch, but a column where one batch holds only integers and another only floating-point values fails the run
+- A batch whose only columns are masked and hold no value takes the type the mask gives any value, or else the type its source loads as, such as `int64` from an `int32` column; when a later batch's masked values have another type, the run fails rather than losing rows

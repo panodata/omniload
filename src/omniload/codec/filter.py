@@ -54,10 +54,10 @@ def table_adapter_exclude_columns(cols: list[str]):
     return excluder
 
 
-def create_masking_filter(mask_configs: list[str]):
+def create_masking_filter(mask_configs: list[str], engine=None):
     from omniload.codec.masking import create_masking_mapper
 
     if not mask_configs:
         return lambda x: x
 
-    return create_masking_mapper(mask_configs)
+    return create_masking_mapper(mask_configs, engine)

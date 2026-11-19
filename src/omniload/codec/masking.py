@@ -5,8 +5,10 @@ import logging
 import random
 import re
 import string
+import sys
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
+from decimal import Decimal
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
@@ -330,31 +332,273 @@ def non_deterministic_masks(mask_configs: list[str]) -> list[str]:
     return unstable
 
 
-def create_masking_mapper(mask_configs: list[str]) -> Callable:
-    engine = MaskingEngine()
+def _loads_as_null(value: Any) -> bool:
+    """Whether Arrow reads `value` as NULL when it builds a masked column.
+
+    That is what `from_pandas=True` treats as missing: `None`, a float or
+    `Decimal` NaN, and pandas' `NaT` and `NA`.
+    """
+    if value is None:
+        return True
+    if isinstance(value, float):
+        return value != value
+    if isinstance(value, Decimal):
+        return value.is_nan()
+    pandas = sys.modules.get("pandas")
+    return pandas is not None and (value is pandas.NaT or value is pandas.NA)
+
+
+def _temporal_kind(value: Any) -> Optional[type]:
+    """The date or time class Arrow would infer for `value`, `None` for others."""
+    for kind in (datetime, date, time, timedelta):
+        if isinstance(value, kind):
+            return kind
+    return None
+
+
+def _masked_column(
+    pa: Any, name: str, column: Any, mask: Callable, emitted_type: Any
+) -> Any:
+    """Mask one Arrow column; `None` when it is kept as it is.
+
+    The masked type follows from the column's type and the mask, not from which
+    values a batch holds: dlt refuses to put batches of one resource together
+    when their types differ. A column the mask returns as it was, holding a
+    value, is kept as it is, so a value a mask does not apply to loads exactly as
+    it would have unmasked, unless inference gives its kind one type whatever the
+    values (see `_inferred_alike`). A column whose masked values all load as NULL
+    takes `emitted_type`, the type this mask gave the column in an earlier item,
+    or Arrow's `null` type before there is one, which dlt loads beside any type
+    by dropping the column from that batch; `create_masking_mapper` types it
+    instead when no other column would keep the batch's rows. Dates or times
+    beside values of another kind are refused: Arrow would read the others as
+    dates or times, or a datetime beside a date as a date. A value that loads as
+    NULL, such as a NaN or `NaT`, is no kind.
+    """
+    values = column.to_pylist()
+    results = [mask(value) for value in values]
+    unchanged = all(result is value for result, value in zip(results, values))
+    if (
+        unchanged
+        and not _inferred_alike(pa, column.type)
+        and any(value is not None for value in values)
+    ):
+        return None
+    if all(_loads_as_null(result) for result in results):
+        if emitted_type is not None:
+            return pa.nulls(len(values), emitted_type)
+        return pa.nulls(len(values))
+    kinds = {_temporal_kind(result) for result in results if not _loads_as_null(result)}
+    if len(kinds) > 1:
+        raise ValueError(
+            f"Cannot mask column {name!r}: the mask returned dates or times "
+            "beside values of another kind"
+        )
+    return _masked_array(pa, results, column.type)
+
+
+def _inferred_alike(pa: Any, column_type: Any) -> bool:
+    """Whether a column of `column_type` is built by inference even when unchanged.
+
+    Inference builds integers as `int64` (`uint64` from a `uint64` column),
+    floating-point values as `double` and text as `string`. Keeping a narrower or
+    larger type of these kinds when a mask happens to return every value as it
+    was would make the type depend on the values: `round:10` hands back the zeros
+    of an `int32` column as the same objects, and the column's other batches as
+    new ones.
+    """
+    if pa.types.is_dictionary(column_type):
+        column_type = column_type.value_type
+    return (
+        pa.types.is_integer(column_type)
+        or pa.types.is_floating(column_type)
+        or pa.types.is_string(column_type)
+        or pa.types.is_large_string(column_type)
+        or pa.types.is_string_view(column_type)
+    )
+
+
+# Algorithms whose result for a value that is not NULL has one kind, whatever the
+# value: text from the hashes and `uuid`, an integer token from `sequential`.
+TEXT_ALGORITHMS = frozenset({"hash", "hmac", "md5", "sha256", "uuid"})
+
+
+def _fixed_output_type(pa: Any, algorithm: str, source_type: Any) -> Any:
+    """The type `algorithm` gives any value of `source_type`, else `None`.
+
+    `sequential` tokens build as `uint64` from a `uint64` column, as
+    `_masked_array` keeps that type, and as `int64` otherwise.
+    """
+    if algorithm in TEXT_ALGORITHMS:
+        return pa.string()
+    if algorithm == "sequential":
+        if pa.types.is_dictionary(source_type):
+            source_type = source_type.value_type
+        return source_type if pa.types.is_uint64(source_type) else pa.int64()
+    return None
+
+
+def _source_kind(pa: Any, source_type: Any) -> Any:
+    """The type values of `source_type` load as when a mask returns them as they were.
+
+    That is the inferred type, decoded from a dictionary, for the kinds
+    `_inferred_alike` names, and the column's own type for the others, which
+    `_masked_column` keeps as it is, dictionary included. A mask that rebuilds
+    one of those others infers its type instead, so a later batch it gives
+    another type fails the run.
+    """
+    if not _inferred_alike(pa, source_type):
+        return source_type
+    if pa.types.is_dictionary(source_type):
+        source_type = source_type.value_type
+    if pa.types.is_uint64(source_type):
+        return source_type
+    if pa.types.is_integer(source_type):
+        return pa.int64()
+    if pa.types.is_floating(source_type):
+        return pa.float64()
+    return pa.string()
+
+
+def _masked_array(pa: Any, values: list, original_type: Any) -> Any:
+    """Build the Arrow array for a column's masked values.
+
+    The type is inferred from what the masks return, and a NaN reads as NULL.
+    Two cases use the column's own type, decoded from a dictionary, instead:
+    integers from a `uint64` column, whose upper half `int64` cannot hold, and
+    timestamps, whose unit and time zone inference would not keep.
+    """
+    own_type = original_type
+    if pa.types.is_dictionary(own_type):
+        own_type = own_type.value_type
+    if pa.types.is_uint64(own_type) and all(
+        _loads_as_null(value)
+        or (isinstance(value, int) and not isinstance(value, bool))
+        for value in values
+    ):
+        return pa.array(values, type=own_type, from_pandas=True)
+    masked = pa.array(values, from_pandas=True)
+    if pa.types.is_timestamp(masked.type) and pa.types.is_timestamp(own_type):
+        return pa.array(values, type=own_type, from_pandas=True)
+    return masked
+
+
+def _remembered(known: list, source_type: Any) -> Any:
+    """The masked type remembered for `source_type`, else `None`."""
+    for known_source, masked_type in known:
+        if known_source.equals(source_type):
+            return masked_type
+    return None
+
+
+def _remember(known: list, source_type: Any, masked_type: Any) -> None:
+    for position, (known_source, _) in enumerate(known):
+        if known_source.equals(source_type):
+            known[position] = (known_source, masked_type)
+            return
+    known.append((source_type, masked_type))
+
+
+def create_masking_mapper(
+    mask_configs: list[str], engine: Optional[MaskingEngine] = None
+) -> Callable:
+    """A map that masks rows and Arrow items, one mapper per resource.
+
+    Mappers given the same `engine` share its tokens, so `sequential` and `uuid`
+    give a value the same token in every table of a run.
+    """
+    engine = engine or MaskingEngine()
 
     # Parse all configurations
     masks = {}
+    algorithms = {}
     for config in mask_configs:
         column, algorithm, param = engine.parse_mask_config(config)
         masks[column] = engine.get_masking_function(algorithm, param)
+        algorithms[column] = algorithm.lower()
+
+    # The type each mask gave a column of this resource, per column name as
+    # (source type, masked type) pairs matched by type equality, so an all-NULL
+    # column in a later item can take it too. A list rather than a dict key: a
+    # Python-defined extension type need not be hashable, and a type's text can
+    # name two unequal types alike.
+    emitted: Dict[str, list] = {}
 
     def apply_masks(data: Any) -> Any:
-        # Handle PyArrow tables
+        # Handle PyArrow tables and record batches
         try:
             import pyarrow as pa
 
-            if isinstance(data, pa.Table):
-                # Convert to pandas for easier manipulation
-                df = data.to_pandas()
+            if isinstance(data, (pa.Table, pa.RecordBatch)):
+                schema = data.schema
+                targets = [column for column in masks if column in schema.names]
+                if not targets:
+                    return data
 
-                # Apply masks to each column
-                for column, mask_func in masks.items():
-                    if column in df.columns:
-                        df[column] = df[column].apply(mask_func)
+                # The masks read each column's own Python values, as dict rows
+                # give them, in mask order. Only the masked columns are rebuilt;
+                # the others keep their arrays, types and metadata.
+                columns = list(data.columns)
+                fields = list(schema)
+                untyped = []
+                for column in targets:
+                    index = schema.get_field_index(column)
+                    if index < 0:
+                        raise ValueError(
+                            f"Cannot mask column {column!r}: the data has more "
+                            "than one column of that name"
+                        )
+                    source_type = columns[index].type
+                    known = emitted.setdefault(column, [])
+                    masked = _masked_column(
+                        pa,
+                        column,
+                        columns[index],
+                        masks[column],
+                        _remembered(known, source_type),
+                    )
+                    result_type = source_type if masked is None else masked.type
+                    if pa.types.is_null(result_type):
+                        untyped.append((index, source_type))
+                    else:
+                        _remember(known, source_type, result_type)
+                    if masked is None:
+                        continue
+                    columns[index] = masked
+                    fields[index] = pa.field(
+                        column, masked.type, metadata=fields[index].metadata
+                    )
 
-                # Convert back to PyArrow table
-                return pa.Table.from_pandas(df)
+                # dlt drops a column typed `null`, and with it the rows of a
+                # batch that has no other column. Such a batch keeps its rows
+                # with the masked columns typed as the mask's output when that
+                # is one type for any value, else as their source kind loads; a
+                # later batch the mask types otherwise fails the run.
+                if data.num_rows and all(
+                    pa.types.is_null(field.type) for field in fields
+                ):
+                    for index, source_type in untyped:
+                        name = fields[index].name
+                        fallback = _fixed_output_type(
+                            pa, algorithms[name], source_type
+                        ) or _source_kind(pa, source_type)
+                        columns[index] = pa.nulls(data.num_rows, fallback)
+                        fields[index] = pa.field(
+                            fields[index].name,
+                            fallback,
+                            metadata=fields[index].metadata,
+                        )
+                        _remember(emitted[name], source_type, fallback)
+
+                # pandas metadata would describe the column types before masking.
+                metadata = {
+                    key: value
+                    for key, value in (schema.metadata or {}).items()
+                    if key != b"pandas"
+                }
+                return type(data).from_arrays(
+                    columns, schema=pa.schema(fields, metadata=metadata or None)
+                )
         except ImportError:
             pass
 
