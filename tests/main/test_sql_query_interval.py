@@ -120,7 +120,8 @@ def test_stored_cursor_outranks_interval_start_on_resumed_run(
 def test_interval_window_binds_both_bounds_on_resumed_run(
     source, tmp_path, bound_parameters
 ):
-    """A start and end together window the run, past the stored cursor."""
+    """A start and end together window the run, past the stored cursor. dlt keeps
+    no boundary state for a window, so `append` loads the rows in it again."""
     destination = tmp_path / "warehouse.duckdb"
     query = "SELECT id, ts FROM t WHERE ts >= :interval_start AND ts <= :interval_end"
     add_rows(source, 1, 2, 3, 4)
@@ -138,6 +139,7 @@ def test_interval_window_binds_both_bounds_on_resumed_run(
         "interval_start": datetime(2024, 1, 1),
         "interval_end": datetime(2024, 1, 2),
     }
+    assert loaded_ids(destination) == [1, 1, 2, 2, 3, 4]
 
 
 def test_query_without_placeholders_resumes(source, tmp_path, bound_parameters):

@@ -55,6 +55,8 @@ or the timestamp `0001-01-01 00:00:00` without one. After that the stored cursor
 takes precedence over `--interval-start`, as it does for a table, unless
 `--interval-end` is given too: the two then bound the run. Compare with `>=`, not
 `>`: rows added after the previous run with the same cursor value as the last row
-it loaded are read only through `>=`, and the rows already loaded at that value
-are not loaded twice.
+it loaded are read only through `>=`. Without `--interval-end`, the rows already
+loaded at that value are not loaded twice. A run bounded by `--interval-start`
+and `--interval-end` loads every row in its window, so with the `append`
+strategy it loads again the rows an earlier run loaded there.
 
