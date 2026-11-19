@@ -698,6 +698,7 @@ class TestMaskingArrowParity(unittest.TestCase):
             (pa.array([math.nan, None], pa.float32()), pa.float64()),
             (pa.array([None, None], pa.large_string()), pa.string()),
             (pa.array([None, None], pa.string()).dictionary_encode(), pa.string()),
+            (pa.array([None, None], pa.int64()).dictionary_encode(), pa.int64()),
             (pa.array([None, None], pa.date32()), pa.date32()),
             (
                 pa.array([None, None], pa.date32()).dictionary_encode(),
@@ -715,8 +716,13 @@ class TestMaskingArrowParity(unittest.TestCase):
                 self.assertEqual(result.schema.field("w").type, pa.int64())
                 self.assertEqual(result.num_rows, 2)
                 self.assertEqual(result.column("v").null_count, 2)
-                # Later all-NULL batches take the same type.
-                again = mapper(kind.from_arrays([pa.nulls(1, array.type)], ["v"]))
+                # Later all-NULL batches take the same type, beside another
+                # column too, where the type is the one remembered.
+                again = mapper(
+                    kind.from_arrays(
+                        [pa.nulls(1, array.type), pa.array([1])], ["v", "id"]
+                    )
+                )
                 self.assertEqual(again.schema.field("v").type, source_kind)
 
     def test_a_typed_leading_batch_matches_a_column_the_mask_keeps(self):
