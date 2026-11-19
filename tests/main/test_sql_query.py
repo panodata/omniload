@@ -1,6 +1,7 @@
 """Custom SQL queries must not change the loader used by subsequent SQL sources."""
 
 import sqlite3
+from datetime import time
 from unittest.mock import Mock
 
 import dlt.sources.sql_database as sql_database
@@ -143,8 +144,8 @@ def _ingest_query_incremental(source, destination, cursor):
 
 @pytest.mark.parametrize(
     "cursor",
-    ["amount", "ratio", "code", "id"],
-    ids=["decimal", "double", "varchar", "bigint"],
+    ["amount", "ratio", "code", "clock", "id"],
+    ids=["decimal", "double", "varchar", "time", "bigint"],
 )
 def test_query_incremental_resumes_from_stored_cursor(tmp_path, cursor):
     """The second run restores the cursor value the first run stored, whatever its
@@ -154,15 +155,15 @@ def test_query_incremental_resumes_from_stored_cursor(tmp_path, cursor):
     with duckdb.connect(str(source)) as connection:
         connection.execute(
             "CREATE TABLE t (id BIGINT, amount DECIMAL(10, 2), ratio DOUBLE, "
-            "code VARCHAR)"
+            "code VARCHAR, clock TIME)"
         )
 
     def add_rows(ids):
         with duckdb.connect(str(source)) as connection:
             for i in ids:
                 connection.execute(
-                    "INSERT INTO t VALUES (?, ?, ?, ?)",
-                    [i, i * 1.5, i * 0.5, f"k{i:03d}"],
+                    "INSERT INTO t VALUES (?, ?, ?, ?, ?)",
+                    [i, i * 1.5, i * 0.5, f"k{i:03d}", time(1, 0, i)],
                 )
 
     add_rows([1, 2, 3])

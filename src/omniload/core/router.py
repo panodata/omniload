@@ -4,7 +4,7 @@ import json
 import os
 import sys
 import tempfile
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from typing import (
     Any,
@@ -442,6 +442,7 @@ class SqlSourceRouter:
                         str: sa.String,
                         datetime: sa.TIMESTAMP,
                         date: sa.DATE,
+                        time: sa.TIME,
                         pendulum.Date: sa.DATE,
                         pendulum.DateTime: sa.TIMESTAMP,
                     }
@@ -454,7 +455,8 @@ class SqlSourceRouter:
                                 f"'{incremental.cursor_path}' has type "
                                 f"{cursor_type.__name__}, which a query: source "
                                 f"cannot resume from. Use an integer, decimal, "
-                                f"float, string, date or timestamp cursor column."
+                                f"float, string, date, time or timestamp cursor "
+                                f"column."
                             )
                         cols.append(
                             Column(
