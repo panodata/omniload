@@ -265,7 +265,9 @@ An interval column that reaches the mask as a `timedelta` value or an Arrow
 `pyarrow` SQL backend, takes only the masks that apply to any value: `hash`,
 `sha256`, `md5`, `hmac`, `redact`, `stars`, `fixed`, `uuid` and `sequential`.
 Any other mask on it fails the run rather than load the interval, or its text,
-unmasked. An Arrow month, day and nanosecond interval column is not checked.
+unmasked. An Arrow month, day and nanosecond interval column is not checked,
+and a mask that hands one back as it is leaves a column dlt refuses, so the
+load fails rather than load it in clear.
 :::
 
 ## Use Case Examples
