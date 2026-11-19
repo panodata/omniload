@@ -507,6 +507,27 @@ def _interval_left_unmasked(column: str) -> ValueError:
     )
 
 
+def _plain_intervals(mask: Callable) -> Callable:
+    """`mask`, reading a `timedelta` subclass as a plain `timedelta` first.
+
+    A driver's subclass prints its own text, as pyexasol's `ExaTimeDelta` prints
+    Exasol's, where the same value read through Arrow reaches the mask as a plain
+    `timedelta`; masked from one text, it hashes alike on either path. pandas'
+    `Timedelta`, which carries nanoseconds, is masked as it is.
+    """
+
+    def masked(value: Any) -> Any:
+        if isinstance(value, timedelta) and type(value) is not timedelta:
+            pandas = sys.modules.get("pandas")
+            if pandas is None or not isinstance(value, pandas.Timedelta):
+                from omniload.codec.filter import _timedelta_ns
+
+                value = timedelta(microseconds=_timedelta_ns(value) // 1_000)
+        return mask(value)
+
+    return masked
+
+
 def _passing_intervals(mask: Callable) -> Callable:
     """`mask`, returning an interval as it is for the refusal below to catch."""
     return lambda value: value if isinstance(value, timedelta) else mask(value)
@@ -544,7 +565,9 @@ def create_masking_mapper(
     for config in mask_configs:
         column, algorithm, param = engine.parse_mask_config(config)
         mask = engine.get_masking_function(algorithm, param)
-        if algorithm.lower() not in INTERVAL_ALGORITHMS:
+        if algorithm.lower() in INTERVAL_ALGORITHMS:
+            mask = _plain_intervals(mask)
+        else:
             mask = _passing_intervals(mask)
         masks[column] = mask
         algorithms[column] = algorithm.lower()

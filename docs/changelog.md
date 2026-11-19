@@ -16,7 +16,9 @@
   Arrow `month_day_nano_interval` column, such as DuckDB's Arrow export gives,
   still fails the load, and a duration inside a list or struct column is not
   converted. A masked `timedelta` value or Arrow `duration` column is hashed
-  from its `timedelta` value before it becomes text. Only the masks that apply
+  from its `timedelta` value before it becomes text, a driver's own subclass,
+  such as pyexasol's for Exasol, read as a plain `timedelta`, so an interval
+  hashes alike through either SQL backend. Only the masks that apply
   to any value mask one: `hash`, `sha256`, `md5`, `hmac`, `redact`, `stars`,
   `fixed`, `uuid` and `sequential`. Any other mask on such a column, such as
   `round`, `date_shift` or `partial`, fails the run rather than load the

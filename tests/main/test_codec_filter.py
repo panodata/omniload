@@ -422,18 +422,40 @@ def test_a_nanosecond_duration_that_reads_back_as_nat_is_masked_or_refused(kind)
         assert year.column("d").null_count == 2
 
 
-def test_a_mask_that_raises_on_an_interval_fails_the_run():
+def test_a_mask_that_raises_on_an_interval_fails_the_run(monkeypatch):
     # The failing mask would leave the interval in the row, to load unmasked.
-    from omniload.codec.masking import create_masking_mapper
+    from omniload.codec.masking import MaskingEngine, create_masking_mapper
 
-    class Unprintable(timedelta):
-        def __str__(self):
+    def unprintable(self, value):
+        if isinstance(value, timedelta):
             raise RuntimeError("no text")
+        return hashlib.sha256(str(value).encode()).hexdigest()
 
+    monkeypatch.setattr(MaskingEngine, "_hash_sha256", unprintable)
     mapper = create_masking_mapper(["d:sha256"])
     with pytest.raises(ValueError, match="would load it unmasked"):
-        mapper({"d": Unprintable(hours=1)})
+        mapper({"d": timedelta(hours=1)})
     assert mapper({"d": "text"})["d"] == hashlib.sha256(b"text").hexdigest()
+
+
+class PrintsItsOwnText(timedelta):
+    # As pyexasol's `ExaTimeDelta` prints Exasol's interval text.
+    def __str__(self):
+        return "+000000000 01:00:00.000000000"
+
+
+@pytest.mark.parametrize("algorithm", ["sha256", "md5", "hmac:k", "stars"])
+def test_a_driver_interval_masks_as_its_arrow_twin_does(algorithm):
+    # The same interval reaches the mask as the driver's subclass on dict rows
+    # and as a plain `timedelta` from an Arrow duration column.
+    from omniload.codec.masking import create_masking_mapper
+
+    row = create_masking_mapper([f"d:{algorithm}"])({"d": PrintsItsOwnText(hours=1)})
+    item = create_masking_mapper([f"d:{algorithm}"])(
+        pa.table({"d": pa.array([timedelta(hours=1)], pa.duration("us"))})
+    )
+
+    assert row["d"] == item.column("d")[0].as_py()
 
 
 class DriverTimeDelta(timedelta):
