@@ -725,6 +725,29 @@ class TestMaskingArrowParity(unittest.TestCase):
                 )
                 self.assertEqual(again.schema.field("v").type, source_kind)
 
+    def test_a_typed_leading_batch_takes_the_type_a_fixed_output_mask_gives(self):
+        # The hashes and `uuid` give text for any value, and `sequential` an
+        # integer token, so the leading batch matches the batches after it.
+        import pyarrow as pa
+
+        cases = [
+            ("sha256", pa.int32(), [1, 2], pa.string()),
+            ("hmac:k", pa.float64(), [1.5], pa.string()),
+            ("md5", pa.date32(), [date(2024, 1, 2)], pa.string()),
+            ("uuid", pa.int64(), [1], pa.string()),
+            ("sequential", pa.string(), ["a", "b"], pa.int64()),
+            ("sequential", pa.uint64(), [2**63 + 1], pa.uint64()),
+        ]
+        for algorithm, source_type, values, masked_type in cases:
+            for kind in (pa.Table, pa.RecordBatch):
+                mapper = create_masking_mapper([f"v:{algorithm}"])
+                nulls = pa.nulls(2, source_type)
+                first = mapper(kind.from_arrays([nulls], ["v"]))
+                later = mapper(kind.from_arrays([pa.array(values, source_type)], ["v"]))
+
+                self.assertEqual(first.schema.field("v").type, masked_type)
+                self.assertEqual(later.schema.field("v").type, masked_type)
+
     def test_a_typed_leading_batch_matches_a_column_the_mask_keeps(self):
         # `round` hands dates back as they are, so the column keeps its own
         # type, dictionary included; the leading all-NULL batch takes it too.
@@ -1117,8 +1140,9 @@ def test_a_masked_float_column_nan_in_a_whole_batch_loads(tmp_path, algorithm, n
         ("round:10", pa.int64(), None, 10_000),
         ("noise:0", pa.float64(), math.nan, 10_000),
         ("sha256", pa.int64(), None, None),
+        ("sha256", pa.int64(), None, 10_000),
     ],
-    ids=["null-then-ints", "nan-then-floats", "all-null"],
+    ids=["null-then-ints", "nan-then-floats", "all-null", "null-then-hashes"],
 )
 def test_a_masked_column_alone_keeps_the_rows_of_a_leading_empty_batch(
     tmp_path, algorithm, source_type, empty, loaded
@@ -1152,9 +1176,10 @@ def test_a_masked_column_alone_keeps_the_rows_of_a_leading_empty_batch(
 
 
 def test_a_masked_column_alone_typed_otherwise_after_an_empty_batch_fails(tmp_path):
-    # The leading batch takes the integer type its source loads as, and the
-    # hashes after it are text: dlt refuses the run rather than lose the rows.
-    numbers = [None] * 10_000 + list(range(10_000))
+    # The leading batch takes the integer type its source loads as, since what
+    # `partial` gives depends on the value, and the text after it is another
+    # type: dlt refuses the run rather than lose the rows.
+    numbers = [None] * 10_000 + list(range(1, 10_001))
     source = tmp_path / "source.parquet"
     pa.parquet.write_table(
         pa.table({"n": pa.array(numbers, pa.int64())}),
@@ -1168,7 +1193,7 @@ def test_a_masked_column_alone_typed_otherwise_after_an_empty_batch_fails(tmp_pa
         "rows",
         f"duckdb:///{dest}",
         "main.t",
-        mask=["n:sha256"],
+        mask=["n:partial"],
         print_output=False,
     )
 
