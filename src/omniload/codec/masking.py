@@ -369,7 +369,8 @@ def _masked_column(
     values (see `_inferred_alike`). A column whose masked values all load as NULL
     takes `emitted_type`, the type this mask gave the column in an earlier item,
     or Arrow's `null` type before there is one, which dlt loads beside any type
-    by dropping the column from that batch. Dates or times beside values of
+    by dropping the column from that batch; `create_masking_mapper` types it
+    instead when no other column would keep the batch's rows. Dates or times beside values of
     another kind are refused: Arrow would read the others as dates or times, or a
     datetime beside a date as a date. A value that loads as NULL, such as a NaN
     or `NaT`, is no kind.
