@@ -990,7 +990,7 @@ def test_a_masked_int32_column_loads_whether_a_batch_changes_or_not(
     assert counts == (20_000, 20_000, 10_000, "BIGINT")
 
 
-@pytest.mark.parametrize("algorithm", ["round:10", "range", "noise:0"])
+@pytest.mark.parametrize("algorithm", ["round:10", "range", "noise:0", "year_only"])
 @pytest.mark.parametrize("nans", ["first", "last", "only"])
 def test_a_masked_float_column_nan_in_a_whole_batch_loads(tmp_path, algorithm, nans):
     # Each row group reaches the mask as its own record batch, one with nothing
