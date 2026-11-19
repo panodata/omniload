@@ -367,25 +367,29 @@ def _temporal_kind(value: Any) -> Optional[type]:
 def _masked_column(
     pa: Any, name: str, column: Any, mask: Callable, emitted_type: Any
 ) -> Any:
-    """Mask one Arrow column; `None` when the mask returned every value as it was.
+    """Mask one Arrow column; `None` when it is kept as it is.
 
-    An unchanged column that holds a value is kept as it is, so a value a mask
-    does not apply to loads exactly as it would have unmasked. An all-NULL one
+    The masked type follows from the column's type and the mask, not from which
+    values a batch holds: dlt refuses to put batches of one resource together
+    when their types differ. So a column whose masked values all load as NULL
     takes `emitted_type`, the type this mask gave the column in an earlier item,
-    or Arrow's `null` type before there is one: dlt refuses to put batches of
-    different types together, and a mask may or may not change the type. Dates or
-    times beside values of another kind are refused: Arrow would read the others
-    as dates or times, or a datetime beside a date as a date. A value that loads
-    as NULL, such as a NaN or `NaT`, is no kind.
+    or Arrow's `null` type before there is one. A column the mask returns as it
+    was is kept as it is, so a value a mask does not apply to loads exactly as it
+    would have unmasked, unless inference gives its kind one type whatever the
+    values (see `_inferred_alike`). Dates or times beside values of another kind
+    are refused: Arrow would read the others as dates or times, or a datetime
+    beside a date as a date. A value that loads as NULL, such as a NaN or `NaT`,
+    is no kind.
     """
     values = column.to_pylist()
     results = [mask(value) for value in values]
-    unchanged = all(result is value for result, value in zip(results, values))
-    if unchanged:
-        if any(value is not None for value in values):
-            return None
+    if all(_loads_as_null(result) for result in results):
         if emitted_type is not None:
             return pa.nulls(len(values), emitted_type)
+        return pa.nulls(len(values))
+    unchanged = all(result is value for result, value in zip(results, values))
+    if unchanged and not _inferred_alike(pa, column.type):
+        return None
     kinds = {_temporal_kind(result) for result in results if not _loads_as_null(result)}
     if len(kinds) > 1:
         raise ValueError(
@@ -395,24 +399,45 @@ def _masked_column(
     return _masked_array(pa, results, column.type)
 
 
+def _inferred_alike(pa: Any, column_type: Any) -> bool:
+    """Whether a column of `column_type` is built by inference even when unchanged.
+
+    Inference builds integers as `int64` (`uint64` from a `uint64` column),
+    floating-point values as `double` and text as `string`. Keeping a narrower or
+    larger type of these kinds when a mask happens to return every value as it
+    was would make the type depend on the values: `round:10` hands back the zeros
+    of an `int32` column as the same objects, and the column's other batches as
+    new ones.
+    """
+    if pa.types.is_dictionary(column_type):
+        column_type = column_type.value_type
+    return (
+        pa.types.is_integer(column_type)
+        or pa.types.is_floating(column_type)
+        or pa.types.is_string(column_type)
+        or pa.types.is_large_string(column_type)
+        or pa.types.is_string_view(column_type)
+    )
+
+
 def _masked_array(pa: Any, values: list, original_type: Any) -> Any:
     """Build the Arrow array for a column's masked values.
 
     The type is inferred from what the masks return, and a NaN reads as NULL.
-    Two cases use the column's own type, decoded from a dictionary, instead: an
-    integer column whose values inference cannot hold, such as an unsigned
-    integer above the signed range returned unchanged, and timestamps, whose
-    unit and time zone inference would not keep.
+    Two cases use the column's own type, decoded from a dictionary, instead:
+    integers from a `uint64` column, whose upper half `int64` cannot hold, and
+    timestamps, whose unit and time zone inference would not keep.
     """
     own_type = original_type
     if pa.types.is_dictionary(own_type):
         own_type = own_type.value_type
-    try:
-        masked = pa.array(values, from_pandas=True)
-    except (pa.ArrowException, OverflowError):
-        if not pa.types.is_integer(own_type):
-            raise
+    if pa.types.is_uint64(own_type) and all(
+        _loads_as_null(value)
+        or (isinstance(value, int) and not isinstance(value, bool))
+        for value in values
+    ):
         return pa.array(values, type=own_type, from_pandas=True)
+    masked = pa.array(values, from_pandas=True)
     if pa.types.is_timestamp(masked.type) and pa.types.is_timestamp(own_type):
         return pa.array(values, type=own_type, from_pandas=True)
     return masked
