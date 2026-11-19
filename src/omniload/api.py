@@ -512,11 +512,16 @@ def _assemble_and_run(
         return (source_table, dest_table)
 
     def validate_loader_file_format(
-        dlt_dest, loader_file_format: Optional[LoaderFileFormat]
+        pipeline, loader_file_format: Optional[LoaderFileFormat]
     ):
         if not loader_file_format:
             return
-        formats = dlt_dest.capabilities().supported_loader_file_formats
+        capabilities = pipeline.destination.capabilities()
+        formats = (
+            capabilities.supported_staging_file_formats
+            if pipeline.staging
+            else capabilities.supported_loader_file_formats
+        )
         if loader_file_format.value not in formats:
             cli_formats = sorted(
                 fmt.value for fmt in LoaderFileFormat if fmt.value in formats
@@ -746,7 +751,7 @@ def _assemble_and_run(
         pipelines_dir=pipelines_dir,
         refresh="drop_resources" if jr.full_refresh else None,  # ty: ignore[invalid-argument-type]
     )
-    validate_loader_file_format(pipeline.destination, loader_file_format)
+    validate_loader_file_format(pipeline, loader_file_format)
 
     if jr.filesystem_incremental and is_pipelines_dir_temp:
         from dlt.common.destination.client import WithStateSync
