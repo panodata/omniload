@@ -264,10 +264,14 @@ An interval column that reaches the mask as a `timedelta` value or an Arrow
 `duration` column, such as a PostgreSQL `interval` through the `sqlalchemy` or
 `pyarrow` SQL backend, takes only the masks that apply to any value: `hash`,
 `sha256`, `md5`, `hmac`, `redact`, `stars`, `fixed`, `uuid` and `sequential`.
-Any other mask on it fails the run rather than load the interval, or its text,
-unmasked. An Arrow month, day and nanosecond interval column is not checked,
-and a mask that hands one back as it is leaves a column dlt refuses, so the
-load fails rather than load it in clear.
+Any other mask on it fails the run. `round`, `range` and `noise` would hand the
+interval back as it is, the date masks would read its text as a time of day, and
+`random` would return its text, so none of them would mask it. `partial`,
+`email`, `phone`, `credit_card`, `ssn` and `first_letter` mask pieces of a
+nonzero interval's text and hand a zero interval back as it is, so they fail the
+run too. An Arrow month, day and nanosecond interval column is not checked, and
+a mask that hands one back as it is leaves a column dlt refuses, so the load
+fails rather than load it in clear.
 :::
 
 ## Use Case Examples

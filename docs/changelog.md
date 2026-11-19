@@ -18,12 +18,15 @@
   converted. A masked `timedelta` value or Arrow `duration` column is hashed
   from its `timedelta` value before it becomes text, a driver's own subclass,
   such as pyexasol's for Exasol, read as a plain `timedelta`, so an interval
-  hashes alike through either SQL backend. Only the masks that apply
-  to any value mask one: `hash`, `sha256`, `md5`, `hmac`, `redact`, `stars`,
-  `fixed`, `uuid` and `sequential`. Any other mask on such a column, such as
-  `round`, `date_shift` or `partial`, fails the run rather than load the
-  interval or its text unmasked. A `month_day_nano_interval` column is not
-  checked.
+  hashes alike through either SQL backend. Only the masks that apply to any
+  value mask one: `hash`, `sha256`, `md5`, `hmac`, `redact`, `stars`, `fixed`,
+  `uuid` and `sequential`. Any other mask on such a column fails the run.
+  `round`, `range` and `noise` hand an interval back as it is, the date masks
+  read its text as a time of day, and `random` returns its text, so none of them
+  masks it. `partial`, `email`, `phone`, `credit_card`, `ssn` and `first_letter`
+  read a value's text: they used to load pieces of a nonzero interval's text,
+  and hand a zero interval back as it is, and now fail the run. A
+  `month_day_nano_interval` column is not checked.
 - Masking: `--mask` now applies to sources that yield Arrow record batches, such
   as `--sql-backend adbcbridge` and a Parquet file read with `#use_pyarrow=true`.
   Their columns were loaded unmasked. On Arrow items, only the masked columns

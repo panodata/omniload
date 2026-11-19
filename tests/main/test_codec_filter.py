@@ -477,12 +477,34 @@ def test_a_mask_that_leaves_a_timedelta_subclass_as_it_is_is_refused(algorithm, 
         create_masking_mapper([f"d:{algorithm}"])({"d": value})
 
 
+TEXT_MASKS = ["partial", "email", "phone", "credit_card", "ssn", "first_letter"]
+
+
+@pytest.mark.parametrize("algorithm", TEXT_MASKS)
+@pytest.mark.parametrize(
+    "interval", [timedelta(hours=1), timedelta(0)], ids=["hour", "zero"]
+)
+def test_a_text_mask_on_an_interval_is_refused_whatever_its_value(algorithm, interval):
+    # These masks read a value's text, so before intervals were refused they
+    # loaded pieces of an interval's text, and handed a zero interval, which is
+    # falsy, back as it is. Either way the run now fails.
+    from omniload.codec.masking import create_masking_mapper
+
+    assert algorithm in INTERVAL_PASS_THROUGH_MASKS
+    with pytest.raises(ValueError, match="would load it unmasked"):
+        create_masking_mapper([f"d:{algorithm}"])({"d": interval})
+    item = pa.table({"d": pa.array([interval], pa.duration("us"))})
+    with pytest.raises(ValueError, match="would load it unmasked"):
+        create_masking_mapper([f"d:{algorithm}"])(item)
+
+
 @pytest.mark.parametrize("algorithm", INTERVAL_PASS_THROUGH_MASKS)
 @pytest.mark.parametrize("path", ["sqlalchemy", "pyarrow", "record-batches"])
 def test_a_mask_that_leaves_an_interval_as_it_is_fails_the_run(
     interval_source, tmp_path, algorithm, path
 ):
-    # The interval would otherwise become text after masking and load in clear.
+    # Left in place, the interval would become text after masking and load in
+    # clear; a text mask masks pieces of its text instead, and is refused too.
     if path == "record-batches":
         source = tmp_path / "source.parquet"
         pa.parquet.write_table(
