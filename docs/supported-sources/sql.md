@@ -50,10 +50,12 @@ omniload ingest \
 In this example, the query is filtering the data to only include rows where the `updated_at` column is at or after the `interval_start` variable.
 
 On a resumed run, `interval_start` is the cursor value the previous run stored,
-so the query reads only the rows past it. The first run binds `--interval-start`,
-or the timestamp `0001-01-01 00:00:00` without one. After that the stored cursor
-takes precedence over `--interval-start`, as it does for a table, unless
-`--interval-end` is given too: the two then bound the run. Compare with `>=`, not
+so the query reads only the rows from it on. The first run binds
+`--interval-start`, or the timestamp `0001-01-01 00:00:00` without one. After that
+the stored cursor takes precedence over `--interval-start`, as it does for a
+table, unless `--interval-end` is given too: the two then bound the run. The
+`replace` strategy stores no cursor, so it binds `--interval-start`, or
+`0001-01-01 00:00:00`, on every run. Compare with `>=`, not
 `>`: rows added after the previous run with the same cursor value as the last row
 it loaded are read only through `>=`. A run bounded by `--interval-start` and
 `--interval-end` loads every row in its window, so with the `append` strategy it
