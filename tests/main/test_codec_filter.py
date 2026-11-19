@@ -381,6 +381,22 @@ def test_an_arrow_duration_column_without_a_value_is_not_refused(algorithm):
 
 
 @pytest.mark.parametrize("kind", [pa.Table, pa.RecordBatch])
+def test_a_sequential_duration_after_a_typed_leading_batch_takes_integers(kind):
+    # The leading batch takes the interval text type, and `sequential` gives the
+    # later durations integer tokens: dlt refuses the two types, failing the run.
+    from omniload.codec.masking import create_masking_mapper
+
+    hours = pa.array([3_600, 7_200], pa.duration("s"))
+    for array in (hours, hours.dictionary_encode()):
+        mapper = create_masking_mapper(["d:sequential"])
+        first = mapper(kind.from_arrays([pa.nulls(2, array.type)], ["d"]))
+        later = mapper(kind.from_arrays([array], ["d"]))
+
+        assert first.schema.field("d").type == pa.string()
+        assert later.schema.field("d").type == pa.int64()
+
+
+@pytest.mark.parametrize("kind", [pa.Table, pa.RecordBatch])
 def test_a_nanosecond_duration_that_reads_back_as_nat_is_masked_or_refused(kind):
     # The lowest nanosecond duration reads back as pandas' `NaT`, a datetime
     # rather than a `timedelta`. Unmasked it loads as interval text, so a mask
