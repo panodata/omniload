@@ -737,6 +737,13 @@ class TestMaskingArrowParity(unittest.TestCase):
             ("uuid", pa.int64(), [1], pa.string()),
             ("sequential", pa.string(), ["a", "b"], pa.int64()),
             ("sequential", pa.uint64(), [2**63 + 1], pa.uint64()),
+            ("hash", pa.int64(), [1], pa.string()),
+            (
+                "sequential",
+                pa.dictionary(pa.int32(), pa.uint64()),
+                [2**63 + 1],
+                pa.uint64(),
+            ),
         ]
         for algorithm, source_type, values, masked_type in cases:
             for kind in (pa.Table, pa.RecordBatch):
