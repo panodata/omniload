@@ -2,6 +2,8 @@
 
 ## in progress
 
+## 2026/11/20 v0.25.0
+
 - SQL: On an incremental `query:` table, a resumed run binds `:interval_start`
   to the cursor value the previous run stored, so a query filtered on it reads
   rows from the stored cursor onward. It bound `--interval-start`, or `0001-01-01` without one, on
