@@ -2,6 +2,18 @@
 
 ## in progress
 
+- SQL: On an incremental `query:` table, a resumed run binds `:interval_start`
+  to the cursor value the previous run stored, so a query filtered on it reads
+  rows from the stored cursor onward. It bound `--interval-start`, or `0001-01-01` without one, on
+  every run, so each run read the whole result. As on a table, the stored cursor
+  now outranks `--interval-start` unless `--interval-end` is given too. A query
+  that selects `:interval_start` as a column loads the stored cursor there. A
+  query that compares with `>`, as the SQL source page's example did, now misses
+  a row added at the stored cursor value after the previous run: compare with
+  `>=`. A query that compares `:interval_start` with a column other than the
+  incremental key, such as a date column with an integer key, now drops rows, or
+  fails, on a run that binds the stored cursor: write such a fixed bound into
+  the query as a literal.
 - SQL: A `query:` table resumes an incremental load from a DECIMAL,
   floating-point, text or TIME cursor column. The second run failed with a
   `KeyError` naming `decimal.Decimal`, `float`, `str` or `datetime.time`. A

@@ -18,9 +18,11 @@ def chained_query_adapter_callback(query_adapters):
     This gives us the flexibility to introduce various adapters based on the given command parameters.
     """
 
-    def callback(query, table):
+    # dlt calls a query adapter with the incremental and the engine when its
+    # signature takes them, so accept both and hand them on to every adapter.
+    def callback(query, table, incremental=None, engine=None):
         for adapter in query_adapters:
-            query = adapter(query, table)
+            query = adapter(query, table, incremental, engine)
 
         return query
 
@@ -28,7 +30,7 @@ def chained_query_adapter_callback(query_adapters):
 
 
 def limit_callback(sql_limit: int, incremental_key: Optional[str] = None):
-    def callback(query, table):
+    def callback(query, table, incremental=None, engine=None):
         query = query.limit(sql_limit)
         if incremental_key:
             query = query.order_by(incremental_key)
@@ -39,28 +41,21 @@ def limit_callback(sql_limit: int, incremental_key: Optional[str] = None):
 
 def custom_query_variable_subsitution(query_value: str, kwargs: dict):
     def callback(query, table, incremental=None, engine=None):
+        # Bind only the placeholders the query names: text() refuses a value for a
+        # parameter it does not define. With an incremental key, a resumed run
+        # binds the stored cursor; a first run binds --interval-start, as dlt
+        # seeds the incremental from it.
         params = {}
-        if incremental:
-            params["interval_start"] = (
-                incremental.last_value
-                if incremental.last_value is not None
-                else datetime(year=1, month=1, day=1)
-            )
-            if incremental.end_value is not None:
-                params["interval_end"] = incremental.end_value
-        else:
-            if ":interval_start" in query_value:
-                params["interval_start"] = (
-                    datetime.min
-                    if kwargs.get("interval_start") is None
-                    else kwargs.get("interval_start")
-                )
-            if ":interval_end" in query_value:
-                params["interval_end"] = (
-                    datetime.max
-                    if kwargs.get("interval_end") is None
-                    else kwargs.get("interval_end")
-                )
+        if ":interval_start" in query_value:
+            start = incremental.last_value if incremental is not None else None
+            if start is None:
+                start = kwargs.get("interval_start")
+            params["interval_start"] = datetime.min if start is None else start
+        if ":interval_end" in query_value:
+            end = incremental.end_value if incremental is not None else None
+            if end is None:
+                end = kwargs.get("interval_end")
+            params["interval_end"] = datetime.max if end is None else end
 
         return text(query_value).bindparams(**params)
 

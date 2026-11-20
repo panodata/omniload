@@ -34,10 +34,11 @@ Custom queries support incremental loads, but there are some caveats:
   time or timestamp column
 - you must do your own filtering in the query for the incremental load
   - you can use the `interval_start` and `interval_end` variables to filter the data
-  - `interval_start` is the `--interval-start` value, or the timestamp
-    `0001-01-01 00:00:00` without one, on every run: it is not the stored
-    cursor. Compare it only with a date or timestamp column. Each run reads every
-    row the query returns, and only the rows past the stored cursor are loaded
+  - `interval_start` is a timestamp on the first run: `--interval-start`, or
+    `0001-01-01 00:00:00` without one. On a resumed run it is the stored cursor,
+    as described below. Use it only with a date or timestamp incremental key, and
+    compare it only with that column. With any other key, leave it out of the
+    query: only the rows past the stored cursor are loaded
 
 Here's an example of how to do an incremental load:
 
@@ -46,11 +47,29 @@ omniload ingest \
     --source-uri $POSTGRES_URI \
     --dest-uri "duckdb:///mydb.db" \
     --dest-table "public.output" \
-    --source-table "query:select oi.*, o.updated_at from order_items oi join orders o on oi.order_id = o.id where o.updated_at > :interval_start" \
+    --source-table "query:select oi.*, o.updated_at from order_items oi join orders o on oi.order_id = o.id where o.updated_at >= :interval_start" \
     --incremental-key updated_at \
     --incremental-strategy merge \
     --primary-key id
 ```
 
-In this example, the query is filtering the data to only include rows where the `updated_at` column is greater than the `interval_start` variable.
+In this example, the query is filtering the data to only include rows where the `updated_at` column is at or after the `interval_start` variable.
 
+On a resumed run, `interval_start` is the cursor value the previous run stored,
+so the query reads only the rows from it on. The first run binds
+`--interval-start`, or the timestamp `0001-01-01 00:00:00` without one. After that
+the stored cursor takes precedence over `--interval-start`, as it does for a
+table, unless `--interval-end` is given too: the two then bound the run. The
+`replace` strategy resets the incremental state before every run, so it binds
+`--interval-start`, or `0001-01-01 00:00:00`, each time.
+
+Because `interval_start` holds the stored value of the `--incremental-key`
+column, compare it only with that column: a query that uses it as a fixed lower
+bound on another column drops rows, or fails, as with an integer key and a
+timestamp column, on a run that binds the stored cursor. Write such a bound into
+the query as a literal.
+
+Compare with `>=`, not `>`: rows added after the previous run with the same
+cursor value as the last row it loaded are read only through `>=`. A run bounded
+by `--interval-start` and `--interval-end` loads every row in its window, so with
+the `append` strategy it loads again the rows an earlier run loaded there.
