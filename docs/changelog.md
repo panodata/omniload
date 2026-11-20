@@ -4,7 +4,7 @@
 
 - SQL: On an incremental `query:` table, a resumed run binds `:interval_start`
   to the cursor value the previous run stored, so a query filtered on it reads
-  only the new rows. It bound `--interval-start`, or `0001-01-01` without one, on
+  rows from the stored cursor onward. It bound `--interval-start`, or `0001-01-01` without one, on
   every run, so each run read the whole result. As on a table, the stored cursor
   now outranks `--interval-start` unless `--interval-end` is given too. A query
   that selects `:interval_start` as a column loads the stored cursor there. A
