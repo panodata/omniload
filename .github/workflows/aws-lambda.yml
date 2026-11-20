@@ -42,7 +42,7 @@ jobs:
           fetch-tags: true
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.3
+        uses: astral-sh/setup-uv@v10.4.0
         with:
           activate-environment: 'true'
           cache-suffix: aws-lambda
