@@ -5,7 +5,7 @@
 # - https://github.com/FernandoMiguel/Buildkit#mounttypecache
 
 # Stage 1: Build wheel package
-FROM python:3.14-slim-trixie AS build
+FROM python:3.15-slim-trixie AS build
 
 # Configure operating system.
 ENV DEBIAN_FRONTEND=noninteractive
@@ -32,7 +32,7 @@ RUN pip install build
 RUN python -m build --wheel --outdir ${BUILD}/dist ${BUILD}
 
 
-FROM python:3.14-slim-trixie AS package
+FROM python:3.15-slim-trixie AS package
 
 # Guidelines that have been followed.
 # - https://hynek.me/articles/docker-uv/
