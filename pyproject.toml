@@ -167,7 +167,7 @@ optional-dependencies.filesystem = [
 optional-dependencies.full = [ "omniload[adbcbridge,exasol,ibm-db,iterable,notify,oci,odbc,oracle,reshape,turso,vortex]" ]
 optional-dependencies.ibm-db = [
   "ibm-db<4; platform_machine!='aarch64'",
-  "ibm-db-sa<0.5; platform_machine!='aarch64'",
+  "ibm-db-sa<0.6; platform_machine!='aarch64'",
 ]
 # Long-tail file formats (XML, YAML, MessagePack, CBOR).
 optional-dependencies.iterable = [
